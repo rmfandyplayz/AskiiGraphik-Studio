@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AskiiArt.App/AskiiArt.App.csproj" />
+    <Project Path="src/AskiiArt.Core/AskiiArt.Core.csproj" />
+    <Project Path="src/AskiiArt.Imaging/AskiiArt.Imaging.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AskiiArt.App.Tests/AskiiArt.App.Tests.csproj" />
+    <Project Path="tests/AskiiArt.Core.Tests/AskiiArt.Core.Tests.csproj" />
+    <Project Path="tests/AskiiArt.Imaging.Tests/AskiiArt.Imaging.Tests.csproj" />
+  </Folder>
+</Solution>

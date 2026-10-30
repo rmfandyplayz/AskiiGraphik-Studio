@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- The document model, commands, tools and file format. BCL only: no Avalonia, no SkiaSharp
+     (ARCHITECTURE §2, §4). -->
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>

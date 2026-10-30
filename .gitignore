@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Written with Claude Code (Anthropic).
+
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+# IDE state (per user, never committed)
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.DotSettings.user
+riderModule.iml
+/_ReSharper.Caches/
+
+# Verify: a received file is a snapshot that hasn't been approved yet.
+*.received.*
+
+# OS clutter
+.DS_Store
+Thumbs.db

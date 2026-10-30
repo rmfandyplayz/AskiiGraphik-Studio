@@ -1,0 +1,25 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Every package version lives here (Central Package Management). See ARCHITECTURE §3 and ADR 0002. -->
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Avalonia (keep every Avalonia package on the same version)">
+    <PackageVersion Include="Avalonia" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.4" />
+  </ItemGroup>
+
+  <ItemGroup Label="SkiaSharp (must equal the version Avalonia.Skia depends on; never pin a different one)">
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
+  </ItemGroup>
+
+  <ItemGroup Label="Tests (xunit.v3 stays on 3.x until Avalonia.Headless.XUnit supports 4.x; see ADR 0002)">
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <PackageVersion Include="Verify.XunitV3" Version="32.0.1" />
+  </ItemGroup>
+</Project>

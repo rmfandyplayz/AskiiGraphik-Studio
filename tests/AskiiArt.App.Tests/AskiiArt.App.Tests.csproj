@@ -1,0 +1,16 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Avalonia.Headless interaction tests. Few and focused; no pixel or layout assertions about
+     placeholder UI (ARCHITECTURE §19). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AskiiArt.App\AskiiArt.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <!-- Referenced directly so the build fails with NU1605 (package downgrade) if Avalonia ever
+         needs a newer SkiaSharp than the one pinned in Directory.Packages.props. -->
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+</Project>

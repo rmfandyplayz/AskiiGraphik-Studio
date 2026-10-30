@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Written with Claude Code (Anthropic).
+
+# Every text file in the repo uses LF, on every OS.
+* text=auto eol=lf
+
+# Binary files.
+*.png binary
+*.ico binary
+*.ttf binary
+*.otf binary
+
+# Verify snapshot files (see .editorconfig).
+*.verified.txt text eol=lf working-tree-encoding=UTF-8
+*.verified.xml text eol=lf working-tree-encoding=UTF-8
+*.verified.json text eol=lf working-tree-encoding=UTF-8
+*.verified.bin binary
+*.verified.png binary
