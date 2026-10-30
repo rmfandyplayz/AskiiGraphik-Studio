@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Written with Claude Code (Anthropic).
+#
+# Builds and tests on Windows, macOS and Linux. Linux is never tested by hand, so this
+# workflow is its only safety net. Choices are explained in ADR 0005.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the run that's still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
+    strategy:
+      # Keep the other operating systems running when one fails, so a run shows every
+      # platform that's broken, not just the first.
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up .NET (version from global.json)
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', '**/Directory.Build.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+      # Formatting doesn't depend on the OS (all files are LF), so one check is enough.
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: dotnet format --verify-no-changes --no-restore
+
+      # When a snapshot test fails, Verify writes the actual output to *.received.* files.
+      # Uploading them makes the difference visible without rerunning locally.
+      - name: Upload unapproved snapshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: received-snapshots-${{ matrix.os }}
+          path: '**/*.received.*'
+          if-no-files-found: ignore

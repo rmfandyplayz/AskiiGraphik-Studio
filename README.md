@@ -3,6 +3,8 @@
 
 # AskiiArt
 
+[![CI](https://github.com/rmfandyplayz/AskiiGraphik-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/rmfandyplayz/AskiiGraphik-Studio/actions/workflows/ci.yml)
+
 > "AskiiArt" is a placeholder name.
 
 A cross-platform (Windows, macOS, Linux) editor for text art, with layers, selections, customizable brushes and full undo history. It's in early development and not usable yet.

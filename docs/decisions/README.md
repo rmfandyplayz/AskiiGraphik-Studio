@@ -11,3 +11,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0002](0002-test-stack-and-version-pins.md) | Test stack and version pins | Accepted |
 | [0003](0003-slnx-solution-format.md) | Use the .slnx solution format | Accepted |
 | [0004](0004-code-style-enforcement.md) | How code style is enforced | Accepted |
+| [0005](0005-ci-workflow.md) | CI workflow | Accepted |

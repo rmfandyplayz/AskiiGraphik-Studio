@@ -39,7 +39,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line | Adopted in M2 (§14.4) |
 | Tests | xUnit v3, Verify (snapshot tests), CsCheck (property-based tests), Avalonia.Headless | Run on Microsoft.Testing.Platform. xUnit v3 stays on 3.x and Verify on 32.x until Avalonia.Headless.XUnit supports xUnit 4 (ADR 0002) |
 | Logging | Microsoft.Extensions.Logging plus a rolling file sink | The owner attaches the log to bug reports |
-| CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push |
+| CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push and pull request, and check formatting (ADR 0005) |
 
 All package versions are pinned in `Directory.Packages.props` (Central Package Management). Before adding a package that isn't listed here, ask first (see CLAUDE.md), and check that its license is compatible with GPL-3.0.
 
@@ -51,6 +51,7 @@ global.json                  pinned .NET SDK and test runner (ADR 0002)
 Directory.Build.props        shared settings: TFM, nullable, warnings-as-errors, analyzers
 Directory.Packages.props     pinned package versions
 .editorconfig  .gitattributes  .gitignore  LICENSE  README.md  THIRD-PARTY-NOTICES.md  CLAUDE.md
+.github/workflows/ci.yml     build and test on Windows, macOS and Ubuntu (ADR 0005)
 docs/
   ARCHITECTURE.md  ROADMAP.md
   decisions/                 ADRs, named NNNN-short-title.md

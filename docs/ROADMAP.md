@@ -13,11 +13,12 @@
 
 ## M0: Foundation
 
-- [~] **0.1 Repo scaffold.** Create the solution and projects per ARCHITECTURE §4. Add `Directory.Build.props` (net10.0, nullable, warnings as errors, analyzers), `Directory.Packages.props`, `.editorconfig` (encoding the CLAUDE.md code style wherever analyzers can), `.gitattributes`, `LICENSE` (GPL-3.0), a stub `README.md`, `THIRD-PARTY-NOTICES.md`, `docs/decisions/0001-record-architecture-decisions.md` (which spells out the status and supersede rules), and the `docs/decisions/README.md` index. Add one trivial test per test project.
+- [x] **0.1 Repo scaffold.** Create the solution and projects per ARCHITECTURE §4. Add `Directory.Build.props` (net10.0, nullable, warnings as errors, analyzers), `Directory.Packages.props`, `.editorconfig` (encoding the CLAUDE.md code style wherever analyzers can), `.gitattributes`, `LICENSE` (GPL-3.0), a stub `README.md`, `THIRD-PARTY-NOTICES.md`, `docs/decisions/0001-record-architecture-decisions.md` (which spells out the status and supersede rules), and the `docs/decisions/README.md` index. Add one trivial test per test project.
   *Owner checks:* `dotnet build` and `dotnet test` succeed on Windows and on Mac.
   *Note:* Built. Template mobile and browser projects were removed; xUnit and Verify are pinned to older versions so the headless tests work (ADR 0002).
-- [ ] **0.2 CI.** Add a GitHub Actions workflow that builds and tests on Windows, macOS and Ubuntu on every push and pull request. Put a status badge in the README.
+- [~] **0.2 CI.** Add a GitHub Actions workflow that builds and tests on Windows, macOS and Ubuntu on every push and pull request. Put a status badge in the README.
   *Owner checks:* after a push, CI is green on all three.
+  *Note:* Built (`.github/workflows/ci.yml`, ADR 0005). Also runs the format check on Linux, since the owner works in Rider. Not run yet; the first push verifies it.
 - [ ] **0.3 App skeleton.** The Avalonia app starts and shows an empty main window with a placeholder menu (File → Quit; Help → Open Log Folder, About). This step also adds:
   - the DI container and logging to a rolling file
   - `.resx` string resources, used by every visible string
