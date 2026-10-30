@@ -3,7 +3,7 @@
 # AskiiArt: Architecture
 
 > **Status:** v0.1, the agreed baseline before any code exists.
-> **Name:** "AskiiArt" is a placeholder for the namespace, solution and repo. The product name is undecided ("AsKEEGraphics Studio" is a candidate). Keep the display name and file extension in single constants so renaming is cheap.
+> **Name:** "AskiiArt" is the code name, used for the namespaces and the solution. The product's display name is currently **AskiiGraphiks Studio** (tentative); it lives only in `Strings.resx` (`AppDisplayName`). Keep the display name and file extension in single constants so renaming is cheap.
 
 ---
 
@@ -38,7 +38,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | Graphics | SkiaSharp | **Use the exact version Avalonia depends on.** Never pin a different one. |
 | Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line | Adopted in M2 (§14.4) |
 | Tests | xUnit v3, Verify (snapshot tests), CsCheck (property-based tests), Avalonia.Headless | Run on Microsoft.Testing.Platform. xUnit v3 stays on 3.x and Verify on 32.x until Avalonia.Headless.XUnit supports xUnit 4 (ADR 0002) |
-| Logging | Microsoft.Extensions.Logging plus a rolling file sink | The owner attaches the log to bug reports |
+| Logging | Microsoft.Extensions.Logging, writing to a rolling file through Serilog (Serilog.Extensions.Logging, Serilog.Sinks.File) | The owner attaches the log to bug reports (ADR 0006) |
 | CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push and pull request, and check formatting (ADR 0005) |
 
 All package versions are pinned in `Directory.Packages.props` (Central Package Management). Before adding a package that isn't listed here, ask first (see CLAUDE.md), and check that its license is compatible with GPL-3.0.
@@ -259,6 +259,8 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings.
 
+Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and a menu bar inside the window on Windows and Linux (ADR 0007).
+
 ### 14.4 Panels and docking
 
 Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. In M2 the shell adopts **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings. Before M2, panels can sit in a simple fixed placeholder layout.
@@ -336,8 +338,8 @@ If implementing something would require making a reserved feature real, stop and
 
 - The document is changed **only on the UI thread**. Heavy work (image conversion, global fill on large canvases, export, compression) runs as a background task. It reports progress, supports cancellation, and returns a result that the UI thread applies as a command.
 - No `async void` except in event handlers, and no fire-and-forget work without error handling.
-- Unhandled exceptions are logged with context and shown to the user as a clear message, and the app tries to keep the document safe by offering to save a recovery copy. Exceptions are never swallowed silently.
-- Logs go to a rolling file in the app-data folder. A Help → "Open log folder" menu item makes bug reports easy.
+- Unhandled exceptions are logged with context and shown to the user as a clear message, and the app tries to keep the document safe by offering to save a recovery copy. Exceptions are never swallowed silently. How each kind of exception is handled is in ADR 0008.
+- Logs go to a rolling file in the per-machine (local, non-roaming) app-data folder, under `Logs` (ADR 0006). A Help → "Open log folder" menu item makes bug reports easy.
 
 ## 21. Performance targets
 

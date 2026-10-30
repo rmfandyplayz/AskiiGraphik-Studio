@@ -1,11 +1,11 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 
-# AskiiArt
+# AskiiGraphiks Studio
 
 [![CI](https://github.com/rmfandyplayz/AskiiGraphik-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/rmfandyplayz/AskiiGraphik-Studio/actions/workflows/ci.yml)
 
-> "AskiiArt" is a placeholder name.
+> The name is tentative. "AskiiArt" is the code name used for the solution and namespaces.
 
 A cross-platform (Windows, macOS, Linux) editor for text art, with layers, selections, customizable brushes and full undo history. It's in early development and not usable yet.
 

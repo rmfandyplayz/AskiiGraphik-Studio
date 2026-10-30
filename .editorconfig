@@ -14,6 +14,8 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
+# Rider wraps long lines at this width when it reformats; dotnet format doesn't wrap.
+max_line_length = 120
 
 [*.{csproj,props,targets,slnx,axaml,xml,manifest,resx,json,yml,yaml}]
 indent_size = 2
@@ -118,6 +120,12 @@ dotnet_naming_style.pascal_case.capitalization = pascal_case
 dotnet_naming_style.underscore_camel_case.required_prefix = _
 dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 
+#### Analyzer tuning ####
+
+# CA1863 wants a cached CompositeFormat for every string.Format call. UI strings come from
+# Strings.resx, can change with the UI culture, and are formatted rarely, so caching buys nothing.
+dotnet_diagnostic.CA1863.severity = none
+
 #### Documentation ####
 
 # Missing XML doc comments are only required for Core's public API (see the Core section below).
@@ -130,3 +138,6 @@ dotnet_diagnostic.CS1591.severity = warning
 # Test names use underscores to separate the parts (Method_Scenario_Result).
 [tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none
+# Tests log a handful of messages; LoggerMessage source generation (CA1848) is a production
+# performance concern only.
+dotnet_diagnostic.CA1848.severity = none

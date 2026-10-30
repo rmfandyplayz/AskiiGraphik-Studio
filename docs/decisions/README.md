@@ -12,3 +12,7 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0003](0003-slnx-solution-format.md) | Use the .slnx solution format | Accepted |
 | [0004](0004-code-style-enforcement.md) | How code style is enforced | Accepted |
 | [0005](0005-ci-workflow.md) | CI workflow | Accepted |
+| [0006](0006-startup-di-and-logging.md) | Startup, dependency injection and logging | Accepted |
+| [0007](0007-actions-menus-and-shortcuts.md) | Actions, menus and shortcuts | Accepted |
+| [0008](0008-unexpected-errors.md) | Handling unexpected errors | Accepted |
+| [0009](0009-ui-strings-and-theme-tokens.md) | UI strings and theme tokens | Accepted |

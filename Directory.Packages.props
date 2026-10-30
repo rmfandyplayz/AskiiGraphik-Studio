@@ -18,6 +18,18 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
   </ItemGroup>
 
+  <ItemGroup Label="App infrastructure">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup Label="Logging to a rolling file (ADR 0006)">
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Tests (xunit.v3 stays on 3.x until Avalonia.Headless.XUnit supports 4.x; see ADR 0002)">
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="Verify.XunitV3" Version="32.0.1" />

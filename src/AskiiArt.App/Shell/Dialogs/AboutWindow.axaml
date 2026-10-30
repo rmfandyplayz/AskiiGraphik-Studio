@@ -1,0 +1,31 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder About dialog. The real About / credits / licenses screen comes in M9. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:AskiiArt.App.Shell.Dialogs"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Shell.Dialogs.AboutWindow"
+        x:DataType="dialogs:AboutViewModel"
+        Title="{x:Static res:Strings.AboutTitle}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <TextBlock Text="{Binding AppName}" FontSize="{StaticResource AppFontSizeTitle}" />
+    <TextBlock Text="{Binding VersionText}" />
+    <TextBlock Text="{Binding LicenseText}"
+               Foreground="{DynamicResource AppSecondaryTextBrush}"
+               TextWrapping="Wrap" />
+    <Button Content="{x:Static res:Strings.DialogOk}"
+            HorizontalAlignment="Right"
+            Margin="{StaticResource AppDialogButtonsMargin}"
+            IsDefault="True"
+            IsCancel="True"
+            Click="OnOkClick" />
+  </StackPanel>
+</Window>

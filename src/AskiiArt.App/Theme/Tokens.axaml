@@ -1,0 +1,30 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Design tokens (ARCHITECTURE §14.5). Placeholder UI uses only these, never literal colors or
+     sizes, so the owner's design system can replace them in one place. Colors have a light and a
+     dark value; everything else is shared. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FF5F5F5F" />
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <!-- Spacing -->
+  <x:Double x:Key="AppSpacingSmall">4</x:Double>
+  <x:Double x:Key="AppSpacingMedium">8</x:Double>
+  <x:Double x:Key="AppSpacingLarge">16</x:Double>
+  <Thickness x:Key="AppDialogPadding">24</Thickness>
+
+  <!-- Typography -->
+  <x:Double x:Key="AppFontSizeTitle">20</x:Double>
+
+  <!-- Dialogs -->
+  <Thickness x:Key="AppDialogButtonsMargin">0,16,0,0</Thickness>
+  <x:Double x:Key="AppDialogMinWidth">320</x:Double>
+  <x:Double x:Key="AppDialogMaxWidth">480</x:Double>
+</ResourceDictionary>

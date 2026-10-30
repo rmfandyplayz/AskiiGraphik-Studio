@@ -2,7 +2,7 @@
 
 # CLAUDE.md
 
-AskiiArt (a placeholder name) is a cross-platform ASCII art editor. C# on .NET 10 with Avalonia 12, licensed GPL-3.0-or-later.
+AskiiArt (the code name; the display name is currently "AskiiGraphiks Studio") is a cross-platform ASCII art editor. C# on .NET 10 with Avalonia 12, licensed GPL-3.0-or-later.
 
 - `docs/ARCHITECTURE.md` is the **source of truth** for structure and agreed decisions. Before coding, read the sections your step touches.
 - `docs/ROADMAP.md` is the work queue.

@@ -12,6 +12,9 @@ AskiiArt uses the components below. Every one is under a license compatible with
 | Avalonia (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Skia) | MIT | https://github.com/AvaloniaUI/Avalonia |
 | SkiaSharp | MIT | https://github.com/mono/SkiaSharp |
 | HarfBuzzSharp (dependency of Avalonia.Skia) | MIT | https://github.com/mono/SkiaSharp |
+| CommunityToolkit.Mvvm | MIT | https://github.com/CommunityToolkit/dotnet |
+| Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Logging | MIT | https://github.com/dotnet/runtime |
+| Serilog, Serilog.Extensions.Logging, Serilog.Sinks.File | Apache-2.0 | https://github.com/serilog/serilog |
 
 ## Used only for development and testing (not shipped)
 

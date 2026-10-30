@@ -1,6 +1,16 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Deliberately empty until step 0.3 adds the title, menu and theme tokens. -->
+<!-- Placeholder main window: a menu bar and nothing else yet. The menus themselves are built in
+     code from the MenuLayout (see MainWindowBuilder). -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="AskiiArt.App.Shell.MainWindow" />
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Shell.MainWindow"
+        Title="{x:Static res:Strings.AppDisplayName}">
+  <DockPanel>
+    <!-- Shows the window's native menu on Windows and Linux; hides itself on macOS, where the
+         menu goes to the system menu bar instead. -->
+    <NativeMenuBar DockPanel.Dock="Top" />
+    <Panel />
+  </DockPanel>
+</Window>

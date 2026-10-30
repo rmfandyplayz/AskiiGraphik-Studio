@@ -5,6 +5,10 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <Version>0.1.0</Version>
+    <!-- The language of Strings.resx; lets resource lookups skip searching for translations. -->
+    <NeutralLanguage>en</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +19,33 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
+
+  <!-- Every user-visible string lives in Strings.resx. MSBuild generates the strongly typed
+       Strings class from it at build time (no IDE-specific code generator needed). -->
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>AskiiArt.App.Resources</StronglyTypedNamespace>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <!-- Public, because AXAML's {x:Static} only resolves public members. -->
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- IDEs and dotnet format analyze the code with a "design-time build", which normally skips
+       resource generation, so they wouldn't know the Strings class exists. This runs it there too. -->
+  <Target Name="GenerateStringsForDesignTimeBuilds"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="PrepareResources"
+          Condition="'$(DesignTimeBuild)' == 'true'" />
 
   <ItemGroup>
     <InternalsVisibleTo Include="AskiiArt.App.Tests" />

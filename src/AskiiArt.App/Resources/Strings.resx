@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Every user-visible string in the app. Code refers to these through the generated Strings
+     class (C#: Strings.MenuFile, AXAML: {x:Static res:Strings.MenuFile}). An underscore marks
+     the Alt access key on Windows and Linux; macOS ignores it. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Product -->
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>AskiiGraphiks Studio</value>
+  </data>
+
+  <!-- Menus -->
+  <data name="MenuFile" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="MenuDebug" xml:space="preserve">
+    <value>_Debug</value>
+  </data>
+  <data name="MenuAboutAppFormat" xml:space="preserve">
+    <value>About {0}</value>
+    <comment>macOS application menu. {0} is AppDisplayName.</comment>
+  </data>
+
+  <!-- Actions -->
+  <data name="ActionQuit" xml:space="preserve">
+    <value>_Quit</value>
+  </data>
+  <data name="ActionOpenLogFolder" xml:space="preserve">
+    <value>Open _Log Folder</value>
+  </data>
+  <data name="ActionAbout" xml:space="preserve">
+    <value>_About</value>
+  </data>
+  <data name="ActionThrowTestException" xml:space="preserve">
+    <value>Throw Test Exception</value>
+    <comment>Debug builds only.</comment>
+  </data>
+
+  <!-- About dialog -->
+  <data name="AboutTitle" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="AboutVersionFormat" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>{0} is the version, for example "0.1.0 (fc89da6)".</comment>
+  </data>
+  <data name="AboutLicense" xml:space="preserve">
+    <value>Licensed under GPL-3.0-or-later</value>
+  </data>
+  <data name="DialogOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
+  <!-- Unexpected error dialog -->
+  <data name="UnexpectedErrorTitle" xml:space="preserve">
+    <value>Unexpected error</value>
+  </data>
+  <data name="UnexpectedErrorMessage" xml:space="preserve">
+    <value>Something went wrong. The details were written to the log.</value>
+  </data>
+  <data name="UnexpectedErrorOpenLogFolder" xml:space="preserve">
+    <value>Open Log Folder</value>
+  </data>
+  <data name="UnexpectedErrorContinue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="UnexpectedErrorQuit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+</root>
