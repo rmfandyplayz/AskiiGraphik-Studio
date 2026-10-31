@@ -3,4 +3,9 @@
 <!-- The document model, commands, tools and file format. BCL only: no Avalonia, no SkiaSharp
      (ARCHITECTURE §2, §4). -->
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- Document changes are internal so they can only go through commands (ADR 0010); the tests
+         check them directly. -->
+    <InternalsVisibleTo Include="AskiiArt.Core.Tests" />
+  </ItemGroup>
 </Project>
