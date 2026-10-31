@@ -83,7 +83,9 @@ public sealed class GlyphAtlas : IDisposable
         var y = slotInPage / _columnsPerPage * Metrics.Height;
 
         // Full-alpha ink, so each pixel's alpha is exactly the glyph's coverage.
-        var source = _rasterizer.Draw(_pages[pageIndex].Canvas, x, y, rune, SKColors.Black);
+        var page = _pages[pageIndex];
+        var source = _rasterizer.Draw(page.Canvas, x, y, rune, SKColors.Black);
+        page.Version++;
         entry = new GlyphAtlasEntry(pageIndex, SKRectI.Create(x, y, Metrics.Width, Metrics.Height), source);
         _entries.Add(rune, entry);
         return entry;
@@ -97,6 +99,16 @@ public sealed class GlyphAtlas : IDisposable
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         return _pages[pageIndex].Bitmap;
+    }
+
+    /// <summary>
+    /// A number that changes whenever a glyph is added to the page, so a caller that copies the
+    /// page (to hand it to a render thread, say) knows when its copy is out of date.
+    /// </summary>
+    public int GetPageVersion(int pageIndex)
+    {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+        return _pages[pageIndex].Version;
     }
 
     /// <inheritdoc/>
@@ -126,6 +138,8 @@ public sealed class GlyphAtlas : IDisposable
         public SKBitmap Bitmap { get; }
 
         public SKCanvas Canvas { get; }
+
+        public int Version { get; set; }
 
         public void Dispose()
         {

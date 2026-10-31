@@ -166,6 +166,64 @@ public sealed class GlyphRasterizerTests
         Assert.Equal(expected, scale, 0.0001f);
     }
 
+    [Theory]
+    [InlineData(10, 0, 10, 1)] // fills the cell exactly
+    [InlineData(10, -0.4f, 10.4f, 1)] // pokes out by 4%: within the allowance
+    [InlineData(10, -1, 11, 10f / 12)] // pokes out by 10%: squeezed to the cell width
+    [InlineData(10, 0, 13, 10f / 13)] // pokes out on one side only
+    [InlineData(10, 0, 0, 1)] // no ink
+    public void HorizontalSqueezeToFit_SqueezesOnlyGlyphsThatPokeOutClearly(float advance, float inkLeft,
+        float inkRight, float expected)
+    {
+        var inkBounds = SKRect.Create(inkLeft, -10, inkRight - inkLeft, 10);
+
+        var squeeze = GlyphRasterizer.HorizontalSqueezeToFit(advance, inkBounds, cellWidth: 10);
+
+        Assert.Equal(expected, squeeze, 0.0001f);
+    }
+
+    [Fact]
+    public void GetHorizontalSqueeze_DoubleArrowWiderThanTheCell_IsSqueezedToFit()
+    {
+        // JetBrains Mono's ↔ is about 1.3 cells wide, so clipping would cut off both tips.
+        using var font = FontLoader.LoadBundled(BundledFonts.JetBrainsMono);
+        using var rasterizer = CreateRasterizer(font);
+
+        var squeeze = rasterizer.GetHorizontalSqueeze(new Rune('↔'));
+
+        Assert.InRange(squeeze, 0.7f, 0.85f);
+    }
+
+    [Theory]
+    [InlineData('M')]
+    [InlineData('─')] // box drawing pokes out on purpose so lines join
+    [InlineData('█')]
+    [InlineData('←')]
+    public void GetHorizontalSqueeze_GlyphsThatFitOrJoinTheirNeighbours_AreNotSqueezed(char character)
+    {
+        using var font = FontLoader.LoadBundled(BundledFonts.JetBrainsMono);
+        using var rasterizer = CreateRasterizer(font);
+
+        Assert.Equal(1, rasterizer.GetHorizontalSqueeze(new Rune(character)));
+    }
+
+    [Fact]
+    public void Draw_SqueezedGlyph_StaysInsideItsCell()
+    {
+        using var font = FontLoader.LoadBundled(BundledFonts.JetBrainsMono);
+        using var rasterizer = CreateRasterizer(font);
+        using var bitmap = CreateCellRow(rasterizer, 3);
+        using var canvas = new SKCanvas(bitmap);
+        var (width, height) = (rasterizer.Metrics.Width, rasterizer.Metrics.Height);
+
+        var source = rasterizer.Draw(canvas, width, 0, new Rune('↔'), SKColors.Black);
+
+        Assert.Equal(GlyphSource.PrimaryFont, source);
+        Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(0, 0, width, height)));
+        Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(2 * width, 0, width, height)));
+        Assert.True(TestBitmaps.CountInk(bitmap, SKRectI.Create(width, 0, width, height)) > 0);
+    }
+
     [Fact]
     public void Constructor_PixelSizeOutOfRange_Throws()
     {

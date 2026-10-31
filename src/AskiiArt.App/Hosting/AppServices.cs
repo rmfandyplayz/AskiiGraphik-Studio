@@ -2,10 +2,14 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Hosting.Logging;
+using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.Imaging.Fonts;
+using AskiiArt.Imaging.Glyphs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -30,7 +34,18 @@ internal static class AppServices
             provider.GetRequiredService<IAppShell>(),
             locations,
             includeDebugActions: BuildInfo.IsDebugBuild));
+        services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<ActionRegistry>();
+
+        // Fonts and glyphs. The canvas shows a temporary sample document until New and Open
+        // exist (steps 1.6 and 1.7).
+        services.AddSingleton(_ => FontLoader.LoadBundled(BundledFonts.Default));
+        services.AddSingleton<IFallbackFontProvider, SystemFallbackFontProvider>();
+        services.AddSingleton<GlyphAtlasCache>();
+        services.AddSingleton(provider => new CanvasViewModel(
+            SampleDocument.Create(Strings.DefaultLayerName),
+            provider.GetRequiredService<LoadedFont>(),
+            provider.GetRequiredService<GlyphAtlasCache>()));
 
         services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(), includeDebugMenu: BuildInfo.IsDebugBuild));
         services.AddSingleton<MainWindowBuilder>();

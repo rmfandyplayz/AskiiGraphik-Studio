@@ -212,6 +212,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
   - **Cell size comes from font metrics:** the advance width of a reference glyph (`0`) × the line height (ascent + descent + line gap), read from the font file so it's the same on every OS (ADR 0013). It is never hardcoded.
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
   - **Missing glyphs:** drawn with an installed font that has them, or as a placeholder box if none does; a fallback glyph too big for the cell is shrunk to fit. Either way the cell is flagged as an error (ADR 0013); how the flag looks is still open (§23). It must never crash.
+- **Too-wide glyphs:** a glyph from the document's font that reaches well past its cell (like `↔` in some fonts) is squeezed sideways to fit; box-drawing and block characters are clipped instead, so they still join their neighbours (ADR 0014).
 - **Ligatures can't happen,** because each cell is rasterized as a single glyph and never shaped as a run of text.
 - **Glyph atlas:** rasterized glyphs are cached per (font, pixel size, render options) and reused. Glyphs are rasterized at the actual device-pixel size for the current zoom and DPI so text stays crisp. A glyph bitmap is never scaled.
 - **One rasterizer** (Principle 4): the atlas, PNG export and glyph-density measurement all share the same Skia code path and settings.
@@ -220,12 +221,12 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 
 - **One custom control** draws the whole canvas. There are no per-cell controls and no `TextBlock`s.
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
-- **Dirty regions:** only the regions that changed are redrawn (§5.9).
+- **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
 - **Draw order:** composite → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
-- **Zoom:** discrete steps where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the scrollbars, middle-drag or space-drag.
+- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the scrollbars, the mouse wheel, middle-drag or space-drag.
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
-- **Drawing approach:** Claude Code decides between drawing atlas bitmaps through Avalonia's `DrawingContext` and using a custom draw operation with a direct Skia lease. The choice should be based on measurement and recorded in an ADR.
+- **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015).
 
 ## 13. File format (`.asciiart`, tentative)
 

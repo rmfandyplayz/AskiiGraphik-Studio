@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -13,7 +14,7 @@ namespace AskiiArt.App.Tests.Shell.Menus;
 public sealed class MenuLayoutTests
 {
     [Fact]
-    public void WindowsAndLinux_HaveFileQuit_AndHelpWithOpenLogFolderAndAbout()
+    public void WindowsAndLinux_HaveFileQuit_View_AndHelpWithOpenLogFolderAndAbout()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false);
 
@@ -26,6 +27,7 @@ public sealed class MenuLayoutTests
                 Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
                 Assert.Equal([ShellActionIds.Quit], ActionIdsIn(file.Entries));
             },
+            AssertIsViewMenu,
             help =>
             {
                 Assert.Equal(nameof(Strings.MenuHelp), help.LabelKey);
@@ -43,9 +45,14 @@ public sealed class MenuLayoutTests
         Assert.Equal(ShellActionIds.About, about.ActionId);
         Assert.Equal(nameof(Strings.MenuAboutAppFormat), about.LabelWithAppNameKey);
 
-        var help = Assert.Single(layout.WindowMenus);
-        Assert.Equal(nameof(Strings.MenuHelp), help.LabelKey);
-        Assert.Equal([ShellActionIds.OpenLogFolder], ActionIdsIn(help.Entries));
+        Assert.Collection(
+            layout.WindowMenus,
+            AssertIsViewMenu,
+            help =>
+            {
+                Assert.Equal(nameof(Strings.MenuHelp), help.LabelKey);
+                Assert.Equal([ShellActionIds.OpenLogFolder], ActionIdsIn(help.Entries));
+            });
     }
 
     [Theory]
@@ -69,14 +76,25 @@ public sealed class MenuLayoutTests
     public void EveryMenuEntry_RefersToARegisteredAction_AndHasALabel(bool isMacOS, bool includeDebugMenu)
     {
         var layout = MenuLayout.CreateDefault(isMacOS, includeDebugMenu);
-        var registry = new ActionRegistry(
-            [new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: includeDebugMenu)]);
+        using var canvas = new TestCanvas();
+        var registry = new ActionRegistry([
+            new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: includeDebugMenu),
+            new CanvasActions(canvas.ViewModel)
+        ]);
 
         foreach (var actionId in layout.ActionIds())
             Assert.True(registry.Contains(actionId), $"The menu refers to the unregistered action '{actionId}'.");
 
         foreach (var menu in layout.WindowMenus)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(menu.LabelKey)));
+    }
+
+    private static void AssertIsViewMenu(MenuDefinition view)
+    {
+        Assert.Equal(nameof(Strings.MenuView), view.LabelKey);
+        Assert.Equal(
+            [CanvasActionIds.ZoomIn, CanvasActionIds.ZoomOut, CanvasActionIds.ActualSize, CanvasActionIds.ShowGrid],
+            ActionIdsIn(view.Entries));
     }
 
     private static string[] ActionIdsIn(IEnumerable<MenuEntry> entries)

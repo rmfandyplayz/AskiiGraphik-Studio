@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -13,8 +14,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AskiiArt.App.Tests;
 
-public sealed class AppTests
+public sealed class AppTests : IDisposable
 {
+    private readonly TestCanvas _canvas = new();
+
     [AvaloniaFact]
     public void Initialize_SetsTheMacOSApplicationMenu()
     {
@@ -43,11 +46,15 @@ public sealed class AppTests
         Assert.Null(NativeMenu.GetMenu(app));
     }
 
-    private static ServiceProvider ServicesWithMenuLayout(MenuLayout layout)
+    public void Dispose() => _canvas.Dispose();
+
+    private ServiceProvider ServicesWithMenuLayout(MenuLayout layout)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IActionProvider>(
             new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: false));
+        services.AddSingleton<IActionProvider>(new CanvasActions(_canvas.ViewModel));
+        services.AddSingleton(_canvas.ViewModel);
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton<MainWindowBuilder>();

@@ -87,7 +87,8 @@ public readonly record struct CellMetrics
         }
     }
 
-    private static float MeasureReferenceAdvance(LoadedFont font, SKFont skFont)
+    /// <summary>The unrounded cell width: the advance of <see cref="ReferenceCharacter"/> in <paramref name="skFont"/>.</summary>
+    internal static float MeasureReferenceAdvance(LoadedFont font, SKFont skFont)
     {
         if (font.Typeface.ContainsGlyph(ReferenceCharacter))
             return skFont.MeasureText(ReferenceCharacter.ToString());

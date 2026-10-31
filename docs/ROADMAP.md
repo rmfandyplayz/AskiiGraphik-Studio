@@ -46,7 +46,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
   Includes the property-based test: a random sequence of commands, then undo all, returns the original document.
   *Owner checks:* CI is green.
   *Note:* Built (ADR 0012). Coalescing uses caller-made `CoalescingGroup`s; the newest step survives the memory budget; CsCheck pinned at 4.9.1.
-- [~] **1.3 Fonts and glyph atlas** (Imaging). Covers:
+- [x] **1.3 Fonts and glyph atlas** (Imaging). Covers:
   - the bundled fonts, with their licenses
   - loading fonts from a file and from the system
   - deriving cell size from font metrics, and the monospace check
@@ -55,8 +55,8 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   A test generates a "font sheet" PNG for each bundled font so the owner can eyeball it.
   *Owner checks:* the font sheets look right; CI is green.
-  *Note:* Built (ADRs 0013, 0014), not pushed. Missing glyphs use an installed fallback font or a placeholder box and are reported per cell; sheets go to `artifacts/font-sheets/`, and CI uploads them per OS.
-- [ ] **1.4 Canvas control** (App). Renders a document (temporary sample content) with virtualization and the atlas. Covers:
+  *Note:* Built (ADRs 0013, 0014). Missing glyphs use an installed fallback font or a placeholder box and are reported per cell; sheets go to `artifacts/font-sheets/`, and CI uploads them per OS.
+- [~] **1.4 Canvas control** (App). Renders a document (temporary sample content) with virtualization and the atlas. Covers:
   - zoom (Ctrl/Cmd + mouse wheel, plus keyboard shortcuts)
   - pan (scrollbars, middle-drag, space-drag)
   - a grid toggle and hover highlight
@@ -64,6 +64,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
   - correct HiDPI rendering
 
   *Owner checks:* zooming and panning are smooth on a 500×500 sample; text is crisp at 100% and 150% Windows scaling and on Retina.
+  *Note:* Built (ADR 0015), not pushed. Skia lease with one `DrawAtlas` per atlas page; zoom 25–800%; temporary sample document and orange/red missing-glyph markers. Also fixes the cut-off `↔` from 1.3 testing.
 - [ ] **1.5 Text mode** (a Core tool, plus App wiring). Click to place the caret, and typing writes glyphs. Arrow keys, Home/End, Backspace, Delete and Enter work. Typing coalesces into undo steps. Undo and Redo actions use platform shortcuts. (**Ask about the charset policy first**, ARCHITECTURE §23.)
   *Owner checks:* typing, editing, and undo/redo behave as the test doc describes.
 - [ ] **1.6 Document actions.** Adds:

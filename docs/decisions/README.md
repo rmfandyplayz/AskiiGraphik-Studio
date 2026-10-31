@@ -21,3 +21,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0012](0012-commands-and-undo-history.md) | Commands and undo history | Accepted |
 | [0013](0013-fonts-cell-metrics-and-missing-glyphs.md) | Fonts, cell metrics and missing glyphs | Accepted |
 | [0014](0014-glyph-rasterizer-and-atlas.md) | Glyph rasterizer and atlas | Accepted |
+| [0015](0015-canvas-rendering.md) | Canvas rendering | Accepted |

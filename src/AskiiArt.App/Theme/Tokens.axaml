@@ -8,9 +8,23 @@
   <ResourceDictionary.ThemeDictionaries>
     <ResourceDictionary x:Key="Light">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FF5F5F5F" />
+      <SolidColorBrush x:Key="AppCanvasPasteboardBrush" Color="#FFC8C8C8" />
+      <SolidColorBrush x:Key="AppCanvasPaperBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasInkBrush" Color="#FF000000" />
+      <SolidColorBrush x:Key="AppCanvasGridLineBrush" Color="#1F000000" />
+      <SolidColorBrush x:Key="AppCanvasHoverBrush" Color="#400078D7" />
+      <SolidColorBrush x:Key="AppCanvasFallbackGlyphBrush" Color="#FFFFD699" />
+      <SolidColorBrush x:Key="AppCanvasPlaceholderGlyphBrush" Color="#FFFF9E9E" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
+      <SolidColorBrush x:Key="AppCanvasPasteboardBrush" Color="#FF141414" />
+      <SolidColorBrush x:Key="AppCanvasPaperBrush" Color="#FF262626" />
+      <SolidColorBrush x:Key="AppCanvasInkBrush" Color="#FFE8E8E8" />
+      <SolidColorBrush x:Key="AppCanvasGridLineBrush" Color="#26FFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasHoverBrush" Color="#504C9EEB" />
+      <SolidColorBrush x:Key="AppCanvasFallbackGlyphBrush" Color="#FF6B5420" />
+      <SolidColorBrush x:Key="AppCanvasPlaceholderGlyphBrush" Color="#FF7A2E2E" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -22,6 +36,14 @@
 
   <!-- Typography -->
   <x:Double x:Key="AppFontSizeTitle">20</x:Double>
+
+  <!-- Canvas. The fallback and placeholder colours flag cells whose glyph the document's font
+       doesn't have (ADR 0013); they're temporary until the owner designs that marker. -->
+  <x:Double x:Key="AppCanvasMargin">32</x:Double>
+
+  <!-- Status bar -->
+  <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>
+  <x:Double x:Key="AppStatusBarSpacing">24</x:Double>
 
   <!-- Dialogs -->
   <Thickness x:Key="AppDialogButtonsMargin">0,16,0,0</Thickness>

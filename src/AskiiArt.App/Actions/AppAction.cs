@@ -11,12 +11,13 @@ namespace AskiiArt.App.Actions;
 /// without touching that logic.
 /// </summary>
 /// <remarks>
-/// Whether the action is enabled comes from <see cref="Command"/>'s CanExecute. A checked state
-/// for toggle actions arrives with the first toggle action (the grid toggle, step 1.4).
+/// Whether the action is enabled comes from <see cref="Command"/>'s CanExecute. A toggle action,
+/// such as Show Grid, also has a <see cref="CheckedState"/>.
 /// </remarks>
 internal sealed class AppAction
 {
-    public AppAction(string id, string labelKey, ICommand command, IReadOnlyList<ActionShortcut>? defaultShortcuts = null, string? iconKey = null)
+    public AppAction(string id, string labelKey, ICommand command, IReadOnlyList<ActionShortcut>? defaultShortcuts = null,
+        string? iconKey = null, ActionCheckedState? checkedState = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentException.ThrowIfNullOrWhiteSpace(labelKey);
@@ -27,6 +28,7 @@ internal sealed class AppAction
         Command = command;
         DefaultShortcuts = defaultShortcuts ?? [];
         IconKey = iconKey;
+        CheckedState = checkedState;
     }
 
     /// <summary>A stable id, for example "askiiart.quit". Never shown to the user.</summary>
@@ -41,4 +43,7 @@ internal sealed class AppAction
 
     /// <summary>The icon's key in the icon lookup (ARCHITECTURE §14.5), or null for no icon.</summary>
     public string? IconKey { get; }
+
+    /// <summary>For a toggle action, whether it's on; null for an ordinary action.</summary>
+    public ActionCheckedState? CheckedState { get; }
 }

@@ -30,6 +30,9 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>_Help</value>
   </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>_View</value>
+  </data>
   <data name="MenuDebug" xml:space="preserve">
     <value>_Debug</value>
   </data>
@@ -48,9 +51,42 @@
   <data name="ActionAbout" xml:space="preserve">
     <value>_About</value>
   </data>
+  <data name="ActionZoomIn" xml:space="preserve">
+    <value>Zoom _In</value>
+  </data>
+  <data name="ActionZoomOut" xml:space="preserve">
+    <value>Zoom _Out</value>
+  </data>
+  <data name="ActionActualSize" xml:space="preserve">
+    <value>_Actual Size</value>
+    <comment>Zoom back to 100%.</comment>
+  </data>
+  <data name="ActionShowGrid" xml:space="preserve">
+    <value>Show _Grid</value>
+  </data>
   <data name="ActionThrowTestException" xml:space="preserve">
     <value>Throw Test Exception</value>
     <comment>Debug builds only.</comment>
+  </data>
+
+  <!-- Status bar -->
+  <data name="StatusZoomFormat" xml:space="preserve">
+    <value>Zoom {0:0}%</value>
+    <comment>{0} is the zoom as a percentage, for example 150.</comment>
+  </data>
+  <data name="StatusCellFormat" xml:space="preserve">
+    <value>Cell {0}, {1}</value>
+    <comment>The cell under the pointer. {0} is the column and {1} the row, both counted from 0.</comment>
+  </data>
+  <data name="StatusCanvasSizeFormat" xml:space="preserve">
+    <value>{0} × {1} cells</value>
+    <comment>The canvas size. {0} is the width and {1} the height, in cells.</comment>
+  </data>
+
+  <!-- Documents -->
+  <data name="DefaultLayerName" xml:space="preserve">
+    <value>Layer 1</value>
+    <comment>The name of a new document's first layer.</comment>
   </data>
 
   <!-- About dialog -->

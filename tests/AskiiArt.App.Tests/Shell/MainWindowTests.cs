@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -14,16 +15,28 @@ using Avalonia.Input;
 
 namespace AskiiArt.App.Tests.Shell;
 
-public sealed class MainWindowTests
+public sealed class MainWindowTests : IDisposable
 {
     private readonly FakeAppShell _shell = new();
+    private readonly TestCanvas _canvas = new();
+    private readonly List<Window> _windows = [];
     private readonly ActionRegistry _actions;
 
     public MainWindowTests()
     {
         _actions = new ActionRegistry([
-            new ShellActions(_shell, new AppDataLocations("root"), includeDebugActions: false)
+            new ShellActions(_shell, new AppDataLocations("root"), includeDebugActions: false),
+            new CanvasActions(_canvas.ViewModel)
         ]);
+    }
+
+    public void Dispose()
+    {
+        // Windows first: a window still showing would keep drawing the canvas.
+        foreach (var window in _windows)
+            window.Close();
+
+        _canvas.Dispose();
     }
 
     [AvaloniaFact]
@@ -38,7 +51,7 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
-    public void WindowMenu_HasFileAndHelp_WithTheirActions()
+    public void WindowMenu_HasFileViewAndHelp_WithTheirActions()
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
 
@@ -46,14 +59,14 @@ public sealed class MainWindowTests
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuHelp], topLevelItems.Select(item => item.Header));
+        Assert.Equal([Strings.MenuFile, Strings.MenuView, Strings.MenuHelp], topLevelItems.Select(item => item.Header));
 
         var quit = Assert.IsType<NativeMenuItem>(Assert.Single(topLevelItems[0].Menu!.Items));
         Assert.Equal(Strings.ActionQuit, quit.Header);
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[1].Menu!.Items;
+        var helpItems = topLevelItems[2].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -71,6 +84,38 @@ public sealed class MainWindowTests
     }
 
     [AvaloniaFact]
+    public void ZoomShortcuts_InTheMainWindow_ZoomTheCanvas()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+
+        window.KeyPress(Key.OemPlus, RawInputModifiers.Control, PhysicalKey.Equal, "=");
+        window.KeyRelease(Key.OemPlus, RawInputModifiers.Control, PhysicalKey.Equal, "=");
+        Assert.Equal(1.25, _canvas.ViewModel.ZoomFactor);
+
+        window.KeyPress(Key.D0, RawInputModifiers.Control, PhysicalKey.Digit0, "0");
+        window.KeyRelease(Key.D0, RawInputModifiers.Control, PhysicalKey.Digit0, "0");
+        Assert.Equal(1, _canvas.ViewModel.ZoomFactor);
+    }
+
+    [AvaloniaFact]
+    public void ShowGrid_IsACheckBoxMenuItemThatFollowsTheGrid()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        var viewMenu = NativeMenu.GetMenu(window)!.Items.Cast<NativeMenuItem>()
+            .Single(item => item.Header == Strings.MenuView);
+        var showGrid = viewMenu.Menu!.Items.OfType<NativeMenuItem>()
+            .Single(item => item.Header == Strings.ActionShowGrid);
+        Assert.Equal(MenuItemToggleType.CheckBox, showGrid.ToggleType);
+        Assert.False(showGrid.IsChecked);
+
+        showGrid.Command!.Execute(null);
+
+        Assert.True(_canvas.ViewModel.IsGridVisible);
+        Assert.True(showGrid.IsChecked);
+    }
+
+    [AvaloniaFact]
     public void InTheSystemMenuBar_ActionsInAMenu_GetNoExtraWindowKeyBinding()
     {
         // macOS: the system menu bar triggers a menu item's shortcut itself, so a window key
@@ -82,7 +127,8 @@ public sealed class MainWindowTests
 
         var window = BuildWindow(quitInMenu, KeyModifiers.Meta);
 
-        Assert.Empty(window.KeyBindings);
+        Assert.DoesNotContain(window.KeyBindings,
+            binding => binding.Gesture == new KeyGesture(Key.Q, KeyModifiers.Meta));
     }
 
     [AvaloniaFact]
@@ -92,14 +138,14 @@ public sealed class MainWindowTests
 
         var window = BuildWindow(noMenus, KeyModifiers.Meta);
 
-        var binding = Assert.Single(window.KeyBindings);
-        Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Meta), binding.Gesture);
+        Assert.Contains(window.KeyBindings, binding => binding.Gesture == new KeyGesture(Key.Q, KeyModifiers.Meta));
     }
 
     [AvaloniaFact]
     public void ApplicationMenu_OnMacOS_HasAboutWithTheAppName()
     {
-        var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false));
+        var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
+            _canvas.ViewModel);
 
         var applicationMenu = builder.BuildApplicationMenu(KeyModifiers.Meta);
 
@@ -113,13 +159,16 @@ public sealed class MainWindowTests
     public void ApplicationMenu_OnWindowsAndLinux_IsNotCreated()
     {
         var builder =
-            new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+            new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
+                _canvas.ViewModel);
 
         Assert.Null(builder.BuildApplicationMenu(KeyModifiers.Control));
     }
 
     private MainWindow BuildWindow(MenuLayout layout, KeyModifiers commandModifiers = KeyModifiers.Control)
     {
-        return new MainWindowBuilder(_actions, layout).Build(commandModifiers);
+        var window = new MainWindowBuilder(_actions, layout, _canvas.ViewModel).Build(commandModifiers);
+        _windows.Add(window);
+        return window;
     }
 }

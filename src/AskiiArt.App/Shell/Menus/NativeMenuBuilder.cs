@@ -69,6 +69,13 @@ internal sealed class NativeMenuBuilder(ActionRegistry actions, KeyModifiers pla
         if (action.DefaultShortcuts.Count > 0)
             item.Gesture = action.DefaultShortcuts[0].ToKeyGesture(platformCommandModifiers);
 
+        if (action.CheckedState is { } checkedState)
+        {
+            item.ToggleType = MenuItemToggleType.CheckBox;
+            item.IsChecked = checkedState.IsChecked;
+            checkedState.Changed += (_, _) => item.IsChecked = checkedState.IsChecked;
+        }
+
         return item;
     }
 }

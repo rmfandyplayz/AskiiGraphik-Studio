@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Shell.Menus;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -10,13 +11,13 @@ namespace AskiiArt.App.Shell;
 
 /// <summary>
 /// Creates the main window with its menus and keyboard shortcuts, all taken from the action
-/// registry and the menu layout.
+/// registry and the menu layout, showing the canvas's document.
 /// </summary>
-internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout)
+internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, CanvasViewModel canvas)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
-        var window = new MainWindow();
+        var window = new MainWindow { DataContext = canvas };
         var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
 
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));

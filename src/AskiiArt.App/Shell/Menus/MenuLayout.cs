@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Resources;
 
 namespace AskiiArt.App.Shell.Menus;
@@ -45,17 +46,28 @@ internal sealed record MenuLayout(
         var windowMenus = new List<MenuDefinition>();
         IReadOnlyList<MenuEntry> applicationMenu;
 
+        var viewMenu = new MenuDefinition(nameof(Strings.MenuView),
+        [
+            new ActionMenuEntry(CanvasActionIds.ZoomIn),
+            new ActionMenuEntry(CanvasActionIds.ZoomOut),
+            new ActionMenuEntry(CanvasActionIds.ActualSize),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(CanvasActionIds.ShowGrid)
+        ]);
+
         if (isMacOS)
         {
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
             // the Quit item there (with Cmd+Q), so the Quit action isn't listed again.
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
+            windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp), [new ActionMenuEntry(ShellActionIds.OpenLogFolder)]));
         }
         else
         {
             applicationMenu = [];
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [new ActionMenuEntry(ShellActionIds.Quit)]));
+            windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
             [
                 new ActionMenuEntry(ShellActionIds.OpenLogFolder),

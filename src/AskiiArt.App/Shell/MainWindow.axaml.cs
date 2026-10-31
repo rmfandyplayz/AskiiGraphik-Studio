@@ -10,5 +10,6 @@ internal sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Opened += (_, _) => CanvasView.FocusCanvas();
     }
 }

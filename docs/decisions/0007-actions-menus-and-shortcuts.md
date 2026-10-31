@@ -11,7 +11,7 @@ ARCHITECTURE §14.2–14.3 requires every user-invocable operation to be an acti
 
 ## Decision
 
-- **Actions live in the App project** (`Actions/`): `AppAction` holds an id, a label key, an optional icon key, default shortcuts, and an `ICommand`. Features contribute actions through `IActionProvider`s registered in DI, and `ActionRegistry` collects them and rejects duplicate ids. Label keys are written as `nameof(Strings.X)`, so a missing string is a compile error.
+- **Actions live in the App project** (`Actions/`): `AppAction` holds an id, a label key, an optional icon key, default shortcuts, an `ICommand`, and for a toggle action (such as Show Grid) an `ActionCheckedState` that menus show as a check mark. Features contribute actions through `IActionProvider`s registered in DI, and `ActionRegistry` collects them and rejects duplicate ids. Label keys are written as `nameof(Strings.X)`, so a missing string is a compile error.
 - **Shortcuts are platform-neutral:** `ActionShortcut(Key, ShortcutModifiers)`, where `Command` means "the platform's command key". It becomes a concrete `KeyGesture` using Avalonia's `HotkeyConfiguration.CommandModifiers`.
 - **Menus are data:** `MenuLayout` lists menus and action ids (plus separators), and `MenuLayout.CreateDefault(isMacOS, includeDebugMenu)` builds the default layout. `NativeMenuBuilder` turns it into Avalonia `NativeMenu`s. On Windows and Linux, a `NativeMenuBar` shows them in the window; on macOS they go to the system menu bar.
 - **macOS:** the application menu holds "About AskiiGraphiks Studio". Avalonia adds its standard items below it (Services, Hide, Hide Others, Show All, Quit ⌘Q), and its Quit calls the same `TryShutdown` as our Quit action. There's no File menu on macOS until File has more items.
@@ -31,3 +31,4 @@ ARCHITECTURE §14.2–14.3 requires every user-invocable operation to be an acti
 - Menu layout, labels and shortcuts can change without touching action logic, and that's the hook for user customization in M8.
 
 Updated 2026-10-30: the application menu is now set in `App.Initialize`. It used to be set in `OnFrameworkInitializationCompleted`, which was too late, so macOS showed "About Avalonia".
+Updated 2026-10-31: toggle actions have an `ActionCheckedState` (step 1.4), and there's a View menu on every OS.

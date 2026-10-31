@@ -21,8 +21,15 @@ public sealed class GlyphRasterizer : IDisposable
     private const float PlaceholderHeightPerEm = 0.7f;
     private const float PlaceholderStrokePerEm = 1f / 14;
 
+    // A document-font glyph may reach this far past either side of its cell (as a share of the
+    // cell width) before it's squeezed. Most fonts let a few glyphs poke out slightly; only the
+    // ones that would visibly lose a part (like the tips of ↔) are worth distorting.
+    private const float AllowedOverhangPerCellWidth = 0.05f;
+
     private readonly IFallbackFontProvider _fallbackFonts;
     private readonly SKFont _primaryFont;
+    private readonly SKFont _measuringFont;
+    private readonly float _referenceAdvance;
     private readonly Dictionary<LoadedFont, SKFont> _fallbackSkFonts = [];
     private readonly SKPaint _paint;
     private bool _isDisposed;
@@ -43,6 +50,8 @@ public sealed class GlyphRasterizer : IDisposable
         Options = options;
         _fallbackFonts = fallbackFonts;
         _primaryFont = CreateRenderingFont(font.Typeface, pixelSize);
+        _measuringFont = CellMetrics.CreateMeasuringFont(font, pixelSize);
+        _referenceAdvance = CellMetrics.MeasureReferenceAdvance(font, _measuringFont);
         _paint = new SKPaint { IsAntialias = options.Antialias, Style = SKPaintStyle.Fill };
     }
 
@@ -78,7 +87,7 @@ public sealed class GlyphRasterizer : IDisposable
         switch (source)
         {
             case GlyphSource.PrimaryFont:
-                DrawOnBaseline(canvas, _primaryFont, rune.ToString(), cell);
+                DrawPrimary(canvas, rune, cell);
                 break;
             case GlyphSource.FallbackFont:
                 DrawFallback(canvas, GetFallbackSkFont(fallbackFont!), rune.ToString(), cell);
@@ -100,6 +109,7 @@ public sealed class GlyphRasterizer : IDisposable
 
         _isDisposed = true;
         _primaryFont.Dispose();
+        _measuringFont.Dispose();
         foreach (var skFont in _fallbackSkFonts.Values)
             skFont.Dispose();
 
@@ -119,6 +129,44 @@ public sealed class GlyphRasterizer : IDisposable
 
         return scale;
     }
+
+    /// <summary>
+    /// How much to squeeze a glyph sideways so its ink fits the cell; 1 when it already fits, or
+    /// pokes out by no more than <see cref="AllowedOverhangPerCellWidth"/> on either side. The
+    /// glyph is assumed centred in the cell by its advance, as <see cref="Draw"/> places it.
+    /// </summary>
+    internal static float HorizontalSqueezeToFit(float advance, SKRect inkBounds, float cellWidth)
+    {
+        if (inkBounds.Width <= 0 || cellWidth <= 0)
+            return 1;
+
+        var originX = (cellWidth - advance) / 2;
+        var overhang = MathF.Max(-(originX + inkBounds.Left), originX + inkBounds.Right - cellWidth);
+        if (overhang <= AllowedOverhangPerCellWidth * cellWidth)
+            return 1;
+
+        return MathF.Min(1, cellWidth / inkBounds.Width);
+    }
+
+    /// <summary>
+    /// The sideways squeeze <see cref="Draw"/> applies to <paramref name="rune"/> from the
+    /// document font; 1 for no squeeze. It's measured unhinted and relative to the cell, so a
+    /// glyph is squeezed the same way at every size.
+    /// </summary>
+    internal float GetHorizontalSqueeze(Rune rune)
+    {
+        // These are drawn to reach the cell's edges, and slightly past them, on purpose: that's
+        // how neighbouring lines and blocks join without gaps. Clipping is right for them.
+        if (IsDrawnEdgeToEdge(rune))
+            return 1;
+
+        var advance = _measuringFont.MeasureText(rune.ToString(), out var inkBounds);
+        return HorizontalSqueezeToFit(advance, inkBounds, _referenceAdvance);
+    }
+
+    // Box drawing, block elements, and the sextants and wedges of Symbols for Legacy Computing.
+    private static bool IsDrawnEdgeToEdge(Rune rune) =>
+        rune.Value is >= 0x2500 and <= 0x259F or >= 0x1FB00 and <= 0x1FBFF;
 
     private static SKFontHinting ToSkiaHinting(GlyphHinting hinting) => hinting switch
     {
@@ -162,6 +210,26 @@ public sealed class GlyphRasterizer : IDisposable
         skFont = CreateRenderingFont(fallbackFont.Typeface, Metrics.PixelSize);
         _fallbackSkFonts.Add(fallbackFont, skFont);
         return skFont;
+    }
+
+    // A document-font glyph much wider than its cell (like ↔ in JetBrains Mono, whose tips reach
+    // well into the neighbouring cells) is squeezed sideways from its outline, so it keeps its
+    // height and stays whole instead of losing its ends to the clip.
+    private void DrawPrimary(SKCanvas canvas, Rune rune, SKRectI cell)
+    {
+        var text = rune.ToString();
+        var squeeze = GetHorizontalSqueeze(rune);
+        if (squeeze >= 1)
+        {
+            DrawOnBaseline(canvas, _primaryFont, text, cell);
+            return;
+        }
+
+        using var squeezedFont = CreateRenderingFont(Font.Typeface, Metrics.PixelSize);
+        squeezedFont.ScaleX = squeeze;
+        squeezedFont.MeasureText(text, out var inkBounds);
+        var originX = cell.Left + MathF.Round((cell.Width - inkBounds.Width) / 2 - inkBounds.Left);
+        canvas.DrawText(text, originX, cell.Top + Metrics.Baseline, squeezedFont, _paint);
     }
 
     private void DrawOnBaseline(SKCanvas canvas, SKFont skFont, string text, SKRectI cell)

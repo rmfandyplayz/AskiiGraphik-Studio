@@ -1,0 +1,42 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder canvas view: the canvas control with a scrollbar on the right and at the bottom.
+     The scrollbars work in the control's device pixels. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:canvas="using:AskiiArt.App.Canvas"
+             x:Class="AskiiArt.App.Canvas.CanvasView"
+             x:DataType="canvas:CanvasViewModel">
+  <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+    <canvas:CanvasControl x:Name="Canvas"
+                          Composite="{Binding Composite}"
+                          Font="{Binding Font}"
+                          Atlases="{Binding Atlases}"
+                          BaseFontSize="{Binding FontSize}"
+                          ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
+                          IsGridVisible="{Binding IsGridVisible}"
+                          HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
+                          CanvasMargin="{DynamicResource AppCanvasMargin}"
+                          PasteboardBrush="{DynamicResource AppCanvasPasteboardBrush}"
+                          PaperBrush="{DynamicResource AppCanvasPaperBrush}"
+                          InkBrush="{DynamicResource AppCanvasInkBrush}"
+                          GridLineBrush="{DynamicResource AppCanvasGridLineBrush}"
+                          HoverBrush="{DynamicResource AppCanvasHoverBrush}"
+                          FallbackGlyphBrush="{DynamicResource AppCanvasFallbackGlyphBrush}"
+                          PlaceholderGlyphBrush="{DynamicResource AppCanvasPlaceholderGlyphBrush}" />
+    <ScrollBar Grid.Column="1"
+               Orientation="Vertical"
+               AllowAutoHide="False"
+               Maximum="{Binding #Canvas.VerticalMaximum}"
+               ViewportSize="{Binding #Canvas.VerticalViewport}"
+               LargeChange="{Binding #Canvas.VerticalViewport}"
+               Value="{Binding #Canvas.VerticalOffset, Mode=TwoWay}" />
+    <ScrollBar Grid.Row="1"
+               Orientation="Horizontal"
+               AllowAutoHide="False"
+               Maximum="{Binding #Canvas.HorizontalMaximum}"
+               ViewportSize="{Binding #Canvas.HorizontalViewport}"
+               LargeChange="{Binding #Canvas.HorizontalViewport}"
+               Value="{Binding #Canvas.HorizontalOffset, Mode=TwoWay}" />
+  </Grid>
+</UserControl>

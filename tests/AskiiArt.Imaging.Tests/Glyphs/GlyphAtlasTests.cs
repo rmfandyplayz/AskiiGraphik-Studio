@@ -58,6 +58,22 @@ public sealed class GlyphAtlasTests
     }
 
     [Fact]
+    public void GetPageVersion_ChangesOnlyWhenANewGlyphLandsOnThatPage()
+    {
+        using var font = FontLoader.LoadBundled(BundledFonts.Default);
+        using var atlas = new GlyphAtlas(font, PixelSize, GlyphRenderOptions.Default, FixedFallbackFontProvider.None,
+            pageSizeInPixels: 1);
+        atlas.GetOrAdd(new Rune('A'));
+        var firstPageVersion = atlas.GetPageVersion(0);
+
+        atlas.GetOrAdd(new Rune('A')); // already there: nothing drawn
+        atlas.GetOrAdd(new Rune('B')); // lands on a new page
+
+        Assert.Equal(firstPageVersion, atlas.GetPageVersion(0));
+        Assert.NotEqual(0, atlas.GetPageVersion(1));
+    }
+
+    [Fact]
     public void GetPage_IsAnAlphaOnlyBitmap()
     {
         using var font = FontLoader.LoadBundled(BundledFonts.Default);
