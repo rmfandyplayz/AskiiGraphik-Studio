@@ -19,7 +19,7 @@
 - [x] **0.2 CI.** Add a GitHub Actions workflow that builds and tests on Windows, macOS and Ubuntu on every push and pull request. Put a status badge in the README.
   *Owner checks:* after a push, CI is green on all three.
   *Note:* Built (`.github/workflows/ci.yml`, ADR 0005). Also runs the format check on Linux, since the owner works in Rider. Not run yet; the first push verifies it.
-- [~] **0.3 App skeleton.** The Avalonia app starts and shows an empty main window with a placeholder menu (File → Quit; Help → Open Log Folder, About). This step also adds:
+- [x] **0.3 App skeleton.** The Avalonia app starts and shows an empty main window with a placeholder menu (File → Quit; Help → Open Log Folder, About). This step also adds:
   - the DI container and logging to a rolling file
   - `.resx` string resources, used by every visible string
   - the theme token dictionary
