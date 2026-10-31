@@ -74,9 +74,10 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
   - `.asciiart` Save, Save As and Open, in both plain and compressed variants, with header sniffing, a format version, and atomic saves
   - round-trip tests, and the scaffolding for future format migrations
   - unsaved-changes prompts on close, New and Open, and a window title that shows the file name plus a dirty marker
+  - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New opens a new window (requested in 0.3 testing)
   - Copy as Text (to the clipboard) and Export .txt
 
-  *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, the unsaved-changes prompts behave correctly, and copied art pastes correctly into a text editor.
+  *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, the unsaved-changes prompts behave correctly, copied art pastes correctly into a text editor, and on a Mac, closing the window leaves the app running.
 
 **The MVP is complete after 1.7.**
 

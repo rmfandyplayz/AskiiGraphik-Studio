@@ -11,6 +11,10 @@
 
 The app now opens a window titled "AskiiGraphiks Studio" with a placeholder menu: Quit, Open Log Folder and About. Quit has a shortcut (Ctrl+Q on Windows, Cmd+Q on Mac). The app writes a log file you can open from the Help menu. If something goes wrong unexpectedly, the app shows an error dialog instead of crashing. Debug builds have a Debug menu that triggers a test error.
 
+## Retest after the first run (2026-10-30)
+
+The first run on macOS showed Avalonia's "About Avalonia" item in the application menu, and its About box had no OK button and ignored Esc and Enter. The menu was set up too late for macOS to see it. This is fixed. **On macOS, rerun T2 and T4.** No other tests need rerunning.
+
 ## Setup
 
 1. In Rider, open `AskiiArt.slnx`, pick the **AskiiArt.App** run configuration with the **Debug** configuration, and click Run. (From a terminal: `dotnet run --project src/AskiiArt.App`.)
@@ -70,7 +74,7 @@ The app now opens a window titled "AskiiGraphiks Studio" with a placeholder menu
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | **Help → Open Log Folder** | File Explorer (Windows) or Finder (Mac) opens the log folder from Setup step 2. It contains a file named like `log-20261030.txt` (today's date). |
-| 2 | Open that file in a text editor | Each line starts with a date and time. One of the latest lines says `[INF] AskiiArt.App.Startup: Starting version 0.1.0+…` followed by your OS and .NET version. |
+| 2 | Open that file in a text editor | Each line starts with a date and time. One of the latest lines says `[INF] AskiiArt.App.Startup: Starting version 0.1.0+…` followed by your OS and .NET version. (Windows 11 shows up as `Microsoft Windows 10.0.2xxxx`. That's normal: Windows 11 kept the 10.0 version number, and builds 22000 and above are Windows 11.) |
 | 3 | Quit the app, then open the log file again | The last line now says `Exiting with code 0`. |
 
 - [ ] Pass  - [ ] Fail. Notes:
@@ -100,7 +104,7 @@ The app now opens a window titled "AskiiGraphiks Studio" with a placeholder menu
 ## Worth poking at (optional, unscripted)
 
 - Switch the OS between light and dark mode while the app is open, then open About. The grey license line should be readable in both.
-- Windows: try Ctrl+Q while a menu is open, or while the About dialog is open.
+- Windows: try Ctrl+Q while a menu is open, or while the About dialog is open. (Nothing happening while a dialog is open is expected: the shortcuts belong to the main window.)
 - Mac: check that ⌘Q quits exactly once and nothing odd happens (no second dialog, no error in the log).
 
 ## Known limitations (not bugs)

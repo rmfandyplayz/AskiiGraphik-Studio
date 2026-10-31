@@ -33,6 +33,11 @@ internal sealed partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
         Name = Strings.AppDisplayName;
+
+        // It has to be here: Avalonia's macOS menu exporter reads the application menu once, right after
+        // Initialize and before OnFrameworkInitializationCompleted, and ignores any menu set later.
+        if (_services is not null)
+            SetApplicationMenu(_services);
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -48,13 +53,16 @@ internal sealed partial class App : Application
         var errors = services.GetRequiredService<UnexpectedErrorHandler>();
         Dispatcher.UIThread.UnhandledException += (_, e) => e.Handled = errors.HandleUiThreadException(e.Exception);
 
-        var commandModifiers = PlatformCommandModifiers();
+        var windowBuilder = services.GetRequiredService<MainWindowBuilder>();
+        desktop.MainWindow = windowBuilder.Build(PlatformCommandModifiers());
+    }
+
+    private void SetApplicationMenu(IServiceProvider services)
+    {
         var windowBuilder = services.GetRequiredService<MainWindowBuilder>();
 
-        if (windowBuilder.BuildApplicationMenu(commandModifiers) is { } applicationMenu)
+        if (windowBuilder.BuildApplicationMenu(PlatformCommandModifiers()) is { } applicationMenu)
             NativeMenu.SetMenu(this, applicationMenu);
-
-        desktop.MainWindow = windowBuilder.Build(commandModifiers);
     }
 
     // Ctrl on Windows and Linux, Cmd on macOS, as Avalonia reports it for this platform.
