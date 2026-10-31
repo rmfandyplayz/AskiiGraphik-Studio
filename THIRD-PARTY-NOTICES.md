@@ -23,3 +23,4 @@ AskiiArt uses the components below. Every one is under a license compatible with
 | xUnit.net v3 | Apache-2.0 | https://github.com/xunit/xunit |
 | Avalonia.Headless.XUnit | MIT | https://github.com/AvaloniaUI/Avalonia |
 | Verify (Verify.XunitV3) | MIT | https://github.com/VerifyTests/Verify |
+| CsCheck | Apache-2.0 | https://github.com/AnthonyLloyd/CsCheck |

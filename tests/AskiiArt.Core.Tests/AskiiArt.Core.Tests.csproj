@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="Verify.XunitV3" />
+    <PackageReference Include="CsCheck" />
   </ItemGroup>
 </Project>

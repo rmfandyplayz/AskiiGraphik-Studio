@@ -18,3 +18,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0009](0009-ui-strings-and-theme-tokens.md) | UI strings and theme tokens | Accepted |
 | [0010](0010-document-model-and-change-events.md) | Document model, mutation and change events | Accepted |
 | [0011](0011-canvas-size-limits-and-resize-anchoring.md) | Canvas size limits and resize anchoring | Accepted |
+| [0012](0012-commands-and-undo-history.md) | Commands and undo history | Accepted |

@@ -37,7 +37,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 - [~] **1.1 Document model** (Core). Document, Frame, Layer and Cell; `CellPoint` and `CellRect`; occupancy; compositing with the space-policy hook; change events with dirty regions; and canvas-resize logic with an anchor. Thorough unit tests, no UI.
   *Owner checks:* CI is green. (There's nothing to click yet.)
   *Note:* Built (ADRs 0010, 0011). Mutation is internal to Core, so only commands (1.2) can change a document; canvas hard limit is 4096 per side.
-- [ ] **1.2 Commands and undo** (Core). Covers:
+- [~] **1.2 Commands and undo** (Core). Covers:
   - the command interfaces, and a cell-edit command with a before/after diff
   - composite commands and the coalescing hook
   - history with a memory budget, and dirty-state tracking
@@ -45,6 +45,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   Includes the property-based test: a random sequence of commands, then undo all, returns the original document.
   *Owner checks:* CI is green.
+  *Note:* Built (ADR 0012), not pushed. Coalescing uses caller-made `CoalescingGroup`s; the newest step survives the memory budget; CsCheck pinned at 4.9.1.
 - [ ] **1.3 Fonts and glyph atlas** (Imaging). Covers:
   - the bundled fonts, with their licenses
   - loading fonts from a file and from the system
