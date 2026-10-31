@@ -67,7 +67,7 @@ tests/
   AskiiArt.App.Tests/        Avalonia.Headless interaction tests (few and focused, see §19)
 ```
 
-Dependencies point strictly in the order `App → Imaging → Core`. Core never references the other two, and Imaging never references Avalonia. Inside each project, folders are organized by feature (`Document/`, `Commands/`, `Selection/`, `Tools/`, `Ramps/`, `Formats/`, …), not by kind (`Interfaces/`, `Models/`).
+Dependencies point strictly in the order `App → Imaging → Core`. Core never references the other two, and Imaging never references Avalonia. Inside each project, folders are organized by feature (`Documents/`, `Commands/`, `Selection/`, `Tools/`, `Ramps/`, `Formats/`, …), not by kind (`Interfaces/`, `Models/`).
 
 ## 5. Document model
 
@@ -207,11 +207,11 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 
 ## 11. Fonts and glyph rasterization (Imaging)
 
-- **Bundled fonts:** JetBrains Mono (the default, OFL-1.1), Roboto Mono (Apache-2.0), IBM Plex Mono (OFL-1.1) and Fira Code (OFL-1.1). Each one ships with its license file and is listed in THIRD-PARTY-NOTICES.md.
+- **Bundled fonts:** JetBrains Mono (the default), Roboto Mono, IBM Plex Mono and Fira Code, Regular weight only, all OFL-1.1. Each one ships with its license file and is listed in THIRD-PARTY-NOTICES.md (ADR 0013).
 - **User fonts:** any TTF or OTF file the user picks, or any installed system font.
-  - **Cell size comes from font metrics:** the advance width of a reference glyph × the line height (ascent + descent + line gap). It is never hardcoded.
+  - **Cell size comes from font metrics:** the advance width of a reference glyph (`0`) × the line height (ascent + descent + line gap), read from the font file so it's the same on every OS (ADR 0013). It is never hardcoded.
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
-  - **Missing glyphs:** how to show a glyph the font doesn't have is an open question (§23). It must never crash.
+  - **Missing glyphs:** drawn with an installed font that has them, or as a placeholder box if none does; a fallback glyph too big for the cell is shrunk to fit. Either way the cell is flagged as an error (ADR 0013); how the flag looks is still open (§23). It must never crash.
 - **Ligatures can't happen,** because each cell is rasterized as a single glyph and never shaped as a run of text.
 - **Glyph atlas:** rasterized glyphs are cached per (font, pixel size, render options) and reused. Glyphs are rasterized at the actual device-pixel size for the current zoom and DPI so text stays crisp. A glyph bitmap is never scaled.
 - **One rasterizer** (Principle 4): the atlas, PNG export and glyph-density measurement all share the same Skia code path and settings.
@@ -366,7 +366,7 @@ Ask the owner about each of these at the milestone that needs it.
 
 | Question | Needed by |
 |---|---|
-| How to display a glyph that's missing from the font (placeholder marker? fallback font?) | Step 1.3 |
+| How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy: free Unicode input, or a per-document "ASCII only" restriction? | Step 1.5 |
 | Should the space-as-empty option be per layer, per document or app-wide? | M2 |
 | Should selection changes count as undo steps? | M4 |

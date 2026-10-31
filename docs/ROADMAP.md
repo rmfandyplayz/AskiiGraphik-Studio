@@ -34,10 +34,10 @@
 
 Goal: a window with a grid you can type into, where you can pick a font, resize the canvas, undo and redo, and save and load. Layers exist in the model but have no UI yet.
 
-- [~] **1.1 Document model** (Core). Document, Frame, Layer and Cell; `CellPoint` and `CellRect`; occupancy; compositing with the space-policy hook; change events with dirty regions; and canvas-resize logic with an anchor. Thorough unit tests, no UI.
+- [x] **1.1 Document model** (Core). Document, Frame, Layer and Cell; `CellPoint` and `CellRect`; occupancy; compositing with the space-policy hook; change events with dirty regions; and canvas-resize logic with an anchor. Thorough unit tests, no UI.
   *Owner checks:* CI is green. (There's nothing to click yet.)
   *Note:* Built (ADRs 0010, 0011). Mutation is internal to Core, so only commands (1.2) can change a document; canvas hard limit is 4096 per side.
-- [~] **1.2 Commands and undo** (Core). Covers:
+- [x] **1.2 Commands and undo** (Core). Covers:
   - the command interfaces, and a cell-edit command with a before/after diff
   - composite commands and the coalescing hook
   - history with a memory budget, and dirty-state tracking
@@ -45,8 +45,8 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   Includes the property-based test: a random sequence of commands, then undo all, returns the original document.
   *Owner checks:* CI is green.
-  *Note:* Built (ADR 0012), not pushed. Coalescing uses caller-made `CoalescingGroup`s; the newest step survives the memory budget; CsCheck pinned at 4.9.1.
-- [ ] **1.3 Fonts and glyph atlas** (Imaging). Covers:
+  *Note:* Built (ADR 0012). Coalescing uses caller-made `CoalescingGroup`s; the newest step survives the memory budget; CsCheck pinned at 4.9.1.
+- [~] **1.3 Fonts and glyph atlas** (Imaging). Covers:
   - the bundled fonts, with their licenses
   - loading fonts from a file and from the system
   - deriving cell size from font metrics, and the monospace check
@@ -55,6 +55,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   A test generates a "font sheet" PNG for each bundled font so the owner can eyeball it.
   *Owner checks:* the font sheets look right; CI is green.
+  *Note:* Built (ADRs 0013, 0014), not pushed. Missing glyphs use an installed fallback font or a placeholder box and are reported per cell; sheets go to `artifacts/font-sheets/`, and CI uploads them per OS.
 - [ ] **1.4 Canvas control** (App). Renders a document (temporary sample content) with virtualization and the atlas. Covers:
   - zoom (Ctrl/Cmd + mouse wheel, plus keyboard shortcuts)
   - pan (scrollbars, middle-drag, space-drag)

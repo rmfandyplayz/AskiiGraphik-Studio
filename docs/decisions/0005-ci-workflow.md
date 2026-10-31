@@ -20,6 +20,7 @@ One workflow, `.github/workflows/ci.yml`, with one job run on a matrix of `windo
 - **The SDK version comes from `global.json`,** so CI and local builds use the same SDK.
 - **The NuGet package folder is cached,** keyed on the files that decide which packages are restored.
 - **Failed runs upload Verify's `*.received.*` files** as an artifact, so a snapshot difference can be inspected without rerunning locally.
+- **Every run that gets as far as testing uploads the font sheets** (`artifacts/font-sheets/`, one artifact per OS, kept 14 days), so the owner can check each OS's glyph rendering by eye (ADR 0014).
 - **Least privilege:** the workflow token can only read the repo, and a newer push cancels an older run on the same branch.
 - **Action versions:** GitHub's own `actions/*` are pinned to a major version tag (`@v7`). Any third-party action added later is pinned to a full commit SHA.
 
@@ -34,3 +35,5 @@ One workflow, `.github/workflows/ci.yml`, with one job run on a matrix of `windo
 
 - A broken build, failing test or formatting change fails CI on the affected OS. The README badge shows the status of the default branch.
 - The badge URL contains the GitHub repo name, so it needs updating if the repo is renamed.
+
+Updated 2026-10-31: added the font-sheet upload (step 1.3).

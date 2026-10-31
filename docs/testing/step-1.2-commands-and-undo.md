@@ -45,7 +45,7 @@ Every change to a document now goes through an undoable command: editing cells, 
 
 - No Undo or Redo menu items or shortcuts yet (step 1.5), and no history panel (M2).
 - The memory budget can't be changed from the UI yet; that's for the settings window (M8).
-- A frame's last layer can't be removed. That rule is waiting for your confirmation (see the summary for this step).
+- A frame's last layer can't be removed. That's intended (confirmed by the owner).
 
 ## Reporting a problem
 

@@ -12,4 +12,20 @@
     <!-- SkiaSharp only brings Windows and macOS native libraries; Linux needs this one. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Lets Imaging's tests reach internal members without making them public. -->
+    <InternalsVisibleTo Include="AskiiArt.Imaging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup Label="Bundled fonts (ADR 0013)">
+    <!-- The fonts are embedded so loading them never depends on where the app is installed. -->
+    <EmbeddedResource Include="Fonts\Bundled\**\*.ttf" />
+    <!-- Each font's license ships as a plain file next to the app, as the OFL requires. Removed
+         and included again so the folder below Bundled\ is what %(RecursiveDir) holds. -->
+    <None Remove="Fonts\Bundled\**\*.txt" />
+    <None Include="Fonts\Bundled\**\*.txt"
+          Link="Licenses\Fonts\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

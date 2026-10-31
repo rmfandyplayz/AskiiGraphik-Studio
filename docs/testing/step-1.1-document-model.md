@@ -24,7 +24,7 @@ Core now has the document model: a document holds frames (exactly one for now), 
 |---|---|---|
 | 1 | Open the CI run for the commit "claude: add document model (step 1.1)" and wait for it to finish | All three jobs (**windows-latest**, **macos-latest**, **ubuntu-latest**) have a green check mark. |
 | 2 | Click the **ubuntu-latest** job and expand the **Test** step | The output ends with `Test run summary: Passed!` and `total: 172` or more. |
-| 3 | In the same job, look at **Check formatting** | It's green. |
+| 3 | In the same job, look at **Check formatting** | It has a check mark. (GitHub draws step check marks in grey, not green; a failed step shows a red ✗.) |
 
 - [ ] Pass  - [ ] Fail. Notes:
 

@@ -66,6 +66,17 @@ jobs:
         if: runner.os == 'Linux'
         run: dotnet format --verify-no-changes --no-restore
 
+      # The Imaging tests draw one font sheet per bundled font (step 1.3). Each OS's font engine
+      # draws slightly differently, so upload every OS's sheets for checking by eye.
+      - name: Upload font sheets
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: font-sheets-${{ matrix.os }}
+          path: artifacts/font-sheets/
+          if-no-files-found: ignore
+          retention-days: 14
+
       # When a snapshot test fails, Verify writes the actual output to *.received.* files.
       # Uploading them makes the difference visible without rerunning locally.
       - name: Upload unapproved snapshots
