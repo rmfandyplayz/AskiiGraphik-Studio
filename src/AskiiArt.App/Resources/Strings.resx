@@ -378,4 +378,28 @@
   <data name="StatusFontNotAvailableFormat" xml:space="preserve">
     <value>{0} (not available)</value>
   </data>
+  <data name="ActionCopyAsText" xml:space="preserve">
+    <value>Copy as _Text</value>
+    <comment>Copies the visible art to the clipboard as plain text.</comment>
+  </data>
+  <data name="ActionExportAsText" xml:space="preserve">
+    <value>_Export as Text…</value>
+  </data>
+  <data name="ActionCloseWindow" xml:space="preserve">
+    <value>Close</value>
+    <comment>macOS only: closes the window and its document; the app keeps running.</comment>
+  </data>
+  <data name="TextFileTypeName" xml:space="preserve">
+    <value>Text file</value>
+  </data>
+  <data name="ExportFilePickerTitle" xml:space="preserve">
+    <value>Export as Text</value>
+  </data>
+  <data name="ExportFailedTitle" xml:space="preserve">
+    <value>Can't export the file</value>
+  </data>
+  <data name="ExportFailedFormat" xml:space="preserve">
+    <value>“{0}” couldn't be written. {1}</value>
+    <comment>{0} is the file name, {1} the reason from the operating system.</comment>
+  </data>
 </root>

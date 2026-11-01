@@ -6,6 +6,7 @@ using AskiiArt.App.Shell.Dialogs;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,16 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
             desktop.TryShutdown();
     }
 
+    public void CloseMainWindow() => MainWindow?.Close();
+
+    public async Task CopyTextAsync(string text)
+    {
+        if (MainWindow?.Clipboard is not { } clipboard)
+            return;
+
+        await clipboard.SetTextAsync(text);
+    }
+
     public async Task OpenFolderAsync(string folderPath)
     {
         if (MainWindow is not { } window)
@@ -46,7 +57,7 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
             return;
 
         var dialog = new AboutWindow { DataContext = new AboutViewModel() };
-        await dialog.ShowDialog(owner);
+        await ModalDialog.ShowAsync(dialog, owner);
     }
 
     public async Task<UnexpectedErrorChoice> ShowUnexpectedErrorAsync()
@@ -56,7 +67,7 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
 
         var openLogFolder = new AsyncRelayCommand(() => OpenFolderAsync(locations.LogFolder));
         var dialog = new UnexpectedErrorWindow { DataContext = new UnexpectedErrorViewModel(openLogFolder) };
-        return await dialog.ShowDialog<UnexpectedErrorChoice>(owner);
+        return await ModalDialog.ShowAsync<UnexpectedErrorChoice>(dialog, owner);
     }
 
     public async Task<bool> ConfirmAsync(string title, string message, string confirmLabel)
@@ -65,7 +76,7 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
             return false;
 
         var dialog = new ConfirmWindow { DataContext = new ConfirmViewModel(title, message, confirmLabel) };
-        return await dialog.ShowDialog<bool>(owner);
+        return await ModalDialog.ShowAsync<bool>(dialog, owner);
     }
 
     public async Task ShowMessageAsync(string title, string message)
@@ -74,7 +85,7 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
             return;
 
         var dialog = new MessageWindow { DataContext = new MessageViewModel(title, message) };
-        await dialog.ShowDialog(owner);
+        await ModalDialog.ShowAsync(dialog, owner);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The OS could not open the folder {FolderPath}")]

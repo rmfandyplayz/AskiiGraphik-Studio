@@ -14,11 +14,11 @@ namespace AskiiArt.App.Tests.Fakes;
 internal static class TestActions
 {
     public static IActionProvider[] CreateProviders(TestCanvas canvas, FakeAppShell shell,
-        FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false) =>
+        FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false, bool isMacOS = false) =>
     [
-        new ShellActions(shell, new AppDataLocations("root"), includeDebugActions),
+        new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel),
-        new EditActions(canvas.ActiveDocument),
+        new EditActions(canvas.ActiveDocument, canvas.TextExporter, shell),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

@@ -25,6 +25,9 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
     /// <summary>The file the save picker returns; null means the user cancelled.</summary>
     public DocumentFile? FileToSave { get; set; }
 
+    /// <summary>The path the export picker returns; null means the user cancelled.</summary>
+    public string? FileToExport { get; set; }
+
     public int NewDocumentShownCount { get; private set; }
 
     /// <summary>The canvas size each Resize Canvas dialog was opened with.</summary>
@@ -40,6 +43,9 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
 
     /// <summary>The suggested name and current file each save picker was opened with.</summary>
     public List<(string SuggestedName, DocumentFile? Current)> SavePickerShownWith { get; } = [];
+
+    /// <summary>The suggested name and folder each export picker was opened with.</summary>
+    public List<(string SuggestedName, string? Folder)> ExportPickerShownWith { get; } = [];
 
     public Task<NewDocumentSettings?> ShowNewDocumentAsync()
     {
@@ -75,5 +81,11 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
     {
         SavePickerShownWith.Add((suggestedName, current));
         return Task.FromResult(FileToSave);
+    }
+
+    public Task<string?> PickTextFileToExportAsync(string suggestedName, string? folder)
+    {
+        ExportPickerShownWith.Add((suggestedName, folder));
+        return Task.FromResult(FileToExport);
     }
 }

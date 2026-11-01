@@ -220,6 +220,56 @@ public sealed class DocumentFilesTests : IDisposable
         Assert.Empty(_dialogs.SaveChangesAskedFor);
     }
 
+    [Fact]
+    public async Task ExportAsText_WritesTheArt_AndLeavesTheDocumentAsItWas()
+    {
+        var file = FileIn("art.asciiart", DocumentFileVariant.Plain);
+        _dialogs.FileToSave = file;
+        await _files.SaveAsAsync();
+        MakeAChange();
+        var path = Path.Combine(_folder, "art.txt");
+        _dialogs.FileToExport = path;
+
+        await _files.ExportAsTextAsync();
+
+        Assert.Equal([("art", _folder)], _dialogs.ExportPickerShownWith);
+        Assert.Equal("x   \n    \n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        Assert.Equal(file, ActiveDocument.File);
+        Assert.True(History.HasUnsavedChanges);
+    }
+
+    [Fact]
+    public async Task ExportAsText_AddsTheExtension_WhenTheNameHasNone()
+    {
+        _dialogs.FileToExport = Path.Combine(_folder, "art");
+
+        await _files.ExportAsTextAsync();
+
+        Assert.Equal([("Untitled", null)], _dialogs.ExportPickerShownWith);
+        Assert.True(File.Exists(Path.Combine(_folder, "art.txt")));
+    }
+
+    [Fact]
+    public async Task ExportAsText_Cancelled_WritesNothing()
+    {
+        await _files.ExportAsTextAsync();
+
+        Assert.Empty(Directory.GetFiles(_folder));
+        Assert.Empty(_shell.Messages);
+    }
+
+    [Fact]
+    public async Task ExportAsText_ThatCantBeWritten_SaysSo()
+    {
+        _dialogs.FileToExport = Path.Combine(_folder, "missing folder", "art.txt");
+
+        await _files.ExportAsTextAsync();
+
+        var message = Assert.Single(_shell.Messages);
+        Assert.Equal(Strings.ExportFailedTitle, message.Title);
+        Assert.Contains("art.txt", message.Message, StringComparison.Ordinal);
+    }
+
     private void MakeAChange()
     {
         var edit = new CellEditBuilder(_canvas.Document, _canvas.Document.ActiveFrame.Layers[0].Id);

@@ -25,6 +25,19 @@ internal sealed class FakeAppShell : IAppShell
 
     public void RequestShutdown() => ShutdownRequestCount++;
 
+    public int CloseMainWindowCount { get; private set; }
+
+    public void CloseMainWindow() => CloseMainWindowCount++;
+
+    /// <summary>The text of each copy to the clipboard so far.</summary>
+    public List<string> CopiedTexts { get; } = [];
+
+    public Task CopyTextAsync(string text)
+    {
+        CopiedTexts.Add(text);
+        return Task.CompletedTask;
+    }
+
     public Task OpenFolderAsync(string folderPath)
     {
         OpenedFolders.Add(folderPath);

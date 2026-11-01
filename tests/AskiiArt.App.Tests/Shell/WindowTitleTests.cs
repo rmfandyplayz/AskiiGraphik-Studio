@@ -39,12 +39,14 @@ public sealed class WindowTitleTests : IDisposable
     {
         MakeAChange(_canvas.Session);
         Assert.Equal(Title(Strings.WindowTitleUnsavedFormat, Strings.UntitledDocumentName), _title.Text);
+        Assert.True(_title.HasUnsavedChanges);
 
         var file = new DocumentFile(Path.Combine("folder", "art.asciiart"), DocumentFileVariant.Plain);
         _canvas.ActiveDocument.SetFile(file);
         _canvas.Session.History.MarkSaved();
 
         Assert.Equal(Title(Strings.WindowTitleFormat, "art.asciiart"), _title.Text);
+        Assert.False(_title.HasUnsavedChanges);
         Assert.Equal(_title.Text, _changes[^1]);
     }
 

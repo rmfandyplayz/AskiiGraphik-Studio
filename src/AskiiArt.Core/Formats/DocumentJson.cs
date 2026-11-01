@@ -76,12 +76,35 @@ internal static class DocumentJson
 
         try
         {
+            CheckEscapedText(json);
             return JsonNode.Parse(json, documentOptions: _readerOptions) as JsonObject
                    ?? throw Damaged("The document isn't a JSON object.");
         }
         catch (JsonException exception)
         {
             throw new DocumentFileException("The document's JSON is broken.", exception);
+        }
+    }
+
+    // Escapes are also decoded only when a string or property name is read, so one that makes no
+    // sense (such as half of a surrogate pair) would likewise surface later as an unrelated exception.
+    private static void CheckEscapedText(ReadOnlySpan<byte> json)
+    {
+        var reader = new Utf8JsonReader(json, new JsonReaderOptions { MaxDepth = _readerOptions.MaxDepth });
+        while (reader.Read())
+        {
+            if (reader.TokenType is not (JsonTokenType.String or JsonTokenType.PropertyName) || !reader.ValueIsEscaped)
+                continue;
+
+            try
+            {
+                reader.GetString();
+            }
+            catch (InvalidOperationException exception)
+            {
+                throw new DocumentFileException("The document has an escaped character that isn't valid.",
+                    exception);
+            }
         }
     }
 

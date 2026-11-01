@@ -11,7 +11,8 @@ namespace AskiiArt.App.Shell;
 
 /// <summary>
 /// The main window's title: the document's file name (or "Untitled"), marked while it has
-/// unsaved changes, then the app's name.
+/// unsaved changes, then the app's name. <see cref="HasUnsavedChanges"/> also drives the macOS
+/// close button's dot.
 /// </summary>
 internal sealed class WindowTitle : ObservableObject
 {
@@ -29,12 +30,14 @@ internal sealed class WindowTitle : ObservableObject
         activeDocument.SessionChanged += OnSessionChanged;
     }
 
+    public bool HasUnsavedChanges => _followedHistory.HasUnsavedChanges;
+
     public string Text
     {
         get
         {
             var format = Strings.WindowTitleFormat;
-            if (_followedHistory.HasUnsavedChanges)
+            if (HasUnsavedChanges)
                 format = Strings.WindowTitleUnsavedFormat;
 
             return string.Format(CultureInfo.CurrentCulture, format, _activeDocument.DisplayName,
@@ -47,8 +50,12 @@ internal sealed class WindowTitle : ObservableObject
         _followedHistory.StateChanged -= OnTitleInputChanged;
         _followedHistory = _activeDocument.Session.History;
         _followedHistory.StateChanged += OnTitleInputChanged;
-        OnPropertyChanged(nameof(Text));
+        OnTitleInputChanged(this, EventArgs.Empty);
     }
 
-    private void OnTitleInputChanged(object? sender, EventArgs e) => OnPropertyChanged(nameof(Text));
+    private void OnTitleInputChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        OnPropertyChanged(nameof(Text));
+    }
 }

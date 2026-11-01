@@ -26,7 +26,9 @@ public sealed class StringsTests
     [Fact]
     public void EveryShellAction_HasALabelInStringsResx()
     {
-        var registry = new ActionRegistry([new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: true)]);
+        var shellActions = new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: true,
+            isMacOS: true);
+        var registry = new ActionRegistry([shellActions]);
 
         foreach (var action in registry.All)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(action.LabelKey)), action.Id);

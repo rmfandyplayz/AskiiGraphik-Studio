@@ -35,3 +35,4 @@ Updated 2026-10-31: toggle actions have an `ActionCheckedState` (step 1.4), and 
 Updated 2026-10-31: on macOS, a menu action's second and later shortcuts get window key bindings (step 1.5); before, only the first worked. There's an Edit menu.
 Updated 2026-11-01: a placeholder toolbar binds to actions the same way (ADR 0020). There's a Document menu, and macOS has a File menu with New.
 Updated 2026-11-01: File has Open (Cmd+O), Save (Cmd+S) and Save As (Cmd+Shift+S), also on the toolbar, and Debug has Open Sample Document (step 1.7).
+Updated 2026-11-01: Edit has Copy as Text (Cmd+Shift+C) and File has Export as Text (step 1.8, ADR 0022). On macOS, File has Close (Cmd+W), and the Dock menu has New and Open, built from `MenuLayout.DockMenu` (ADR 0023).

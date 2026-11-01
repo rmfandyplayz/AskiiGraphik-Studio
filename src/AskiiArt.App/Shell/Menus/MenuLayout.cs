@@ -43,6 +43,12 @@ internal sealed record MenuLayout(
     IReadOnlyList<MenuDefinition> WindowMenus,
     bool IsSystemMenuBar)
 {
+    /// <summary>
+    /// The macOS Dock icon's menu. Its items work with no window open, which the menu bar can't
+    /// offer: on macOS the File menu belongs to the window (ADR 0023). Empty elsewhere.
+    /// </summary>
+    public IReadOnlyList<MenuEntry> DockMenu { get; init; } = [];
+
     public static MenuLayout CreateDefault(bool isMacOS, bool includeDebugMenu)
     {
         var windowMenus = new List<MenuDefinition>();
@@ -51,7 +57,9 @@ internal sealed record MenuLayout(
         var editMenu = new MenuDefinition(nameof(Strings.MenuEdit),
         [
             new ActionMenuEntry(EditActionIds.Undo),
-            new ActionMenuEntry(EditActionIds.Redo)
+            new ActionMenuEntry(EditActionIds.Redo),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(EditActionIds.CopyAsText)
         ]);
 
         // ASCII Only sits here until the owner designs document options.
@@ -77,7 +85,7 @@ internal sealed record MenuLayout(
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
             // the Quit item there (with Cmd+Q), so the Quit action isn't listed again.
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
-            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [.. FileEntries()]));
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [.. FileEntries(isMacOS)]));
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
@@ -88,7 +96,7 @@ internal sealed record MenuLayout(
             applicationMenu = [];
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile),
             [
-                .. FileEntries(),
+                .. FileEntries(isMacOS),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(ShellActionIds.Quit)
             ]));
@@ -112,24 +120,35 @@ internal sealed record MenuLayout(
             ]));
         }
 
-        return new MenuLayout(applicationMenu, windowMenus, IsSystemMenuBar: isMacOS);
+        IReadOnlyList<MenuEntry> dockMenu = [];
+        if (isMacOS)
+            dockMenu = [new ActionMenuEntry(DocumentActionIds.New), new ActionMenuEntry(DocumentActionIds.Open)];
+
+        return new MenuLayout(applicationMenu, windowMenus, IsSystemMenuBar: isMacOS) { DockMenu = dockMenu };
     }
 
-    // The File menu's own items; on Windows and Linux, Quit follows them.
-    private static IEnumerable<MenuEntry> FileEntries() =>
-    [
-        new ActionMenuEntry(DocumentActionIds.New),
-        new ActionMenuEntry(DocumentActionIds.Open),
-        new SeparatorMenuEntry(),
-        new ActionMenuEntry(DocumentActionIds.Save),
-        new ActionMenuEntry(DocumentActionIds.SaveAs)
-    ];
+    // The File menu's own items; on Windows and Linux, Quit follows them. On macOS, Close sits where
+    // Mac apps put it.
+    private static IEnumerable<MenuEntry> FileEntries(bool isMacOS)
+    {
+        yield return new ActionMenuEntry(DocumentActionIds.New);
+        yield return new ActionMenuEntry(DocumentActionIds.Open);
+        yield return new SeparatorMenuEntry();
+        if (isMacOS)
+            yield return new ActionMenuEntry(ShellActionIds.CloseWindow);
 
-    /// <summary>Every action id that appears in any menu.</summary>
+        yield return new ActionMenuEntry(DocumentActionIds.Save);
+        yield return new ActionMenuEntry(DocumentActionIds.SaveAs);
+        yield return new SeparatorMenuEntry();
+        yield return new ActionMenuEntry(DocumentActionIds.ExportAsText);
+    }
+
+    /// <summary>Every action id that appears in any menu, the Dock menu included.</summary>
     public IEnumerable<string> ActionIds()
     {
         return ApplicationMenu
             .Concat(WindowMenus.SelectMany(menu => menu.Entries))
+            .Concat(DockMenu)
             .OfType<ActionMenuEntry>()
             .Select(entry => entry.ActionId);
     }

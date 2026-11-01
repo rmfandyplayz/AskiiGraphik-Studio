@@ -4,6 +4,7 @@
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Dialogs;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using Avalonia.Controls;
@@ -33,6 +34,13 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
         Patterns = ["*" + DocumentFileFormat.CompressedExtension]
     };
 
+    private static readonly FilePickerFileType _textFiles = new(Strings.TextFileTypeName)
+    {
+        Patterns = ["*.txt"],
+        AppleUniformTypeIdentifiers = ["public.plain-text"],
+        MimeTypes = ["text/plain"]
+    };
+
     // Opening offers both variants together: the header decides how a file is read, not its name.
     private static readonly FilePickerFileType _allDocuments = new(Strings.DocumentFileTypeName)
     {
@@ -45,7 +53,7 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
             return null;
 
         var dialog = new NewDocumentWindow { DataContext = new NewDocumentViewModel() };
-        return await dialog.ShowDialog<NewDocumentSettings?>(owner);
+        return await ModalDialog.ShowAsync<NewDocumentSettings?>(dialog, owner);
     }
 
     public async Task<CanvasResizeRequest?> ShowResizeCanvasAsync(CanvasSize currentSize)
@@ -54,7 +62,7 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
             return null;
 
         var dialog = new ResizeCanvasWindow { DataContext = new ResizeCanvasViewModel(currentSize) };
-        return await dialog.ShowDialog<CanvasResizeRequest?>(owner);
+        return await ModalDialog.ShowAsync<CanvasResizeRequest?>(dialog, owner);
     }
 
     public async Task<FontReference?> ShowFontPickerAsync(FontReference currentFont)
@@ -65,7 +73,7 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
         var dialog = new FontPickerWindow();
         dialog.DataContext = new FontPickerViewModel(fonts, currentFont, () => PickFontFileAsync(dialog),
             fontPickerLogger);
-        return await dialog.ShowDialog<FontReference?>(owner);
+        return await ModalDialog.ShowAsync<FontReference?>(dialog, owner);
     }
 
     public async Task<SaveChangesChoice> AskToSaveChangesAsync(string documentName)
@@ -74,7 +82,7 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
             return SaveChangesChoice.Cancel;
 
         var dialog = new SaveChangesWindow { DataContext = new SaveChangesViewModel(documentName) };
-        return await dialog.ShowDialog<SaveChangesChoice>(owner);
+        return await ModalDialog.ShowAsync<SaveChangesChoice>(dialog, owner);
     }
 
     public async Task<string?> PickFileToOpenAsync()
@@ -100,9 +108,7 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
         if (AppWindows.Main is not { } owner)
             return null;
 
-        IStorageFolder? startFolder = null;
-        if (Path.GetDirectoryName(current?.Path) is { Length: > 0 } folder)
-            startFolder = await owner.StorageProvider.TryGetFolderFromPathAsync(folder);
+        var startFolder = await FindFolderAsync(owner, Path.GetDirectoryName(current?.Path));
 
         // The document's own variant comes first, so Save As keeps it unless the user picks the other.
         var variant = current?.Variant ?? DocumentFileVariant.Plain;
@@ -128,6 +134,32 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
             chosenVariant = DocumentFileVariant.Compressed;
 
         return DocumentFile.ForSavePath(path, chosenVariant);
+    }
+
+    public async Task<string?> PickTextFileToExportAsync(string suggestedName, string? folder)
+    {
+        if (AppWindows.Main is not { } owner)
+            return null;
+
+        var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = Strings.ExportFilePickerTitle,
+            SuggestedFileName = suggestedName,
+            SuggestedStartLocation = await FindFolderAsync(owner, folder),
+            DefaultExtension = "txt",
+            FileTypeChoices = [_textFiles],
+            ShowOverwritePrompt = true
+        });
+
+        return file?.TryGetLocalPath();
+    }
+
+    private static async Task<IStorageFolder?> FindFolderAsync(TopLevel owner, string? folder)
+    {
+        if (string.IsNullOrEmpty(folder))
+            return null;
+
+        return await owner.StorageProvider.TryGetFolderFromPathAsync(folder);
     }
 
     // The file picker belongs to the font picker, so it opens over it.

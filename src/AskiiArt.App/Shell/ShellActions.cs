@@ -11,10 +11,11 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Shell;
 
 /// <summary>
-/// The shell's own actions: Quit, Open Log Folder, About, and (Debug builds only) Throw Test
-/// Exception.
+/// The shell's own actions: Quit, Close Window (macOS only), Open Log Folder, About, and (Debug
+/// builds only) Throw Test Exception.
 /// </summary>
-internal sealed class ShellActions(IAppShell shell, AppDataLocations locations, bool includeDebugActions) : IActionProvider
+internal sealed class ShellActions(IAppShell shell, AppDataLocations locations, bool includeDebugActions,
+    bool isMacOS) : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
@@ -23,6 +24,16 @@ internal sealed class ShellActions(IAppShell shell, AppDataLocations locations, 
             nameof(Strings.ActionQuit),
             new RelayCommand(shell.RequestShutdown),
             [new ActionShortcut(Key.Q, ShortcutModifiers.Command)]);
+
+        // Elsewhere closing the window quits the app, which Quit already does.
+        if (isMacOS)
+        {
+            yield return new AppAction(
+                ShellActionIds.CloseWindow,
+                nameof(Strings.ActionCloseWindow),
+                new RelayCommand(shell.CloseMainWindow),
+                [new ActionShortcut(Key.W, ShortcutModifiers.Command)]);
+        }
 
         yield return new AppAction(
             ShellActionIds.OpenLogFolder,

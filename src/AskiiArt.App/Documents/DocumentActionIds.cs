@@ -10,6 +10,7 @@ internal static class DocumentActionIds
     public const string Open = "askiiart.document.open";
     public const string Save = "askiiart.document.save";
     public const string SaveAs = "askiiart.document.saveAs";
+    public const string ExportAsText = "askiiart.document.exportAsText";
     public const string ResizeCanvas = "askiiart.document.resizeCanvas";
     public const string Font = "askiiart.document.font";
     public const string AsciiOnly = "askiiart.document.asciiOnly";

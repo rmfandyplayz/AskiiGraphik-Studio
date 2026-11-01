@@ -15,7 +15,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Documents;
 
 /// <summary>
-/// New, Open, Save and Save As, Resize Canvas, Font, and the temporary ASCII Only switch
+/// New, Open, Save, Save As and Export as Text, Resize Canvas, Font, and the temporary ASCII Only switch
 /// (ADR 0016), for the active document. Resize Canvas, Font and ASCII Only are undoable commands.
 /// </summary>
 internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFiles files, IDocumentDialogs dialogs,
@@ -45,6 +45,9 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFil
         yield return new AppAction(DocumentActionIds.SaveAs, nameof(Strings.ActionSaveAs),
             new AsyncRelayCommand(files.SaveAsAsync),
             [new ActionShortcut(Key.S, ShortcutModifiers.Command | ShortcutModifiers.Shift)]);
+
+        yield return new AppAction(DocumentActionIds.ExportAsText, nameof(Strings.ActionExportAsText),
+            new AsyncRelayCommand(files.ExportAsTextAsync));
 
         yield return new AppAction(DocumentActionIds.ResizeCanvas, nameof(Strings.ActionResizeCanvas),
             new AsyncRelayCommand(ResizeCanvasAsync));

@@ -4,14 +4,17 @@
 using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Shell;
 using AskiiArt.Core.Commands;
+using AskiiArt.Core.Exporting;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Editing;
 
-/// <summary>Undo and Redo, for the active document's history.</summary>
-internal sealed class EditActions(ActiveDocument activeDocument) : IActionProvider
+/// <summary>Undo and Redo, for the active document's history, and Copy as Text.</summary>
+internal sealed class EditActions(ActiveDocument activeDocument, TextExporter textExporter, IAppShell shell)
+    : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
@@ -40,6 +43,10 @@ internal sealed class EditActions(ActiveDocument activeDocument) : IActionProvid
             new ActionShortcut(Key.Y, ShortcutModifiers.Command)
         ]);
 
+        yield return new AppAction(EditActionIds.CopyAsText, nameof(Strings.ActionCopyAsText),
+            new AsyncRelayCommand(CopyAsTextAsync),
+            [new ActionShortcut(Key.C, ShortcutModifiers.Command | ShortcutModifiers.Shift)]);
+
         void OnHistoryChanged(object? sender, EventArgs e)
         {
             undo.NotifyCanExecuteChanged();
@@ -48,4 +55,8 @@ internal sealed class EditActions(ActiveDocument activeDocument) : IActionProvid
     }
 
     private CommandHistory History => activeDocument.Session.History;
+
+    // With this platform's line breaks, which is what other apps expect from the clipboard (ADR 0022).
+    private Task CopyAsTextAsync() =>
+        shell.CopyTextAsync(textExporter.ToText(activeDocument.Session.Document, Environment.NewLine));
 }

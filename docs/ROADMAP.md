@@ -76,19 +76,20 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   *Owner checks:* each dialog works, resizing with different anchors and then undoing works, and changing the font resizes cells correctly.
   *Note:* Built (ADRs 0019, 0020). New defaults to 80 × 25 and ASCII only; the font is per document and undoable, and file fonts last until the app closes. Also adds caret jumps (per-platform keys) and the fixes from 1.5 testing. The fixes from its own testing (damaged font files, the 10-cell jump moved off Alt on Windows and Linux, size boxes that clamp) land in 1.7.
-- [~] **1.7 Saving and opening.** Adds:
+- [x] **1.7 Saving and opening.** Adds:
   - Save, Save As and Open, in a plain variant (`.asciiart`) and a compressed one (`.asciiartz`), with header sniffing, a format version, and atomic saves
   - round-trip tests, and the scaffolding for future format migrations
   - unsaved-changes prompts on close, New and Open, and a window title that shows the file name plus a dirty marker
   - the app starts with an empty document (the sample moves to the Debug menu), and opening a document whose font is missing says so
 
   *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, and the unsaved-changes prompts behave correctly.
-  *Note:* Built (ADR 0021), not pushed. The fixes from 1.6 testing are in too (damaged fonts, Ctrl+Shift+arrow, size boxes that clamp).
-- [ ] **1.8 Output and macOS windows.** Adds:
+  *Note:* Built (ADR 0021). The fixes from 1.6 testing are in too (damaged fonts, Ctrl+Shift+arrow, size boxes that clamp). The fixes from its own testing (a damaged escape that failed CI on macOS, the open picker that didn't appear after saving on Windows) land in 1.8.
+- [~] **1.8 Output and macOS windows.** Adds:
   - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New or Open with no window opens one (requested in 0.3 testing; one window at a time)
   - Copy as Text (to the clipboard) and Export .txt
 
   *Owner checks:* copied art pastes correctly into a text editor, the exported file matches, and on a Mac, closing the window leaves the app running.
+  *Note:* Built (ADRs 0022, 0023), not pushed. On a Mac the File menu can't exist with no window open, so New and Open are in the Dock menu then; Mac windows also show the unsaved dot. The fixes from 1.7 testing are in too.
 
 **The MVP is complete after 1.8.** (1.7 was split in two after 1.6 testing, with the owner's OK.)
 

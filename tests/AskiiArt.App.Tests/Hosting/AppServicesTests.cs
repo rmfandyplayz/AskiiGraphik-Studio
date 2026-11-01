@@ -6,6 +6,7 @@ using AskiiArt.App.Errors;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.Core.Exporting;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AskiiArt.App.Tests.Hosting;
@@ -26,6 +27,9 @@ public sealed class AppServicesTests : IDisposable
         Assert.True(actions.Contains(ShellActionIds.Quit));
         Assert.True(actions.Contains(ShellActionIds.OpenLogFolder));
         Assert.True(actions.Contains(ShellActionIds.About));
+
+        // The text exporter is registered as one of the exporters, as a plugin's would be.
+        Assert.Same(services.GetRequiredService<TextExporter>(), Assert.Single(services.GetServices<IExporter>()));
     }
 
     [Fact]

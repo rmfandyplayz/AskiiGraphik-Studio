@@ -5,6 +5,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Resources;
 using Avalonia.Controls;
 using Avalonia.Input;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Shell.Menus;
 
@@ -33,6 +34,25 @@ internal sealed class NativeMenuBuilder(ActionRegistry actions, KeyModifiers pla
     {
         var menu = new NativeMenu();
         AddEntries(menu, entries);
+        return menu;
+    }
+
+    /// <summary>
+    /// The macOS Dock menu. It can be used with no window open, so each item goes through
+    /// <paramref name="run"/>, which opens a window first, rather than straight to its action.
+    /// Dock menus don't show shortcuts, so the items have none.
+    /// </summary>
+    public NativeMenu BuildDockMenu(IReadOnlyList<MenuEntry> entries, Action<AppAction> run)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+
+        var menu = new NativeMenu();
+        foreach (var entry in entries.OfType<ActionMenuEntry>())
+        {
+            var action = actions.Get(entry.ActionId);
+            menu.Add(new NativeMenuItem(UiText.Get(action.LabelKey)) { Command = new RelayCommand(() => run(action)) });
+        }
+
         return menu;
     }
 

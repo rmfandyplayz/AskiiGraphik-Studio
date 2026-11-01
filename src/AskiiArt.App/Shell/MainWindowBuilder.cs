@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.ComponentModel;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
@@ -15,17 +16,18 @@ namespace AskiiArt.App.Shell;
 /// <summary>
 /// Creates the main window with its menus, toolbar and keyboard shortcuts, all taken from the
 /// action registry and the menu and toolbar layouts, showing the canvas's document. The window's
-/// title follows the document, and closing it asks about unsaved changes first.
+/// title follows the document, and closing it asks about unsaved changes first. On macOS a new
+/// window is built each time one opens (ADR 0023).
 /// </summary>
 internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, ToolbarLayout toolbar,
-    CanvasViewModel canvas, WindowTitle title, DocumentFiles files)
+    CanvasViewModel canvas, WindowTitle title, DocumentFiles files, IAppShell shell)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
         var window = new MainWindow { DataContext = canvas, Title = title.Text };
         var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
 
-        title.PropertyChanged += (_, _) => window.Title = title.Text;
+        FollowTitle(window);
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
         window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
         AddKeyBindings(window, platformCommandModifiers);
@@ -43,7 +45,24 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
         return new NativeMenuBuilder(actions, platformCommandModifiers).BuildApplicationMenu(layout.ApplicationMenu);
     }
 
-    // Covers the close button, Quit and the app shutting down, which all close the window.
+    // The title, and on macOS the close button's dot, until the window closes: later windows follow
+    // the same title.
+    private void FollowTitle(Window window)
+    {
+        window.Opened += (_, _) => MacOSDocumentEdited.Set(window, title.HasUnsavedChanges);
+        title.PropertyChanged += OnTitleChanged;
+        window.Closed += (_, _) => title.PropertyChanged -= OnTitleChanged;
+
+        void OnTitleChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(WindowTitle.Text))
+                window.Title = title.Text;
+            else if (e.PropertyName == nameof(WindowTitle.HasUnsavedChanges))
+                MacOSDocumentEdited.Set(window, title.HasUnsavedChanges);
+        }
+    }
+
+    // Covers the close button, Close Window, Quit and the app shutting down, which all close the window.
     private void AskAboutUnsavedChangesBeforeClosing(Window window)
     {
         var isAsking = false;
@@ -58,6 +77,7 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
             if (isAsking)
                 return;
 
+            var isQuitting = e.CloseReason is WindowCloseReason.ApplicationShutdown or WindowCloseReason.OSShutdown;
             isAsking = true;
             try
             {
@@ -68,8 +88,15 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
                 isAsking = false;
             }
 
-            // After this Closing event has finished, rather than from inside it.
-            if (mayClose)
+            if (!mayClose)
+                return;
+
+            // After this Closing event has finished, rather than from inside it. Cancelling the close
+            // also cancelled quitting, so that's asked for again: on macOS, closing the window alone
+            // would leave the app running.
+            if (isQuitting)
+                Dispatcher.UIThread.Post(shell.RequestShutdown);
+            else
                 Dispatcher.UIThread.Post(window.Close);
         };
     }

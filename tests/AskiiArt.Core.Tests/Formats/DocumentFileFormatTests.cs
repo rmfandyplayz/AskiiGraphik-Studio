@@ -114,6 +114,21 @@ public sealed class DocumentFileFormatTests
         AssertDamaged(Encoding.UTF8.GetBytes(text));
     }
 
+    [Theory]
+    [InlineData("a!c", "a\\uDE00c")]
+    [InlineData("{\"canvas\"", "{\"\\uDE00\":0,\"canvas\"")]
+    public void Decode_EscapedHalfOfASurrogatePair_IsDamaged(string original, string damaged)
+    {
+        // Found by the corruption test on macOS, whose compressed bytes differ.
+        var root = DocumentJson.Parse(DocumentJson.Write(TestCells.CreateDocument(3, 4)));
+        var layer = root["frames"]![0]!["layers"]![0]!.AsObject();
+        layer["rows"]!.AsArray()[0] = "a!c";
+        layer["occupancy"] = new JsonArray(0, 12);
+        var json = root.ToJsonString().Replace(original, damaged, StringComparison.Ordinal);
+
+        AssertDamaged(Encoding.UTF8.GetBytes(PlainHeader + json));
+    }
+
     public static TheoryData<string> Damage =>
     [
         "canvas.width=0",

@@ -6,8 +6,10 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Shell;
+using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
@@ -46,9 +48,11 @@ internal sealed class TestCanvas : IDisposable
 
     public CanvasViewModel ViewModel { get; }
 
+    public TextExporter TextExporter { get; } = new(CompositingPolicy.Default);
+
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>
-        new(ActiveDocument, dialogs, shell, Fonts, NullLogger<DocumentFiles>.Instance);
+        new(ActiveDocument, dialogs, shell, Fonts, TextExporter, NullLogger<DocumentFiles>.Instance);
 
     public void Dispose()
     {

@@ -13,10 +13,10 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 | Choice | Where | Step |
 |---|---|---|
-| Menus: File (New, Open, Save, Save As, Quit), Edit (Undo, Redo), Document (Resize Canvas, Font, ASCII Only), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7 |
+| Menus: File (New, Open, Save, Save As, Export as Text, Quit), Edit (Undo, Redo, Copy as Text), Document (Resize Canvas, Font, ASCII Only), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8 |
 | A toolbar of plain text buttons under the menu bar: New, Open, Save; Undo, Redo; Resize Canvas, Font; Zoom Out, Zoom In, Actual Size, Show Grid (a toggle). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs` | 1.6, 1.7 |
 | A Debug menu (Open Sample Document, Throw Test Exception) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs` | 0.3, 1.7 |
-| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+' | each feature's `*Actions.cs` | 0.3–1.6 |
+| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Close Cmd+W (macOS only). Export as Text has none | each feature's `*Actions.cs` | 0.3–1.8 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
 | About window and unexpected-error dialog (Open Log Folder, Quit, Continue) | `Shell/Dialogs/` | 0.3 |
 | A plain yes-or-cancel dialog, with Cancel as the default button | `Shell/Dialogs/ConfirmWindow.axaml` | 1.5 |
@@ -42,11 +42,21 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | The app starts with an empty, untitled 80 × 25 ASCII-only document | `Hosting/AppServices.cs`, `NewDocumentSettings.Default` | 1.7 |
 | The window title is "art.asciiart - AskiiGraphiks Studio", or "Untitled - …" before the first save, with a `*` in front while there are unsaved changes | `Shell/WindowTitle.cs`, `WindowTitle*Format` strings | 1.7 |
 | With unsaved changes, New, Open, Open Sample Document and closing the window (also Quit) first ask "Do you want to save the changes to “name”?": Save (the default, Enter), Don't Save, Cancel (Esc). Same button order on every OS. New and Open ask before their own dialogs | `Documents/SaveChangesWindow.axaml`, `DocumentFiles` | 1.7 |
-| Save As offers two file types, "AskiiGraphiks document" (.asciiart) and "AskiiGraphiks document, compressed" (.asciiartz), with the document's own first. It suggests the current name (or "Untitled") and starts in the file's folder. A typed .asciiart or .asciiartz decides the variant; a name with no extension gets the chosen type's | `AvaloniaDocumentDialogs`, `DocumentFile.ForSavePath` | 1.7 |
+| Save As offers two file types, "AskiiGraphiks document" (.asciiart) and "AskiiGraphiks document, compressed" (.asciiartz), with the document's own first. It suggests the current name (or "Untitled") and starts in the file's folder. A typed .asciiart or .asciiartz decides the variant; a name with no extension gets the chosen type's. On a Mac the dialog itself adds the chosen type's extension to any name, so there the type has to be chosen in the dialog | `AvaloniaDocumentDialogs`, `DocumentFile.ForSavePath` | 1.7, 1.8 |
 | Save keeps the variant the file was opened in, even if its name says otherwise | `DocumentFiles` | 1.7 |
 | Open shows one file type for both extensions, plus All files | `AvaloniaDocumentDialogs` | 1.7 |
 | A file that can't be opened says why in one sentence: not a document, saved by a newer version (with its format number), damaged, or couldn't be read (with the system's reason). A failed save says the system's reason, and the changes stay unsaved | `OpenFailed*`, `SaveFailed*` strings | 1.7 |
 | A document whose font isn't available opens in JetBrains Mono, says so once, and the status bar shows "Font Name (not available)" | `DocumentFiles`, `CanvasViewModel.FontText` | 1.7 |
+
+### Output and macOS windows (ADRs 0022, 0023)
+
+| Choice | Where | Step |
+|---|---|---|
+| Copy as Text copies the visible layers as plain text: every row the canvas's full width, empty cells as spaces, this OS's line breaks between rows and none after the last | `Editing/EditActions.cs`, `TextExporter` | 1.8 |
+| Export as Text writes UTF-8 text with `\n` after every row, the last included. It suggests the document's name, starts in its folder, and adds `.txt` to a name without an extension. The document keeps its file, title and unsaved changes. No options yet (line breaks, trimming) | `DocumentFiles.ExportAsTextAsync` | 1.8 |
+| On a Mac, closing the window (its close button, or File → Close) closes the document, after asking about unsaved changes, and the app keeps running. A click on the Dock icon then opens a window with a new empty 80 × 25 ASCII-only document | `Shell/MainWindowLifetime.cs` | 1.8 |
+| On a Mac, the Dock icon's menu has New and Open. With no window open they open one first; cancelling their dialog leaves that window open with an empty document. With no window, Cmd+N and Cmd+O do nothing | `MenuLayout.DockMenu`, `MainWindowLifetime.RunInWindow` | 1.8 |
+| On a Mac, the close button shows a dot while there are unsaved changes, and the title keeps its `*` as well | `Shell/MacOSDocumentEdited.cs` | 1.8 |
 
 ### Canvas
 

@@ -13,8 +13,17 @@ internal interface IAppShell
     /// <summary>True once the main window is open, so dialogs have a window to belong to.</summary>
     bool CanShowDialogs { get; }
 
-    /// <summary>Asks the app to quit. Windows get the chance to cancel (unsaved changes, later).</summary>
+    /// <summary>Asks the app to quit. The window gets the chance to cancel (unsaved changes).</summary>
     void RequestShutdown();
+
+    /// <summary>
+    /// Closes the main window, which asks about unsaved changes first. On macOS the app keeps running
+    /// (ADR 0023); elsewhere closing the window quits it.
+    /// </summary>
+    void CloseMainWindow();
+
+    /// <summary>Puts <paramref name="text"/> on the clipboard. Does nothing when no window is open.</summary>
+    Task CopyTextAsync(string text);
 
     Task OpenFolderAsync(string folderPath);
 

@@ -58,6 +58,7 @@ public sealed class AppTests : IDisposable
         services.AddSingleton(_canvas.ViewModel);
         services.AddSingleton(new WindowTitle(_canvas.ActiveDocument));
         services.AddSingleton(_canvas.CreateDocumentFiles(dialogs, shell));
+        services.AddSingleton<IAppShell>(shell);
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ToolbarLayout.CreateDefault());

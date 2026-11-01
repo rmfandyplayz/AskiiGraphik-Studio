@@ -58,8 +58,20 @@ public sealed class ShellActionsTests
         Assert.False(Registry(includeDebugActions: false).Contains(ShellActionIds.ThrowTestException));
     }
 
-    private ActionRegistry Registry(bool includeDebugActions = false)
+    [Fact]
+    public void CloseWindow_ExistsOnlyOnMacOS_WithCommandW_AndClosesTheWindow()
     {
-        return new ActionRegistry([new ShellActions(_shell, _locations, includeDebugActions)]);
+        Assert.False(Registry(isMacOS: false).Contains(ShellActionIds.CloseWindow));
+
+        var closeWindow = Registry(isMacOS: true).Get(ShellActionIds.CloseWindow);
+        closeWindow.Command.Execute(null);
+
+        Assert.Equal(1, _shell.CloseMainWindowCount);
+        Assert.Equal([new ActionShortcut(Key.W, ShortcutModifiers.Command)], closeWindow.DefaultShortcuts);
+    }
+
+    private ActionRegistry Registry(bool includeDebugActions = false, bool isMacOS = false)
+    {
+        return new ActionRegistry([new ShellActions(_shell, _locations, includeDebugActions, isMacOS)]);
     }
 }

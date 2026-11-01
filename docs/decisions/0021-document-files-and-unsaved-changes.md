@@ -51,4 +51,7 @@ Step 1.7 adds Save, Save As and Open. ARCHITECTURE §13 sketches the format: a p
 - In the plain file, JSON escapes backslashes and quotes (`\\`, `\"`), so art that uses them looks shifted in a text editor. Export .txt (1.8) gives clean text.
 - Every format change bumps `CurrentVersion` and adds a migration. Files from a newer app are refused with a message, never guessed at.
 - A 4096 × 4096 canvas pauses briefly while it's turned into JSON on the UI thread.
-- macOS window behaviour, Copy as Text and Export .txt come in 1.8.
+- macOS window behaviour is in ADR 0023; Copy as Text and Export as Text are in ADR 0022.
+- On macOS the save dialog adds the chosen type's extension itself, so a name ending in the other extension gets both (`cat.asciiartz.asciiart`, saved plain). Choosing the type in the dialog works on every OS.
+
+Updated 2026-11-01: `DocumentJson.Parse` also checks every escaped string and property name before parsing (step 1.8). An escape that makes no sense, such as half of a surrogate pair, is `Damaged`; it used to surface as an unexpected exception, which the corruption test found on macOS. The atomic write is now `AtomicFile`, shared with Export as Text (ADR 0022). After a Quit, Save or Don't Save asks for shutdown again rather than closing only the window (ADR 0023).

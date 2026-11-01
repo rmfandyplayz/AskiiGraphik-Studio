@@ -7,18 +7,19 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Formats;
 using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Documents;
 
 /// <summary>
-/// Saving and opening the active document, and the unsaved-changes question that guards anything
-/// that would replace or close it (ADR 0021). Failures are explained to the user and logged;
-/// they never lose the document on screen.
+/// Saving, opening and exporting the active document, and the unsaved-changes question that guards
+/// anything that would replace or close it (ADRs 0021 and 0022). Failures are explained to the user
+/// and logged; they never lose the document on screen.
 /// </summary>
 internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocumentDialogs dialogs, IAppShell shell,
-    FontCatalog fonts, ILogger<DocumentFiles> logger)
+    FontCatalog fonts, TextExporter textExporter, ILogger<DocumentFiles> logger)
 {
     public bool HasUnsavedChanges => activeDocument.Session.History.HasUnsavedChanges;
 
@@ -99,15 +100,46 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
     /// <summary>Asks for a file and saves the document there. True when it was saved.</summary>
     public async Task<bool> SaveAsAsync()
     {
-        var current = activeDocument.File;
-        var suggestedName = Strings.UntitledDocumentName;
-        if (current is not null)
-            suggestedName = Path.GetFileNameWithoutExtension(current.Path);
-
-        if (await dialogs.PickFileToSaveAsync(suggestedName, current) is not { } file)
+        if (await dialogs.PickFileToSaveAsync(SuggestedFileName(), activeDocument.File) is not { } file)
             return false;
 
         return await SaveToAsync(file);
+    }
+
+    /// <summary>
+    /// Asks for a file and writes the document there as text. The document itself is unchanged: it
+    /// keeps its own file and any unsaved changes.
+    /// </summary>
+    public async Task ExportAsTextAsync()
+    {
+        var folder = Path.GetDirectoryName(activeDocument.File?.Path);
+        if (await dialogs.PickTextFileToExportAsync(SuggestedFileName(), folder) is not { } path)
+            return;
+
+        if (!Path.HasExtension(path))
+            path += textExporter.FileExtension;
+
+        // Read now, on the UI thread; only the writing happens in the background.
+        var text = textExporter.Export(activeDocument.Session.Document);
+        try
+        {
+            await AtomicFile.WriteAsync(path, text);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            LogCouldNotExport(exception, path);
+            await shell.ShowMessageAsync(Strings.ExportFailedTitle,
+                Format(Strings.ExportFailedFormat, Path.GetFileName(path), exception.Message));
+        }
+    }
+
+    // The document's own name, so Save As and Export as Text suggest the name it already has.
+    private string SuggestedFileName()
+    {
+        if (activeDocument.File is { } file)
+            return Path.GetFileNameWithoutExtension(file.Path);
+
+        return Strings.UntitledDocumentName;
     }
 
     private async Task<bool> SaveToAsync(DocumentFile file)
@@ -158,4 +190,7 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not save {FilePath}")]
     private partial void LogCouldNotSave(Exception exception, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not export {FilePath}")]
+    private partial void LogCouldNotExport(Exception exception, string filePath);
 }

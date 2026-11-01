@@ -10,6 +10,7 @@ using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Formats;
 using AskiiArt.Core.Tools;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -31,7 +32,8 @@ public sealed class MainWindowTests : IDisposable
 
     public MainWindowTests()
     {
-        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs));
+        // With the macOS-only actions too, so the macOS menu layout can be built as well.
+        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true));
     }
 
     public void Dispose()
@@ -56,6 +58,21 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.True(window.IsVisible);
         Assert.Equal(new WindowTitle(_canvas.ActiveDocument).Text, window.Title);
+    }
+
+    [AvaloniaFact]
+    public void ClosedWindow_StopsFollowingTheTitle()
+    {
+        // On macOS later windows follow the same title, so a closed one mustn't keep listening.
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        var titleWhenClosed = window.Title;
+        window.Close();
+
+        var file = new DocumentFile(Path.Combine("folder", "art.asciiart"), DocumentFileVariant.Plain);
+        _canvas.ActiveDocument.SetFile(file);
+
+        Assert.Equal(titleWhenClosed, window.Title);
     }
 
     [AvaloniaFact]
@@ -301,5 +318,5 @@ public sealed class MainWindowTests : IDisposable
 
     private MainWindowBuilder CreateBuilder(MenuLayout layout) =>
         new(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
-            _canvas.CreateDocumentFiles(_dialogs, _shell));
+            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell);
 }

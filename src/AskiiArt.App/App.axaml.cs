@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.App.Actions;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Menus;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -53,8 +56,36 @@ internal sealed partial class App : Application
         var errors = services.GetRequiredService<UnexpectedErrorHandler>();
         Dispatcher.UIThread.UnhandledException += (_, e) => e.Handled = errors.HandleUiThreadException(e.Exception);
 
-        var windowBuilder = services.GetRequiredService<MainWindowBuilder>();
-        desktop.MainWindow = windowBuilder.Build(PlatformCommandModifiers());
+        // Mac apps keep running with no window open (ADR 0023).
+        var keepsRunningWithoutWindow = OperatingSystem.IsMacOS();
+        if (keepsRunningWithoutWindow)
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        var windows = new MainWindowLifetime(services.GetRequiredService<MainWindowBuilder>(),
+            services.GetRequiredService<ActiveDocument>(), PlatformCommandModifiers(), keepsRunningWithoutWindow);
+        windows.WindowChanged += (_, _) => desktop.MainWindow = windows.Window;
+        if (keepsRunningWithoutWindow)
+            OpenWindowsFromTheDock(services, windows);
+
+        windows.ShowWindow();
+    }
+
+    // Clicking the Dock icon opens a window when none is open, and the Dock menu's items open one
+    // first; the menu bar can't offer them with no window (ADR 0023).
+    private void OpenWindowsFromTheDock(IServiceProvider services, MainWindowLifetime windows)
+    {
+        if (this.TryGetFeature<IActivatableLifetime>() is { } activatable)
+        {
+            activatable.Activated += (_, e) =>
+            {
+                if (e.Kind == ActivationKind.Reopen)
+                    windows.ShowWindow();
+            };
+        }
+
+        var layout = services.GetRequiredService<MenuLayout>();
+        var menus = new NativeMenuBuilder(services.GetRequiredService<ActionRegistry>(), PlatformCommandModifiers());
+        NativeDock.SetMenu(this, menus.BuildDockMenu(layout.DockMenu, windows.RunInWindow));
     }
 
     private void SetApplicationMenu(IServiceProvider services)

@@ -88,7 +88,7 @@ public static class DocumentFileFormat
 
         var json = DocumentJson.Write(document);
         var file = await Task.Run(() => EncodeJson(json, variant), cancellationToken).ConfigureAwait(false);
-        await WriteAtomicallyAsync(path, file, cancellationToken).ConfigureAwait(false);
+        await AtomicFile.WriteAsync(path, file, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Opens the document file at <paramref name="path"/>.</summary>
@@ -240,47 +240,6 @@ public static class DocumentFileFormat
         catch (Exception exception) when (exception is InvalidDataException or InvalidOperationException)
         {
             throw new DocumentFileException("The compressed content is broken.", exception);
-        }
-    }
-
-    private static async Task WriteAtomicallyAsync(string path, byte[] file, CancellationToken cancellationToken)
-    {
-        var fullPath = Path.GetFullPath(path);
-        var folder = Path.GetDirectoryName(fullPath)
-                     ?? throw new ArgumentException("The path has no folder.", nameof(path));
-
-        // In the same folder, so replacing the old file is a rename on the same disk.
-        var temporaryPath = Path.Combine(folder, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write,
-                             FileShare.None, bufferSize: 4096, FileOptions.Asynchronous))
-            {
-                await stream.WriteAsync(file, cancellationToken).ConfigureAwait(false);
-                stream.Flush(flushToDisk: true);
-            }
-
-            File.Move(temporaryPath, fullPath, overwrite: true);
-        }
-        catch
-        {
-            TryDelete(temporaryPath);
-            throw;
-        }
-    }
-
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            File.Delete(path);
-        }
-        catch (IOException)
-        {
-            // Left behind; it's hidden on macOS and Linux and harmless everywhere.
-        }
-        catch (UnauthorizedAccessException)
-        {
         }
     }
 }

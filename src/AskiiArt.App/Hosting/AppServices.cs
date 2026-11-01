@@ -11,7 +11,9 @@ using AskiiArt.App.Hosting.Logging;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
+using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
@@ -39,7 +41,8 @@ internal static class AppServices
         services.AddSingleton<IActionProvider>(provider => new ShellActions(
             provider.GetRequiredService<IAppShell>(),
             locations,
-            includeDebugActions: BuildInfo.IsDebugBuild));
+            includeDebugActions: BuildInfo.IsDebugBuild,
+            isMacOS: OperatingSystem.IsMacOS()));
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
@@ -60,6 +63,11 @@ internal static class AppServices
         services.AddSingleton<IDocumentDialogs, AvaloniaDocumentDialogs>();
         services.AddSingleton<DocumentFiles>();
         services.AddSingleton<WindowTitle>();
+
+        // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). Text
+        // flattens with the same policy as the canvas.
+        services.AddSingleton(new TextExporter(CompositingPolicy.Default));
+        services.AddSingleton<IExporter>(provider => provider.GetRequiredService<TextExporter>());
 
         // Fonts and glyphs.
         services.AddSingleton<FontCatalog>();

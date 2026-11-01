@@ -27,3 +27,4 @@ Until step 1.6, one `EditingSession` (a document and its history) lived for the 
 - Anything new that keeps a reference to a session or history must follow `SessionChanged`.
 
 Updated 2026-11-01: `ActiveDocument` also holds the file the document is saved in, New asks about unsaved changes, and Open, Save and Save As join the actions (step 1.7, ADR 0021).
+Updated 2026-11-01: every modal dialog goes through `ModalDialog.ShowAsync`, which returns only once Avalonia has finished closing it (step 1.8). Avalonia finishes `ShowDialog` inside the dialog's `Closed` event, before it re-enables the owner, and going straight from there to a file picker (Save in the unsaved-changes question, then Open) stopped the next picker from appearing on Windows. Export as Text joins the actions (ADR 0022).

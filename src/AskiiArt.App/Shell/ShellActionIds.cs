@@ -7,6 +7,9 @@ namespace AskiiArt.App.Shell;
 internal static class ShellActionIds
 {
     public const string Quit = "askiiart.quit";
+
+    /// <summary>macOS only, where closing the window doesn't quit the app.</summary>
+    public const string CloseWindow = "askiiart.closeWindow";
     public const string OpenLogFolder = "askiiart.openLogFolder";
     public const string About = "askiiart.about";
 
