@@ -8,7 +8,6 @@ using AskiiArt.App.Editing;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Hosting.Logging;
-using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
@@ -43,16 +42,24 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, EditActions>();
-        services.AddSingleton<IActionProvider, DocumentActions>();
+        services.AddSingleton<IActionProvider>(provider => new DocumentActions(
+            provider.GetRequiredService<ActiveDocument>(),
+            provider.GetRequiredService<DocumentFiles>(),
+            provider.GetRequiredService<IDocumentDialogs>(),
+            provider.GetRequiredService<IAppShell>(),
+            includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<ActionRegistry>();
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton<ToolRegistry>();
 
-        // The document being edited. The app starts with a temporary sample until Open exists (step 1.7).
-        services.AddSingleton(_ => new ActiveDocument(new EditingSession(SampleDocument.Create(Strings.DefaultLayerName))));
+        // The document being edited. The app starts with an empty one, as New would make it.
+        services.AddSingleton(_ =>
+            new ActiveDocument(new EditingSession(NewDocumentSettings.Default.CreateDocument())));
         services.AddSingleton<IDocumentDialogs, AvaloniaDocumentDialogs>();
+        services.AddSingleton<DocumentFiles>();
+        services.AddSingleton<WindowTitle>();
 
         // Fonts and glyphs.
         services.AddSingleton<FontCatalog>();

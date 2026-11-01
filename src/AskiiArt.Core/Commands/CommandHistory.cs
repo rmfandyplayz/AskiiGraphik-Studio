@@ -21,6 +21,9 @@ public sealed class CommandHistory
     private int? _savedPosition = 0;
     private Entry? _mergeTarget;
 
+    // How many of the oldest steps were dropped to stay within the memory budget.
+    private long _droppedCount;
+
     /// <summary>Creates an empty history. The document starts out with no unsaved changes.</summary>
     /// <param name="document">The document the commands change.</param>
     /// <param name="memoryBudgetInBytes">
@@ -133,6 +136,40 @@ public sealed class CommandHistory
         RaiseStateChanged();
     }
 
+    /// <summary>
+    /// Notes the current state as the one about to be saved. Read the document right after this,
+    /// then pass the result to <see cref="MarkSaved(SavePoint)"/> once the file is written.
+    /// </summary>
+    public SavePoint BeginSave()
+    {
+        // Typing during the save must make a new step, not change the one being saved.
+        _mergeTarget = null;
+
+        return new SavePoint(_droppedCount + _position, _position > 0 ? _entries[_position - 1] : null);
+    }
+
+    /// <summary>
+    /// Records that the state from <paramref name="savePoint"/> was saved. Edits made since then
+    /// still count as unsaved, and undoing them returns to the saved state. If that state can't
+    /// be reached any more (its step was undone and replaced, or dropped to save memory), the
+    /// document counts as unsaved until it's saved again.
+    /// </summary>
+    public void MarkSaved(SavePoint savePoint)
+    {
+        ArgumentNullException.ThrowIfNull(savePoint);
+
+        var position = savePoint.Position - _droppedCount;
+        var isReachable = position switch
+        {
+            0 => savePoint.LastStep is null,
+            > 0 when position <= _entries.Count => ReferenceEquals(_entries[(int)position - 1], savePoint.LastStep),
+            _ => false
+        };
+
+        _savedPosition = isReachable ? (int)position : null;
+        RaiseStateChanged();
+    }
+
     private bool TryMergeIntoLastEntry(IDocumentCommand command, CoalescingGroup? group)
     {
         if (group is null || _mergeTarget is null || _position == 0 || _entries[_position - 1] != _mergeTarget)
@@ -181,6 +218,7 @@ public sealed class CommandHistory
         _entries.RemoveRange(0, dropCount);
         MemoryInBytes = remainingMemory;
         _position -= dropCount;
+        _droppedCount += dropCount;
 
         // A saved state before the dropped steps can never be reached by undoing again.
         if (_savedPosition is { } savedPosition)

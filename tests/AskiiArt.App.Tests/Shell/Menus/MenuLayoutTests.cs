@@ -15,6 +15,9 @@ namespace AskiiArt.App.Tests.Shell.Menus;
 
 public sealed class MenuLayoutTests
 {
+    private static string[] FileActionIds { get; } =
+        [DocumentActionIds.New, DocumentActionIds.Open, DocumentActionIds.Save, DocumentActionIds.SaveAs];
+
     [Fact]
     public void WindowsAndLinux_HaveFile_Edit_Document_View_AndHelpWithOpenLogFolderAndAbout()
     {
@@ -27,7 +30,7 @@ public sealed class MenuLayoutTests
             file =>
             {
                 Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
-                Assert.Equal([DocumentActionIds.New, ShellActionIds.Quit], ActionIdsIn(file.Entries));
+                Assert.Equal([.. FileActionIds, ShellActionIds.Quit], ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
             AssertIsDocumentMenu,
@@ -40,7 +43,7 @@ public sealed class MenuLayoutTests
     }
 
     [Fact]
-    public void MacOS_PutsAboutInTheApplicationMenu_AndOnlyNewInTheFileMenu()
+    public void MacOS_PutsAboutInTheApplicationMenu_AndNoQuitInTheFileMenu()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false);
 
@@ -54,7 +57,7 @@ public sealed class MenuLayoutTests
             file =>
             {
                 Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
-                Assert.Equal([DocumentActionIds.New], ActionIdsIn(file.Entries));
+                Assert.Equal(FileActionIds, ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
             AssertIsDocumentMenu,
@@ -75,7 +78,8 @@ public sealed class MenuLayoutTests
         var withoutDebug = MenuLayout.CreateDefault(isMacOS, includeDebugMenu: false);
 
         Assert.Equal(nameof(Strings.MenuDebug), withDebug.WindowMenus[^1].LabelKey);
-        Assert.Equal([ShellActionIds.ThrowTestException], ActionIdsIn(withDebug.WindowMenus[^1].Entries));
+        Assert.Equal([DocumentActionIds.OpenSampleDocument, ShellActionIds.ThrowTestException],
+            ActionIdsIn(withDebug.WindowMenus[^1].Entries));
         Assert.DoesNotContain(withoutDebug.WindowMenus, menu => menu.LabelKey == nameof(Strings.MenuDebug));
     }
 

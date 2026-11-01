@@ -5,6 +5,7 @@ using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Documents;
 using AskiiArt.Imaging.Fonts;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Fonts;
 
@@ -62,7 +63,7 @@ public sealed class FontPickerViewModelTests : IDisposable
     {
         using var catalog = FontCatalogTests.CreateCatalog();
         var picker = new FontPickerViewModel(catalog, FontReference.Default,
-            () => Task.FromResult<string?>(FontCatalogTests.FiraCodeFile));
+            () => Task.FromResult<string?>(FontCatalogTests.FiraCodeFile), NullLogger.Instance);
 
         await picker.LoadFromFileCommand.ExecuteAsync(null);
 
@@ -106,5 +107,5 @@ public sealed class FontPickerViewModelTests : IDisposable
     public void Dispose() => _catalog.Dispose();
 
     private FontPickerViewModel CreatePicker(FontReference current, string? pickedFile = null) =>
-        new(_catalog, current, () => Task.FromResult(pickedFile));
+        new(_catalog, current, () => Task.FromResult(pickedFile), NullLogger.Instance);
 }

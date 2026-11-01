@@ -91,6 +91,17 @@ internal sealed class FontCatalog : IDisposable
         return Load(font) ?? DefaultFont;
     }
 
+    /// <summary>
+    /// Whether <paramref name="font"/> can be drawn with: bundled, loaded from a file, or
+    /// installed. Documents whose font isn't available are drawn with <see cref="DefaultFont"/>.
+    /// </summary>
+    public bool IsAvailable(FontReference font)
+    {
+        ArgumentNullException.ThrowIfNull(font);
+
+        return Load(font) is not null;
+    }
+
     /// <summary>Whether <paramref name="font"/> is monospaced; true for a font that isn't available.</summary>
     public bool IsMonospace(FontReference font)
     {
@@ -113,7 +124,7 @@ internal sealed class FontCatalog : IDisposable
     /// Returns the font to use and whether the file's own font was added; it isn't when a font
     /// with that family name was already available.
     /// </summary>
-    /// <exception cref="FontLoadException">The file isn't a font that can be loaded.</exception>
+    /// <exception cref="FontLoadException">The file isn't a font that can be loaded, or it's damaged.</exception>
     /// <exception cref="IOException">The file can't be read.</exception>
     public (FontReference Font, bool WasAdded) AddFile(string path)
     {

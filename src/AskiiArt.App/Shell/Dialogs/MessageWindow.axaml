@@ -1,0 +1,30 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder message dialog with an OK button, for things like a file that can't be opened (step 1.7). -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:AskiiArt.App.Shell.Dialogs"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Shell.Dialogs.MessageWindow"
+        x:DataType="dialogs:MessageViewModel"
+        Title="{Binding Title}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="{StaticResource AppDialogButtonsMargin}">
+      <Button x:Name="OkButton"
+              Content="{x:Static res:Strings.DialogOk}"
+              IsDefault="True"
+              IsCancel="True"
+              Click="OnOkClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>

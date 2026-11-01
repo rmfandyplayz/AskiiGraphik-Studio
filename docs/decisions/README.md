@@ -27,3 +27,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0018](0018-wheel-gestures-and-scroll-momentum.md) | Wheel gestures and scroll momentum | Accepted |
 | [0019](0019-document-fonts-and-the-font-catalog.md) | Document fonts and the font catalog | Accepted |
 | [0020](0020-active-document-and-document-actions.md) | The active document and the document actions | Accepted |
+| [0021](0021-document-files-and-unsaved-changes.md) | Document files and unsaved changes | Accepted |

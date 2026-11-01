@@ -34,3 +34,4 @@ Updated 2026-10-30: the application menu is now set in `App.Initialize`. It used
 Updated 2026-10-31: toggle actions have an `ActionCheckedState` (step 1.4), and there's a View menu on every OS.
 Updated 2026-10-31: on macOS, a menu action's second and later shortcuts get window key bindings (step 1.5); before, only the first worked. There's an Edit menu.
 Updated 2026-11-01: a placeholder toolbar binds to actions the same way (ADR 0020). There's a Document menu, and macOS has a File menu with New.
+Updated 2026-11-01: File has Open (Cmd+O), Save (Cmd+S) and Save As (Cmd+Shift+S), also on the toolbar, and Debug has Open Sample Document (step 1.7).

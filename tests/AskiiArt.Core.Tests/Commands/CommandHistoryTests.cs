@@ -277,4 +277,75 @@ public sealed class CommandHistoryTests
         Assert.True(history.MemoryInBytes > oneCell);
         Assert.Equal(TestCommands.Paint(document, layerId, "xy").EstimatedMemoryInBytes, history.MemoryInBytes);
     }
+
+    [Fact]
+    public void MarkSavedWithASavePoint_KeepsEditsMadeDuringTheSaveUnsaved()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layerId = document.ActiveFrame.Layers[0].Id;
+        var history = new CommandHistory(document);
+        var group = new CoalescingGroup();
+        history.Execute(TestCommands.Paint(document, layerId, "a"), group);
+
+        var savePoint = history.BeginSave();
+        history.Execute(TestCommands.Paint(document, layerId, "~b"), group);
+        history.MarkSaved(savePoint);
+
+        Assert.True(history.HasUnsavedChanges);
+
+        // The edit was a step of its own rather than merged into the saved one, so undoing it
+        // returns to exactly what was saved.
+        history.Undo();
+        Assert.False(history.HasUnsavedChanges);
+        Assert.Equal(["a··"], TestCells.Read(document.ActiveFrame.Layers[0]));
+    }
+
+    [Fact]
+    public void MarkSavedWithASavePoint_WithoutEditsInBetween_LeavesNothingUnsaved()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, document.ActiveFrame.Layers[0].Id, "a"));
+
+        history.MarkSaved(history.BeginSave());
+
+        Assert.False(history.HasUnsavedChanges);
+    }
+
+    [Fact]
+    public void MarkSavedWithASavePoint_WhoseStepWasReplaced_LeavesTheDocumentUnsaved()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layerId = document.ActiveFrame.Layers[0].Id;
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, layerId, "a"));
+
+        var savePoint = history.BeginSave();
+        history.Undo();
+        history.Execute(TestCommands.Paint(document, layerId, "b"));
+        history.MarkSaved(savePoint);
+
+        Assert.True(history.HasUnsavedChanges);
+        history.Undo();
+        Assert.True(history.HasUnsavedChanges);
+    }
+
+    [Fact]
+    public void MarkSavedWithASavePoint_FollowsStepsDroppedToSaveMemory()
+    {
+        var document = TestCells.CreateDocument(10, 1);
+        var layerId = document.ActiveFrame.Layers[0].Id;
+        var stepSize = TestCommands.Paint(document, layerId, "a").EstimatedMemoryInBytes;
+        var history = new CommandHistory(document, memoryBudgetInBytes: stepSize * 2);
+        history.Execute(TestCommands.Paint(document, layerId, "a"));
+        history.Execute(TestCommands.Paint(document, layerId, "~b"));
+
+        var savePoint = history.BeginSave();
+        history.Execute(TestCommands.Paint(document, layerId, "~~c"));
+        history.MarkSaved(savePoint);
+
+        Assert.True(history.HasUnsavedChanges);
+        history.Undo();
+        Assert.False(history.HasUnsavedChanges);
+    }
 }

@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 <!-- Placeholder width and height boxes, shared by the New and Resize Canvas dialogs (step 1.6),
-     with the warning for sizes above the soft limit. -->
+     with the warning for sizes above the soft limit. A number outside the allowed sizes is
+     clamped to the nearest one. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:documents="using:AskiiArt.App.Documents"
@@ -22,6 +23,7 @@
                      Increment="1"
                      FormatString="0"
                      ParsingNumberStyle="Integer"
+                     ClipValueToMinMax="True"
                      Width="{StaticResource AppNumberBoxWidth}" />
       <TextBlock Grid.Column="2" Text="{x:Static res:Strings.CanvasSizeUnit}" VerticalAlignment="Center" />
 
@@ -35,6 +37,7 @@
                      Increment="1"
                      FormatString="0"
                      ParsingNumberStyle="Integer"
+                     ClipValueToMinMax="True"
                      Width="{StaticResource AppNumberBoxWidth}" />
       <TextBlock Grid.Row="1" Grid.Column="2" Text="{x:Static res:Strings.CanvasSizeUnit}" VerticalAlignment="Center" />
     </Grid>

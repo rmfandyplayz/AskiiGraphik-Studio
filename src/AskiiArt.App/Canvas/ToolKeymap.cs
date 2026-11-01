@@ -10,7 +10,9 @@ namespace AskiiArt.App.Canvas;
 /// Which keys the canvas passes to the active tool, and as which <see cref="ToolKey"/>. Each
 /// platform follows its own conventions (ADR 0017): on a Mac, Option+arrow jumps and Cmd+arrow
 /// goes to the ends, as in every Mac text field. A key matches only with exactly its modifiers,
-/// so Shift+arrow stays free for extending a selection (M4).
+/// so Shift+arrow stays free for extending a selection (M4). Windows and Linux use no Alt+arrow
+/// keys: letting go of Alt on its own opens the menu bar there, so someone who pressed Alt for a
+/// jump and changed their mind would find the next letter they type opening a menu.
 /// </summary>
 /// <remarks>The keys become rebindable with the shortcut settings (M8).</remarks>
 internal sealed class ToolKeymap
@@ -40,9 +42,10 @@ internal sealed class ToolKeymap
         keymap.Bind(Key.Enter, ToolModifiers.None, ToolKey.Enter);
         keymap.Bind(Key.Escape, ToolModifiers.None, ToolKey.Escape);
 
-        // Command is Ctrl on Windows and Linux and Cmd on macOS; Alt is Option on macOS.
+        // Command is Ctrl on Windows and Linux and Cmd on macOS; Alt is Option on macOS. A long
+        // jump adds Cmd to the jump's keys on a Mac, and Shift elsewhere.
         var jump = isMacOS ? ToolModifiers.Alt : ToolModifiers.Command;
-        var longJump = isMacOS ? ToolModifiers.Command | ToolModifiers.Alt : ToolModifiers.Alt;
+        var longJump = jump | (isMacOS ? ToolModifiers.Command : ToolModifiers.Shift);
         foreach (var arrow in _arrows)
         {
             keymap.Bind(arrow.Key, ToolModifiers.None, arrow.One);

@@ -17,12 +17,14 @@ public static class FontLoader
         using var data = SKData.Create(stream);
         var typeface = SKTypeface.FromData(data)
                        ?? throw new FontLoadException($"The bundled font '{font.FamilyName}' could not be read.");
-        return new LoadedFont(typeface, FontOrigin.Bundled);
+        return CreateUsable(typeface, FontOrigin.Bundled, $"The bundled font '{font.FamilyName}'");
     }
 
     /// <summary>Loads the first font in a TTF, OTF or font collection file.</summary>
     /// <exception cref="FileNotFoundException">The file doesn't exist.</exception>
-    /// <exception cref="FontLoadException">The file isn't a font Skia can read.</exception>
+    /// <exception cref="FontLoadException">
+    /// The file isn't a font Skia can read, or it's damaged in a way that would break drawing.
+    /// </exception>
     public static LoadedFont LoadFromFile(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -33,12 +35,12 @@ public static class FontLoader
                          ?? throw new FontLoadException($"The font file '{path}' could not be read.");
         var typeface = SKTypeface.FromData(data)
                        ?? throw new FontLoadException($"The file '{path}' is not a font that can be loaded.");
-        return new LoadedFont(typeface, FontOrigin.File);
+        return CreateUsable(typeface, FontOrigin.File, $"The font in '{path}'");
     }
 
     /// <summary>
     /// Loads the regular style of an installed font family, or returns null when no installed
-    /// family has that name.
+    /// family has that name or its file is damaged.
     /// </summary>
     public static LoadedFont? LoadSystem(string familyName)
     {
@@ -48,11 +50,18 @@ public static class FontLoader
         if (typeface is null)
             return null;
 
-        if (string.Equals(typeface.FamilyName, familyName, StringComparison.OrdinalIgnoreCase))
-            return new LoadedFont(typeface, FontOrigin.System);
-
         // Some platforms substitute a different family for an unknown name; that's not a match.
-        typeface.Dispose();
+        if (!string.Equals(typeface.FamilyName, familyName, StringComparison.OrdinalIgnoreCase))
+        {
+            typeface.Dispose();
+            return null;
+        }
+
+        var font = new LoadedFont(typeface, FontOrigin.System);
+        if (FindProblem(font) is null)
+            return font;
+
+        font.Dispose();
         return null;
     }
 
@@ -68,4 +77,34 @@ public static class FontLoader
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)
     ];
+
+    /// <summary>
+    /// Why <paramref name="font"/> can't be drawn with, or null when it can. Skia accepts some
+    /// damaged files, so this catches the damage that would break the app later: no name to
+    /// store in a document, no glyphs, or a cell size that's zero, negative or enormous (which
+    /// would make cells vanish or need glyph atlas pages too big to create).
+    /// </summary>
+    internal static string? FindProblem(LoadedFont font)
+    {
+        if (string.IsNullOrWhiteSpace(font.FamilyName))
+            return "it has no family name";
+
+        if (font.Typeface.GlyphCount <= 0)
+            return "it has no glyphs";
+
+        if (!CellMetrics.HasUsableSize(font))
+            return "its cell size is broken";
+
+        return null;
+    }
+
+    private static LoadedFont CreateUsable(SKTypeface typeface, FontOrigin origin, string description)
+    {
+        var font = new LoadedFont(typeface, origin);
+        if (FindProblem(font) is not { } problem)
+            return font;
+
+        font.Dispose();
+        throw new FontLoadException($"{description} can't be used: {problem}.");
+    }
 }

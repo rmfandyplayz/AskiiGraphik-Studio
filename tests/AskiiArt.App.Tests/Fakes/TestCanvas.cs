@@ -5,12 +5,14 @@ using System.Text;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
+using AskiiArt.App.Shell;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Fakes;
 
@@ -43,6 +45,10 @@ internal sealed class TestCanvas : IDisposable
     public GlyphAtlasCache Atlases { get; }
 
     public CanvasViewModel ViewModel { get; }
+
+    /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
+    public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>
+        new(ActiveDocument, dialogs, shell, Fonts, NullLogger<DocumentFiles>.Instance);
 
     public void Dispose()
     {

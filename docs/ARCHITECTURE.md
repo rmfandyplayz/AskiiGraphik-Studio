@@ -212,6 +212,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **User fonts:** any TTF or OTF file the user picks, or any installed system font. Fonts loaded from a file are remembered until the app closes, until the user font list is stored in settings (§15, ADR 0019).
   - **Cell size comes from font metrics:** the advance width of a reference glyph (`0`) × the line height (ascent + descent + line gap), read from the font file so it's the same on every OS (ADR 0013). It is never hardcoded.
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
+  - **Damaged files:** a file that isn't a readable font, or whose name, glyphs or cell size are broken, is rejected with a message and never crashes the app (ADR 0019).
   - **Missing glyphs:** drawn with an installed font that has them, or as a placeholder box if none does; a fallback glyph too big for the cell is shrunk to fit. Either way the cell is flagged as an error (ADR 0013); how the flag looks is still open (§23). It must never crash.
 - **Too-wide glyphs:** a glyph from the document's font that reaches well past its cell (like `↔` in some fonts) is squeezed sideways to fit; box-drawing and block characters are clipped instead, so they still join their neighbours (ADR 0014).
 - **Ligatures can't happen,** because each cell is rasterized as a single glyph and never shaped as a run of text.
@@ -231,14 +232,14 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 
 ## 13. File format (`.asciiart`, tentative)
 
-There is one file extension. It may change to match the final product name, so keep it in a single constant.
+There are two file extensions: `.asciiart` for the plain variant and `.asciiartz` for the compressed one (like `.svg` and `.svgz`). They may change to match the final product name, so keep them in constants.
 
 ```
 plain:       "ASKIIART <format-version>\n" followed by UTF-8 JSON
 compressed:  binary magic bytes + format version + Brotli-compressed UTF-8 JSON (the same JSON)
 ```
 
-- The loader **sniffs** the header, so both variants open the same way. The save dialog offers "compressed" as an option.
+- The loader **sniffs** the header, so both variants open the same way, whatever the file is called. The save dialog's file types choose the variant (decided in 1.7).
 - **The plain variant should be readable in a text editor.** Store each layer's glyphs as an array of row strings so the art is visible in the file, and store occupancy separately (for example as a run-length-encoded mask). Reserved fields are **left out when they hold default values**.
 - **Every file has a format version,** and every version bump comes with a migration so old files keep opening. If a file's version is newer than the app understands, refuse to open it with a clear message rather than guessing.
 - **Saves are atomic:** write to a temp file in the same directory, then replace the original. A half-written file is never left behind.

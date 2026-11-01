@@ -18,6 +18,8 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
     public static ToolbarLayout CreateDefault() => new(
     [
         new ActionMenuEntry(DocumentActionIds.New),
+        new ActionMenuEntry(DocumentActionIds.Open),
+        new ActionMenuEntry(DocumentActionIds.Save),
         new SeparatorMenuEntry(),
         new ActionMenuEntry(EditActionIds.Undo),
         new ActionMenuEntry(EditActionIds.Redo),

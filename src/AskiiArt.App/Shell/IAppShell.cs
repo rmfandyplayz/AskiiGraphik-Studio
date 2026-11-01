@@ -27,6 +27,9 @@ internal interface IAppShell
     /// false when they cancel or no window is open to ask from.
     /// </summary>
     Task<bool> ConfirmAsync(string title, string message, string confirmLabel);
+
+    /// <summary>Tells the user something, with an OK button. Does nothing when no window is open.</summary>
+    Task ShowMessageAsync(string title, string message);
 }
 
 /// <summary>What the user chose in the unexpected-error dialog.</summary>

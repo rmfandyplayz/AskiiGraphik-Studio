@@ -77,7 +77,7 @@ internal sealed record MenuLayout(
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
             // the Quit item there (with Cmd+Q), so the Quit action isn't listed again.
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
-            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [new ActionMenuEntry(DocumentActionIds.New)]));
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [.. FileEntries()]));
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
@@ -88,7 +88,7 @@ internal sealed record MenuLayout(
             applicationMenu = [];
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile),
             [
-                new ActionMenuEntry(DocumentActionIds.New),
+                .. FileEntries(),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(ShellActionIds.Quit)
             ]));
@@ -104,10 +104,26 @@ internal sealed record MenuLayout(
         }
 
         if (includeDebugMenu)
-            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuDebug), [new ActionMenuEntry(ShellActionIds.ThrowTestException)]));
+        {
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuDebug),
+            [
+                new ActionMenuEntry(DocumentActionIds.OpenSampleDocument),
+                new ActionMenuEntry(ShellActionIds.ThrowTestException)
+            ]));
+        }
 
         return new MenuLayout(applicationMenu, windowMenus, IsSystemMenuBar: isMacOS);
     }
+
+    // The File menu's own items; on Windows and Linux, Quit follows them.
+    private static IEnumerable<MenuEntry> FileEntries() =>
+    [
+        new ActionMenuEntry(DocumentActionIds.New),
+        new ActionMenuEntry(DocumentActionIds.Open),
+        new SeparatorMenuEntry(),
+        new ActionMenuEntry(DocumentActionIds.Save),
+        new ActionMenuEntry(DocumentActionIds.SaveAs)
+    ];
 
     /// <summary>Every action id that appears in any menu.</summary>
     public IEnumerable<string> ActionIds()

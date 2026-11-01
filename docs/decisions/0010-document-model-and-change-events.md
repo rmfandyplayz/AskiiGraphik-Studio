@@ -34,3 +34,4 @@ ARCHITECTURE §5 describes the document (frames, layers, cells, occupancy, compo
 
 Updated 2026-10-30: the commands now exist (step 1.2, ADR 0012); wording updated to match.
 Updated 2026-10-31: the owner confirmed the "at least one layer" rule; ARCHITECTURE §4's folder example now says `Documents/`.
+Updated 2026-11-01: the format version lives in the file's header, not in the model; loading builds documents with `Document.CreateWithLayers` (step 1.7, ADR 0021).

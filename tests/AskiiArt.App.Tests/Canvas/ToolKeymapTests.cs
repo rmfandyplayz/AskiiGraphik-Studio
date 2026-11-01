@@ -15,7 +15,7 @@ public sealed class ToolKeymapTests
     [Theory]
     [InlineData(Key.Left, ToolModifiers.None, ToolKey.Left)]
     [InlineData(Key.Right, ToolModifiers.Command, ToolKey.JumpRight)]
-    [InlineData(Key.Up, ToolModifiers.Alt, ToolKey.LongJumpUp)]
+    [InlineData(Key.Up, ToolModifiers.Command | ToolModifiers.Shift, ToolKey.LongJumpUp)]
     [InlineData(Key.Home, ToolModifiers.None, ToolKey.Home)]
     [InlineData(Key.End, ToolModifiers.None, ToolKey.End)]
     [InlineData(Key.Home, ToolModifiers.Command, ToolKey.Top)]
@@ -44,11 +44,16 @@ public sealed class ToolKeymapTests
 
     [Theory]
     [InlineData(ToolModifiers.Shift)]
-    [InlineData(ToolModifiers.Command | ToolModifiers.Shift)]
     [InlineData(ToolModifiers.Command | ToolModifiers.Alt)]
     public void OtherModifiers_DontMatch_SoShiftStaysFreeForSelection(ToolModifiers modifiers)
     {
         Assert.Null(_windows.Find(Key.Left, modifiers));
+    }
+
+    [Fact]
+    public void WindowsAndLinux_AltArrow_DoesNothing_BecauseALoneAltOpensTheMenuBar()
+    {
+        Assert.Null(_windows.Find(Key.Left, ToolModifiers.Alt));
     }
 
     [Fact]

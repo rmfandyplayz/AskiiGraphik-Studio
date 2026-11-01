@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
+using AskiiArt.App.Shell.Dialogs;
 using AskiiArt.App.Tests.Fonts;
 using AskiiArt.Core.Documents;
 using Avalonia.Controls;
@@ -10,6 +11,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Documents;
 
@@ -51,23 +53,47 @@ public sealed class DocumentDialogWindowTests : IDisposable
     public void FontPicker_Ok_ReturnsTheSelectedFont()
     {
         using var catalog = FontCatalogTests.CreateCatalog();
-        var viewModel = new FontPickerViewModel(catalog, FontReference.Default, () => Task.FromResult<string?>(null));
+        var viewModel = new FontPickerViewModel(catalog, FontReference.Default, () => Task.FromResult<string?>(null),
+            NullLogger.Instance);
 
         var result = ShowAndClickOk<FontReference?>(new FontPickerWindow { DataContext = viewModel });
 
         Assert.Equal(FontReference.Default, result);
     }
 
+    [AvaloniaTheory]
+    [InlineData("SaveButton", 1)]
+    [InlineData("DontSaveButton", 2)]
+    [InlineData("CancelButton", 0)]
+    public void SaveChanges_EachButton_ReturnsItsChoice(string buttonName, int expectedChoice)
+    {
+        var dialog = new SaveChangesWindow { DataContext = new SaveChangesViewModel("art.asciiart") };
+
+        var result = ShowAndClick<SaveChangesChoice>(dialog, buttonName);
+
+        Assert.Equal((SaveChangesChoice)expectedChoice, result);
+    }
+
+    [AvaloniaFact]
+    public void Message_Ok_Closes()
+    {
+        var dialog = new MessageWindow { DataContext = new MessageViewModel("Title", "Message") };
+
+        ShowAndClick<object?>(dialog, "OkButton");
+    }
+
     public void Dispose() => _owner.Close();
 
-    private TResult ShowAndClickOk<TResult>(Window dialog)
+    private TResult ShowAndClickOk<TResult>(Window dialog) => ShowAndClick<TResult>(dialog, "OkButton");
+
+    private TResult ShowAndClick<TResult>(Window dialog, string buttonName)
     {
         var closed = dialog.ShowDialog<TResult>(_owner);
         Dispatcher.UIThread.RunJobs();
 
-        var ok = dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == "OkButton");
-        Assert.True(ok.IsEffectivelyEnabled);
-        ok.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        var button = dialog.GetVisualDescendants().OfType<Button>().Single(button => button.Name == buttonName);
+        Assert.True(button.IsEffectivelyEnabled);
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(closed.IsCompleted);

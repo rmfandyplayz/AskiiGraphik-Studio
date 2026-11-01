@@ -75,6 +75,30 @@ public sealed class Document
         return document;
     }
 
+    /// <summary>
+    /// Creates a document with one frame holding <paramref name="layers"/>, bottom first. Used to
+    /// load files; the layers must be the canvas's size, with different ids.
+    /// </summary>
+    internal static Document CreateWithLayers(CanvasSize canvasSize, CharacterSet characterSet, FontReference font,
+        IReadOnlyList<Layer> layers)
+    {
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(layers);
+        if (!Enum.IsDefined(characterSet))
+            throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null);
+
+        if (layers.Count == 0)
+            throw new ArgumentException("A document needs at least one layer.", nameof(layers));
+
+        var document = new Document(canvasSize, characterSet, font);
+        var frame = new Frame(document);
+        document._frames.Add(frame);
+        foreach (var layer in layers)
+            frame.InsertLayer(frame.Layers.Count, layer);
+
+        return document;
+    }
+
     /// <summary>Returns the layer with <paramref name="layerId"/>, in any frame.</summary>
     /// <exception cref="KeyNotFoundException">The document has no such layer.</exception>
     public Layer GetLayer(Guid layerId)

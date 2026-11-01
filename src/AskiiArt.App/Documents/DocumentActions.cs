@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.Core.Commands;
@@ -14,11 +15,11 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Documents;
 
 /// <summary>
-/// New, Resize Canvas, Font, and the temporary ASCII Only switch (ADR 0016), for the active
-/// document. Everything but New is an undoable command.
+/// New, Open, Save and Save As, Resize Canvas, Font, and the temporary ASCII Only switch
+/// (ADR 0016), for the active document. Resize Canvas, Font and ASCII Only are undoable commands.
 /// </summary>
-internal sealed class DocumentActions(ActiveDocument activeDocument, IDocumentDialogs dialogs, IAppShell shell)
-    : IActionProvider
+internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFiles files, IDocumentDialogs dialogs,
+    IAppShell shell, bool includeDebugActions) : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
@@ -37,6 +38,13 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, IDocumentDi
 
         yield return new AppAction(DocumentActionIds.New, nameof(Strings.ActionNew), new AsyncRelayCommand(NewAsync),
             [new ActionShortcut(Key.N, ShortcutModifiers.Command)]);
+        yield return new AppAction(DocumentActionIds.Open, nameof(Strings.ActionOpen),
+            new AsyncRelayCommand(files.OpenAsync), [new ActionShortcut(Key.O, ShortcutModifiers.Command)]);
+        yield return new AppAction(DocumentActionIds.Save, nameof(Strings.ActionSave),
+            new AsyncRelayCommand(files.SaveAsync), [new ActionShortcut(Key.S, ShortcutModifiers.Command)]);
+        yield return new AppAction(DocumentActionIds.SaveAs, nameof(Strings.ActionSaveAs),
+            new AsyncRelayCommand(files.SaveAsAsync),
+            [new ActionShortcut(Key.S, ShortcutModifiers.Command | ShortcutModifiers.Shift)]);
 
         yield return new AppAction(DocumentActionIds.ResizeCanvas, nameof(Strings.ActionResizeCanvas),
             new AsyncRelayCommand(ResizeCanvasAsync));
@@ -46,6 +54,13 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, IDocumentDi
 
         yield return new AppAction(DocumentActionIds.AsciiOnly, nameof(Strings.ActionAsciiOnly),
             new AsyncRelayCommand(() => ToggleAsciiOnlyAsync(asciiOnlyState)), checkedState: asciiOnlyState);
+
+        if (includeDebugActions)
+        {
+            yield return new AppAction(DocumentActionIds.OpenSampleDocument, nameof(Strings.ActionOpenSampleDocument),
+                new AsyncRelayCommand(() => files.ReplaceWithNewAsync(
+                    () => Task.FromResult<Document?>(SampleDocument.Create(Strings.DefaultLayerName)))));
+        }
 
         void OnDocumentChanged(object? sender, DocumentChangedEventArgs e)
         {
@@ -58,15 +73,9 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, IDocumentDi
 
     private Document Document => Session.Document;
 
-    // There's nothing to save yet, so New doesn't ask about unsaved changes (that comes in 1.7).
-    private async Task NewAsync()
-    {
-        if (await dialogs.ShowNewDocumentAsync() is not { } settings)
-            return;
-
-        var document = Document.Create(settings.Size, Strings.DefaultLayerName, settings.CharacterSet);
-        activeDocument.Replace(new EditingSession(document));
-    }
+    // Unsaved changes are dealt with before the New dialog, as in other editors.
+    private Task NewAsync() => files.ReplaceWithNewAsync(async () =>
+        (await dialogs.ShowNewDocumentAsync())?.CreateDocument());
 
     private async Task ResizeCanvasAsync()
     {

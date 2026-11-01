@@ -7,7 +7,15 @@ namespace AskiiArt.App.Documents;
 internal static class DocumentActionIds
 {
     public const string New = "askiiart.document.new";
+    public const string Open = "askiiart.document.open";
+    public const string Save = "askiiart.document.save";
+    public const string SaveAs = "askiiart.document.saveAs";
     public const string ResizeCanvas = "askiiart.document.resizeCanvas";
     public const string Font = "askiiart.document.font";
     public const string AsciiOnly = "askiiart.document.asciiOnly";
+
+    /// <summary>
+    /// Debug builds only: replaces the document with the busy 500 × 500 sample, for performance checks.
+    /// </summary>
+    public const string OpenSampleDocument = "askiiart.debug.openSampleDocument";
 }

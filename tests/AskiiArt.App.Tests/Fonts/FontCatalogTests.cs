@@ -16,6 +16,18 @@ public sealed class FontCatalogTests : IDisposable
         Path.Combine(AppContext.BaseDirectory, "TestFonts", "FiraCode-Regular.ttf");
 
     [Fact]
+    public void IsAvailable_IsTrueForBundledAndLoadedFonts_AndFalseForOthers()
+    {
+        using var catalog = CreateCatalog();
+
+        Assert.True(catalog.IsAvailable(FontReference.Default));
+        Assert.False(catalog.IsAvailable(new FontReference("Fira Code")));
+
+        catalog.AddFile(FiraCodeFile);
+        Assert.True(catalog.IsAvailable(new FontReference("fira code")));
+    }
+
+    [Fact]
     public void Choices_ListBundledFirst_ThenInstalled_WithoutRepeats()
     {
         using var catalog = new FontCatalog(BundledFonts.All, () => ["Courier New", "JetBrains Mono", "Arial"], _ => null);

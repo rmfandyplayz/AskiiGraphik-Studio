@@ -16,6 +16,15 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
 
     public FontReference? FontPickerAnswer { get; set; }
 
+    /// <summary>The answer to "save the changes?"; Cancel unless the test says otherwise.</summary>
+    public SaveChangesChoice SaveChangesAnswer { get; set; }
+
+    /// <summary>The path the open picker returns; null means the user cancelled.</summary>
+    public string? FileToOpen { get; set; }
+
+    /// <summary>The file the save picker returns; null means the user cancelled.</summary>
+    public DocumentFile? FileToSave { get; set; }
+
     public int NewDocumentShownCount { get; private set; }
 
     /// <summary>The canvas size each Resize Canvas dialog was opened with.</summary>
@@ -23,6 +32,14 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
 
     /// <summary>The current font each font picker was opened with.</summary>
     public List<FontReference> FontPickerShownWith { get; } = [];
+
+    /// <summary>The document name each "save the changes?" question named.</summary>
+    public List<string> SaveChangesAskedFor { get; } = [];
+
+    public int OpenPickerShownCount { get; private set; }
+
+    /// <summary>The suggested name and current file each save picker was opened with.</summary>
+    public List<(string SuggestedName, DocumentFile? Current)> SavePickerShownWith { get; } = [];
 
     public Task<NewDocumentSettings?> ShowNewDocumentAsync()
     {
@@ -40,5 +57,23 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
     {
         FontPickerShownWith.Add(currentFont);
         return Task.FromResult(FontPickerAnswer);
+    }
+
+    public Task<SaveChangesChoice> AskToSaveChangesAsync(string documentName)
+    {
+        SaveChangesAskedFor.Add(documentName);
+        return Task.FromResult(SaveChangesAnswer);
+    }
+
+    public Task<string?> PickFileToOpenAsync()
+    {
+        OpenPickerShownCount++;
+        return Task.FromResult(FileToOpen);
+    }
+
+    public Task<DocumentFile?> PickFileToSaveAsync(string suggestedName, DocumentFile? current)
+    {
+        SavePickerShownWith.Add((suggestedName, current));
+        return Task.FromResult(FileToSave);
     }
 }

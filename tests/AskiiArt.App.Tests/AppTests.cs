@@ -50,10 +50,14 @@ public sealed class AppTests : IDisposable
     private ServiceProvider ServicesWithMenuLayout(MenuLayout layout)
     {
         var services = new ServiceCollection();
-        foreach (var provider in TestActions.CreateProviders(_canvas, new FakeAppShell()))
+        var shell = new FakeAppShell();
+        var dialogs = new FakeDocumentDialogs();
+        foreach (var provider in TestActions.CreateProviders(_canvas, shell, dialogs))
             services.AddSingleton(provider);
 
         services.AddSingleton(_canvas.ViewModel);
+        services.AddSingleton(new WindowTitle(_canvas.ActiveDocument));
+        services.AddSingleton(_canvas.CreateDocumentFiles(dialogs, shell));
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ToolbarLayout.CreateDefault());

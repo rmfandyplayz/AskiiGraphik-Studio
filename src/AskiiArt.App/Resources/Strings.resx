@@ -303,4 +303,79 @@
   <data name="UnexpectedErrorQuit" xml:space="preserve">
     <value>Quit</value>
   </data>
+  <data name="ActionOpen" xml:space="preserve">
+    <value>_Open…</value>
+  </data>
+  <data name="ActionSave" xml:space="preserve">
+    <value>_Save</value>
+  </data>
+  <data name="ActionSaveAs" xml:space="preserve">
+    <value>Save _As…</value>
+  </data>
+  <data name="ActionOpenSampleDocument" xml:space="preserve">
+    <value>Open _Sample Document</value>
+  </data>
+  <data name="UntitledDocumentName" xml:space="preserve">
+    <value>Untitled</value>
+  </data>
+  <data name="WindowTitleFormat" xml:space="preserve">
+    <value>{0} - {1}</value>
+  </data>
+  <data name="WindowTitleUnsavedFormat" xml:space="preserve">
+    <value>*{0} - {1}</value>
+  </data>
+  <data name="DocumentFileTypeName" xml:space="preserve">
+    <value>AskiiGraphiks document</value>
+  </data>
+  <data name="CompressedDocumentFileTypeName" xml:space="preserve">
+    <value>AskiiGraphiks document, compressed</value>
+  </data>
+  <data name="OpenFilePickerTitle" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="SaveFilePickerTitle" xml:space="preserve">
+    <value>Save As</value>
+  </data>
+  <data name="SaveChangesTitle" xml:space="preserve">
+    <value>Unsaved changes</value>
+  </data>
+  <data name="SaveChangesMessageFormat" xml:space="preserve">
+    <value>Do you want to save the changes to “{0}”?</value>
+  </data>
+  <data name="SaveChangesSave" xml:space="preserve">
+    <value>_Save</value>
+  </data>
+  <data name="SaveChangesDontSave" xml:space="preserve">
+    <value>Do_n't Save</value>
+  </data>
+  <data name="OpenFailedTitle" xml:space="preserve">
+    <value>Can't open the file</value>
+  </data>
+  <data name="OpenFailedNotADocumentFormat" xml:space="preserve">
+    <value>“{0}” isn't a document this app can open.</value>
+  </data>
+  <data name="OpenFailedNewerVersionFormat" xml:space="preserve">
+    <value>“{0}” was saved by a newer version of this app (file format {1}). Update the app to open it.</value>
+  </data>
+  <data name="OpenFailedDamagedFormat" xml:space="preserve">
+    <value>“{0}” is damaged and can't be opened.</value>
+  </data>
+  <data name="OpenFailedUnreadableFormat" xml:space="preserve">
+    <value>“{0}” couldn't be read. {1}</value>
+  </data>
+  <data name="SaveFailedTitle" xml:space="preserve">
+    <value>Can't save the file</value>
+  </data>
+  <data name="SaveFailedFormat" xml:space="preserve">
+    <value>“{0}” couldn't be saved. {1}</value>
+  </data>
+  <data name="FontMissingTitle" xml:space="preserve">
+    <value>Font not available</value>
+  </data>
+  <data name="FontMissingMessageFormat" xml:space="preserve">
+    <value>This document uses the font “{0}”, which isn't available on this computer. It's shown in {1} instead, and saving keeps “{0}” as its font.</value>
+  </data>
+  <data name="StatusFontNotAvailableFormat" xml:space="preserve">
+    <value>{0} (not available)</value>
+  </data>
 </root>

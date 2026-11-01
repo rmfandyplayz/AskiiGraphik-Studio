@@ -28,3 +28,4 @@ ARCHITECTURE §5.7 sets a soft limit of 500 × 500 (warn, but allow), asks for a
 - The resize command (step 1.2) stores only the cropped cells for undo, using `CroppedRegions`.
 
 Updated 2026-11-01: the Resize Canvas dialog (step 1.6) starts anchored in the centre, and the New and Resize Canvas size boxes accept only sides within the hard limit and warn above the soft limit (ADR 0020).
+Updated 2026-11-01: from the owner's 1.6 testing, a number typed outside the hard limit is clamped to it (99999 becomes 4096, 0 becomes 1) instead of being dropped.

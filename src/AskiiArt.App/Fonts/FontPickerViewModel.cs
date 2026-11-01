@@ -8,6 +8,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Imaging.Fonts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Fonts;
 
@@ -18,23 +19,28 @@ internal sealed record FontPickerItem(FontReference Font, string DisplayName);
 /// The font picker: the bundled, loaded and installed fonts, a search box, and Load from File.
 /// Only the family is picked; the size at 100% zoom is the same for every document (ADR 0019).
 /// </summary>
-internal sealed class FontPickerViewModel : ObservableObject
+internal sealed partial class FontPickerViewModel : ObservableObject
 {
     private readonly FontCatalog _fonts;
     private readonly Func<Task<string?>> _pickFontFile;
+    private readonly ILogger _logger;
     private List<FontPickerItem> _allFonts = [];
 
     /// <param name="fonts">Where the fonts come from.</param>
     /// <param name="currentFont">The document's font, selected to begin with.</param>
     /// <param name="pickFontFile">Asks the user for a font file; returns its path, or null if they cancel.</param>
-    public FontPickerViewModel(FontCatalog fonts, FontReference currentFont, Func<Task<string?>> pickFontFile)
+    /// <param name="logger">Records why a font file couldn't be loaded.</param>
+    public FontPickerViewModel(FontCatalog fonts, FontReference currentFont, Func<Task<string?>> pickFontFile,
+        ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(fonts);
         ArgumentNullException.ThrowIfNull(currentFont);
         ArgumentNullException.ThrowIfNull(pickFontFile);
+        ArgumentNullException.ThrowIfNull(logger);
 
         _fonts = fonts;
         _pickFontFile = pickFontFile;
+        _logger = logger;
         LoadFromFileCommand = new AsyncRelayCommand(LoadFromFileAsync);
 
         RefreshFonts();
@@ -104,6 +110,7 @@ internal sealed class FontPickerViewModel : ObservableObject
         }
         catch (Exception exception) when (exception is FontLoadException or IOException or UnauthorizedAccessException)
         {
+            LogCouldNotLoadFontFile(exception, path);
             Message = Strings.FontLoadFailed;
         }
     }
@@ -142,4 +149,7 @@ internal sealed class FontPickerViewModel : ObservableObject
 
         return string.Format(CultureInfo.CurrentCulture, format, choice.Font.FamilyName);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The font file {FontPath} could not be loaded")]
+    private partial void LogCouldNotLoadFontFile(Exception exception, string fontPath);
 }

@@ -20,7 +20,7 @@ public sealed class DocumentActionsTests : IDisposable
 
     public DocumentActionsTests()
     {
-        _actions = new DocumentActions(_canvas.ActiveDocument, _dialogs, _shell).CreateActions()
+        _actions = TestActions.CreateDocumentActions(_canvas, _shell, _dialogs).CreateActions()
             .ToDictionary(action => action.Id);
     }
 
@@ -34,15 +34,41 @@ public sealed class DocumentActionsTests : IDisposable
     public async Task New_ReplacesTheDocument_WithTheChosenSizeAndCharacterSet_AndAnEmptyHistory()
     {
         Type("ab");
+        _dialogs.SaveChangesAnswer = SaveChangesChoice.DontSave;
         _dialogs.NewDocumentAnswer = new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii);
 
         await ExecuteAsync(DocumentActionIds.New);
 
+        Assert.Equal(["Untitled"], _dialogs.SaveChangesAskedFor);
         Assert.Equal(new CanvasSize(80, 25), Document.CanvasSize);
         Assert.Equal(CharacterSet.Ascii, Document.CharacterSet);
         Assert.Equal(FontReference.Default, Document.Font);
         Assert.False(_canvas.Session.History.CanUndo);
         Assert.Same(_canvas.Session, _canvas.ViewModel.Session);
+    }
+
+    [Fact]
+    public async Task New_WithUnsavedChanges_CancelledAtTheQuestion_KeepsTheDocument_AndSkipsTheNewDialog()
+    {
+        Type("ab");
+        var before = _canvas.Session;
+        _dialogs.SaveChangesAnswer = SaveChangesChoice.Cancel;
+
+        await ExecuteAsync(DocumentActionIds.New);
+
+        Assert.Same(before, _canvas.Session);
+        Assert.Equal(0, _dialogs.NewDocumentShownCount);
+    }
+
+    [Fact]
+    public async Task New_WithoutUnsavedChanges_DoesntAsk()
+    {
+        _dialogs.NewDocumentAnswer = NewDocumentSettings.Default;
+
+        await ExecuteAsync(DocumentActionIds.New);
+
+        Assert.Empty(_dialogs.SaveChangesAskedFor);
+        Assert.Equal(NewDocumentSettings.Default.Size, Document.CanvasSize);
     }
 
     [Fact]

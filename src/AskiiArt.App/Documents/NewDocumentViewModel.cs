@@ -9,12 +9,9 @@ namespace AskiiArt.App.Documents;
 /// <summary>The New dialog: the canvas size and which characters the document may hold (ADR 0016).</summary>
 internal sealed class NewDocumentViewModel : ObservableObject
 {
-    /// <summary>The size a new document starts at, chosen with the owner in step 1.6.</summary>
-    public static CanvasSize DefaultSize { get; } = new(80, 25);
+    // 80 × 25 and ASCII only, chosen with the owner in step 1.6: the app is for ASCII art.
+    public CanvasSizeFields Size { get; } = new(NewDocumentSettings.Default.Size);
 
-    public CanvasSizeFields Size { get; } = new(DefaultSize);
-
-    /// <summary>ASCII only is the default: the app is for ASCII art (the owner's choice in step 1.6).</summary>
     public bool IsAsciiOnly
     {
         get;
@@ -23,7 +20,7 @@ internal sealed class NewDocumentViewModel : ObservableObject
             if (SetProperty(ref field, value))
                 OnPropertyChanged(nameof(IsUnicode));
         }
-    } = true;
+    } = NewDocumentSettings.Default.CharacterSet == CharacterSet.Ascii;
 
     /// <summary>The other choice of the pair; the two radio buttons bind to one each.</summary>
     public bool IsUnicode

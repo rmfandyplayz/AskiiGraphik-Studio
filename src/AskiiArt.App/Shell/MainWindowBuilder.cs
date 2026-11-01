@@ -3,28 +3,33 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 
 namespace AskiiArt.App.Shell;
 
 /// <summary>
 /// Creates the main window with its menus, toolbar and keyboard shortcuts, all taken from the
-/// action registry and the menu and toolbar layouts, showing the canvas's document.
+/// action registry and the menu and toolbar layouts, showing the canvas's document. The window's
+/// title follows the document, and closing it asks about unsaved changes first.
 /// </summary>
 internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, ToolbarLayout toolbar,
-    CanvasViewModel canvas)
+    CanvasViewModel canvas, WindowTitle title, DocumentFiles files)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
-        var window = new MainWindow { DataContext = canvas };
+        var window = new MainWindow { DataContext = canvas, Title = title.Text };
         var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
 
+        title.PropertyChanged += (_, _) => window.Title = title.Text;
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
         window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
         AddKeyBindings(window, platformCommandModifiers);
+        AskAboutUnsavedChangesBeforeClosing(window);
 
         return window;
     }
@@ -36,6 +41,37 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
             return null;
 
         return new NativeMenuBuilder(actions, platformCommandModifiers).BuildApplicationMenu(layout.ApplicationMenu);
+    }
+
+    // Covers the close button, Quit and the app shutting down, which all close the window.
+    private void AskAboutUnsavedChangesBeforeClosing(Window window)
+    {
+        var isAsking = false;
+        var mayClose = false;
+        window.Closing += async (_, e) =>
+        {
+            if (mayClose || !files.HasUnsavedChanges)
+                return;
+
+            // Closing can't wait for an answer, so it's cancelled, and repeated if the user agrees.
+            e.Cancel = true;
+            if (isAsking)
+                return;
+
+            isAsking = true;
+            try
+            {
+                mayClose = await files.ConfirmDiscardingChangesAsync();
+            }
+            finally
+            {
+                isAsking = false;
+            }
+
+            // After this Closing event has finished, rather than from inside it.
+            if (mayClose)
+                Dispatcher.UIThread.Post(window.Close);
+        };
     }
 
     private void AddKeyBindings(Window window, KeyModifiers platformCommandModifiers)

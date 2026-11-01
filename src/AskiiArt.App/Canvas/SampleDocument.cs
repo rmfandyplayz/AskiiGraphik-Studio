@@ -8,10 +8,10 @@ using AskiiArt.Core.Documents;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// TEMPORARY: the 500 × 500 document the app opens with until New and Open exist (steps 1.6 and
-/// 1.7). It's busy on purpose, so zooming, panning and crispness are easy to judge: rings of
-/// shading that show at any zoom, a border, and a block of text near the top-left that includes
-/// glyphs the default font lacks. The text is document content, not UI, so it isn't in
+/// A 500 × 500 document for checking performance, opened from the Debug menu (it was the startup
+/// document until step 1.7). It's busy on purpose, so zooming, panning and crispness are easy to
+/// judge: rings of shading that show at any zoom, a border, and a block of text near the top-left
+/// that includes glyphs the default font lacks. The text is document content, not UI, so it isn't in
 /// Strings.resx.
 /// </summary>
 internal static class SampleDocument

@@ -19,6 +19,10 @@ internal static class TestActions
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions),
         new CanvasActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument),
-        new DocumentActions(canvas.ActiveDocument, dialogs ?? new FakeDocumentDialogs(), shell)
+        CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
+
+    public static DocumentActions CreateDocumentActions(TestCanvas canvas, FakeAppShell shell,
+        FakeDocumentDialogs dialogs, bool includeDebugActions = false) =>
+        new(canvas.ActiveDocument, canvas.CreateDocumentFiles(dialogs, shell), dialogs, shell, includeDebugActions);
 }

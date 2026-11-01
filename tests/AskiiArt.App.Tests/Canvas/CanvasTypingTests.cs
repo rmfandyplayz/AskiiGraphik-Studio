@@ -88,12 +88,12 @@ public sealed class CanvasTypingTests : IDisposable
     [AvaloniaFact]
     public void JumpKeys_MoveTheCaretSeveralCells_AndShiftArrowIsLeftAlone()
     {
-        // The Windows and Linux keys, whatever the test machine: Ctrl+Right jumps, Alt+Down jumps further.
+        // The Windows and Linux keys, whatever the test machine: Ctrl+Right jumps, Ctrl+Shift+Down jumps further.
         _control.Keymap = ToolKeymap.CreateDefault(isMacOS: false);
         Click(new CellPoint(0, 0));
 
         Press(Key.Right, PhysicalKey.ArrowRight, RawInputModifiers.Control);
-        Press(Key.Down, PhysicalKey.ArrowDown, RawInputModifiers.Alt);
+        Press(Key.Down, PhysicalKey.ArrowDown, RawInputModifiers.Control | RawInputModifiers.Shift);
         Press(Key.Left, PhysicalKey.ArrowLeft, RawInputModifiers.Shift);
 
         Assert.Equal(new CellPoint(3, 9), _canvas.ViewModel.ActiveTool.Overlay.Caret);

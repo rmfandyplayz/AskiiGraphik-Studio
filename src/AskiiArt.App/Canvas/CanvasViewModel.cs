@@ -109,7 +109,19 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     public string CanvasSizeText => string.Format(CultureInfo.CurrentCulture, Strings.StatusCanvasSizeFormat,
         Composite.Size.Width, Composite.Size.Height);
 
-    public string FontText => Font.FamilyName;
+    // A document keeps asking for its own font even when another is drawn in its place (§5.10).
+    public string FontText
+    {
+        get
+        {
+            var documentFont = Session.Document.Font;
+            if (new FontReference(Font.FamilyName) == documentFont)
+                return documentFont.FamilyName;
+
+            return string.Format(CultureInfo.CurrentCulture, Strings.StatusFontNotAvailableFormat,
+                documentFont.FamilyName);
+        }
+    }
 
     public string CharacterSetText => Session.Document.CharacterSet switch
     {

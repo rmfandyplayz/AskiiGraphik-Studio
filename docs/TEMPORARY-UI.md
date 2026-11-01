@@ -13,26 +13,40 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 | Choice | Where | Step |
 |---|---|---|
-| Menus: File (New, Quit), Edit (Undo, Redo), Document (Resize Canvas, Font, ASCII Only), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, and File has only New | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6 |
-| A toolbar of plain text buttons under the menu bar: New; Undo, Redo; Resize Canvas, Font; Zoom Out, Zoom In, Actual Size, Show Grid (a toggle). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs` | 1.6 |
-| A Debug menu (Throw Test Exception) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs` | 0.3 |
-| Shortcuts (Cmd on macOS): New Ctrl+N; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+' | each feature's `*Actions.cs` | 0.3–1.6 |
+| Menus: File (New, Open, Save, Save As, Quit), Edit (Undo, Redo), Document (Resize Canvas, Font, ASCII Only), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7 |
+| A toolbar of plain text buttons under the menu bar: New, Open, Save; Undo, Redo; Resize Canvas, Font; Zoom Out, Zoom In, Actual Size, Show Grid (a toggle). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs` | 1.6, 1.7 |
+| A Debug menu (Open Sample Document, Throw Test Exception) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs` | 0.3, 1.7 |
+| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+' | each feature's `*Actions.cs` | 0.3–1.6 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
 | About window and unexpected-error dialog (Open Log Folder, Quit, Continue) | `Shell/Dialogs/` | 0.3 |
 | A plain yes-or-cancel dialog, with Cancel as the default button | `Shell/Dialogs/ConfirmWindow.axaml` | 1.5 |
 | Status bar along the bottom: zoom, canvas size, character set, font, cell under the pointer (counted from 0) | `Shell/MainWindow.axaml` | 1.4, 1.5, 1.6 |
+| A plain message dialog with OK, for files that can't be opened or saved and for a missing font | `Shell/Dialogs/MessageWindow.axaml` | 1.7 |
 
 ### Documents and fonts
 
 | Choice | Where | Step |
 |---|---|---|
-| New asks for the width, height (80 × 25 to begin with) and characters (ASCII only to begin with, or Unicode). It replaces the document without asking about unsaved changes until saving exists (1.7) | `Documents/NewDocumentWindow.axaml`, `NewDocumentViewModel` | 1.6 |
-| The size boxes take whole numbers from 1 to 4096; above 500 a warning appears under them, and OK still works | `Documents/CanvasSizeFieldsView.axaml` | 1.6 |
+| New asks for the width, height (80 × 25 to begin with) and characters (ASCII only to begin with, or Unicode) | `Documents/NewDocumentWindow.axaml`, `NewDocumentViewModel` | 1.6 |
+| The size boxes take whole numbers from 1 to 4096, and a number outside that is clamped to the nearest limit (shown once you leave the box); above 500 a warning appears under them, and OK still works | `Documents/CanvasSizeFieldsView.axaml` | 1.6, 1.7 |
 | Resize Canvas starts at the current size, anchored in the centre. The anchor is a 3 × 3 grid of arrows, and shrinking shows "cells outside the new size will be removed" | `Documents/ResizeCanvasWindow.axaml` | 1.6 |
 | The font picker: a search box, one list (the bundled fonts, marked "comes with the app", then fonts loaded from files, then installed fonts), Load from File, and a warning when the selected font isn't monospaced. No preview | `Fonts/FontPickerWindow.axaml` | 1.6 |
 | A font file whose family is already available isn't added; the picker says the one already there is used (ADR 0019) | `FontCatalog.AddFile` | 1.6 |
 | Fonts loaded from files are forgotten when the app closes (until settings, M2) | `FontCatalog` | 1.6 |
 | Warnings in dialogs are orange text | `AppWarningTextBrush` | 1.6 |
+
+### Files (ADR 0021)
+
+| Choice | Where | Step |
+|---|---|---|
+| The app starts with an empty, untitled 80 × 25 ASCII-only document | `Hosting/AppServices.cs`, `NewDocumentSettings.Default` | 1.7 |
+| The window title is "art.asciiart - AskiiGraphiks Studio", or "Untitled - …" before the first save, with a `*` in front while there are unsaved changes | `Shell/WindowTitle.cs`, `WindowTitle*Format` strings | 1.7 |
+| With unsaved changes, New, Open, Open Sample Document and closing the window (also Quit) first ask "Do you want to save the changes to “name”?": Save (the default, Enter), Don't Save, Cancel (Esc). Same button order on every OS. New and Open ask before their own dialogs | `Documents/SaveChangesWindow.axaml`, `DocumentFiles` | 1.7 |
+| Save As offers two file types, "AskiiGraphiks document" (.asciiart) and "AskiiGraphiks document, compressed" (.asciiartz), with the document's own first. It suggests the current name (or "Untitled") and starts in the file's folder. A typed .asciiart or .asciiartz decides the variant; a name with no extension gets the chosen type's | `AvaloniaDocumentDialogs`, `DocumentFile.ForSavePath` | 1.7 |
+| Save keeps the variant the file was opened in, even if its name says otherwise | `DocumentFiles` | 1.7 |
+| Open shows one file type for both extensions, plus All files | `AvaloniaDocumentDialogs` | 1.7 |
+| A file that can't be opened says why in one sentence: not a document, saved by a newer version (with its format number), damaged, or couldn't be read (with the system's reason). A failed save says the system's reason, and the changes stay unsaved | `OpenFailed*`, `SaveFailed*` strings | 1.7 |
+| A document whose font isn't available opens in JetBrains Mono, says so once, and the status bar shows "Font Name (not available)" | `DocumentFiles`, `CanvasViewModel.FontText` | 1.7 |
 
 ### Canvas
 
@@ -47,7 +61,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Scrollbars always visible; the wheel scrolls 50 pixels a notch | `CanvasView.axaml`, `CanvasControl` | 1.4 |
 | Hand pointer while panning with Space or the middle button | `CanvasControl` | 1.4 |
 | A wheel gesture keeps the keys it started with: pressing Cmd during a touchpad glide doesn't zoom (ADR 0018) | `WheelGestureTracker` | 1.5 |
-| The sample document shown at startup, until Open exists | `Canvas/SampleDocument.cs` | 1.4 |
+| The busy 500 × 500 sample document, opened from the Debug menu (it was the startup document until 1.7) | `Canvas/SampleDocument.cs` | 1.4, 1.7 |
 
 ### Typing (the text tool, ADR 0017)
 
@@ -59,7 +73,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Backspace after typing empties the cell before the caret and moves into it. After a click, an arrow key, Home or Enter, at the left edge, or after typing into the last column, it empties the caret's own cell first. Delete empties the caret's cell. Both leave empty cells, not spaces | `TextTool` | 1.5, 1.6 |
 | Enter goes to the next row, under the start of the text you're typing. A click starts new text; moving with the keys and typing on the same rows (from its start to just past its end) continues it; typing anywhere else starts new text there | `TextTool.TextBlock` | 1.5, 1.6 |
 | Home goes to the first column; End to just past the row's last character; Esc hides the caret | `TextTool` | 1.5 |
-| Jumps: 3 cells with Ctrl+arrow (Option+arrow on a Mac), 10 cells with Alt+arrow (Cmd+Option+arrow). Ctrl+Home and Ctrl+End (Cmd+Up and Cmd+Down) go to the top and bottom of the column; on a Mac, Cmd+Left and Cmd+Right are Home and End. Shift with these keys does nothing yet (it's kept for selection) | `Canvas/ToolKeymap.cs`, `TextTool.ShortJump`, `LongJump` | 1.6 |
+| Jumps: 3 cells with Ctrl+arrow (Option+arrow on a Mac), 10 cells with Ctrl+Shift+arrow (Cmd+Option+arrow). Ctrl+Home and Ctrl+End (Cmd+Up and Cmd+Down) go to the top and bottom of the column; on a Mac, Cmd+Left and Cmd+Right are Home and End. Shift+arrow and Alt+arrow do nothing (Shift is kept for selection, and a lone Alt opens the menu bar on Windows and Linux) | `Canvas/ToolKeymap.cs`, `TextTool.ShortJump`, `LongJump` | 1.6, 1.7 |
 | The bottom of the column is the canvas's last row, even when the column is empty (End, in contrast, goes just past the row's text) | `TextTool` | 1.6 |
 | One undo step per burst of typing; a 2-second pause, or moving the caret, starts a new one | `TextTool.TypingPause` | 1.5 |
 | The canvas scrolls to keep the caret on screen | `CanvasControl` | 1.5 |

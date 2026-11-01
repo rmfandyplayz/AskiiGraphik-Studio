@@ -15,6 +15,7 @@ Step 1.6 adds a font picker: the bundled fonts, installed fonts, and fonts loade
 - **`FontCatalog`** (App) lists the choices (bundled first, then fonts loaded from files, then installed families not already listed) and turns a reference into a `LoadedFont`, falling back to the default. It loads each font once and keeps it until the app closes, because glyph atlases are cached per loaded font.
 - **Same family name:** documents store names, so two fonts with the same name can't be told apart. When a loaded file's family is already available (bundled, installed or loaded earlier), the font already there is used and the picker says so.
 - **Monospace check:** run when a font is selected in the picker, cached per font; a font that fails is allowed, with a warning (§11).
+- **Damaged files:** Skia accepts some damaged fonts, so `FontLoader` also rejects a font with no family name, no glyphs, or a cell that isn't between 0 and 8 ems on each side (which would make cells vanish or need glyph atlas pages too big to create). A rejected file gets the picker's "couldn't be loaded" message and a warning in the log; a damaged installed font isn't loaded, so documents using it fall back to the default font. Tests load truncated and corrupted copies of a bundled font. A crash inside the operating system's own font engine can't be caught, but those engines are hardened against damaged files.
 - The canvas view model re-resolves the font on every settings change, so picking a font or undoing it redraws with the new cell size.
 
 ## Alternatives
@@ -25,5 +26,8 @@ Step 1.6 adds a font picker: the bundled fonts, installed fonts, and fonts loade
 
 ## Consequences
 
-- A document whose font came from a file falls back to the default font once the app restarts, until the user font list is stored in settings (M2) and Open (1.7) tells the user about the fallback.
+- A document whose font came from a file falls back to the default font once the app restarts, until the user font list is stored in settings (M2). Open tells the user about the fallback, and the document keeps its font (ADR 0021).
 - Hundreds of installed fonts are listed by name only; nothing is loaded until one is selected.
+
+Updated 2026-11-01: from the owner's 1.6 testing, damaged font files are rejected when loaded.
+Updated 2026-11-01: Open says when a document's font is missing (step 1.7).

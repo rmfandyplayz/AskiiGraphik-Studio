@@ -13,12 +13,12 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
 
 - **`EditingSession`** (Core) holds what tools edit through: the document, its `CommandHistory`, the active layer (the top layer until layers have a UI in M2) and a `TimeProvider` clock, so tests control time.
 - **`ITool`** gets pointer input as `ToolPointerInput` (cell, position within the cell, modifiers, pressure), keys as `ToolKey` commands, and typed text as strings. It exposes a `ToolOverlay` (for now just the caret) that the canvas draws on top, and `AllowsSpacePanning`. Tools are created per session from a `ToolDefinition` in the `ToolRegistry`, registered through DI. The canvas control translates Avalonia input and gives the tool whatever it doesn't use for zooming and panning.
-- **Keys:** the App's `ToolKeymap` turns the platform's keys into `ToolKey` commands, following each platform's conventions. A key matches only with exactly its modifiers, so Shift+arrow stays free for selection (M4). Ctrl+Alt+arrow is avoided: Ubuntu uses it to switch workspaces, and some Intel graphics drivers rotate the screen with it. The keys and jump sizes become settings in M8.
+- **Keys:** the App's `ToolKeymap` turns the platform's keys into `ToolKey` commands, following each platform's conventions. A key matches only with exactly its modifiers, so Shift+arrow stays free for selection (M4). Ctrl+Alt+arrow is avoided: Ubuntu uses it to switch workspaces, and some Intel graphics drivers rotate the screen with it. Alt+arrow is avoided on Windows and Linux too: letting go of Alt on its own opens the menu bar there, so pressing Alt for a jump and changing your mind made the next letter open a menu. The keys and jump sizes become settings in M8.
 
   | Move | Windows and Linux | macOS |
   |---|---|---|
   | 3 cells (`TextTool.ShortJump`) | Ctrl+arrow | Option+arrow |
-  | 10 cells (`TextTool.LongJump`) | Alt+arrow | Cmd+Option+arrow |
+  | 10 cells (`TextTool.LongJump`) | Ctrl+Shift+arrow | Cmd+Option+arrow |
   | Start or end of the row | Home, End | Cmd+Left, Cmd+Right (and Home, End) |
   | Top or bottom of the column | Ctrl+Home, Ctrl+End | Cmd+Up, Cmd+Down |
 
@@ -40,7 +40,9 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
 
 - Space + drag stays in the canvas, used again once a drawing tool (M3) allows it.
 - `ToolDescriptor` has no shortcut yet. Single-key tool shortcuts arrive with the second tool, and must not fire while the text tool is typing.
+- A later tool that uses Alt with the mouse (Alt+click or Alt+drag, common in image editors) must check that letting go of Alt afterwards doesn't open the menu bar on Windows and Linux.
 - There's no IME composition support yet (Chinese, Japanese and Korean input methods); typed text comes from Avalonia's plain text input.
 
 Updated 2026-10-31: from the owner's 1.5 testing, Backspace erases a placed caret's own cell first, and Enter returns to the start of the current text block instead of the last clicked column.
 Updated 2026-11-01: tool keys are commands from a per-platform keymap, with jumps of 3 and 10 cells and moves to the top and bottom of the column (step 1.6).
+Updated 2026-11-01: from the owner's 1.6 testing, the 10-cell jump on Windows and Linux moved from Alt+arrow to Ctrl+Shift+arrow, because a lone Alt opens the menu bar.

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Globalization;
 using AskiiArt.App.Actions;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
@@ -14,6 +16,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Tests.Shell;
@@ -21,20 +24,25 @@ namespace AskiiArt.App.Tests.Shell;
 public sealed class MainWindowTests : IDisposable
 {
     private readonly FakeAppShell _shell = new();
+    private readonly FakeDocumentDialogs _dialogs = new();
     private readonly TestCanvas _canvas = new();
     private readonly List<Window> _windows = [];
     private readonly ActionRegistry _actions;
 
     public MainWindowTests()
     {
-        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell));
+        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs));
     }
 
     public void Dispose()
     {
-        // Windows first: a window still showing would keep drawing the canvas.
+        // Windows first: a window still showing would keep drawing the canvas. Tests that typed
+        // leave unsaved changes, and closing asks about them first.
+        _dialogs.SaveChangesAnswer = SaveChangesChoice.DontSave;
         foreach (var window in _windows)
             window.Close();
+
+        Dispatcher.UIThread.RunJobs();
 
         _canvas.Dispose();
     }
@@ -47,7 +55,7 @@ public sealed class MainWindowTests : IDisposable
         window.Show();
 
         Assert.True(window.IsVisible);
-        Assert.Equal(Strings.AppDisplayName, window.Title);
+        Assert.Equal(new WindowTitle(_canvas.ActiveDocument).Text, window.Title);
     }
 
     [AvaloniaFact]
@@ -116,6 +124,54 @@ public sealed class MainWindowTests : IDisposable
         window.KeyPress(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
         window.KeyRelease(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
         Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).IsOccupied);
+    }
+
+    [AvaloniaFact]
+    public void Closing_WithUnsavedChanges_AsksFirst_AndCancelKeepsTheWindowOpen()
+    {
+        var window = ShowWindowWithUnsavedChanges();
+        _dialogs.SaveChangesAnswer = SaveChangesChoice.Cancel;
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal([Strings.UntitledDocumentName], _dialogs.SaveChangesAskedFor);
+        Assert.True(window.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void Closing_WithUnsavedChanges_DontSave_Closes()
+    {
+        var window = ShowWindowWithUnsavedChanges();
+        _dialogs.SaveChangesAnswer = SaveChangesChoice.DontSave;
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(window.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void Closing_WithoutUnsavedChanges_ClosesWithoutAsking()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(_dialogs.SaveChangesAskedFor);
+        Assert.False(window.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void Title_FollowsTheDocument()
+    {
+        var window = ShowWindowWithUnsavedChanges();
+
+        var unsavedTitle = string.Format(CultureInfo.CurrentCulture, Strings.WindowTitleUnsavedFormat,
+            Strings.UntitledDocumentName, Strings.AppDisplayName);
+        Assert.Equal(unsavedTitle, window.Title);
     }
 
     [AvaloniaFact]
@@ -202,8 +258,7 @@ public sealed class MainWindowTests : IDisposable
     [AvaloniaFact]
     public void ApplicationMenu_OnMacOS_HasAboutWithTheAppName()
     {
-        var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
-            ToolbarLayout.CreateDefault(), _canvas.ViewModel);
+        var builder = CreateBuilder(MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false));
 
         var applicationMenu = builder.BuildApplicationMenu(KeyModifiers.Meta);
 
@@ -216,10 +271,19 @@ public sealed class MainWindowTests : IDisposable
     [AvaloniaFact]
     public void ApplicationMenu_OnWindowsAndLinux_IsNotCreated()
     {
-        var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
-            ToolbarLayout.CreateDefault(), _canvas.ViewModel);
+        var builder = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
 
         Assert.Null(builder.BuildApplicationMenu(KeyModifiers.Control));
+    }
+
+    private MainWindow ShowWindowWithUnsavedChanges()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        var tool = _canvas.ViewModel.ActiveTool;
+        tool.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
+        tool.TextEntered("a");
+        return window;
     }
 
     private static Button[] ToolbarButtons(MainWindow window) =>
@@ -230,9 +294,12 @@ public sealed class MainWindowTests : IDisposable
 
     private MainWindow BuildWindow(MenuLayout layout, KeyModifiers commandModifiers = KeyModifiers.Control)
     {
-        var window = new MainWindowBuilder(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel)
-            .Build(commandModifiers);
+        var window = CreateBuilder(layout).Build(commandModifiers);
         _windows.Add(window);
         return window;
     }
+
+    private MainWindowBuilder CreateBuilder(MenuLayout layout) =>
+        new(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
+            _canvas.CreateDocumentFiles(_dialogs, _shell));
 }

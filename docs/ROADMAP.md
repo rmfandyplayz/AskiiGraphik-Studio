@@ -68,24 +68,29 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 - [x] **1.5 Text mode** (a Core tool, plus App wiring). Click to place the caret, and typing writes glyphs. Arrow keys, Home/End, Backspace, Delete and Enter work. Typing coalesces into undo steps. Undo and Redo actions use platform shortcuts. (**Ask about the charset policy first**, ARCHITECTURE §23.)
   *Owner checks:* typing, editing, and undo/redo behave as the test doc describes.
   *Note:* Built (ADRs 0016–0018). The text tool is always active and overwrites; per-document Unicode or ASCII only, with a temporary Edit → ASCII Only. Also fixes Cmd zooming during a touchpad glide and the macOS CI failure. The fixes from its testing (zoom-out drift, Backspace on a placed caret and at the edges, Enter following the current text) land in 1.6.
-- [~] **1.6 Document actions.** Adds:
+- [x] **1.6 Document actions.** Adds:
   - New (with a canvas-size dialog)
   - Resize Canvas (a size + anchor dialog, with the >500 warning)
   - a font picker (bundled fonts, system fonts, load from file)
   - placeholder menus and a toolbar, bound to actions
 
   *Owner checks:* each dialog works, resizing with different anchors and then undoing works, and changing the font resizes cells correctly.
-  *Note:* Built (ADRs 0019, 0020), not pushed. New defaults to 80 × 25 and ASCII only; the font is per document and undoable, and file fonts last until the app closes. Also adds caret jumps (per-platform keys) and the fixes from 1.5 testing.
-- [ ] **1.7 File format and output.** Adds:
-  - `.asciiart` Save, Save As and Open, in both plain and compressed variants, with header sniffing, a format version, and atomic saves
+  *Note:* Built (ADRs 0019, 0020). New defaults to 80 × 25 and ASCII only; the font is per document and undoable, and file fonts last until the app closes. Also adds caret jumps (per-platform keys) and the fixes from 1.5 testing. The fixes from its own testing (damaged font files, the 10-cell jump moved off Alt on Windows and Linux, size boxes that clamp) land in 1.7.
+- [~] **1.7 Saving and opening.** Adds:
+  - Save, Save As and Open, in a plain variant (`.asciiart`) and a compressed one (`.asciiartz`), with header sniffing, a format version, and atomic saves
   - round-trip tests, and the scaffolding for future format migrations
   - unsaved-changes prompts on close, New and Open, and a window title that shows the file name plus a dirty marker
-  - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New opens a new window (requested in 0.3 testing)
+  - the app starts with an empty document (the sample moves to the Debug menu), and opening a document whose font is missing says so
+
+  *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, and the unsaved-changes prompts behave correctly.
+  *Note:* Built (ADR 0021), not pushed. The fixes from 1.6 testing are in too (damaged fonts, Ctrl+Shift+arrow, size boxes that clamp).
+- [ ] **1.8 Output and macOS windows.** Adds:
+  - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New or Open with no window opens one (requested in 0.3 testing; one window at a time)
   - Copy as Text (to the clipboard) and Export .txt
 
-  *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, the unsaved-changes prompts behave correctly, copied art pastes correctly into a text editor, and on a Mac, closing the window leaves the app running.
+  *Owner checks:* copied art pastes correctly into a text editor, the exported file matches, and on a Mac, closing the window leaves the app running.
 
-**The MVP is complete after 1.7.**
+**The MVP is complete after 1.8.** (1.7 was split in two after 1.6 testing, with the owner's OK.)
 
 ## M2: Shell and layers
 

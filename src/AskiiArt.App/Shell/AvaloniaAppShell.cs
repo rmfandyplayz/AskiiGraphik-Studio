@@ -68,6 +68,15 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
         return await dialog.ShowDialog<bool>(owner);
     }
 
+    public async Task ShowMessageAsync(string title, string message)
+    {
+        if (MainWindow is not { } owner)
+            return;
+
+        var dialog = new MessageWindow { DataContext = new MessageViewModel(title, message) };
+        await dialog.ShowDialog(owner);
+    }
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "The OS could not open the folder {FolderPath}")]
     private partial void LogCouldNotOpenFolder(string folderPath);
 }

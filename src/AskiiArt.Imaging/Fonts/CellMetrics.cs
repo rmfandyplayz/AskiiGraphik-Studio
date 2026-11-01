@@ -22,8 +22,17 @@ public readonly record struct CellMetrics
     /// <summary>The largest font size, in device pixels.</summary>
     public const float MaximumPixelSize = 1024;
 
+    /// <summary>
+    /// The widest or tallest a usable cell can be, in ems. Real fonts stay well under 3; a
+    /// damaged file can claim thousands.
+    /// </summary>
+    internal const float MaximumSideInEms = 8;
+
     // Used when a font has no reference glyph and no average width: a typical monospace ratio.
     private const float FallbackAdvancePerEm = 0.6f;
+
+    // Per-em measurements don't depend on the size, so any size works for checking them.
+    private const float CheckingPixelSize = 100;
 
     private CellMetrics(float pixelSize, int width, int height, int baseline)
     {
@@ -52,7 +61,7 @@ public readonly record struct CellMetrics
         ValidatePixelSize(pixelSize);
 
         using var skFont = CreateMeasuringFont(font, pixelSize);
-        var vertical = VerticalMetrics.Read(font.Typeface) ?? VerticalMetrics.FromSkia(skFont.Metrics, pixelSize);
+        var vertical = ReadVerticalMetrics(font, skFont);
         var ascent = vertical.AscentPerEm * pixelSize;
         var descent = vertical.DescentPerEm * pixelSize;
         var lineGap = vertical.LineGapPerEm * pixelSize;
@@ -64,6 +73,20 @@ public readonly record struct CellMetrics
         var width = RoundToWholePixels(MeasureReferenceAdvance(font, skFont));
 
         return new CellMetrics(pixelSize, width, height, baseline);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="font"/>'s cell is more than zero and at most
+    /// <see cref="MaximumSideInEms"/> wide and tall.
+    /// </summary>
+    internal static bool HasUsableSize(LoadedFont font)
+    {
+        using var skFont = CreateMeasuringFont(font, CheckingPixelSize);
+        var vertical = ReadVerticalMetrics(font, skFont);
+        var heightInEms = vertical.AscentPerEm + vertical.DescentPerEm + vertical.LineGapPerEm;
+        var widthInEms = MeasureReferenceAdvance(font, skFont) / CheckingPixelSize;
+
+        return IsUsableSide(heightInEms) && IsUsableSide(widthInEms);
     }
 
     /// <summary>
@@ -99,6 +122,12 @@ public readonly record struct CellMetrics
 
         return skFont.Size * FallbackAdvancePerEm;
     }
+
+    private static VerticalMetrics ReadVerticalMetrics(LoadedFont font, SKFont skFont) =>
+        VerticalMetrics.Read(font.Typeface) ?? VerticalMetrics.FromSkia(skFont.Metrics, skFont.Size);
+
+    private static bool IsUsableSide(float sizeInEms) =>
+        float.IsFinite(sizeInEms) && sizeInEms > 0 && sizeInEms <= MaximumSideInEms;
 
     private static int RoundToWholePixels(float value) => Math.Max(1, RoundToInt(value));
 

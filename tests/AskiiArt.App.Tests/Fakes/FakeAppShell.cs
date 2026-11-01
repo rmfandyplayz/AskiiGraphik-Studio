@@ -60,6 +60,15 @@ internal sealed class FakeAppShell : IAppShell
         return Task.FromResult(ConfirmationAnswer);
     }
 
+    /// <summary>The title and text of each message dialog shown so far.</summary>
+    public List<(string Title, string Message)> Messages { get; } = [];
+
+    public Task ShowMessageAsync(string title, string message)
+    {
+        Messages.Add((title, message));
+        return Task.CompletedTask;
+    }
+
     /// <summary>Simulates the user clicking a button in the open error dialog.</summary>
     public void CloseErrorDialog(UnexpectedErrorChoice choice) => _errorDialog.SetResult(choice);
 }

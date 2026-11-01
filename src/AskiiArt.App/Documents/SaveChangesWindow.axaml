@@ -1,0 +1,37 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder "save the changes?" dialog, before unsaved changes would be lost (step 1.7). -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:documents="using:AskiiArt.App.Documents"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Documents.SaveChangesWindow"
+        x:DataType="documents:SaveChangesViewModel"
+        Title="{x:Static res:Strings.SaveChangesTitle}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="{StaticResource AppDialogButtonsMargin}"
+                Spacing="{StaticResource AppSpacingMedium}">
+      <Button x:Name="SaveButton"
+              Content="{x:Static res:Strings.SaveChangesSave}"
+              IsDefault="True"
+              Click="OnSaveClick" />
+      <Button x:Name="DontSaveButton"
+              Content="{x:Static res:Strings.SaveChangesDontSave}"
+              Click="OnDontSaveClick" />
+      <Button x:Name="CancelButton"
+              Content="{x:Static res:Strings.DialogCancel}"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>
