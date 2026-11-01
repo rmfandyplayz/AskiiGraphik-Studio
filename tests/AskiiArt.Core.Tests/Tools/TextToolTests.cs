@@ -171,27 +171,116 @@ public sealed class TextToolTests
     }
 
     [Fact]
-    public void Backspace_ErasesTheCellBeforeTheCaret_WithoutShiftingTheRest()
+    public void Backspace_AfterTyping_ErasesTheCellBeforeTheCaret_WithoutShiftingTheRest()
+    {
+        TestCells.Paint(Layer, "····ef");
+        Click(1, 0);
+        Type("abc");
+
+        Press(ToolKey.Backspace);
+        Assert.Equal(["·ab·ef", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(3, 0), _tool.Caret);
+
+        Press(ToolKey.Backspace);
+        Assert.Equal(["·a··ef", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(2, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void Backspace_AfterAClick_ErasesTheClickedCellFirst_ThenTheCellsBeforeIt()
     {
         TestCells.Paint(Layer, "abcdef");
         Click(3, 0);
 
         Press(ToolKey.Backspace);
+        Assert.Equal(["abc·ef", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(3, 0), _tool.Caret);
 
-        Assert.Equal(["ab·def", "······", "······"], TestCells.Read(Layer));
+        Press(ToolKey.Backspace);
+        Assert.Equal(["ab··ef", "······", "······"], TestCells.Read(Layer));
         Assert.Equal(new CellPoint(2, 0), _tool.Caret);
     }
 
-    [Fact]
-    public void Backspace_AtTheLeftEdge_DoesNothing()
+    [Theory]
+    [InlineData(ToolKey.Left)]
+    [InlineData(ToolKey.Right)]
+    [InlineData(ToolKey.Up)]
+    [InlineData(ToolKey.Down)]
+    [InlineData(ToolKey.Home)]
+    [InlineData(ToolKey.Enter)]
+    public void Backspace_AfterAMoveKey_ErasesTheCaretCell(ToolKey key)
     {
-        TestCells.Paint(Layer, "abcdef");
+        TestCells.Paint(Layer, "abcdef", "ghijkl", "mnopqr");
+        Click(2, 1);
+        Type("X");
+
+        Press(key);
+        var caret = _tool.Caret!.Value;
+        Press(ToolKey.Backspace);
+
+        Assert.True(Layer.GetCell(caret).IsEmpty);
+        Assert.Equal(caret, _tool.Caret);
+    }
+
+    [Fact]
+    public void Backspace_AtTheLeftEdge_ErasesTheCaretCell()
+    {
+        // Typing "a" then Backspace leaves the caret at the left edge, expecting to erase backwards.
+        // Undoing the Backspace brings the "a" back under it.
         Click(0, 0);
+        Type("a");
+        _clock.Advance(TextTool.TypingPause + TimeSpan.FromMilliseconds(1));
+        Press(ToolKey.Backspace);
+        History.Undo();
 
         Press(ToolKey.Backspace);
 
-        Assert.Equal(["abcdef", "······", "······"], TestCells.Read(Layer));
-        Assert.Equal(0, History.UndoCount);
+        Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(0, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void Backspace_AfterTypingIntoTheLastColumn_ErasesItThenMovesBack()
+    {
+        Click(4, 0);
+        Type("XYZ");
+
+        Press(ToolKey.Backspace);
+        Assert.Equal(["····X·", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(5, 0), _tool.Caret);
+
+        Press(ToolKey.Backspace);
+        Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(4, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void Backspace_AfterDelete_ErasesTheCellBeforeTheCaret()
+    {
+        TestCells.Paint(Layer, "abcdef");
+        Click(2, 0);
+
+        Press(ToolKey.Delete);
+        Press(ToolKey.Backspace);
+
+        Assert.Equal(["a··def", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(1, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void Backspace_AfterEnd_ErasesTheRowsLastGlyph()
+    {
+        TestCells.Paint(Layer, "ab·c··", "abcdef");
+        Click(0, 0);
+        Press(ToolKey.End);
+        Press(ToolKey.Backspace);
+        Assert.Equal("ab····", TestCells.Read(Layer)[0]);
+
+        // In a full row, End stops on the last glyph itself.
+        Click(0, 1);
+        Press(ToolKey.End);
+        Press(ToolKey.Backspace);
+        Assert.Equal("abcde·", TestCells.Read(Layer)[1]);
     }
 
     [Fact]
@@ -216,6 +305,64 @@ public sealed class TextToolTests
         Type("cd");
 
         Assert.Equal(["··ab··", "··cd··", "······"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void Enter_AfterMovingAwayWithTheKeysAndTyping_GoesUnderTheNewText()
+    {
+        Click(0, 0);
+        Type("ab");
+        Press(ToolKey.Down);
+        Press(ToolKey.Right);
+        Press(ToolKey.Right);
+        Type("c");
+
+        Press(ToolKey.Enter);
+
+        Assert.Equal(new CellPoint(4, 2), _tool.Caret);
+    }
+
+    [Fact]
+    public void Enter_AfterFixingATypoWithTheArrowKeys_GoesUnderTheStartOfTheText()
+    {
+        Click(1, 0);
+        Type("abc");
+        Press(ToolKey.Left);
+        Type("X");
+
+        Press(ToolKey.Enter);
+
+        Assert.Equal(new CellPoint(1, 1), _tool.Caret);
+    }
+
+    [Fact]
+    public void Enter_KeepsTheStartOfTextSpanningSeveralRows()
+    {
+        Click(1, 0);
+        Type("ab");
+        Press(ToolKey.Enter);
+        Type("cd");
+        Press(ToolKey.Up);
+        Type("e");
+
+        Press(ToolKey.Enter);
+
+        Assert.Equal(["·abe··", "·cd···", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(1, 1), _tool.Caret);
+    }
+
+    [Fact]
+    public void Enter_AwayFromTheText_GoesStraightDown()
+    {
+        Click(0, 0);
+        Type("a");
+        Press(ToolKey.Down);
+        Press(ToolKey.Right);
+        Press(ToolKey.Right);
+
+        Press(ToolKey.Enter);
+
+        Assert.Equal(new CellPoint(3, 2), _tool.Caret);
     }
 
     [Fact]

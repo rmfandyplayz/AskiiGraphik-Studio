@@ -16,8 +16,8 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
 - **Space:** when the active tool doesn't allow Space panning, the canvas leaves Space unhandled, so it arrives as typed text (on macOS a handled key never becomes text). Middle-drag still pans.
 - **The text tool** (`askiiart.text`), the only tool until M3, so always active. Its behaviour is a temporary choice until the owner specifies it (§23):
   - A click places the caret on a cell. Typing **overwrites** that cell and moves right; nothing shifts sideways, since that would wreck the art beside the text. At the right edge the caret stays in the last column.
-  - Backspace empties the cell before the caret and moves into it; Delete empties the caret's cell. Both make cells **empty**, not spaces (§5.4), and do nothing on a locked layer.
-  - Enter moves to the next row, back at the column that was clicked. Arrows move one cell; Home goes to the first column, End to just past the row's last glyph. Esc removes the caret.
+  - Backspace after typing empties the cell before the caret and moves into it. When the caret was put on its cell instead (a click, an arrow key, Home, Enter), at the left edge, or stuck at the right edge after typing, Backspace first empties the caret's own cell. Delete empties the caret's cell. Both make cells **empty**, not spaces (§5.4), and do nothing on a locked layer.
+  - Enter moves to the next row, under the start of the current **block** of text. A block starts at a click; typing with the caret moved by the keys (but still on the block's rows, between its start and just past its right end) continues it, and typing or Enter anywhere else starts a new block at the caret. Arrows move one cell; Home goes to the first column, End to just past the row's last glyph. Esc removes the caret.
   - Each keystroke is a command; a burst shares a `CoalescingGroup`. A burst ends when the caret moves by any means but typing, or after a 2-second pause.
 - **Undo and Redo** are actions (Cmd+Z; Cmd+Shift+Z and Cmd+Y) in a new Edit menu.
 
@@ -32,3 +32,5 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
 - Space + drag stays in the canvas, used again once a drawing tool (M3) allows it.
 - `ToolDescriptor` has no shortcut yet. Single-key tool shortcuts arrive with the second tool, and must not fire while the text tool is typing.
 - There's no IME composition support yet (Chinese, Japanese and Korean input methods); typed text comes from Avalonia's plain text input.
+
+Updated 2026-10-31: from the owner's 1.5 testing, Backspace erases a placed caret's own cell first, and Enter returns to the start of the current text block instead of the last clicked column.

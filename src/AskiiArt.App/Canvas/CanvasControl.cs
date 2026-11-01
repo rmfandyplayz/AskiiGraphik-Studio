@@ -125,6 +125,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private Cursor? _panCursor;
     private double _horizontalOffset;
     private double _verticalOffset;
+    private bool _isPublishingViewport;
 
     static CanvasControl()
     {
@@ -478,7 +479,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             UpdateCursor();
             e.Handled = true;
         }
-        else if (ToToolKey(e.Key) is { } key && Tool is { } tool && tool.KeyPressed(key, ToToolModifiers(e.KeyModifiers)))
+        else if (ToToolKey(e.Key) is { } key && Tool is { } tool &&
+                 tool.KeyPressed(key, ToToolModifiers(e.KeyModifiers)))
         {
             e.Handled = true;
         }
@@ -553,7 +555,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     private void ScrollTo(double horizontal, double vertical)
     {
-        if (_viewport is null)
+        if (_viewport is null || _isPublishingViewport)
             return;
 
         SetViewport(_viewport.ScrolledTo(new PixelPoint((int)Math.Round(horizontal), (int)Math.Round(vertical))));
@@ -589,12 +591,25 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private void SetViewport(CanvasViewport? viewport)
     {
         _viewport = viewport;
-        HorizontalMaximum = viewport?.MaximumScrollOffset.X ?? 0;
-        VerticalMaximum = viewport?.MaximumScrollOffset.Y ?? 0;
-        HorizontalViewport = viewport?.ViewportSize.Width ?? 0;
-        VerticalViewport = viewport?.ViewportSize.Height ?? 0;
-        SetAndRaise(HorizontalOffsetProperty, ref _horizontalOffset, viewport?.ScrollOffset.X ?? 0);
-        SetAndRaise(VerticalOffsetProperty, ref _verticalOffset, viewport?.ScrollOffset.Y ?? 0);
+
+        // A bound scrollbar clamps its old value as soon as its maximum shrinks, and writes the
+        // clamped value back through the two-way binding before the new offset arrives. Those
+        // writes are echoes of the old offset, so they're ignored here.
+        _isPublishingViewport = true;
+        try
+        {
+            HorizontalMaximum = viewport?.MaximumScrollOffset.X ?? 0;
+            VerticalMaximum = viewport?.MaximumScrollOffset.Y ?? 0;
+            HorizontalViewport = viewport?.ViewportSize.Width ?? 0;
+            VerticalViewport = viewport?.ViewportSize.Height ?? 0;
+            SetAndRaise(HorizontalOffsetProperty, ref _horizontalOffset, viewport?.ScrollOffset.X ?? 0);
+            SetAndRaise(VerticalOffsetProperty, ref _verticalOffset, viewport?.ScrollOffset.Y ?? 0);
+        }
+        finally
+        {
+            _isPublishingViewport = false;
+        }
+
         UpdateHoveredCell();
         InvalidateVisual();
     }

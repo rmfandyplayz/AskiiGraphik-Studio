@@ -61,9 +61,9 @@ public sealed class CanvasTypingTests : IDisposable
         Press(Key.Back, PhysicalKey.Backspace);
         _window.KeyTextInput("x");
 
-        // Left moved onto "b", Backspace erased "a" and moved onto it, and "x" replaced it.
-        Assert.Equal("x", GlyphAt(2, 1));
-        Assert.Equal("b", GlyphAt(3, 1));
+        // Left moved onto "b", Backspace erased it, and "x" went into its cell.
+        Assert.Equal("a", GlyphAt(2, 1));
+        Assert.Equal("x", GlyphAt(3, 1));
     }
 
     [AvaloniaFact]

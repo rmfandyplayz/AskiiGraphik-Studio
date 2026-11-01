@@ -65,9 +65,9 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   *Owner checks:* zooming and panning are smooth on a 500×500 sample; text is crisp at 100% and 150% Windows scaling and on Retina.
   *Note:* Built (ADR 0015). Skia lease with one `DrawAtlas` per atlas page; zoom 25–800%; temporary sample document and orange/red missing-glyph markers. The macOS glide-zoom and CI fixes from its testing landed in 1.5.
-- [~] **1.5 Text mode** (a Core tool, plus App wiring). Click to place the caret, and typing writes glyphs. Arrow keys, Home/End, Backspace, Delete and Enter work. Typing coalesces into undo steps. Undo and Redo actions use platform shortcuts. (**Ask about the charset policy first**, ARCHITECTURE §23.)
+- [x] **1.5 Text mode** (a Core tool, plus App wiring). Click to place the caret, and typing writes glyphs. Arrow keys, Home/End, Backspace, Delete and Enter work. Typing coalesces into undo steps. Undo and Redo actions use platform shortcuts. (**Ask about the charset policy first**, ARCHITECTURE §23.)
   *Owner checks:* typing, editing, and undo/redo behave as the test doc describes.
-  *Note:* Built (ADRs 0016–0018), not pushed. The text tool is always active and overwrites; per-document Unicode or ASCII only, with a temporary Edit → ASCII Only. Also fixes Cmd zooming during a touchpad glide and the macOS CI failure.
+  *Note:* Built (ADRs 0016–0018). The text tool is always active and overwrites; per-document Unicode or ASCII only, with a temporary Edit → ASCII Only. Also fixes Cmd zooming during a touchpad glide and the macOS CI failure. The fixes from its testing (zoom-out drift, Backspace on a placed caret and at the edges, Enter following the current text) land in 1.6.
 - [ ] **1.6 Document actions.** Adds:
   - New (with a canvas-size dialog)
   - Resize Canvas (a size + anchor dialog, with the >500 warning)

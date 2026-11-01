@@ -43,8 +43,9 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | The text tool is always active (it's the only tool), so Space types a space and Space + drag doesn't pan | `CanvasViewModel` | 1.5 |
 | The caret is a blue outline around its cell, 2 pixels thick, not blinking | `AppCanvasCaretBrush`, `AppCanvasCaretThickness` | 1.5 |
 | Typing overwrites; nothing shifts sideways. At the right edge the caret stays in the last column | `TextTool` | 1.5 |
-| Backspace empties the cell before the caret and moves into it; Delete empties the caret's cell. Both leave empty cells, not spaces | `TextTool` | 1.5 |
-| Enter goes to the next row at the column you clicked; Home to the first column; End to just past the row's last character; Esc hides the caret | `TextTool` | 1.5 |
+| Backspace after typing empties the cell before the caret and moves into it. After a click, an arrow key, Home or Enter, at the left edge, or after typing into the last column, it empties the caret's own cell first. Delete empties the caret's cell. Both leave empty cells, not spaces | `TextTool` | 1.5, 1.6 |
+| Enter goes to the next row, under the start of the text you're typing. A click starts new text; moving with the keys and typing on the same rows (from its start to just past its end) continues it; typing anywhere else starts new text there | `TextTool.TextBlock` | 1.5, 1.6 |
+| Home goes to the first column; End to just past the row's last character; Esc hides the caret | `TextTool` | 1.5 |
 | One undo step per burst of typing; a 2-second pause, or moving the caret, starts a new one | `TextTool.TypingPause` | 1.5 |
 | The canvas scrolls to keep the caret on screen | `CanvasControl` | 1.5 |
 | Characters the document's character set doesn't allow are silently skipped | `TextTool` | 1.5 |
@@ -57,5 +58,8 @@ The owner's ideas, parked until the stage they belong to.
 - **Debug menu in release builds** (raised in 1.5): hidden by default in release builds, but a setting, probably on an "Advanced" tab of the settings window (M8), turns it on for curious users and contributors hunting bugs. Today the Debug menu exists only in Debug builds.
 - **Draw mode and text mode** (raised in 1.5): two primary ways of working. Draw mode works like an image editor, painting with brushes; text mode is a tool for typing text. Space + drag pans in draw mode only.
 - **Character set UI** (raised in 1.5): the New dialog (1.6) lets you choose Unicode or ASCII only, and document options let you switch later, with a warning that switching to ASCII removes every other character.
+- **Blinking caret** (raised in 1.5): blink at the system's caret rate where the OS has one (on Windows, the Control Panel keyboard setting), else every 0.5 s. The rate becomes a setting later (M8).
+- **Moving the caret faster** (raised in 1.5): jumps of a few cells, of many cells, and to the edge of the row or column, with the keys and jump sizes rebindable (M8). The default keys are being agreed for 1.6.
+- **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
 - **Color and plugins**: possible colour for Discord ANSI art; opacity as a plugin only; wide (CJK) characters as a plugin.

@@ -31,7 +31,8 @@ public sealed class TextTool : ITool
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, session => new TextTool(session));
 
     private readonly EditingSession _session;
-    private int _lineStartColumn;
+    private TextBlock? _block;
+    private bool _backspaceErasesCaretCell;
     private CoalescingGroup? _typingBurst;
     private DateTimeOffset _lastKeystrokeTime;
 
@@ -60,13 +61,16 @@ public sealed class TextTool : ITool
 
     private Document Document => _session.Document;
 
-    /// <summary>Places the caret in the clicked cell. Enter returns to this column.</summary>
+    /// <summary>
+    /// Places the caret in the clicked cell and starts a new block of text there, so Enter
+    /// returns to this column.
+    /// </summary>
     public void PointerPressed(ToolPointerInput input)
     {
         if (!Document.CanvasSize.Contains(input.Cell))
             return;
 
-        _lineStartColumn = input.Cell.X;
+        _block = TextBlock.StartingAt(input.Cell);
         MoveCaret(input.Cell);
     }
 
@@ -104,13 +108,13 @@ public sealed class TextTool : ITool
                 MoveCaret(caret with { X = 0 });
                 break;
             case ToolKey.End:
-                MoveCaret(caret with { X = ColumnAfterLastGlyph(caret.Y) });
+                MoveToRowEnd(caret);
                 break;
             case ToolKey.Enter:
-                MoveCaret(new CellPoint(_lineStartColumn, caret.Y + 1));
+                StartNextLine(caret);
                 break;
             case ToolKey.Backspace:
-                EraseBehind(caret);
+                EraseBackwards(caret);
                 break;
             case ToolKey.Delete:
                 Write(caret, Cell.Empty, nextCaret: caret);
@@ -140,17 +144,30 @@ public sealed class TextTool : ITool
         if (!CanEdit())
             return true;
 
-        var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(Document, layer.Id);
+        var cells = new CellEditBuilder(Document, _session.ActiveLayer.Id);
+        var block = BlockAround(caret);
+        var typedAnything = false;
+        var isStuckAtRightEdge = false;
         foreach (var rune in text.EnumerateRunes())
         {
             if (!Document.CharacterSet.Allows(rune))
                 continue;
 
             cells.Set(caret, Cell.FromGlyph(rune));
-            caret = ClampToCanvas(caret with { X = caret.X + 1 });
+            block = block.WithTyped(caret);
+            var next = ClampToCanvas(caret with { X = caret.X + 1 });
+            isStuckAtRightEdge = next == caret;
+            caret = next;
+            typedAnything = true;
         }
 
+        if (!typedAnything)
+            return true;
+
+        _block = block;
+
+        // Stuck at the right edge, the caret is on what was just typed, so Backspace erases that.
+        _backspaceErasesCaretCell = isStuckAtRightEdge;
         Execute(cells.Build());
         SetCaret(caret);
         return true;
@@ -160,20 +177,27 @@ public sealed class TextTool : ITool
     public void Deactivate()
     {
         _typingBurst = null;
+        _block = null;
         SetCaret(null);
     }
 
-    // Backspace erases the cell before the caret and moves back into it. The cells to the right
-    // stay where they are: shifting them would wreck the art beside the text.
-    private void EraseBehind(CellPoint caret)
+    // Backspace normally erases the cell before the caret and moves back into it, taking back what
+    // was just typed. But when the caret was put on its cell (by a click or a move key), or it's at
+    // the left edge, Backspace erases that cell instead. The cells to the right never shift: that
+    // would wreck the art beside the text.
+    private void EraseBackwards(CellPoint caret)
     {
-        if (caret.X == 0)
+        if (_backspaceErasesCaretCell || caret.X == 0)
+        {
+            Write(caret, Cell.Empty, nextCaret: caret);
             return;
+        }
 
         var behind = caret with { X = caret.X - 1 };
         Write(behind, Cell.Empty, nextCaret: behind);
     }
 
+    // After an erase, the caret's cell is empty, so the next Backspace erases the cell before it.
     private void Write(CellPoint point, Cell cell, CellPoint nextCaret)
     {
         if (!CanEdit())
@@ -182,8 +206,30 @@ public sealed class TextTool : ITool
         var cells = new CellEditBuilder(Document, _session.ActiveLayer.Id);
         cells.Set(point, cell);
         Execute(cells.Build());
+        _backspaceErasesCaretCell = false;
         SetCaret(nextCaret);
     }
+
+    // Enter goes to the next row, under the start of the text being typed. Pressed away from that
+    // text, it starts a new block where the caret is.
+    private void StartNextLine(CellPoint caret)
+    {
+        var block = BlockAround(caret);
+        var next = ClampToCanvas(new CellPoint(block.LineStart, caret.Y + 1));
+        _block = block.WithRow(next.Y);
+        MoveCaret(next);
+    }
+
+    // End goes just past the row's last glyph, as if the row had just been typed, so Backspace
+    // erases that glyph. In a full row the caret stops on the last glyph instead.
+    private void MoveToRowEnd(CellPoint caret)
+    {
+        var column = ColumnAfterLastGlyph(caret.Y);
+        MoveCaret(caret with { X = column }, backspaceErasesCaretCell: column >= Document.CanvasSize.Width);
+    }
+
+    private TextBlock BlockAround(CellPoint caret) =>
+        _block is { } block && block.Continues(caret) ? block : TextBlock.StartingAt(caret);
 
     // A locked layer can't be typed into (§8.1). Nothing happens, and the caret stays put.
     private bool CanEdit() => !_session.ActiveLayer.Properties.IsLocked;
@@ -201,9 +247,12 @@ public sealed class TextTool : ITool
             _session.History.Execute(command, _typingBurst);
     }
 
-    private void MoveCaret(CellPoint point)
+    // Any move but typing ends the typing burst. The caret usually lands on a cell the user chose,
+    // so Backspace erases that cell rather than the one before it.
+    private void MoveCaret(CellPoint point, bool backspaceErasesCaretCell = true)
     {
         _typingBurst = null;
+        _backspaceErasesCaretCell = backspaceErasesCaretCell;
         SetCaret(ClampToCanvas(point));
     }
 
@@ -239,5 +288,23 @@ public sealed class TextTool : ITool
     {
         var size = Document.CanvasSize;
         return new CellPoint(Math.Clamp(point.X, 0, size.Width - 1), Math.Clamp(point.Y, 0, size.Height - 1));
+    }
+
+    // The text typed since the last click: the column Enter returns to, the rows it covers, and its
+    // rightmost typed column. Moving the caret with the keys and typing elsewhere starts a new one,
+    // so Enter doesn't jump back to text typed somewhere else (from 1.5 testing).
+    private readonly record struct TextBlock(int LineStart, int Top, int Bottom, int Right)
+    {
+        // Nothing typed yet, so the block is just this cell.
+        public static TextBlock StartingAt(CellPoint cell) => new(cell.X, cell.Y, cell.Y, cell.X - 1);
+
+        // A caret on one of the block's rows, between its line start and just past its rightmost
+        // glyph, is still in this text: fixing a typo, say.
+        public bool Continues(CellPoint caret) =>
+            caret.Y >= Top && caret.Y <= Bottom && caret.X >= LineStart && caret.X <= Right + 1;
+
+        public TextBlock WithTyped(CellPoint cell) => WithRow(cell.Y) with { Right = Math.Max(Right, cell.X) };
+
+        public TextBlock WithRow(int row) => this with { Top = Math.Min(Top, row), Bottom = Math.Max(Bottom, row) };
     }
 }
