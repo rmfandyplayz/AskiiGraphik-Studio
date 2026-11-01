@@ -160,8 +160,22 @@ public sealed class GlyphRasterizer : IDisposable
         if (IsDrawnEdgeToEdge(rune))
             return 1;
 
-        var advance = _measuringFont.MeasureText(rune.ToString(), out var inkBounds);
+        var advance = MeasureInk(_measuringFont, rune.ToString(), out var inkBounds);
         return HorizontalSqueezeToFit(advance, inkBounds, _referenceAdvance);
+    }
+
+    // Ink bounds come from the glyph's outline, which is the same on every operating system.
+    // Skia's glyph metrics are only an estimate: on macOS they're rounded out to whole pixels and
+    // padded for antialiasing, which made glyphs that fit their cell (like ←) look too wide there.
+    // Bitmap glyphs, such as colour emoji, have no outline and keep the estimate.
+    private static float MeasureInk(SKFont font, string text, out SKRect inkBounds)
+    {
+        var advance = font.MeasureText(text, out inkBounds);
+        using var outline = font.GetTextPath(text, SKPoint.Empty);
+        if (outline is { IsEmpty: false })
+            inkBounds = outline.TightBounds;
+
+        return advance;
     }
 
     // Box drawing, block elements, and the sextants and wedges of Symbols for Legacy Computing.
@@ -227,7 +241,7 @@ public sealed class GlyphRasterizer : IDisposable
 
         using var squeezedFont = CreateRenderingFont(Font.Typeface, Metrics.PixelSize);
         squeezedFont.ScaleX = squeeze;
-        squeezedFont.MeasureText(text, out var inkBounds);
+        MeasureInk(squeezedFont, text, out var inkBounds);
         var originX = cell.Left + MathF.Round((cell.Width - inkBounds.Width) / 2 - inkBounds.Left);
         canvas.DrawText(text, originX, cell.Top + Metrics.Baseline, squeezedFont, _paint);
     }
@@ -243,7 +257,7 @@ public sealed class GlyphRasterizer : IDisposable
     // centred, so it stays recognisable instead of being cut in half.
     private void DrawFallback(SKCanvas canvas, SKFont skFont, string text, SKRectI cell)
     {
-        var advance = skFont.MeasureText(text, out var inkBounds);
+        var advance = MeasureInk(skFont, text, out var inkBounds);
         var scale = ScaleToFit(advance, inkBounds, cell.Size);
         if (scale >= 1)
         {
@@ -252,7 +266,7 @@ public sealed class GlyphRasterizer : IDisposable
         }
 
         using var shrunkFont = CreateRenderingFont(skFont.Typeface, skFont.Size * scale);
-        shrunkFont.MeasureText(text, out var shrunkBounds);
+        MeasureInk(shrunkFont, text, out var shrunkBounds);
         var originX = cell.Left + MathF.Round((cell.Width - shrunkBounds.Width) / 2 - shrunkBounds.Left);
         var originY = cell.Top + MathF.Round((cell.Height - shrunkBounds.Height) / 2 - shrunkBounds.Top);
         canvas.DrawText(text, originX, originY, shrunkFont, _paint);

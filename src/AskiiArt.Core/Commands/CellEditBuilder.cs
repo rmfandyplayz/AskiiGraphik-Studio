@@ -15,6 +15,7 @@ namespace AskiiArt.Core.Commands;
 /// </remarks>
 public sealed class CellEditBuilder
 {
+    private readonly Document _document;
     private readonly Layer _layer;
     private readonly Dictionary<int, CellEdit> _editsByIndex = [];
 
@@ -24,6 +25,7 @@ public sealed class CellEditBuilder
     {
         ArgumentNullException.ThrowIfNull(document);
 
+        _document = document;
         _layer = document.GetLayer(layerId);
     }
 
@@ -32,10 +34,17 @@ public sealed class CellEditBuilder
 
     /// <summary>Sets the cell at <paramref name="point"/>. Setting the same cell again replaces the earlier value.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The point is outside the canvas.</exception>
+    /// <exception cref="ArgumentException">The document's character set doesn't allow the cell's glyph.</exception>
     public void Set(CellPoint point, Cell cell)
     {
         if (!_layer.Size.Contains(point))
             throw new ArgumentOutOfRangeException(nameof(point), point, $"The point is outside the {_layer.Size} canvas.");
+
+        if (cell.IsOccupied && !_document.CharacterSet.Allows(cell.Glyph))
+        {
+            throw new ArgumentException(
+                $"The document's {_document.CharacterSet} character set doesn't allow U+{cell.Glyph.Value:X4}.", nameof(cell));
+        }
 
         var index = _layer.IndexOf(point);
         if (_editsByIndex.TryGetValue(index, out var earlier))

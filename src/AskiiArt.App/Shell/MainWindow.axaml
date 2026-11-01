@@ -19,6 +19,7 @@
                 Spacing="{DynamicResource AppStatusBarSpacing}">
       <TextBlock Text="{Binding ZoomText}" />
       <TextBlock Text="{Binding CanvasSizeText}" />
+      <TextBlock Text="{Binding CharacterSetText}" />
       <TextBlock Text="{Binding HoveredCellText}" />
     </StackPanel>
     <canvas:CanvasView x:Name="CanvasView" />

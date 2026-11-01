@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -14,7 +15,7 @@ namespace AskiiArt.App.Tests.Shell.Menus;
 public sealed class MenuLayoutTests
 {
     [Fact]
-    public void WindowsAndLinux_HaveFileQuit_View_AndHelpWithOpenLogFolderAndAbout()
+    public void WindowsAndLinux_HaveFileQuit_Edit_View_AndHelpWithOpenLogFolderAndAbout()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false);
 
@@ -27,6 +28,7 @@ public sealed class MenuLayoutTests
                 Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
                 Assert.Equal([ShellActionIds.Quit], ActionIdsIn(file.Entries));
             },
+            AssertIsEditMenu,
             AssertIsViewMenu,
             help =>
             {
@@ -47,6 +49,7 @@ public sealed class MenuLayoutTests
 
         Assert.Collection(
             layout.WindowMenus,
+            AssertIsEditMenu,
             AssertIsViewMenu,
             help =>
             {
@@ -79,7 +82,8 @@ public sealed class MenuLayoutTests
         using var canvas = new TestCanvas();
         var registry = new ActionRegistry([
             new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: includeDebugMenu),
-            new CanvasActions(canvas.ViewModel)
+            new CanvasActions(canvas.ViewModel),
+            new EditActions(canvas.Session, new FakeAppShell())
         ]);
 
         foreach (var actionId in layout.ActionIds())
@@ -87,6 +91,12 @@ public sealed class MenuLayoutTests
 
         foreach (var menu in layout.WindowMenus)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(menu.LabelKey)));
+    }
+
+    private static void AssertIsEditMenu(MenuDefinition edit)
+    {
+        Assert.Equal(nameof(Strings.MenuEdit), edit.LabelKey);
+        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo, EditActionIds.AsciiOnly], ActionIdsIn(edit.Entries));
     }
 
     private static void AssertIsViewMenu(MenuDefinition view)

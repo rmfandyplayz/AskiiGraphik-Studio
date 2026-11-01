@@ -48,6 +48,18 @@ internal sealed class FakeAppShell : IAppShell
         return _errorDialog.Task;
     }
 
+    /// <summary>The messages of the confirmation dialogs shown so far.</summary>
+    public List<string> ConfirmationMessages { get; } = [];
+
+    /// <summary>What the user answers in every confirmation dialog.</summary>
+    public bool ConfirmationAnswer { get; set; }
+
+    public Task<bool> ConfirmAsync(string title, string message, string confirmLabel)
+    {
+        ConfirmationMessages.Add(message);
+        return Task.FromResult(ConfirmationAnswer);
+    }
+
     /// <summary>Simulates the user clicking a button in the open error dialog.</summary>
     public void CloseErrorDialog(UnexpectedErrorChoice choice) => _errorDialog.SetResult(choice);
 }

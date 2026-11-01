@@ -29,6 +29,11 @@ internal sealed class CanvasScene : IDisposable
 
     public required PixelRect? HoveredCell { get; init; }
 
+    /// <summary>The text caret's cell, drawn as an outline <see cref="CaretThickness"/> pixels thick.</summary>
+    public required PixelRect? Caret { get; init; }
+
+    public required int CaretThickness { get; init; }
+
     public void Dispose()
     {
         foreach (var batch in Glyphs)

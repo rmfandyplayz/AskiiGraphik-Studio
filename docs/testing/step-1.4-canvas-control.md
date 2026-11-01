@@ -38,7 +38,7 @@ Shortcuts below say **Ctrl**. On a Mac, use **Cmd** instead.
 |---|---|---|
 | 1 | Point at a letter in the text block, hold **Ctrl** and scroll the wheel up a few notches | The canvas zooms in step by step: 125%, 150%, 200%… The letter stays under the mouse pointer. The status bar shows the new zoom. |
 | 2 | Keep zooming in | It stops at 800%. Text stays sharp at every step, never blurry or blocky. |
-| 3 | Hold **Ctrl** and scroll down until it stops | It stops at 25%, where the whole canvas fits in the window and is centred. The rings are still visible as a pattern. |
+| 3 | Hold **Ctrl** and scroll down until it stops | It stops at 25%. The rings are still visible as a pattern. (A 500 × 500 canvas is still bigger than the window there.) |
 | 4 | Press **Ctrl+0** | Back to 100%. |
 | 5 | Press **Ctrl+=** (or Ctrl and the keypad +) twice, then **Ctrl+-** once | 125%, 150%, then 125%. The zoom centres on the middle of the window. |
 | 6 | Open the **View** menu | It lists Zoom In, Zoom Out, Actual Size and Show Grid, with their shortcuts. At 800%, Zoom In is greyed out; at 25%, Zoom Out is. |
@@ -65,8 +65,8 @@ Shortcuts below say **Ctrl**. On a Mac, use **Cmd** instead.
 | 1 | Move the mouse over the canvas | The cell under the pointer is highlighted, and the status bar shows `Cell x, y` (counted from 0 at the top-left). |
 | 2 | Move the mouse onto the grey margin, or out of the window | The highlight and the `Cell` text disappear. |
 | 3 | Press **Ctrl+'** (the apostrophe key) | Faint lines appear between all cells. **View → Show Grid** now has a check mark. |
-| 4 | Zoom out to 25% and 33% | The grid hides, because the cells are too small for it. It comes back at 50%. |
-| 5 | Press **Ctrl+'** again | The grid disappears and the check mark goes. |
+| 4 | Zoom out to 25% | The grid isn't drawn, because the cells are under 4 screen pixels wide; the check mark stays on. It comes back when you zoom in. With display scaling above 100%, cells are bigger, so it may stay visible. |
+| 5 | Press **Ctrl+'** again | The grid disappears and **View → Show Grid** loses its check mark. |
 
 - [ ] Pass  - [ ] Fail. Notes:
 

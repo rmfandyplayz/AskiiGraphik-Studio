@@ -139,14 +139,14 @@ The document raises change events that carry the **affected region**: the layer 
 ### 5.10 Document metadata
 
 - **Font reference:** the family name, style and size the document was authored with. Store this, not a file path. If the font isn't available when the document opens, fall back to the default font and tell the user.
-- **Document-level settings** (for example the space policy, if it ends up per-document) live in the metadata and change only through commands.
+- **Document-level settings** (the character set, §6, and the space policy if it ends up per-document) live in the metadata and change only through commands.
 
 ## 6. Characters and width
 
 - In v1 the grid is **always one column per cell**.
 - A `CharWidth` service can compute each glyph's expected display width (1 or 2 columns, following East Asian Width rules). In v1 it's used only to flag wide characters; the owner decides how they're flagged visually when this comes up. It's the hook for real wide-character support later.
-- Control characters are never stored. Input filters them out.
-- Whether a document can restrict input to printable ASCII is an open question (§23).
+- Control characters are never stored. Input filters them out. Neither are characters that only modify or join their neighbours, such as combining accents.
+- **Character set** (decided in step 1.5, ADR 0016): each document is either **Unicode** or **ASCII only** (printable ASCII), chosen when it's created and switchable later from document options. Switching to ASCII only warns the user, then removes every other character (undoably). A document never holds a character its set doesn't allow.
 
 ## 7. Intensity, ramps and glyph density
 
@@ -164,13 +164,14 @@ Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging imple
 
 Tools are **Core** classes with no UI dependencies. Each tool has:
 
-- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a default shortcut and a category.
+- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a default shortcut (added with the second tool) and a category.
 - **Options:** a plain model object (size, ramp id, mode, …) that the UI binds to. The tool doesn't know what draws its options panel.
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key input for text mode. The App translates Avalonia events into these.
 - **Preview, then commit:** during a gesture, a tool can draw a preview overlay that isn't part of the document. When the gesture ends, it emits **exactly one** command. Pressing Esc cancels the gesture and discards the preview.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
+- **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017).
 
-Tools are registered through DI in a `ToolRegistry`. Built-in tools register exactly the way a future plugin would (§18).
+Tools edit through an **editing session**: the document, its undo history and the active layer. Tools are registered through DI in a `ToolRegistry` and created per session. Built-in tools register exactly the way a future plugin would (§18).
 
 ### 8.2 Planned tools
 
@@ -223,7 +224,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
 - **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
 - **Draw order:** composite → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
-- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the scrollbars, the mouse wheel, middle-drag or space-drag.
+- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the scrollbars, the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
 - **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015).
@@ -274,7 +275,7 @@ Each panel (layers, tool options, ramps, character picker, history, …) is a se
 
 ### 14.6 Placeholder UI policy
 
-Claude Code may build any temporary UI it needs to exercise a feature. Keep it plain and functional, build it only from tokens, resource strings and actions, and make it obviously temporary. Don't spend effort polishing UI the owner will replace. When the owner delivers a design, integrating it is its own roadmap step.
+Claude Code may build any temporary UI it needs to exercise a feature. Keep it plain and functional, build it only from tokens, resource strings and actions, and make it obviously temporary. Don't spend effort polishing UI the owner will replace. Every placeholder choice is listed in `docs/TEMPORARY-UI.md`, the owner's checklist when designing. When the owner delivers a design, integrating it is its own roadmap step.
 
 ## 15. Settings and user data
 
@@ -368,7 +369,7 @@ Ask the owner about each of these at the milestone that needs it.
 | Question | Needed by |
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
-| Charset policy: free Unicode input, or a per-document "ASCII only" restriction? | Step 1.5 |
+| Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Still open:* the New dialog and document options that choose it | The owner's UI design |
 | Should the space-as-empty option be per layer, per document or app-wide? | M2 |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |

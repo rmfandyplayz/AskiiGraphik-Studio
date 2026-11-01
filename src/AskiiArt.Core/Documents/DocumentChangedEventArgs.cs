@@ -13,11 +13,13 @@ public sealed class DocumentChangedEventArgs : EventArgs
         IReadOnlyList<LayerCellsChange> cellChanges,
         bool layerListChanged,
         IReadOnlyList<Guid> layersWithChangedProperties,
+        bool settingsChanged,
         CanvasResizeChange? canvasResize)
     {
         CellChanges = cellChanges;
         LayerListChanged = layerListChanged;
         LayersWithChangedProperties = layersWithChangedProperties;
+        SettingsChanged = settingsChanged;
         CanvasResize = canvasResize;
     }
 
@@ -32,6 +34,9 @@ public sealed class DocumentChangedEventArgs : EventArgs
 
     /// <summary>The layers whose <see cref="Layer.Properties"/> changed, such as visibility or name.</summary>
     public IReadOnlyList<Guid> LayersWithChangedProperties { get; }
+
+    /// <summary>True when a document-level setting changed, such as <see cref="Document.CharacterSet"/>.</summary>
+    public bool SettingsChanged { get; }
 
     /// <summary>Set when the canvas was resized: every cell of every layer may have changed.</summary>
     public CanvasResizeChange? CanvasResize { get; }

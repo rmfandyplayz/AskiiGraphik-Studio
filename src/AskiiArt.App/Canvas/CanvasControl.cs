@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Canvas.Rendering;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
@@ -18,7 +19,8 @@ namespace AskiiArt.App.Canvas;
 /// <summary>
 /// The one control that draws the whole canvas (ARCHITECTURE §12): only the visible cells, from
 /// the composite cache and the glyph atlas, at the display's real pixel size. It also handles
-/// zooming (Ctrl/Cmd + wheel), panning (wheel, middle-drag, Space + drag) and the hover highlight.
+/// zooming (Ctrl/Cmd + wheel), panning (wheel, middle-drag, Space + drag when the tool allows it)
+/// and the hover highlight, and passes everything else to the active tool in cell terms.
 /// Scrollbars bind to its offset properties, which are in device pixels.
 /// </summary>
 internal sealed class CanvasControl : Control, ICustomHitTest
@@ -66,6 +68,15 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     public static readonly StyledProperty<IBrush?> PlaceholderGlyphBrushProperty =
         AvaloniaProperty.Register<CanvasControl, IBrush?>(nameof(PlaceholderGlyphBrush));
 
+    public static readonly StyledProperty<IBrush?> CaretBrushProperty =
+        AvaloniaProperty.Register<CanvasControl, IBrush?>(nameof(CaretBrush));
+
+    public static readonly StyledProperty<double> CaretThicknessProperty =
+        AvaloniaProperty.Register<CanvasControl, double>(nameof(CaretThickness), 2);
+
+    public static readonly StyledProperty<ITool?> ToolProperty =
+        AvaloniaProperty.Register<CanvasControl, ITool?>(nameof(Tool));
+
     public static readonly DirectProperty<CanvasControl, CellPoint?> HoveredCellProperty =
         AvaloniaProperty.RegisterDirect<CanvasControl, CellPoint?>(nameof(HoveredCell),
             control => control.HoveredCell, (control, value) => control.HoveredCell = value);
@@ -81,27 +92,33 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             defaultBindingMode: BindingMode.TwoWay);
 
     public static readonly DirectProperty<CanvasControl, double> HorizontalMaximumProperty =
-        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(HorizontalMaximum), control => control.HorizontalMaximum);
+        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(HorizontalMaximum),
+            control => control.HorizontalMaximum);
 
     public static readonly DirectProperty<CanvasControl, double> VerticalMaximumProperty =
-        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(VerticalMaximum), control => control.VerticalMaximum);
+        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(VerticalMaximum),
+            control => control.VerticalMaximum);
 
     public static readonly DirectProperty<CanvasControl, double> HorizontalViewportProperty =
-        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(HorizontalViewport), control => control.HorizontalViewport);
+        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(HorizontalViewport),
+            control => control.HorizontalViewport);
 
     public static readonly DirectProperty<CanvasControl, double> VerticalViewportProperty =
-        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(VerticalViewport), control => control.VerticalViewport);
+        AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(VerticalViewport),
+            control => control.VerticalViewport);
 
     // How far one notch of the mouse wheel scrolls, in logical pixels (the same as a ScrollViewer).
     private const double WheelScrollDistance = 50;
 
     private readonly CanvasSceneBuilder _sceneBuilder = new();
+    private readonly WheelGestureTracker _wheelGesture = new();
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
     private Point? _panStart;
     private PixelPoint _panStartOffset;
     private bool _isSpaceHeld;
+    private bool _isToolGestureActive;
     private Point? _zoomAnchor;
     private CompositeCache? _subscribedComposite;
     private TopLevel? _topLevel;
@@ -115,7 +132,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         ClipToBoundsProperty.OverrideDefaultValue<CanvasControl>(true);
         AffectsRender<CanvasControl>(IsGridVisibleProperty, PasteboardBrushProperty, PaperBrushProperty,
             InkBrushProperty, GridLineBrushProperty, HoverBrushProperty, FallbackGlyphBrushProperty,
-            PlaceholderGlyphBrushProperty);
+            PlaceholderGlyphBrushProperty, CaretBrushProperty, CaretThicknessProperty);
     }
 
     public CompositeCache? Composite
@@ -205,6 +222,26 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         set => SetValue(PlaceholderGlyphBrushProperty, value);
     }
 
+    public IBrush? CaretBrush
+    {
+        get => GetValue(CaretBrushProperty);
+        set => SetValue(CaretBrushProperty, value);
+    }
+
+    /// <summary>The text caret outline's thickness, in logical pixels.</summary>
+    public double CaretThickness
+    {
+        get => GetValue(CaretThicknessProperty);
+        set => SetValue(CaretThicknessProperty, value);
+    }
+
+    /// <summary>The active tool, which gets the pointer and keyboard input the canvas doesn't use itself.</summary>
+    public ITool? Tool
+    {
+        get => GetValue(ToolProperty);
+        set => SetValue(ToolProperty, value);
+    }
+
     /// <summary>The cell under the pointer, or null when the pointer isn't over the canvas.</summary>
     public CellPoint? HoveredCell
     {
@@ -259,7 +296,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (_viewport is null || Composite is null || GetAtlas() is not { } atlas)
             return;
 
-        var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), IsGridVisible, HoveredCell);
+        var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
+        var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, Tool?.Overlay.Caret, caretThickness);
+        var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene));
     }
 
@@ -269,6 +308,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         if (change.Property == CompositeProperty)
             FollowComposite(change.GetNewValue<CompositeCache?>());
+
+        if (change.Property == ToolProperty)
+            FollowTool(change.GetOldValue<ITool?>(), change.GetNewValue<ITool?>());
 
         if (change.Property == ZoomFactorProperty)
         {
@@ -308,6 +350,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         _topLevel = null;
         FollowComposite(null);
+        FollowTool(Tool, null);
         _sceneBuilder.ReleaseCachedPages();
         _panCursor?.Dispose();
         _panCursor = null;
@@ -326,6 +369,10 @@ internal sealed class CanvasControl : Control, ICustomHitTest
                 _panStartOffset.Y - (int)Math.Round(current.Y - start.Y));
             SetViewport(_viewport.ScrolledTo(offset));
         }
+        else if (Tool is { } tool && ToToolInput(_pointerPosition.Value, e.KeyModifiers) is { } input)
+        {
+            tool.PointerMoved(input);
+        }
 
         UpdateHoveredCell();
     }
@@ -343,32 +390,53 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         Focus();
 
         var point = e.GetCurrentPoint(this);
-        var startsPan = point.Properties.IsMiddleButtonPressed ||
-                        (_isSpaceHeld && point.Properties.IsLeftButtonPressed);
-        if (!startsPan || _viewport is null)
+        if (_viewport is null)
             return;
 
-        _panStart = ToDevicePixels(point.Position);
-        _panStartOffset = _viewport.ScrollOffset;
-        e.Pointer.Capture(this);
-        UpdateCursor();
-        e.Handled = true;
+        var startsPan = point.Properties.IsMiddleButtonPressed ||
+                        (_isSpaceHeld && point.Properties.IsLeftButtonPressed);
+        if (startsPan)
+        {
+            _panStart = ToDevicePixels(point.Position);
+            _panStartOffset = _viewport.ScrollOffset;
+            e.Pointer.Capture(this);
+            UpdateCursor();
+            e.Handled = true;
+        }
+        else if (point.Properties.IsLeftButtonPressed && Tool is { } tool &&
+                 ToToolInput(ToDevicePixels(point.Position), e.KeyModifiers) is { } input)
+        {
+            _isToolGestureActive = true;
+            e.Pointer.Capture(this);
+            tool.PointerPressed(input);
+            e.Handled = true;
+        }
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        if (_panStart is null)
-            return;
+        if (_panStart is not null)
+        {
+            EndPan(e.Pointer);
+            e.Handled = true;
+        }
+        else if (_isToolGestureActive)
+        {
+            _isToolGestureActive = false;
+            e.Pointer.Capture(null);
+            if (Tool is { } tool && ToToolInput(ToDevicePixels(e.GetPosition(this)), e.KeyModifiers) is { } input)
+                tool.PointerReleased(input);
 
-        EndPan(e.Pointer);
-        e.Handled = true;
+            e.Handled = true;
+        }
     }
 
     protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
     {
         base.OnPointerCaptureLost(e);
         _panStart = null;
+        _isToolGestureActive = false;
         UpdateCursor();
     }
 
@@ -378,10 +446,22 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (_viewport is null)
             return;
 
-        if (e.KeyModifiers.HasFlag(PlatformCommandModifiers()))
-            ZoomByWheel(e);
-        else
-            ScrollByWheel(e, _viewport);
+        var action = _wheelGesture.Track(e.Timestamp, e.KeyModifiers.HasFlag(PlatformCommandModifiers()),
+            e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+        switch (action)
+        {
+            case WheelAction.Zoom:
+                ZoomByWheel(e);
+                break;
+            case WheelAction.Scroll:
+                ScrollByWheel(e.Delta, _viewport);
+                break;
+            case WheelAction.ScrollSideways:
+                // Shift turns a vertical wheel into a horizontal one, as in most apps. macOS does
+                // that itself, so a delta that's already sideways is left alone.
+                ScrollByWheel(e.Delta.X == 0 ? new Vector(e.Delta.Y, 0) : e.Delta, _viewport);
+                break;
+        }
 
         e.Handled = true;
     }
@@ -389,23 +469,37 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key != Key.Space)
-            return;
 
-        _isSpaceHeld = true;
-        UpdateCursor();
-        e.Handled = true;
+        // A text tool wants Space as a typed space, so it isn't handled here: on macOS a handled
+        // key never reaches text input.
+        if (e.Key == Key.Space && (Tool?.AllowsSpacePanning ?? true))
+        {
+            _isSpaceHeld = true;
+            UpdateCursor();
+            e.Handled = true;
+        }
+        else if (ToToolKey(e.Key) is { } key && Tool is { } tool && tool.KeyPressed(key, ToToolModifiers(e.KeyModifiers)))
+        {
+            e.Handled = true;
+        }
     }
 
     protected override void OnKeyUp(KeyEventArgs e)
     {
         base.OnKeyUp(e);
-        if (e.Key != Key.Space)
+        if (e.Key != Key.Space || !_isSpaceHeld)
             return;
 
         _isSpaceHeld = false;
         UpdateCursor();
         e.Handled = true;
+    }
+
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        base.OnTextInput(e);
+        if (e.Text is { Length: > 0 } text && Tool is { } tool && tool.TextEntered(text))
+            e.Handled = true;
     }
 
     protected override void OnLostFocus(FocusChangedEventArgs e)
@@ -427,22 +521,24 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     private void ZoomByWheel(PointerWheelEventArgs e)
     {
-        if (e.Delta.Y != 0)
-            ZoomAt(ToDevicePixels(e.GetPosition(this)), zoomIn: e.Delta.Y > 0);
+        var steps = _wheelGesture.TakeZoomSteps(e.Delta.Y);
+        if (steps != 0)
+            ZoomAt(ToDevicePixels(e.GetPosition(this)), steps);
     }
 
-    private void ScrollByWheel(PointerWheelEventArgs e, CanvasViewport viewport)
+    private void ScrollByWheel(Vector delta, CanvasViewport viewport)
     {
-        // Shift turns a vertical wheel into a horizontal one, as in most apps; touchpads also
-        // scroll sideways on their own.
-        var delta = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? new Vector(e.Delta.Y, e.Delta.X) : e.Delta;
         var distance = WheelScrollDistance * _renderScaling;
         SetViewport(viewport.ScrolledBy(-(int)Math.Round(delta.X * distance), -(int)Math.Round(delta.Y * distance)));
     }
 
-    private void ZoomAt(Point anchor, bool zoomIn)
+    // Zooms in by positive steps and out by negative ones.
+    private void ZoomAt(Point anchor, int steps)
     {
-        var factor = zoomIn ? ZoomLevels.StepIn(ZoomFactor) : ZoomLevels.StepOut(ZoomFactor);
+        var factor = ZoomFactor;
+        for (var step = 0; step < Math.Abs(steps); step++)
+            factor = steps > 0 ? ZoomLevels.StepIn(factor) : ZoomLevels.StepOut(factor);
+
         _zoomAnchor = anchor;
         SetCurrentValue(ZoomFactorProperty, factor);
         _zoomAnchor = null;
@@ -538,7 +634,93 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         ToSkColor(GridLineBrush),
         ToSkColor(HoverBrush),
         ToSkColor(FallbackGlyphBrush),
-        ToSkColor(PlaceholderGlyphBrush));
+        ToSkColor(PlaceholderGlyphBrush),
+        ToSkColor(CaretBrush));
+
+    private void FollowTool(ITool? oldTool, ITool? newTool)
+    {
+        if (oldTool is not null)
+            oldTool.OverlayChanged -= OnToolOverlayChanged;
+
+        if (newTool is not null)
+            newTool.OverlayChanged += OnToolOverlayChanged;
+
+        InvalidateVisual();
+    }
+
+    private void OnToolOverlayChanged(object? sender, EventArgs e)
+    {
+        ScrollCaretIntoView();
+        InvalidateVisual();
+    }
+
+    // Typing or arrow keys can move the caret off screen; scroll just far enough to show it.
+    private void ScrollCaretIntoView()
+    {
+        if (_viewport is null || Tool?.Overlay.Caret is not { } caret || !_viewport.CanvasSize.Contains(caret))
+            return;
+
+        var cell = _viewport.GetCellBounds(caret);
+        var size = _viewport.ViewportSize;
+        var deltaX = DistanceToShow(cell.X, cell.Right, size.Width);
+        var deltaY = DistanceToShow(cell.Y, cell.Bottom, size.Height);
+        if (deltaX != 0 || deltaY != 0)
+            SetViewport(_viewport.ScrolledBy(deltaX, deltaY));
+    }
+
+    // How far to scroll so the span from start to end is on screen, preferring its start.
+    private static int DistanceToShow(int start, int end, int viewportLength)
+    {
+        if (start < 0)
+            return start;
+
+        if (end > viewportLength)
+            return Math.Min(end - viewportLength, start);
+
+        return 0;
+    }
+
+    private ToolPointerInput? ToToolInput(Point devicePoint, KeyModifiers modifiers)
+    {
+        if (_viewport is null)
+            return null;
+
+        var origin = _viewport.CanvasOrigin;
+        var column = (devicePoint.X - origin.X) / _viewport.CellSize.Width;
+        var row = (devicePoint.Y - origin.Y) / _viewport.CellSize.Height;
+        var cell = new CellPoint((int)Math.Floor(column), (int)Math.Floor(row));
+        return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers));
+    }
+
+    private static ToolKey? ToToolKey(Key key) => key switch
+    {
+        Key.Left => ToolKey.Left,
+        Key.Right => ToolKey.Right,
+        Key.Up => ToolKey.Up,
+        Key.Down => ToolKey.Down,
+        Key.Home => ToolKey.Home,
+        Key.End => ToolKey.End,
+        Key.Back => ToolKey.Backspace,
+        Key.Delete => ToolKey.Delete,
+        Key.Enter => ToolKey.Enter,
+        Key.Escape => ToolKey.Escape,
+        _ => null
+    };
+
+    private static ToolModifiers ToToolModifiers(KeyModifiers modifiers)
+    {
+        var toolModifiers = ToolModifiers.None;
+        if ((modifiers & PlatformCommandModifiers()) != 0)
+            toolModifiers |= ToolModifiers.Command;
+
+        if (modifiers.HasFlag(KeyModifiers.Shift))
+            toolModifiers |= ToolModifiers.Shift;
+
+        if (modifiers.HasFlag(KeyModifiers.Alt))
+            toolModifiers |= ToolModifiers.Alt;
+
+        return toolModifiers;
+    }
 
     private void FollowComposite(CompositeCache? composite)
     {

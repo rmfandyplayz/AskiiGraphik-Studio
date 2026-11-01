@@ -14,7 +14,7 @@ namespace AskiiArt.Core.Tests.Commands;
 /// </summary>
 public sealed class UndoPropertyTests
 {
-    private const int KindCount = 10;
+    private const int KindCount = 11;
 
     private static Cell[] Glyphs { get; } =
         [Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('a'), TestCells.Glyph('#'), TestCells.Glyph('é')];
@@ -88,6 +88,7 @@ public sealed class UndoPropertyTests
             6 => new SetLayerPropertiesCommand(layer.Id, ChangeProperties(layer.Properties, step.B)),
             7 => new ResizeCanvasCommand(new CanvasSize(1 + (step.B % 7), 1 + (step.C % 6)), (ResizeAnchor)(step.A % 9)),
             8 => CreateComposite(document, layer, step),
+            9 => new SetCharacterSetCommand((CharacterSet)(step.B % 2)),
             _ => null
         };
     }
@@ -95,12 +96,13 @@ public sealed class UndoPropertyTests
     private static CellEditCommand? CreateCellEdit(Document document, Layer layer, int cellCountSeed, int seed)
     {
         var random = new Random(seed);
+        var glyphs = Glyphs.Where(cell => cell.IsEmpty || document.CharacterSet.Allows(cell.Glyph)).ToArray();
         var builder = new CellEditBuilder(document, layer.Id);
         var cellCount = 1 + (cellCountSeed % 6);
         for (var index = 0; index < cellCount; index++)
         {
             var point = new CellPoint(random.Next(document.CanvasSize.Width), random.Next(document.CanvasSize.Height));
-            builder.Set(point, Glyphs[random.Next(Glyphs.Length)]);
+            builder.Set(point, glyphs[random.Next(glyphs.Length)]);
         }
 
         return builder.Build();

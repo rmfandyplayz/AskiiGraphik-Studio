@@ -4,24 +4,32 @@
 using System.Text;
 using AskiiArt.App.Canvas;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Editing;
+using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
 
 namespace AskiiArt.App.Tests.Fakes;
 
 /// <summary>
-/// A canvas view model over a small empty document, with the default bundled font and no
-/// fallback fonts, so tests don't depend on what the machine has installed. Dispose it to release
-/// the font and atlases.
+/// A canvas view model over a small empty document, with the text tool, the default bundled font
+/// and no fallback fonts, so tests don't depend on what the machine has installed. Dispose it to
+/// release the font and atlases.
 /// </summary>
 internal sealed class TestCanvas : IDisposable
 {
-    public TestCanvas(CanvasSize? size = null)
+    public TestCanvas(CanvasSize? size = null, CharacterSet characterSet = CharacterSet.Unicode)
     {
         Font = FontLoader.LoadBundled(BundledFonts.Default);
         Atlases = new GlyphAtlasCache(NoFallbackFonts.Instance);
-        ViewModel = new CanvasViewModel(Document.Create(size ?? new CanvasSize(40, 20), "Layer"), Font, Atlases);
+        Session = new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet));
+        ViewModel = new CanvasViewModel(Session, new ToolRegistry([TextTool.Definition]), Font, Atlases);
     }
+
+    public EditingSession Session { get; }
+
+    public Document Document => Session.Document;
 
     public LoadedFont Font { get; }
 

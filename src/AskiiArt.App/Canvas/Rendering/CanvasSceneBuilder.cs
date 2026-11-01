@@ -20,7 +20,7 @@ internal sealed class CanvasSceneBuilder
     private readonly AtlasPageImages _pageImages = new();
 
     public CanvasScene Build(CompositeCache composite, GlyphAtlas atlas, CanvasViewport viewport,
-        CanvasColors colors, bool isGridVisible, CellPoint? hoveredCell)
+        CanvasColors colors, CanvasOverlays overlays)
     {
         ArgumentNullException.ThrowIfNull(composite);
         ArgumentNullException.ThrowIfNull(atlas);
@@ -72,10 +72,15 @@ internal sealed class CanvasSceneBuilder
             Glyphs = batches,
             FallbackGlyphCells = fallbackCells,
             PlaceholderGlyphCells = placeholderCells,
-            IsGridVisible = isGridVisible,
-            HoveredCell = hoveredCell is { } hovered ? viewport.GetCellBounds(hovered) : null
+            IsGridVisible = overlays.IsGridVisible,
+            HoveredCell = BoundsOf(viewport, overlays.HoveredCell),
+            Caret = BoundsOf(viewport, overlays.Caret),
+            CaretThickness = overlays.CaretThickness
         };
     }
+
+    private static PixelRect? BoundsOf(CanvasViewport viewport, CellPoint? cell) =>
+        cell is { } point && viewport.CanvasSize.Contains(point) ? viewport.GetCellBounds(point) : null;
 
     /// <summary>Lets go of the page copies kept between frames (when the canvas leaves the window).</summary>
     public void ReleaseCachedPages() => _pageImages.Clear();

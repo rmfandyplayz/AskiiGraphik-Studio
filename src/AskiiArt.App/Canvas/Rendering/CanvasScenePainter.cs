@@ -55,6 +55,9 @@ internal static class CanvasScenePainter
         if (scene.HoveredCell is { } hovered)
             Fill(canvas, paint, hovered, colors.Hover);
 
+        if (scene.Caret is { } caret)
+            DrawOutline(canvas, paint, caret, scene.CaretThickness, colors.Caret);
+
         canvas.Restore();
     }
 
@@ -84,6 +87,17 @@ internal static class CanvasScenePainter
             var y = Math.Min(canvasBounds.Y + row * viewport.CellSize.Height, canvasBounds.Bottom - GridLineWidth);
             canvas.DrawRect(SKRect.Create(left, y, right - left, GridLineWidth), paint);
         }
+    }
+
+    // Four filled edges inside the rect, so the outline lands on whole pixels and never covers
+    // the neighbouring cells.
+    private static void DrawOutline(SKCanvas canvas, SKPaint paint, PixelRect rect, int thickness, SKColor color)
+    {
+        var width = Math.Clamp(thickness, 1, Math.Max(1, Math.Min(rect.Width, rect.Height) / 2));
+        Fill(canvas, paint, new PixelRect(rect.X, rect.Y, rect.Width, width), color);
+        Fill(canvas, paint, new PixelRect(rect.X, rect.Bottom - width, rect.Width, width), color);
+        Fill(canvas, paint, new PixelRect(rect.X, rect.Y, width, rect.Height), color);
+        Fill(canvas, paint, new PixelRect(rect.Right - width, rect.Y, width, rect.Height), color);
     }
 
     private static void Fill(SKCanvas canvas, SKPaint paint, PixelRect rect, SKColor color)

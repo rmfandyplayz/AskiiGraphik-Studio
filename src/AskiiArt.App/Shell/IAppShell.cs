@@ -21,6 +21,12 @@ internal interface IAppShell
     Task ShowAboutAsync();
 
     Task<UnexpectedErrorChoice> ShowUnexpectedErrorAsync();
+
+    /// <summary>
+    /// Asks the user to confirm something that removes content. True only when they confirm;
+    /// false when they cancel or no window is open to ask from.
+    /// </summary>
+    Task<bool> ConfirmAsync(string title, string message, string confirmLabel);
 }
 
 /// <summary>What the user chose in the unexpected-error dialog.</summary>

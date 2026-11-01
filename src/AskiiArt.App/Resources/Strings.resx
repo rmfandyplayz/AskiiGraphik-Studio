@@ -30,6 +30,9 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>_Help</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>
@@ -61,6 +64,16 @@
     <value>_Actual Size</value>
     <comment>Zoom back to 100%.</comment>
   </data>
+  <data name="ActionUndo" xml:space="preserve">
+    <value>_Undo</value>
+  </data>
+  <data name="ActionRedo" xml:space="preserve">
+    <value>_Redo</value>
+  </data>
+  <data name="ActionAsciiOnly" xml:space="preserve">
+    <value>_ASCII Only</value>
+    <comment>A check mark item: when on, the document holds only printable ASCII characters.</comment>
+  </data>
   <data name="ActionShowGrid" xml:space="preserve">
     <value>Show _Grid</value>
   </data>
@@ -77,6 +90,14 @@
   <data name="StatusCellFormat" xml:space="preserve">
     <value>Cell {0}, {1}</value>
     <comment>The cell under the pointer. {0} is the column and {1} the row, both counted from 0.</comment>
+  </data>
+  <data name="StatusCharacterSetUnicode" xml:space="preserve">
+    <value>Unicode</value>
+    <comment>Status bar: the document can hold any character.</comment>
+  </data>
+  <data name="StatusCharacterSetAscii" xml:space="preserve">
+    <value>ASCII only</value>
+    <comment>Status bar: the document holds only printable ASCII characters.</comment>
   </data>
   <data name="StatusCanvasSizeFormat" xml:space="preserve">
     <value>{0} × {1} cells</value>
@@ -102,6 +123,26 @@
   </data>
   <data name="DialogOk" xml:space="preserve">
     <value>OK</value>
+  </data>
+
+  <!-- Tools -->
+  <data name="ToolText" xml:space="preserve">
+    <value>Text</value>
+  </data>
+
+  <!-- Switching a document to ASCII only -->
+  <data name="AsciiOnlyConfirmTitle" xml:space="preserve">
+    <value>Switch to ASCII Only</value>
+  </data>
+  <data name="AsciiOnlyConfirmMessageFormat" xml:space="preserve">
+    <value>Switching to ASCII only removes every character that isn't ASCII ({0:N0} in this document). You can undo this.</value>
+    <comment>{0} is how many cells hold a character that isn't printable ASCII.</comment>
+  </data>
+  <data name="AsciiOnlyConfirmRemove" xml:space="preserve">
+    <value>Remove and Switch</value>
+  </data>
+  <data name="DialogCancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
 
   <!-- Unexpected error dialog -->
