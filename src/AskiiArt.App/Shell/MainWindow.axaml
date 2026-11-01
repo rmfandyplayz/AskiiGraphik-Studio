@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder main window: a menu bar, the canvas, and a status bar. The menus themselves are
-     built in code from the MenuLayout (see MainWindowBuilder). -->
+<!-- Placeholder main window: a menu bar, a toolbar, the canvas, and a status bar. The menus and
+     the toolbar are built in code from the MenuLayout and ToolbarLayout (see MainWindowBuilder). -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:res="using:AskiiArt.App.Resources"
@@ -13,6 +13,7 @@
     <!-- Shows the window's native menu on Windows and Linux; hides itself on macOS, where the
          menu goes to the system menu bar instead. -->
     <NativeMenuBar DockPanel.Dock="Top" />
+    <ContentControl x:Name="ToolbarHost" DockPanel.Dock="Top" />
     <StackPanel DockPanel.Dock="Bottom"
                 Orientation="Horizontal"
                 Margin="{DynamicResource AppStatusBarPadding}"
@@ -20,6 +21,7 @@
       <TextBlock Text="{Binding ZoomText}" />
       <TextBlock Text="{Binding CanvasSizeText}" />
       <TextBlock Text="{Binding CharacterSetText}" />
+      <TextBlock Text="{Binding FontText}" />
       <TextBlock Text="{Binding HoveredCellText}" />
     </StackPanel>
     <canvas:CanvasView x:Name="CanvasView" />

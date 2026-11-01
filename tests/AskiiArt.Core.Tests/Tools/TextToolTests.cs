@@ -208,6 +208,8 @@ public sealed class TextToolTests
     [InlineData(ToolKey.Down)]
     [InlineData(ToolKey.Home)]
     [InlineData(ToolKey.Enter)]
+    [InlineData(ToolKey.JumpLeft)]
+    [InlineData(ToolKey.Top)]
     public void Backspace_AfterAMoveKey_ErasesTheCaretCell(ToolKey key)
     {
         TestCells.Paint(Layer, "abcdef", "ghijkl", "mnopqr");
@@ -388,6 +390,47 @@ public sealed class TextToolTests
         Press(ToolKey.Right);
         Press(ToolKey.Down);
         Assert.Equal(new CellPoint(1, 1), _tool.Caret);
+    }
+
+    [Theory]
+    [InlineData(ToolKey.JumpRight, 3, 0)]
+    [InlineData(ToolKey.JumpDown, 0, 3)]
+    [InlineData(ToolKey.LongJumpRight, 10, 0)]
+    [InlineData(ToolKey.LongJumpDown, 0, 10)]
+    public void Jumps_MoveSeveralCells(ToolKey key, int expectedX, int expectedY)
+    {
+        var tool = new TextTool(new EditingSession(TestCells.CreateDocument(20, 20), _clock));
+        tool.PointerPressed(PointerAt(0, 0));
+
+        Assert.True(tool.KeyPressed(key, ToolModifiers.None));
+
+        Assert.Equal(new CellPoint(expectedX, expectedY), tool.Caret);
+    }
+
+    [Theory]
+    [InlineData(ToolKey.JumpLeft, 0, 1)]
+    [InlineData(ToolKey.JumpUp, 1, 0)]
+    [InlineData(ToolKey.LongJumpRight, 5, 1)]
+    [InlineData(ToolKey.LongJumpDown, 1, 2)]
+    public void Jumps_StopAtTheCanvasEdge(ToolKey key, int expectedX, int expectedY)
+    {
+        Click(1, 1);
+
+        Press(key);
+
+        Assert.Equal(new CellPoint(expectedX, expectedY), _tool.Caret);
+    }
+
+    [Fact]
+    public void TopAndBottom_GoToTheEndsOfTheColumn()
+    {
+        Click(4, 1);
+
+        Press(ToolKey.Bottom);
+        Assert.Equal(new CellPoint(4, 2), _tool.Caret);
+
+        Press(ToolKey.Top);
+        Assert.Equal(new CellPoint(4, 0), _tool.Caret);
     }
 
     [Fact]

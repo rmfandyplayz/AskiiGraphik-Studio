@@ -1,0 +1,59 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Resize Canvas dialog (step 1.6): the new size, and a three-by-three grid of
+     arrows for the anchor that stays put. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:documents="using:AskiiArt.App.Documents"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Documents.ResizeCanvasWindow"
+        x:DataType="documents:ResizeCanvasViewModel"
+        Title="{x:Static res:Strings.ResizeCanvasTitle}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <documents:CanvasSizeFieldsView x:Name="SizeFields" DataContext="{Binding Size}" />
+    <TextBlock Text="{x:Static res:Strings.ResizeCropWarning}"
+               IsVisible="{Binding CropsCanvas}"
+               Foreground="{DynamicResource AppWarningTextBrush}"
+               TextWrapping="Wrap" />
+    <TextBlock Text="{x:Static res:Strings.ResizeAnchorLabel}" />
+    <ListBox ItemsSource="{Binding Anchors}"
+             SelectedItem="{Binding SelectedAnchor, Mode=TwoWay}"
+             HorizontalAlignment="Left">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Columns="3" />
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="documents:ResizeAnchorOption">
+          <TextBlock Text="{Binding Symbol}"
+                     ToolTip.Tip="{Binding Name}"
+                     Width="{StaticResource AppResizeAnchorButtonSize}"
+                     Height="{StaticResource AppResizeAnchorButtonSize}"
+                     TextAlignment="Center"
+                     VerticalAlignment="Center" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="{StaticResource AppDialogButtonsMargin}"
+                Spacing="{StaticResource AppSpacingMedium}">
+      <Button x:Name="OkButton"
+              Content="{x:Static res:Strings.DialogOk}"
+              IsDefault="True"
+              IsEnabled="{Binding CanAccept}"
+              Click="OnOkClick" />
+      <Button Content="{x:Static res:Strings.DialogCancel}"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>

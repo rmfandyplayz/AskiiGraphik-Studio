@@ -26,3 +26,5 @@ ARCHITECTURE §5.7 sets a soft limit of 500 × 500 (warn, but allow), asks for a
 
 - Memory: a cell is 8 bytes today (16 bytes at most later), so one 4096 × 4096 layer takes about 134 MB (268 MB at 16 bytes). Large canvases with many layers can use gigabytes, which is why the soft-limit warning exists. Tiled storage (§5.8) is the fix if it becomes a problem.
 - The resize command (step 1.2) stores only the cropped cells for undo, using `CroppedRegions`.
+
+Updated 2026-11-01: the Resize Canvas dialog (step 1.6) starts anchored in the centre, and the New and Resize Canvas size boxes accept only sides within the hard limit and warn above the soft limit (ADR 0020).

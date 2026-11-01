@@ -16,6 +16,7 @@
       <SolidColorBrush x:Key="AppCanvasFallbackGlyphBrush" Color="#FFFFD699" />
       <SolidColorBrush x:Key="AppCanvasPlaceholderGlyphBrush" Color="#FFFF9E9E" />
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
+      <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -27,6 +28,7 @@
       <SolidColorBrush x:Key="AppCanvasFallbackGlyphBrush" Color="#FF6B5420" />
       <SolidColorBrush x:Key="AppCanvasPlaceholderGlyphBrush" Color="#FF7A2E2E" />
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
+      <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -49,8 +51,16 @@
   <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>
   <x:Double x:Key="AppStatusBarSpacing">24</x:Double>
 
+  <!-- Toolbar -->
+  <Thickness x:Key="AppToolbarPadding">8,4</Thickness>
+  <!-- The extra gap between groups of toolbar buttons. -->
+  <x:Double x:Key="AppToolbarGroupGap">12</x:Double>
+
   <!-- Dialogs -->
   <Thickness x:Key="AppDialogButtonsMargin">0,16,0,0</Thickness>
   <x:Double x:Key="AppDialogMinWidth">320</x:Double>
   <x:Double x:Key="AppDialogMaxWidth">480</x:Double>
+  <x:Double x:Key="AppNumberBoxWidth">140</x:Double>
+  <x:Double x:Key="AppResizeAnchorButtonSize">32</x:Double>
+  <x:Double x:Key="AppFontListHeight">320</x:Double>
 </ResourceDictionary>

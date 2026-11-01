@@ -14,8 +14,15 @@ internal static class UiText
     public static string Get(string key)
     {
         return Strings.ResourceManager.GetString(key, Strings.Culture)
-            ?? throw new KeyNotFoundException($"Strings.resx has no string with the key '{key}'.");
+               ?? throw new KeyNotFoundException($"Strings.resx has no string with the key '{key}'.");
     }
+
+    /// <summary>
+    /// Removes the underscore that marks a menu label's access key ("_New…" becomes "New…"), for
+    /// places that show the label without one, such as toolbar buttons.
+    /// </summary>
+    public static string WithoutAccessKey(string label) =>
+        label.Replace("__", "\0").Replace("_", "").Replace("\0", "_");
 
     /// <summary>Formats the string with the app's display name as <c>{0}</c>.</summary>
     public static string GetWithAppName(string key)

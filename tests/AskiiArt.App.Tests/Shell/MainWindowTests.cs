@@ -2,19 +2,19 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
-using AskiiArt.App.Canvas;
-using AskiiArt.App.Editing;
-using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Tools;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Tests.Shell;
 
@@ -27,11 +27,7 @@ public sealed class MainWindowTests : IDisposable
 
     public MainWindowTests()
     {
-        _actions = new ActionRegistry([
-            new ShellActions(_shell, new AppDataLocations("root"), includeDebugActions: false),
-            new CanvasActions(_canvas.ViewModel),
-            new EditActions(_canvas.Session, _shell)
-        ]);
+        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell));
     }
 
     public void Dispose()
@@ -55,7 +51,7 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void WindowMenu_HasFileViewAndHelp_WithTheirActions()
+    public void WindowMenu_HasItsMenus_WithTheirActions()
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
 
@@ -63,15 +59,15 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuView, Strings.MenuHelp],
+        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuView, Strings.MenuHelp],
             topLevelItems.Select(item => item.Header));
 
-        var quit = Assert.IsType<NativeMenuItem>(Assert.Single(topLevelItems[0].Menu!.Items));
+        var quit = Assert.IsType<NativeMenuItem>(topLevelItems[0].Menu!.Items[^1]);
         Assert.Equal(Strings.ActionQuit, quit.Header);
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[3].Menu!.Items;
+        var helpItems = topLevelItems[4].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -140,6 +136,33 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void Toolbar_HasAButtonPerAction_ThatRunsItAndDoesntTakeFocus()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+
+        var buttons = ToolbarButtons(window);
+        var zoomIn = buttons.Single(button => Equals(button.Content, UiText.WithoutAccessKey(Strings.ActionZoomIn)));
+        Assert.Equal(ToolbarLayout.CreateDefault().ActionIds().Count(), buttons.Length);
+        Assert.All(buttons, button => Assert.False(button.Focusable));
+
+        zoomIn.Command!.Execute(null);
+        Assert.Equal(1.25, _canvas.ViewModel.ZoomFactor);
+    }
+
+    [AvaloniaFact]
+    public void ToolbarShowGrid_IsAToggleThatFollowsTheGrid()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        var showGrid = ToolbarButtons(window).OfType<ToggleButton>().Single();
+
+        _canvas.ViewModel.ToggleGrid();
+
+        Assert.True(showGrid.IsChecked);
+    }
+
+    [AvaloniaFact]
     public void InTheSystemMenuBar_ActionsInAMenu_GetNoExtraWindowKeyBinding()
     {
         // macOS: the system menu bar triggers a menu item's shortcut itself, so a window key
@@ -180,7 +203,7 @@ public sealed class MainWindowTests : IDisposable
     public void ApplicationMenu_OnMacOS_HasAboutWithTheAppName()
     {
         var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
-            _canvas.ViewModel);
+            ToolbarLayout.CreateDefault(), _canvas.ViewModel);
 
         var applicationMenu = builder.BuildApplicationMenu(KeyModifiers.Meta);
 
@@ -193,16 +216,22 @@ public sealed class MainWindowTests : IDisposable
     [AvaloniaFact]
     public void ApplicationMenu_OnWindowsAndLinux_IsNotCreated()
     {
-        var builder =
-            new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
-                _canvas.ViewModel);
+        var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
+            ToolbarLayout.CreateDefault(), _canvas.ViewModel);
 
         Assert.Null(builder.BuildApplicationMenu(KeyModifiers.Control));
     }
 
+    private static Button[] ToolbarButtons(MainWindow window) =>
+    [
+        .. window.GetVisualDescendants().OfType<ContentControl>().Single(host => host.Name == "ToolbarHost")
+            .GetVisualDescendants().OfType<Button>()
+    ];
+
     private MainWindow BuildWindow(MenuLayout layout, KeyModifiers commandModifiers = KeyModifiers.Control)
     {
-        var window = new MainWindowBuilder(_actions, layout, _canvas.ViewModel).Build(commandModifiers);
+        var window = new MainWindowBuilder(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel)
+            .Build(commandModifiers);
         _windows.Add(window);
         return window;
     }

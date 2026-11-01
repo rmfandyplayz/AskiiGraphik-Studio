@@ -2,12 +2,10 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
-using AskiiArt.App.Canvas;
-using AskiiArt.App.Editing;
-using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -52,13 +50,13 @@ public sealed class AppTests : IDisposable
     private ServiceProvider ServicesWithMenuLayout(MenuLayout layout)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IActionProvider>(
-            new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: false));
-        services.AddSingleton<IActionProvider>(new CanvasActions(_canvas.ViewModel));
-        services.AddSingleton<IActionProvider>(new EditActions(_canvas.Session, new FakeAppShell()));
+        foreach (var provider in TestActions.CreateProviders(_canvas, new FakeAppShell()))
+            services.AddSingleton(provider);
+
         services.AddSingleton(_canvas.ViewModel);
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
+        services.AddSingleton(ToolbarLayout.CreateDefault());
         services.AddSingleton<MainWindowBuilder>();
         return services.BuildServiceProvider();
     }

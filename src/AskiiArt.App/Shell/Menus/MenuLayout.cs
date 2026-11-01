@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 
@@ -47,13 +48,19 @@ internal sealed record MenuLayout(
         var windowMenus = new List<MenuDefinition>();
         IReadOnlyList<MenuEntry> applicationMenu;
 
-        // ASCII Only is a document setting; it sits here until the owner designs document options.
         var editMenu = new MenuDefinition(nameof(Strings.MenuEdit),
         [
             new ActionMenuEntry(EditActionIds.Undo),
-            new ActionMenuEntry(EditActionIds.Redo),
+            new ActionMenuEntry(EditActionIds.Redo)
+        ]);
+
+        // ASCII Only sits here until the owner designs document options.
+        var documentMenu = new MenuDefinition(nameof(Strings.MenuDocument),
+        [
+            new ActionMenuEntry(DocumentActionIds.ResizeCanvas),
+            new ActionMenuEntry(DocumentActionIds.Font),
             new SeparatorMenuEntry(),
-            new ActionMenuEntry(EditActionIds.AsciiOnly)
+            new ActionMenuEntry(DocumentActionIds.AsciiOnly)
         ]);
 
         var viewMenu = new MenuDefinition(nameof(Strings.MenuView),
@@ -70,15 +77,23 @@ internal sealed record MenuLayout(
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
             // the Quit item there (with Cmd+Q), so the Quit action isn't listed again.
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [new ActionMenuEntry(DocumentActionIds.New)]));
             windowMenus.Add(editMenu);
+            windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp), [new ActionMenuEntry(ShellActionIds.OpenLogFolder)]));
         }
         else
         {
             applicationMenu = [];
-            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [new ActionMenuEntry(ShellActionIds.Quit)]));
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile),
+            [
+                new ActionMenuEntry(DocumentActionIds.New),
+                new SeparatorMenuEntry(),
+                new ActionMenuEntry(ShellActionIds.Quit)
+            ]));
             windowMenus.Add(editMenu);
+            windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
             [

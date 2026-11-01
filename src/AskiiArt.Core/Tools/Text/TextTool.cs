@@ -24,6 +24,12 @@ public sealed class TextTool : ITool
     /// <summary>How long a pause in typing ends the burst, so the next keystroke starts a new undo step.</summary>
     public static readonly TimeSpan TypingPause = TimeSpan.FromSeconds(2);
 
+    /// <summary>How many cells a jump moves (<see cref="ToolKey.JumpLeft"/> and friends). A setting later (M8).</summary>
+    public const int ShortJump = 3;
+
+    /// <summary>How many cells a long jump moves (<see cref="ToolKey.LongJumpLeft"/> and friends). A setting later (M8).</summary>
+    public const int LongJump = 10;
+
     /// <summary>The text tool's identity. The name key is the App's resource key.</summary>
     public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text");
 
@@ -90,25 +96,25 @@ public sealed class TextTool : ITool
         if (CurrentCaret() is not { } caret)
             return false;
 
+        if (MoveDistance(key) is { } distance)
+        {
+            MoveCaret(new CellPoint(caret.X + distance.X, caret.Y + distance.Y));
+            return true;
+        }
+
         switch (key)
         {
-            case ToolKey.Left:
-                MoveCaret(caret with { X = caret.X - 1 });
-                break;
-            case ToolKey.Right:
-                MoveCaret(caret with { X = caret.X + 1 });
-                break;
-            case ToolKey.Up:
-                MoveCaret(caret with { Y = caret.Y - 1 });
-                break;
-            case ToolKey.Down:
-                MoveCaret(caret with { Y = caret.Y + 1 });
-                break;
             case ToolKey.Home:
                 MoveCaret(caret with { X = 0 });
                 break;
             case ToolKey.End:
                 MoveToRowEnd(caret);
+                break;
+            case ToolKey.Top:
+                MoveCaret(caret with { Y = 0 });
+                break;
+            case ToolKey.Bottom:
+                MoveCaret(caret with { Y = Document.CanvasSize.Height - 1 });
                 break;
             case ToolKey.Enter:
                 StartNextLine(caret);
@@ -227,6 +233,24 @@ public sealed class TextTool : ITool
         var column = ColumnAfterLastGlyph(caret.Y);
         MoveCaret(caret with { X = column }, backspaceErasesCaretCell: column >= Document.CanvasSize.Width);
     }
+
+    // How far each arrow-style key moves the caret. Moves stop at the canvas edges.
+    private static (int X, int Y)? MoveDistance(ToolKey key) => key switch
+    {
+        ToolKey.Left => (-1, 0),
+        ToolKey.Right => (1, 0),
+        ToolKey.Up => (0, -1),
+        ToolKey.Down => (0, 1),
+        ToolKey.JumpLeft => (-ShortJump, 0),
+        ToolKey.JumpRight => (ShortJump, 0),
+        ToolKey.JumpUp => (0, -ShortJump),
+        ToolKey.JumpDown => (0, ShortJump),
+        ToolKey.LongJumpLeft => (-LongJump, 0),
+        ToolKey.LongJumpRight => (LongJump, 0),
+        ToolKey.LongJumpUp => (0, -LongJump),
+        ToolKey.LongJumpDown => (0, LongJump),
+        _ => null
+    };
 
     private TextBlock BlockAround(CellPoint caret) =>
         _block is { } block && block.Continues(caret) ? block : TextBlock.StartingAt(caret);

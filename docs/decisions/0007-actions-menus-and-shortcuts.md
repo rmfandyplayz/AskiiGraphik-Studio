@@ -33,3 +33,4 @@ ARCHITECTURE §14.2–14.3 requires every user-invocable operation to be an acti
 Updated 2026-10-30: the application menu is now set in `App.Initialize`. It used to be set in `OnFrameworkInitializationCompleted`, which was too late, so macOS showed "About Avalonia".
 Updated 2026-10-31: toggle actions have an `ActionCheckedState` (step 1.4), and there's a View menu on every OS.
 Updated 2026-10-31: on macOS, a menu action's second and later shortcuts get window key bindings (step 1.5); before, only the first worked. There's an Edit menu.
+Updated 2026-11-01: a placeholder toolbar binds to actions the same way (ADR 0020). There's a Document menu, and macOS has a File menu with New.

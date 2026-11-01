@@ -24,10 +24,11 @@ public sealed class Document
 {
     private readonly List<Frame> _frames = [];
 
-    private Document(CanvasSize canvasSize, CharacterSet characterSet)
+    private Document(CanvasSize canvasSize, CharacterSet characterSet, FontReference font)
     {
         CanvasSize = canvasSize;
         CharacterSet = characterSet;
+        Font = font;
         Frames = new ReadOnlyCollection<Frame>(_frames);
         ChangeTracker = new DocumentChangeTracker(this);
     }
@@ -44,6 +45,9 @@ public sealed class Document
     /// <summary>Which characters the document may hold. Change it with <c>SetCharacterSetCommand</c>.</summary>
     public CharacterSet CharacterSet { get; private set; }
 
+    /// <summary>The font the document is drawn with. Change it with <c>SetFontCommand</c>.</summary>
+    public FontReference Font { get; private set; }
+
     /// <summary>The frames. A v1 document always has exactly one.</summary>
     public IReadOnlyList<Frame> Frames { get; }
 
@@ -56,14 +60,15 @@ public sealed class Document
     /// <param name="canvasSize">The size of the canvas.</param>
     /// <param name="firstLayerName">The first layer's name. Core has no UI text, so the caller supplies it.</param>
     /// <param name="characterSet">Which characters the document may hold.</param>
+    /// <param name="font">The font; <see cref="FontReference.Default"/> if null.</param>
     public static Document Create(CanvasSize canvasSize, string firstLayerName,
-        CharacterSet characterSet = CharacterSet.Unicode)
+        CharacterSet characterSet = CharacterSet.Unicode, FontReference? font = null)
     {
         ArgumentNullException.ThrowIfNull(firstLayerName);
         if (!Enum.IsDefined(characterSet))
             throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null);
 
-        var document = new Document(canvasSize, characterSet);
+        var document = new Document(canvasSize, characterSet, font ?? FontReference.Default);
         var frame = new Frame(document);
         document._frames.Add(frame);
         frame.InsertLayer(0, new Layer(Guid.NewGuid(), new LayerProperties(firstLayerName), canvasSize));
@@ -135,6 +140,16 @@ public sealed class Document
             return;
 
         CharacterSet = characterSet;
+        ChangeTracker.RecordSettingsChanged();
+    }
+
+    /// <summary>Changes the font. Every cell keeps its glyph; only how it's drawn changes.</summary>
+    internal void SetFont(FontReference font)
+    {
+        if (font == Font)
+            return;
+
+        Font = font;
         ChangeTracker.RecordSettingsChanged();
     }
 

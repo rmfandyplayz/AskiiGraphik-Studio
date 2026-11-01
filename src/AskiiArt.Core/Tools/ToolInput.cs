@@ -22,26 +22,60 @@ public enum ToolModifiers
     Alt = 4
 }
 
-/// <summary>The keys a tool can respond to. Typed characters arrive separately, as text.</summary>
+/// <summary>
+/// The key commands a tool can respond to. The App's keymap has already translated the platform's
+/// keys into these (on a Mac, Cmd+Left arrives as <see cref="Home"/>), so tools never deal with
+/// platform conventions. Typed characters arrive separately, as text.
+/// </summary>
 public enum ToolKey
 {
-    /// <summary>The left arrow key.</summary>
+    /// <summary>One cell left (the left arrow key).</summary>
     Left,
 
-    /// <summary>The right arrow key.</summary>
+    /// <summary>One cell right.</summary>
     Right,
 
-    /// <summary>The up arrow key.</summary>
+    /// <summary>One cell up.</summary>
     Up,
 
-    /// <summary>The down arrow key.</summary>
+    /// <summary>One cell down.</summary>
     Down,
 
-    /// <summary>Home (Fn+Left on a Mac laptop).</summary>
+    /// <summary>A few cells left (Ctrl+Left on Windows and Linux, Option+Left on macOS).</summary>
+    JumpLeft,
+
+    /// <summary>A few cells right.</summary>
+    JumpRight,
+
+    /// <summary>A few cells up.</summary>
+    JumpUp,
+
+    /// <summary>A few cells down.</summary>
+    JumpDown,
+
+    /// <summary>Many cells left (Alt+Left on Windows and Linux, Cmd+Option+Left on macOS).</summary>
+    LongJumpLeft,
+
+    /// <summary>Many cells right.</summary>
+    LongJumpRight,
+
+    /// <summary>Many cells up.</summary>
+    LongJumpUp,
+
+    /// <summary>Many cells down.</summary>
+    LongJumpDown,
+
+    /// <summary>The start of the row (Home; also Cmd+Left on macOS).</summary>
     Home,
 
-    /// <summary>End (Fn+Right on a Mac laptop).</summary>
+    /// <summary>The end of the row (End; also Cmd+Right on macOS).</summary>
     End,
+
+    /// <summary>The top of the column (Ctrl+Home on Windows and Linux, Cmd+Up on macOS).</summary>
+    Top,
+
+    /// <summary>The bottom of the column (Ctrl+End on Windows and Linux, Cmd+Down on macOS).</summary>
+    Bottom,
 
     /// <summary>Backspace (Delete on a Mac keyboard).</summary>
     Backspace,

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using AskiiArt.App.Documents;
+using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
@@ -15,40 +18,44 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// The canvas's view of one document: what it draws (the composite, font and atlases), how
+/// The canvas's view of the active document: what it draws (the composite, font and atlases), how
 /// (zoom, grid, the cell under the pointer), and the tool that edits it. Zoom and grid are view
-/// settings, not document changes, so they don't go through commands or undo.
+/// settings, not document changes, so they don't go through commands or undo. When New replaces
+/// the document, all of these switch to the new one.
 /// </summary>
 internal sealed class CanvasViewModel : ObservableObject, IDisposable
 {
-    /// <summary>The font size at 100% zoom, in logical pixels, until documents store their own (step 1.6).</summary>
+    /// <summary>The font size at 100% zoom, in logical pixels. It's the same for every document (ADR 0019).</summary>
     public const double DefaultFontSize = 16;
 
-    public CanvasViewModel(EditingSession session, ToolRegistry tools, LoadedFont font, GlyphAtlasCache atlases)
+    private readonly ActiveDocument _activeDocument;
+    private readonly ToolRegistry _tools;
+    private readonly FontCatalog _fonts;
+
+    public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, FontCatalog fonts, GlyphAtlasCache atlases)
     {
-        ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(activeDocument);
         ArgumentNullException.ThrowIfNull(tools);
-        ArgumentNullException.ThrowIfNull(font);
+        ArgumentNullException.ThrowIfNull(fonts);
         ArgumentNullException.ThrowIfNull(atlases);
 
-        Session = session;
-        Composite = new CompositeCache(session.Document, CompositingPolicy.Default);
-        Composite.Changed += OnCompositeChanged;
-        session.Document.Changed += OnDocumentChanged;
-        Font = font;
+        _activeDocument = activeDocument;
+        _tools = tools;
+        _fonts = fonts;
         Atlases = atlases;
 
-        // The text tool is the only tool until M3, so it's always active.
-        ActiveTool = tools.Get(TextTool.Id).Create(session);
+        Attach(activeDocument.Session);
+        activeDocument.SessionChanged += OnSessionChanged;
     }
 
-    public EditingSession Session { get; }
+    public EditingSession Session { get; private set; }
 
-    public ITool ActiveTool { get; }
+    public ITool ActiveTool { get; private set; }
 
-    public CompositeCache Composite { get; }
+    public CompositeCache Composite { get; private set; }
 
-    public LoadedFont Font { get; }
+    /// <summary>The document's font, or the default font when it isn't available.</summary>
+    public LoadedFont Font { get; private set; }
 
     public GlyphAtlasCache Atlases { get; }
 
@@ -102,6 +109,8 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     public string CanvasSizeText => string.Format(CultureInfo.CurrentCulture, Strings.StatusCanvasSizeFormat,
         Composite.Size.Width, Composite.Size.Height);
 
+    public string FontText => Font.FamilyName;
+
     public string CharacterSetText => Session.Document.CharacterSet switch
     {
         CharacterSet.Ascii => Strings.StatusCharacterSetAscii,
@@ -118,17 +127,60 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        _activeDocument.SessionChanged -= OnSessionChanged;
+        Detach();
+    }
+
+    // The text tool is the only tool until M3, so it's always active.
+    [MemberNotNull(nameof(Session), nameof(Composite), nameof(ActiveTool), nameof(Font))]
+    private void Attach(EditingSession session)
+    {
+        Session = session;
+        Composite = new CompositeCache(session.Document, CompositingPolicy.Default);
+        Composite.Changed += OnCompositeChanged;
+        session.Document.Changed += OnDocumentChanged;
+        Font = _fonts.Resolve(session.Document.Font);
+        ActiveTool = _tools.Get(TextTool.Id).Create(session);
+    }
+
+    private void Detach()
+    {
         ActiveTool.Deactivate();
         Session.Document.Changed -= OnDocumentChanged;
         Composite.Changed -= OnCompositeChanged;
         Composite.Dispose();
     }
 
+    private void OnSessionChanged(object? sender, EventArgs e)
+    {
+        Detach();
+        Attach(_activeDocument.Session);
+
+        OnPropertyChanged(nameof(Session));
+        OnPropertyChanged(nameof(Composite));
+        OnPropertyChanged(nameof(Font));
+        OnPropertyChanged(nameof(ActiveTool));
+        OnPropertyChanged(nameof(CanvasSizeText));
+        OnPropertyChanged(nameof(CharacterSetText));
+        OnPropertyChanged(nameof(FontText));
+    }
+
     private void OnCompositeChanged(object? sender, EventArgs e) => OnPropertyChanged(nameof(CanvasSizeText));
 
+    // A font change (or undoing one) redraws the canvas with the new font's cell size.
     private void OnDocumentChanged(object? sender, DocumentChangedEventArgs e)
     {
-        if (e.SettingsChanged)
-            OnPropertyChanged(nameof(CharacterSetText));
+        if (!e.SettingsChanged)
+            return;
+
+        OnPropertyChanged(nameof(CharacterSetText));
+
+        var font = _fonts.Resolve(Session.Document.Font);
+        if (font == Font)
+            return;
+
+        Font = font;
+        OnPropertyChanged(nameof(Font));
+        OnPropertyChanged(nameof(FontText));
     }
 }

@@ -12,4 +12,7 @@ internal sealed partial class MainWindow : Window
         InitializeComponent();
         Opened += (_, _) => CanvasView.FocusCanvas();
     }
+
+    /// <summary>Puts the toolbar under the menu bar.</summary>
+    public void SetToolbar(Control toolbar) => ToolbarHost.Content = toolbar;
 }

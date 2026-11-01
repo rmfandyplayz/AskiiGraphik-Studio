@@ -3,11 +3,12 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
-using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 
 namespace AskiiArt.App.Tests.Shell.Menus;
@@ -15,7 +16,7 @@ namespace AskiiArt.App.Tests.Shell.Menus;
 public sealed class MenuLayoutTests
 {
     [Fact]
-    public void WindowsAndLinux_HaveFileQuit_Edit_View_AndHelpWithOpenLogFolderAndAbout()
+    public void WindowsAndLinux_HaveFile_Edit_Document_View_AndHelpWithOpenLogFolderAndAbout()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false);
 
@@ -26,9 +27,10 @@ public sealed class MenuLayoutTests
             file =>
             {
                 Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
-                Assert.Equal([ShellActionIds.Quit], ActionIdsIn(file.Entries));
+                Assert.Equal([DocumentActionIds.New, ShellActionIds.Quit], ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
+            AssertIsDocumentMenu,
             AssertIsViewMenu,
             help =>
             {
@@ -38,7 +40,7 @@ public sealed class MenuLayoutTests
     }
 
     [Fact]
-    public void MacOS_PutsAboutInTheApplicationMenu_AndHasNoFileMenu()
+    public void MacOS_PutsAboutInTheApplicationMenu_AndOnlyNewInTheFileMenu()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false);
 
@@ -49,7 +51,13 @@ public sealed class MenuLayoutTests
 
         Assert.Collection(
             layout.WindowMenus,
+            file =>
+            {
+                Assert.Equal(nameof(Strings.MenuFile), file.LabelKey);
+                Assert.Equal([DocumentActionIds.New], ActionIdsIn(file.Entries));
+            },
             AssertIsEditMenu,
+            AssertIsDocumentMenu,
             AssertIsViewMenu,
             help =>
             {
@@ -80,14 +88,11 @@ public sealed class MenuLayoutTests
     {
         var layout = MenuLayout.CreateDefault(isMacOS, includeDebugMenu);
         using var canvas = new TestCanvas();
-        var registry = new ActionRegistry([
-            new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: includeDebugMenu),
-            new CanvasActions(canvas.ViewModel),
-            new EditActions(canvas.Session, new FakeAppShell())
-        ]);
+        var registry = new ActionRegistry(
+            TestActions.CreateProviders(canvas, new FakeAppShell(), includeDebugActions: includeDebugMenu));
 
-        foreach (var actionId in layout.ActionIds())
-            Assert.True(registry.Contains(actionId), $"The menu refers to the unregistered action '{actionId}'.");
+        foreach (var actionId in layout.ActionIds().Concat(ToolbarLayout.CreateDefault().ActionIds()))
+            Assert.True(registry.Contains(actionId), $"A menu or the toolbar uses the unregistered action '{actionId}'.");
 
         foreach (var menu in layout.WindowMenus)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(menu.LabelKey)));
@@ -96,7 +101,14 @@ public sealed class MenuLayoutTests
     private static void AssertIsEditMenu(MenuDefinition edit)
     {
         Assert.Equal(nameof(Strings.MenuEdit), edit.LabelKey);
-        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo, EditActionIds.AsciiOnly], ActionIdsIn(edit.Entries));
+        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo], ActionIdsIn(edit.Entries));
+    }
+
+    private static void AssertIsDocumentMenu(MenuDefinition document)
+    {
+        Assert.Equal(nameof(Strings.MenuDocument), document.LabelKey);
+        Assert.Equal([DocumentActionIds.ResizeCanvas, DocumentActionIds.Font, DocumentActionIds.AsciiOnly],
+            ActionIdsIn(document.Entries));
     }
 
     private static void AssertIsViewMenu(MenuDefinition view)

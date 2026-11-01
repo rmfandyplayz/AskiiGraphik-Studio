@@ -3,12 +3,15 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Errors;
+using AskiiArt.App.Fonts;
 using AskiiArt.App.Hosting.Logging;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Text;
@@ -40,22 +43,25 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, EditActions>();
+        services.AddSingleton<IActionProvider, DocumentActions>();
         services.AddSingleton<ActionRegistry>();
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton<ToolRegistry>();
 
-        // The document being edited: a temporary sample until New and Open exist (steps 1.6 and 1.7).
-        services.AddSingleton(_ => new EditingSession(SampleDocument.Create(Strings.DefaultLayerName)));
+        // The document being edited. The app starts with a temporary sample until Open exists (step 1.7).
+        services.AddSingleton(_ => new ActiveDocument(new EditingSession(SampleDocument.Create(Strings.DefaultLayerName))));
+        services.AddSingleton<IDocumentDialogs, AvaloniaDocumentDialogs>();
 
         // Fonts and glyphs.
-        services.AddSingleton(_ => FontLoader.LoadBundled(BundledFonts.Default));
+        services.AddSingleton<FontCatalog>();
         services.AddSingleton<IFallbackFontProvider, SystemFallbackFontProvider>();
         services.AddSingleton<GlyphAtlasCache>();
         services.AddSingleton<CanvasViewModel>();
 
         services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(), includeDebugMenu: BuildInfo.IsDebugBuild));
+        services.AddSingleton(ToolbarLayout.CreateDefault());
         services.AddSingleton<MainWindowBuilder>();
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

@@ -1,0 +1,56 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder font picker (step 1.6): a search box, the list of fonts, Load from File, and a
+     warning when the selected font isn't monospaced. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fonts="using:AskiiArt.App.Fonts"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Fonts.FontPickerWindow"
+        x:DataType="fonts:FontPickerViewModel"
+        Title="{x:Static res:Strings.FontPickerTitle}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              Width="{StaticResource AppDialogMaxWidth}">
+    <TextBox x:Name="SearchBox"
+             Text="{Binding SearchText, Mode=TwoWay}"
+             PlaceholderText="{x:Static res:Strings.FontSearchWatermark}" />
+    <ListBox ItemsSource="{Binding Fonts}"
+             SelectedItem="{Binding SelectedFont, Mode=TwoWay}"
+             Height="{StaticResource AppFontListHeight}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="fonts:FontPickerItem">
+          <TextBlock Text="{Binding DisplayName}" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <TextBlock Text="{x:Static res:Strings.FontNotMonospaceWarning}"
+               IsVisible="{Binding IsNotMonospace}"
+               Foreground="{DynamicResource AppWarningTextBrush}"
+               TextWrapping="Wrap" />
+    <TextBlock Text="{Binding Message}"
+               IsVisible="{Binding Message, Converter={x:Static ObjectConverters.IsNotNull}}"
+               TextWrapping="Wrap" />
+    <DockPanel Margin="{StaticResource AppDialogButtonsMargin}">
+      <Button DockPanel.Dock="Left"
+              Content="{x:Static res:Strings.FontLoadFromFile}"
+              Command="{Binding LoadFromFileCommand}" />
+      <StackPanel Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="{StaticResource AppSpacingMedium}">
+        <Button x:Name="OkButton"
+                Content="{x:Static res:Strings.DialogOk}"
+                IsDefault="True"
+                IsEnabled="{Binding CanAccept}"
+                Click="OnOkClick" />
+        <Button Content="{x:Static res:Strings.DialogCancel}"
+                IsCancel="True"
+                Click="OnCancelClick" />
+      </StackPanel>
+    </DockPanel>
+  </StackPanel>
+</Window>

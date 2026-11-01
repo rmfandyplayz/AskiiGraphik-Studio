@@ -1,0 +1,46 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder width and height boxes, shared by the New and Resize Canvas dialogs (step 1.6),
+     with the warning for sizes above the soft limit. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:documents="using:AskiiArt.App.Documents"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Documents.CanvasSizeFieldsView"
+             x:DataType="documents:CanvasSizeFields">
+  <StackPanel Spacing="{StaticResource AppSpacingMedium}">
+    <Grid ColumnDefinitions="Auto,Auto,Auto"
+          RowDefinitions="Auto,Auto"
+          ColumnSpacing="{StaticResource AppSpacingMedium}"
+          RowSpacing="{StaticResource AppSpacingMedium}">
+      <TextBlock Text="{x:Static res:Strings.CanvasWidthLabel}" VerticalAlignment="Center" />
+      <NumericUpDown x:Name="WidthBox"
+                     Grid.Column="1"
+                     Value="{Binding Width, Mode=TwoWay}"
+                     Minimum="{x:Static documents:CanvasSizeFields.MinimumSide}"
+                     Maximum="{x:Static documents:CanvasSizeFields.MaximumSide}"
+                     Increment="1"
+                     FormatString="0"
+                     ParsingNumberStyle="Integer"
+                     Width="{StaticResource AppNumberBoxWidth}" />
+      <TextBlock Grid.Column="2" Text="{x:Static res:Strings.CanvasSizeUnit}" VerticalAlignment="Center" />
+
+      <TextBlock Grid.Row="1" Text="{x:Static res:Strings.CanvasHeightLabel}" VerticalAlignment="Center" />
+      <NumericUpDown x:Name="HeightBox"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Value="{Binding Height, Mode=TwoWay}"
+                     Minimum="{x:Static documents:CanvasSizeFields.MinimumSide}"
+                     Maximum="{x:Static documents:CanvasSizeFields.MaximumSide}"
+                     Increment="1"
+                     FormatString="0"
+                     ParsingNumberStyle="Integer"
+                     Width="{StaticResource AppNumberBoxWidth}" />
+      <TextBlock Grid.Row="1" Grid.Column="2" Text="{x:Static res:Strings.CanvasSizeUnit}" VerticalAlignment="Center" />
+    </Grid>
+    <TextBlock Text="{x:Static documents:CanvasSizeFields.RecommendedSizeWarning}"
+               IsVisible="{Binding ExceedsRecommendedSize}"
+               Foreground="{DynamicResource AppWarningTextBrush}"
+               TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

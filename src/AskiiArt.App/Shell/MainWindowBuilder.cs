@@ -4,16 +4,18 @@
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Toolbars;
 using Avalonia.Controls;
 using Avalonia.Input;
 
 namespace AskiiArt.App.Shell;
 
 /// <summary>
-/// Creates the main window with its menus and keyboard shortcuts, all taken from the action
-/// registry and the menu layout, showing the canvas's document.
+/// Creates the main window with its menus, toolbar and keyboard shortcuts, all taken from the
+/// action registry and the menu and toolbar layouts, showing the canvas's document.
 /// </summary>
-internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, CanvasViewModel canvas)
+internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, ToolbarLayout toolbar,
+    CanvasViewModel canvas)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -21,6 +23,7 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
         var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
 
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
+        window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
         AddKeyBindings(window, platformCommandModifiers);
 
         return window;

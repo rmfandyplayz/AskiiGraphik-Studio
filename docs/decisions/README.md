@@ -25,3 +25,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0016](0016-character-set-per-document.md) | A character set per document | Accepted |
 | [0017](0017-tools-and-the-text-tool.md) | Tools and the text tool | Accepted |
 | [0018](0018-wheel-gestures-and-scroll-momentum.md) | Wheel gestures and scroll momentum | Accepted |
+| [0019](0019-document-fonts-and-the-font-catalog.md) | Document fonts and the font catalog | Accepted |
+| [0020](0020-active-document-and-document-actions.md) | The active document and the document actions | Accepted |

@@ -86,6 +86,20 @@ public sealed class CanvasTypingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void JumpKeys_MoveTheCaretSeveralCells_AndShiftArrowIsLeftAlone()
+    {
+        // The Windows and Linux keys, whatever the test machine: Ctrl+Right jumps, Alt+Down jumps further.
+        _control.Keymap = ToolKeymap.CreateDefault(isMacOS: false);
+        Click(new CellPoint(0, 0));
+
+        Press(Key.Right, PhysicalKey.ArrowRight, RawInputModifiers.Control);
+        Press(Key.Down, PhysicalKey.ArrowDown, RawInputModifiers.Alt);
+        Press(Key.Left, PhysicalKey.ArrowLeft, RawInputModifiers.Shift);
+
+        Assert.Equal(new CellPoint(3, 9), _canvas.ViewModel.ActiveTool.Overlay.Caret);
+    }
+
+    [AvaloniaFact]
     public void TypingWithoutAClick_ChangesNothing()
     {
         _control.Focus();
@@ -110,10 +124,10 @@ public sealed class CanvasTypingTests : IDisposable
         _window.MouseUp(point, MouseButton.Left);
     }
 
-    private void Press(Key key, PhysicalKey physicalKey)
+    private void Press(Key key, PhysicalKey physicalKey, RawInputModifiers modifiers = RawInputModifiers.None)
     {
-        _window.KeyPress(key, RawInputModifiers.None, physicalKey, null);
-        _window.KeyRelease(key, RawInputModifiers.None, physicalKey, null);
+        _window.KeyPress(key, modifiers, physicalKey, null);
+        _window.KeyRelease(key, modifiers, physicalKey, null);
     }
 
     // The window's scaling is 1, so device pixels and logical pixels are the same.

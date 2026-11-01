@@ -289,6 +289,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     /// <summary>Where the canvas currently sits; null until the control has a size and a document.</summary>
     internal CanvasViewport? Viewport => _viewport;
 
+    /// <summary>Which keys go to the tool, and as what. Tests swap in another platform's keys.</summary>
+    internal ToolKeymap Keymap { get; set; } = ToolKeymap.ForCurrentPlatform();
+
     // The whole control takes pointer input, including the pasteboard, before anything is drawn.
     public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
 
@@ -479,8 +482,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             UpdateCursor();
             e.Handled = true;
         }
-        else if (ToToolKey(e.Key) is { } key && Tool is { } tool &&
-                 tool.KeyPressed(key, ToToolModifiers(e.KeyModifiers)))
+        else if (FindToolKey(e) is { } key && Tool is { } tool && tool.KeyPressed(key, ToToolModifiers(e.KeyModifiers)))
         {
             e.Handled = true;
         }
@@ -707,20 +709,15 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers));
     }
 
-    private static ToolKey? ToToolKey(Key key) => key switch
+    // A modifier tools don't know (Ctrl on a Mac, the Windows key) makes it a different shortcut.
+    private ToolKey? FindToolKey(KeyEventArgs e)
     {
-        Key.Left => ToolKey.Left,
-        Key.Right => ToolKey.Right,
-        Key.Up => ToolKey.Up,
-        Key.Down => ToolKey.Down,
-        Key.Home => ToolKey.Home,
-        Key.End => ToolKey.End,
-        Key.Back => ToolKey.Backspace,
-        Key.Delete => ToolKey.Delete,
-        Key.Enter => ToolKey.Enter,
-        Key.Escape => ToolKey.Escape,
-        _ => null
-    };
+        var known = PlatformCommandModifiers() | KeyModifiers.Shift | KeyModifiers.Alt;
+        if ((e.KeyModifiers & ~known) != 0)
+            return null;
+
+        return Keymap.Find(e.Key, ToToolModifiers(e.KeyModifiers));
+    }
 
     private static ToolModifiers ToToolModifiers(KeyModifiers modifiers)
     {

@@ -36,8 +36,11 @@
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>
+  <data name="MenuDocument" xml:space="preserve">
+    <value>_Document</value>
+  </data>
   <data name="MenuDebug" xml:space="preserve">
-    <value>_Debug</value>
+    <value>De_bug</value>
   </data>
   <data name="MenuAboutAppFormat" xml:space="preserve">
     <value>About {0}</value>
@@ -73,6 +76,16 @@
   <data name="ActionAsciiOnly" xml:space="preserve">
     <value>_ASCII Only</value>
     <comment>A check mark item: when on, the document holds only printable ASCII characters.</comment>
+  </data>
+  <data name="ActionNew" xml:space="preserve">
+    <value>_New…</value>
+  </data>
+  <data name="ActionResizeCanvas" xml:space="preserve">
+    <value>_Resize Canvas…</value>
+  </data>
+  <data name="ActionFont" xml:space="preserve">
+    <value>_Font…</value>
+    <comment>Opens the font picker for the document.</comment>
   </data>
   <data name="ActionShowGrid" xml:space="preserve">
     <value>Show _Grid</value>
@@ -143,6 +156,135 @@
   </data>
   <data name="DialogCancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+
+  <!-- New and Resize Canvas dialogs -->
+  <data name="NewDocumentTitle" xml:space="preserve">
+    <value>New Document</value>
+  </data>
+  <data name="ResizeCanvasTitle" xml:space="preserve">
+    <value>Resize Canvas</value>
+  </data>
+  <data name="CanvasWidthLabel" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="CanvasHeightLabel" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="CanvasSizeUnit" xml:space="preserve">
+    <value>cells</value>
+    <comment>After the width and height boxes.</comment>
+  </data>
+  <data name="CanvasSizeWarningFormat" xml:space="preserve">
+    <value>Canvases bigger than {0} × {0} cells can use a lot of memory and feel slow.</value>
+    <comment>Shown under the size boxes. {0} is the recommended largest side, 500.</comment>
+  </data>
+  <data name="CharacterSetLabel" xml:space="preserve">
+    <value>Characters</value>
+  </data>
+  <data name="CharacterSetAsciiOnlyOption" xml:space="preserve">
+    <value>ASCII only</value>
+    <comment>New dialog: the document can hold only printable ASCII characters.</comment>
+  </data>
+  <data name="CharacterSetUnicodeOption" xml:space="preserve">
+    <value>Unicode (any character)</value>
+  </data>
+  <data name="ResizeAnchorLabel" xml:space="preserve">
+    <value>Anchor</value>
+    <comment>The part of the canvas that stays put when it's resized.</comment>
+  </data>
+  <data name="ResizeCropWarning" xml:space="preserve">
+    <value>Cells outside the new size will be removed. You can undo this.</value>
+  </data>
+  <data name="ResizeAnchorTopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="ResizeAnchorTopLeftSymbol" xml:space="preserve">
+    <value>↖</value>
+    <comment>An arrow pointing at the anchor.</comment>
+  </data>
+  <data name="ResizeAnchorTop" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="ResizeAnchorTopSymbol" xml:space="preserve">
+    <value>↑</value>
+  </data>
+  <data name="ResizeAnchorTopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="ResizeAnchorTopRightSymbol" xml:space="preserve">
+    <value>↗</value>
+  </data>
+  <data name="ResizeAnchorLeft" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="ResizeAnchorLeftSymbol" xml:space="preserve">
+    <value>←</value>
+  </data>
+  <data name="ResizeAnchorCenter" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="ResizeAnchorCenterSymbol" xml:space="preserve">
+    <value>•</value>
+  </data>
+  <data name="ResizeAnchorRight" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="ResizeAnchorRightSymbol" xml:space="preserve">
+    <value>→</value>
+  </data>
+  <data name="ResizeAnchorBottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="ResizeAnchorBottomLeftSymbol" xml:space="preserve">
+    <value>↙</value>
+  </data>
+  <data name="ResizeAnchorBottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="ResizeAnchorBottomSymbol" xml:space="preserve">
+    <value>↓</value>
+  </data>
+  <data name="ResizeAnchorBottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="ResizeAnchorBottomRightSymbol" xml:space="preserve">
+    <value>↘</value>
+  </data>
+
+  <!-- Font picker -->
+  <data name="FontPickerTitle" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="FontSearchWatermark" xml:space="preserve">
+    <value>Search fonts</value>
+  </data>
+  <data name="FontLoadFromFile" xml:space="preserve">
+    <value>Load from File…</value>
+  </data>
+  <data name="FontSourceBundledFormat" xml:space="preserve">
+    <value>{0} (comes with the app)</value>
+    <comment>{0} is a font family name.</comment>
+  </data>
+  <data name="FontSourceFileFormat" xml:space="preserve">
+    <value>{0} (from a file)</value>
+    <comment>A font loaded from a file since the app started. {0} is its family name.</comment>
+  </data>
+  <data name="FontNotMonospaceWarning" xml:space="preserve">
+    <value>This font's characters aren't all the same width, so some won't line up with the grid.</value>
+  </data>
+  <data name="FontLoadFailed" xml:space="preserve">
+    <value>That file couldn't be loaded as a font.</value>
+  </data>
+  <data name="FontAlreadyAvailableFormat" xml:space="preserve">
+    <value>A font called {0} is already available, so that one is used.</value>
+    <comment>{0} is the family name in the loaded file.</comment>
+  </data>
+  <data name="FontFilePickerTitle" xml:space="preserve">
+    <value>Load Font</value>
+  </data>
+  <data name="FontFileTypeName" xml:space="preserve">
+    <value>Font files</value>
   </data>
 
   <!-- Unexpected error dialog -->

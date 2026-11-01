@@ -8,5 +8,4 @@ internal static class EditActionIds
 {
     public const string Undo = "askiiart.edit.undo";
     public const string Redo = "askiiart.edit.redo";
-    public const string AsciiOnly = "askiiart.document.asciiOnly";
 }

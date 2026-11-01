@@ -13,4 +13,11 @@
          needs a newer SkiaSharp than the one pinned in Directory.Packages.props. -->
     <PackageReference Include="SkiaSharp" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- A real font file for the Load from File tests. -->
+    <None Include="..\..\src\AskiiArt.Imaging\Fonts\Bundled\FiraCode\FiraCode-Regular.ttf"
+          Link="TestFonts\FiraCode-Regular.ttf"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -44,7 +44,8 @@ internal static class TestCommands
     public static string Snapshot(Document document)
     {
         var snapshot = new StringBuilder();
-        snapshot.Append("canvas ").Append(document.CanvasSize).Append(' ').Append(document.CharacterSet).Append('\n');
+        snapshot.Append("canvas ").Append(document.CanvasSize).Append(' ').Append(document.CharacterSet)
+            .Append(' ').Append(document.Font).Append('\n');
         foreach (var frame in document.Frames)
         {
             snapshot.Append("frame\n");

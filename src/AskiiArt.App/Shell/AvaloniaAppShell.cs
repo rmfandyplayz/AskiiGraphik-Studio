@@ -17,8 +17,7 @@ namespace AskiiArt.App.Shell;
 /// </summary>
 internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogger<AvaloniaAppShell> logger) : IAppShell
 {
-    private static Window? MainWindow =>
-        (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+    private static Window? MainWindow => AppWindows.Main;
 
     public bool CanShowDialogs => MainWindow is { IsVisible: true };
 

@@ -138,7 +138,7 @@ The document raises change events that carry the **affected region**: the layer 
 
 ### 5.10 Document metadata
 
-- **Font reference:** the family name, style and size the document was authored with. Store this, not a file path. If the font isn't available when the document opens, fall back to the default font and tell the user.
+- **Font reference:** the family name the document was authored with, changed with a command. Store this, not a file path. If the font isn't available when the document opens, fall back to the default font and tell the user. The style is always Regular and the size at 100% zoom is the same for every document, so neither is stored yet (ADR 0019).
 - **Document-level settings** (the character set, §6, and the space policy if it ends up per-document) live in the metadata and change only through commands.
 
 ## 6. Characters and width
@@ -166,12 +166,12 @@ Tools are **Core** classes with no UI dependencies. Each tool has:
 
 - **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a default shortcut (added with the second tool) and a category.
 - **Options:** a plain model object (size, ramp id, mode, …) that the UI binds to. The tool doesn't know what draws its options panel.
-- **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key input for text mode. The App translates Avalonia events into these.
+- **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
 - **Preview, then commit:** during a gesture, a tool can draw a preview overlay that isn't part of the document. When the gesture ends, it emits **exactly one** command. Pressing Esc cancels the gesture and discards the preview.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
 - **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017).
 
-Tools edit through an **editing session**: the document, its undo history and the active layer. Tools are registered through DI in a `ToolRegistry` and created per session. Built-in tools register exactly the way a future plugin would (§18).
+Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session. Built-in tools register exactly the way a future plugin would (§18).
 
 ### 8.2 Planned tools
 
@@ -209,7 +209,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 ## 11. Fonts and glyph rasterization (Imaging)
 
 - **Bundled fonts:** JetBrains Mono (the default), Roboto Mono, IBM Plex Mono and Fira Code, Regular weight only, all OFL-1.1. Each one ships with its license file and is listed in THIRD-PARTY-NOTICES.md (ADR 0013).
-- **User fonts:** any TTF or OTF file the user picks, or any installed system font.
+- **User fonts:** any TTF or OTF file the user picks, or any installed system font. Fonts loaded from a file are remembered until the app closes, until the user font list is stored in settings (§15, ADR 0019).
   - **Cell size comes from font metrics:** the advance width of a reference glyph (`0`) × the line height (ascent + descent + line gap), read from the font file so it's the same on every OS (ADR 0013). It is never hardcoded.
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
   - **Missing glyphs:** drawn with an installed font that has them, or as a placeholder box if none does; a fallback glyph too big for the cell is shrunk to fit. Either way the cell is flagged as an error (ADR 0013); how the flag looks is still open (§23). It must never crash.
@@ -369,7 +369,7 @@ Ask the owner about each of these at the milestone that needs it.
 | Question | Needed by |
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
-| Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Still open:* the New dialog and document options that choose it | The owner's UI design |
+| Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should the space-as-empty option be per layer, per document or app-wide? | M2 |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |

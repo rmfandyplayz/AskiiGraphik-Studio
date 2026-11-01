@@ -7,6 +7,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Editing;
 
 namespace AskiiArt.App.Tests.Canvas;
 
@@ -53,12 +54,44 @@ public sealed class CanvasViewModelTests : IDisposable
         new ResizeCanvasCommand(new CanvasSize(60, 30), ResizeAnchor.TopLeft).Apply(ViewModel.Composite.Document);
 
         Assert.Equal(string.Format(CultureInfo.CurrentCulture, Strings.StatusZoomFormat, 150), ViewModel.ZoomText);
-        Assert.Equal(string.Format(CultureInfo.CurrentCulture, Strings.StatusCellFormat, 7, 3), ViewModel.HoveredCellText);
+        Assert.Equal(string.Format(CultureInfo.CurrentCulture, Strings.StatusCellFormat, 7, 3),
+            ViewModel.HoveredCellText);
         Assert.Equal(string.Format(CultureInfo.CurrentCulture, Strings.StatusCanvasSizeFormat, 60, 30),
             ViewModel.CanvasSizeText);
         Assert.Contains(nameof(CanvasViewModel.ZoomText), changed);
         Assert.Contains(nameof(CanvasViewModel.HoveredCellText), changed);
         Assert.Contains(nameof(CanvasViewModel.CanvasSizeText), changed);
+    }
+
+    [Fact]
+    public void ANewDocument_SwitchesTheCompositeToolAndStatus()
+    {
+        var oldComposite = ViewModel.Composite;
+        var oldTool = ViewModel.ActiveTool;
+        var changed = new List<string?>();
+        ViewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        var document = Document.Create(new CanvasSize(80, 25), "Layer", CharacterSet.Ascii);
+
+        _canvas.ActiveDocument.Replace(new EditingSession(document));
+
+        Assert.Same(document, ViewModel.Composite.Document);
+        Assert.NotSame(oldComposite, ViewModel.Composite);
+        Assert.NotSame(oldTool, ViewModel.ActiveTool);
+        Assert.Same(_canvas.Session, ViewModel.Session);
+        Assert.Equal(Strings.StatusCharacterSetAscii, ViewModel.CharacterSetText);
+        Assert.Contains(nameof(CanvasViewModel.Composite), changed);
+        Assert.Contains(nameof(CanvasViewModel.ActiveTool), changed);
+        Assert.Contains(nameof(CanvasViewModel.CanvasSizeText), changed);
+    }
+
+    [Fact]
+    public void FontText_ShowsTheDocumentsFont()
+    {
+        Assert.Equal("JetBrains Mono", ViewModel.FontText);
+
+        _canvas.Session.History.Execute(new SetFontCommand(new FontReference("IBM Plex Mono")));
+
+        Assert.Equal("IBM Plex Mono", ViewModel.FontText);
     }
 
     [Fact]

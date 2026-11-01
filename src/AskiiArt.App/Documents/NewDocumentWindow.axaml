@@ -1,0 +1,41 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder New dialog (step 1.6): the canvas size and the character set. -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:documents="using:AskiiArt.App.Documents"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Documents.NewDocumentWindow"
+        x:DataType="documents:NewDocumentViewModel"
+        Title="{x:Static res:Strings.NewDocumentTitle}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <documents:CanvasSizeFieldsView x:Name="SizeFields" DataContext="{Binding Size}" />
+    <TextBlock Text="{x:Static res:Strings.CharacterSetLabel}" />
+    <RadioButton GroupName="CharacterSet"
+                 Content="{x:Static res:Strings.CharacterSetAsciiOnlyOption}"
+                 IsChecked="{Binding IsAsciiOnly, Mode=TwoWay}" />
+    <RadioButton GroupName="CharacterSet"
+                 Content="{x:Static res:Strings.CharacterSetUnicodeOption}"
+                 IsChecked="{Binding IsUnicode, Mode=TwoWay}" />
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="{StaticResource AppDialogButtonsMargin}"
+                Spacing="{StaticResource AppSpacingMedium}">
+      <Button x:Name="OkButton"
+              Content="{x:Static res:Strings.DialogOk}"
+              IsDefault="True"
+              IsEnabled="{Binding Size.IsValid}"
+              Click="OnOkClick" />
+      <Button Content="{x:Static res:Strings.DialogCancel}"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>

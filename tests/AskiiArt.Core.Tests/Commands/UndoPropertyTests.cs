@@ -14,7 +14,7 @@ namespace AskiiArt.Core.Tests.Commands;
 /// </summary>
 public sealed class UndoPropertyTests
 {
-    private const int KindCount = 11;
+    private const int KindCount = 12;
 
     private static Cell[] Glyphs { get; } =
         [Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('a'), TestCells.Glyph('#'), TestCells.Glyph('é')];
@@ -89,6 +89,7 @@ public sealed class UndoPropertyTests
             7 => new ResizeCanvasCommand(new CanvasSize(1 + (step.B % 7), 1 + (step.C % 6)), (ResizeAnchor)(step.A % 9)),
             8 => CreateComposite(document, layer, step),
             9 => new SetCharacterSetCommand((CharacterSet)(step.B % 2)),
+            10 => new SetFontCommand(new FontReference(step.B % 2 == 0 ? "Font A" : "Font B")),
             _ => null
         };
     }
