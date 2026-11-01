@@ -16,6 +16,7 @@
                           ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
                           IsGridVisible="{Binding IsGridVisible}"
                           HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
+                          Tool="{Binding ActiveTool}"
                           CanvasMargin="{DynamicResource AppCanvasMargin}"
                           PasteboardBrush="{DynamicResource AppCanvasPasteboardBrush}"
                           PaperBrush="{DynamicResource AppCanvasPaperBrush}"
@@ -23,7 +24,9 @@
                           GridLineBrush="{DynamicResource AppCanvasGridLineBrush}"
                           HoverBrush="{DynamicResource AppCanvasHoverBrush}"
                           FallbackGlyphBrush="{DynamicResource AppCanvasFallbackGlyphBrush}"
-                          PlaceholderGlyphBrush="{DynamicResource AppCanvasPlaceholderGlyphBrush}" />
+                          PlaceholderGlyphBrush="{DynamicResource AppCanvasPlaceholderGlyphBrush}"
+                          CaretBrush="{DynamicResource AppCanvasCaretBrush}"
+                          CaretThickness="{DynamicResource AppCanvasCaretThickness}" />
     <ScrollBar Grid.Column="1"
                Orientation="Vertical"
                AllowAutoHide="False"

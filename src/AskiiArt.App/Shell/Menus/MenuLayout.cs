@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 
 namespace AskiiArt.App.Shell.Menus;
@@ -46,6 +47,15 @@ internal sealed record MenuLayout(
         var windowMenus = new List<MenuDefinition>();
         IReadOnlyList<MenuEntry> applicationMenu;
 
+        // ASCII Only is a document setting; it sits here until the owner designs document options.
+        var editMenu = new MenuDefinition(nameof(Strings.MenuEdit),
+        [
+            new ActionMenuEntry(EditActionIds.Undo),
+            new ActionMenuEntry(EditActionIds.Redo),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(EditActionIds.AsciiOnly)
+        ]);
+
         var viewMenu = new MenuDefinition(nameof(Strings.MenuView),
         [
             new ActionMenuEntry(CanvasActionIds.ZoomIn),
@@ -60,6 +70,7 @@ internal sealed record MenuLayout(
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
             // the Quit item there (with Cmd+Q), so the Quit action isn't listed again.
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
+            windowMenus.Add(editMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp), [new ActionMenuEntry(ShellActionIds.OpenLogFolder)]));
         }
@@ -67,6 +78,7 @@ internal sealed record MenuLayout(
         {
             applicationMenu = [];
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [new ActionMenuEntry(ShellActionIds.Quit)]));
+            windowMenus.Add(editMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
             [

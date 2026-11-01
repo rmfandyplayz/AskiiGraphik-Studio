@@ -22,3 +22,6 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0013](0013-fonts-cell-metrics-and-missing-glyphs.md) | Fonts, cell metrics and missing glyphs | Accepted |
 | [0014](0014-glyph-rasterizer-and-atlas.md) | Glyph rasterizer and atlas | Accepted |
 | [0015](0015-canvas-rendering.md) | Canvas rendering | Accepted |
+| [0016](0016-character-set-per-document.md) | A character set per document | Accepted |
+| [0017](0017-tools-and-the-text-tool.md) | Tools and the text tool | Accepted |
+| [0018](0018-wheel-gestures-and-scroll-momentum.md) | Wheel gestures and scroll momentum | Accepted |

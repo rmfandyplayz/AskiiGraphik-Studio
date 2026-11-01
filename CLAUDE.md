@@ -113,6 +113,7 @@ When you **edit** a file that has no Claude line, add `// Edited with Claude Cod
 - No literal UI strings, colors or sizes in C# or AXAML. Use `.resx` resources and theme tokens.
 - Bind menus, toolbars and shortcuts to action ids (ARCHITECTURE §14.2).
 - Placeholder UI is fine, but keep it plain. Don't polish it; the owner will replace it.
+- Record every placeholder UI choice, and every UX behaviour the owner hasn't specified, in `docs/TEMPORARY-UI.md` in the same step. Ideas the owner parks for later go there too.
 
 ## Git
 

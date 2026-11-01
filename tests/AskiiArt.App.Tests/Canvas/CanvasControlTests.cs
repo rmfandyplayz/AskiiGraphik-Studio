@@ -63,16 +63,28 @@ public sealed class CanvasControlTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Wheel_ScrollsDown_AndShiftWheelScrollsSideways()
+    public void Wheel_ScrollsDown()
     {
         Show();
 
         _window.MouseWheel(new Point(10, 10), new Vector(0, -1));
-        _window.MouseWheel(new Point(10, 10), new Vector(0, -2), RawInputModifiers.Shift);
 
         Assert.Equal(50, _control.VerticalOffset);
-        Assert.Equal(100, _control.HorizontalOffset);
+        Assert.Equal(0, _control.HorizontalOffset);
         Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
+    }
+
+    // Separate from the test above: wheel events close together are one gesture, and the keys
+    // held at its start decide it (WheelGestureTrackerTests).
+    [AvaloniaFact]
+    public void ShiftWheel_ScrollsSideways()
+    {
+        Show();
+
+        _window.MouseWheel(new Point(10, 10), new Vector(0, -2), RawInputModifiers.Shift);
+
+        Assert.Equal(100, _control.HorizontalOffset);
+        Assert.Equal(0, _control.VerticalOffset);
     }
 
     [AvaloniaFact]

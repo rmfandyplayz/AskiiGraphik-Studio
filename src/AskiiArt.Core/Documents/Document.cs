@@ -24,9 +24,10 @@ public sealed class Document
 {
     private readonly List<Frame> _frames = [];
 
-    private Document(CanvasSize canvasSize)
+    private Document(CanvasSize canvasSize, CharacterSet characterSet)
     {
         CanvasSize = canvasSize;
+        CharacterSet = characterSet;
         Frames = new ReadOnlyCollection<Frame>(_frames);
         ChangeTracker = new DocumentChangeTracker(this);
     }
@@ -40,6 +41,9 @@ public sealed class Document
     /// <summary>The canvas size, shared by every layer of every frame.</summary>
     public CanvasSize CanvasSize { get; private set; }
 
+    /// <summary>Which characters the document may hold. Change it with <c>SetCharacterSetCommand</c>.</summary>
+    public CharacterSet CharacterSet { get; private set; }
+
     /// <summary>The frames. A v1 document always has exactly one.</summary>
     public IReadOnlyList<Frame> Frames { get; }
 
@@ -51,11 +55,15 @@ public sealed class Document
     /// <summary>Creates a document with one frame holding one empty, visible layer.</summary>
     /// <param name="canvasSize">The size of the canvas.</param>
     /// <param name="firstLayerName">The first layer's name. Core has no UI text, so the caller supplies it.</param>
-    public static Document Create(CanvasSize canvasSize, string firstLayerName)
+    /// <param name="characterSet">Which characters the document may hold.</param>
+    public static Document Create(CanvasSize canvasSize, string firstLayerName,
+        CharacterSet characterSet = CharacterSet.Unicode)
     {
         ArgumentNullException.ThrowIfNull(firstLayerName);
+        if (!Enum.IsDefined(characterSet))
+            throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null);
 
-        var document = new Document(canvasSize);
+        var document = new Document(canvasSize, characterSet);
         var frame = new Frame(document);
         document._frames.Add(frame);
         frame.InsertLayer(0, new Layer(Guid.NewGuid(), new LayerProperties(firstLayerName), canvasSize));
@@ -115,6 +123,19 @@ public sealed class Document
 
         CanvasSize = newSize;
         ChangeTracker.RecordCanvasResized(oldSize, newSize, contentOffset);
+    }
+
+    /// <summary>
+    /// Changes the character set alone. The caller removes the glyphs the new set doesn't allow
+    /// first, so the document never holds one.
+    /// </summary>
+    internal void SetCharacterSet(CharacterSet characterSet)
+    {
+        if (characterSet == CharacterSet)
+            return;
+
+        CharacterSet = characterSet;
+        ChangeTracker.RecordSettingsChanged();
     }
 
     internal void RaiseChanged(DocumentChangedEventArgs change) => Changed?.Invoke(this, change);

@@ -28,7 +28,8 @@ public sealed class CanvasRenderingTests : IDisposable
         GridLine: SKColors.Blue,
         Hover: new SKColor(0, 255, 0, 128),
         FallbackGlyph: SKColors.Orange,
-        PlaceholderGlyph: SKColors.Pink);
+        PlaceholderGlyph: SKColors.Pink,
+        Caret: SKColors.Purple);
 
     private readonly TestCanvas _canvas = new(new CanvasSize(4, 2));
     private readonly CanvasSceneBuilder _builder = new();
@@ -133,6 +134,21 @@ public sealed class CanvasRenderingTests : IDisposable
     }
 
     [Fact]
+    public void Paint_Caret_OutlinesItsCellAndLeavesTheMiddleAlone()
+    {
+        var viewport = CreateViewport();
+
+        using var scene = Build(viewport, caret: new CellPoint(1, 1));
+        using var bitmap = PaintScene(scene);
+
+        var cell = viewport.GetCellBounds(new CellPoint(1, 1));
+        Assert.Equal(SKColors.Purple, bitmap.GetPixel(cell.X, cell.Y + cell.Height / 2));
+        Assert.Equal(SKColors.Purple, bitmap.GetPixel(cell.Right - 1, cell.Y + cell.Height / 2));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(cell.X + cell.Width / 2, cell.Y + cell.Height / 2));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(cell.Right, cell.Y + cell.Height / 2));
+    }
+
+    [Fact]
     public void Paint_Grid_DrawsLinesOnCellEdgesOnlyWhenVisible()
     {
         var viewport = CreateViewport();
@@ -193,8 +209,10 @@ public sealed class CanvasRenderingTests : IDisposable
     private CanvasViewport CreateViewport() =>
         new(_canvas.ViewModel.Composite.Size, CellSize, new PixelSize(200, 100), margin: 10, default);
 
-    private CanvasScene Build(CanvasViewport viewport, bool isGridVisible = false, CellPoint? hoveredCell = null) =>
-        _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors, isGridVisible, hoveredCell);
+    private CanvasScene Build(CanvasViewport viewport, bool isGridVisible = false, CellPoint? hoveredCell = null,
+        CellPoint? caret = null) =>
+        _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
+            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

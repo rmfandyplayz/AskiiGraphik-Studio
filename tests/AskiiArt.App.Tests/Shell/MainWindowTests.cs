@@ -3,11 +3,14 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Tests.Fakes;
+using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -26,7 +29,8 @@ public sealed class MainWindowTests : IDisposable
     {
         _actions = new ActionRegistry([
             new ShellActions(_shell, new AppDataLocations("root"), includeDebugActions: false),
-            new CanvasActions(_canvas.ViewModel)
+            new CanvasActions(_canvas.ViewModel),
+            new EditActions(_canvas.Session, _shell)
         ]);
     }
 
@@ -59,14 +63,15 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuView, Strings.MenuHelp], topLevelItems.Select(item => item.Header));
+        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuView, Strings.MenuHelp],
+            topLevelItems.Select(item => item.Header));
 
         var quit = Assert.IsType<NativeMenuItem>(Assert.Single(topLevelItems[0].Menu!.Items));
         Assert.Equal(Strings.ActionQuit, quit.Header);
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[2].Menu!.Items;
+        var helpItems = topLevelItems[3].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -96,6 +101,25 @@ public sealed class MainWindowTests : IDisposable
         window.KeyPress(Key.D0, RawInputModifiers.Control, PhysicalKey.Digit0, "0");
         window.KeyRelease(Key.D0, RawInputModifiers.Control, PhysicalKey.Digit0, "0");
         Assert.Equal(1, _canvas.ViewModel.ZoomFactor);
+    }
+
+    [AvaloniaFact]
+    public void UndoAndRedoShortcuts_InTheMainWindow_UndoAndRedoTyping()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        var tool = _canvas.ViewModel.ActiveTool;
+        tool.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
+        tool.TextEntered("a");
+        var cell = new CellPoint(0, 0);
+
+        window.KeyPress(Key.Z, RawInputModifiers.Control, PhysicalKey.Z, "z");
+        window.KeyRelease(Key.Z, RawInputModifiers.Control, PhysicalKey.Z, "z");
+        Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).IsEmpty);
+
+        window.KeyPress(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
+        window.KeyRelease(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
+        Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).IsOccupied);
     }
 
     [AvaloniaFact]
@@ -129,6 +153,17 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.DoesNotContain(window.KeyBindings,
             binding => binding.Gesture == new KeyGesture(Key.Q, KeyModifiers.Meta));
+    }
+
+    [AvaloniaFact]
+    public void InTheSystemMenuBar_AMenuActionsOtherShortcuts_GetWindowKeyBindings()
+    {
+        // The menu item only shows (and triggers) Zoom In's first shortcut, Cmd+=.
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false), KeyModifiers.Meta);
+
+        Assert.DoesNotContain(window.KeyBindings,
+            binding => binding.Gesture == new KeyGesture(Key.OemPlus, KeyModifiers.Meta));
+        Assert.Contains(window.KeyBindings, binding => binding.Gesture == new KeyGesture(Key.Add, KeyModifiers.Meta));
     }
 
     [AvaloniaFact]

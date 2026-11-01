@@ -221,7 +221,12 @@ public sealed class GlyphRasterizerTests
         Assert.Equal(GlyphSource.PrimaryFont, source);
         Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(0, 0, width, height)));
         Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(2 * width, 0, width, height)));
-        Assert.True(TestBitmaps.CountInk(bitmap, SKRectI.Create(width, 0, width, height)) > 0);
+
+        // Squeezed to the cell's width and centred, both tips reach (nearly) to the cell's edges.
+        // An off-centre glyph would leave a gap on one side and lose a tip on the other.
+        var ink = TestBitmaps.InkBounds(bitmap, SKRectI.Create(width, 0, width, height));
+        Assert.InRange(ink.Left - width, 0, 1);
+        Assert.InRange(2 * width - ink.Right, 0, 1);
     }
 
     [Fact]

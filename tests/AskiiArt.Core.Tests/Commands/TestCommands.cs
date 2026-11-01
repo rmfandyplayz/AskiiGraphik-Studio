@@ -29,7 +29,8 @@ internal static class TestCommands
                 if (character == SkipMarker)
                     continue;
 
-                builder.Set(new CellPoint(x, y), character == TestCells.EmptyMarker ? Cell.Empty : TestCells.Glyph(character));
+                builder.Set(new CellPoint(x, y),
+                    character == TestCells.EmptyMarker ? Cell.Empty : TestCells.Glyph(character));
             }
         }
 
@@ -43,7 +44,7 @@ internal static class TestCommands
     public static string Snapshot(Document document)
     {
         var snapshot = new StringBuilder();
-        snapshot.Append("canvas ").Append(document.CanvasSize).Append('\n');
+        snapshot.Append("canvas ").Append(document.CanvasSize).Append(' ').Append(document.CharacterSet).Append('\n');
         foreach (var frame in document.Frames)
         {
             snapshot.Append("frame\n");

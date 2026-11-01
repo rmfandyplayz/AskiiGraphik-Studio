@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -54,6 +55,7 @@ public sealed class AppTests : IDisposable
         services.AddSingleton<IActionProvider>(
             new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: false));
         services.AddSingleton<IActionProvider>(new CanvasActions(_canvas.ViewModel));
+        services.AddSingleton<IActionProvider>(new EditActions(_canvas.Session, new FakeAppShell()));
         services.AddSingleton(_canvas.ViewModel);
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);

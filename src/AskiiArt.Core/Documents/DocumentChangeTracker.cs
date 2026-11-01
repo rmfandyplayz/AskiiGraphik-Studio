@@ -15,6 +15,7 @@ internal sealed class DocumentChangeTracker
     private readonly List<Guid> _layersWithChangedProperties = [];
     private int _groupDepth;
     private bool _layerListChanged;
+    private bool _settingsChanged;
     private CanvasResizeChange? _canvasResize;
 
     public DocumentChangeTracker(Document document)
@@ -23,7 +24,8 @@ internal sealed class DocumentChangeTracker
     }
 
     private bool HasPendingChanges =>
-        _layersWithChangedCells.Count > 0 || _layerListChanged || _layersWithChangedProperties.Count > 0 || _canvasResize is not null;
+        _layersWithChangedCells.Count > 0 || _layerListChanged || _layersWithChangedProperties.Count > 0
+        || _settingsChanged || _canvasResize is not null;
 
     public void Begin() => _groupDepth++;
 
@@ -68,13 +70,19 @@ internal sealed class DocumentChangeTracker
         RaiseIfComplete();
     }
 
+    public void RecordSettingsChanged()
+    {
+        _settingsChanged = true;
+        RaiseIfComplete();
+    }
+
     public void RecordCanvasResized(CanvasSize oldSize, CanvasSize newSize, CellPoint contentOffset)
     {
         // Several resizes in one group report as one: from the first old size to the last new size,
         // with the offsets added up.
-        _canvasResize = _canvasResize is null
-            ? new CanvasResizeChange(oldSize, newSize, contentOffset)
-            : _canvasResize with { NewSize = newSize, ContentOffset = _canvasResize.ContentOffset.Offset(contentOffset) };
+        var firstOldSize = _canvasResize?.OldSize ?? oldSize;
+        var totalOffset = _canvasResize?.ContentOffset.Offset(contentOffset) ?? contentOffset;
+        _canvasResize = new CanvasResizeChange(firstOldSize, newSize, totalOffset);
 
         ClearCellChanges();
         RaiseIfComplete();
@@ -85,6 +93,7 @@ internal sealed class DocumentChangeTracker
         ClearCellChanges();
         _layerListChanged = false;
         _layersWithChangedProperties.Clear();
+        _settingsChanged = false;
         _canvasResize = null;
     }
 
@@ -96,7 +105,8 @@ internal sealed class DocumentChangeTracker
         var cellChanges = _layersWithChangedCells
             .Select(layerId => new LayerCellsChange(layerId, _dirtyRegionsByLayer[layerId].ToList()))
             .ToList();
-        var change = new DocumentChangedEventArgs(cellChanges, _layerListChanged, _layersWithChangedProperties.ToList(), _canvasResize);
+        var change = new DocumentChangedEventArgs(cellChanges, _layerListChanged, _layersWithChangedProperties.ToList(),
+            _settingsChanged, _canvasResize);
 
         // Reset before raising, so a handler that reads or changes the document starts clean.
         DiscardPendingChanges();

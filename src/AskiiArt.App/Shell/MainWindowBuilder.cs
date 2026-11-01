@@ -37,19 +37,17 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
 
     private void AddKeyBindings(Window window, KeyModifiers platformCommandModifiers)
     {
-        // In the macOS system menu bar, a menu item's shortcut already triggers it. Binding it
-        // again on the window could run the action twice, so only actions that aren't in a menu
-        // get a window key binding there.
+        // In the macOS system menu bar, a menu item's shortcut (an action's first one) already
+        // triggers it. Binding it again on the window could run the action twice, so there only
+        // the other shortcuts get a window key binding.
         var actionsTriggeredByMenu = layout.IsSystemMenuBar
             ? layout.ActionIds().ToHashSet(StringComparer.Ordinal)
             : [];
 
         foreach (var action in actions.All)
         {
-            if (actionsTriggeredByMenu.Contains(action.Id))
-                continue;
-
-            foreach (var shortcut in action.DefaultShortcuts)
+            var firstBoundShortcut = actionsTriggeredByMenu.Contains(action.Id) ? 1 : 0;
+            foreach (var shortcut in action.DefaultShortcuts.Skip(firstBoundShortcut))
             {
                 window.KeyBindings.Add(new KeyBinding
                 {

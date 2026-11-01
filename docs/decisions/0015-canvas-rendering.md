@@ -41,4 +41,7 @@ Per-cell `DrawImage` also spends 13–38 ms just recording its operations on the
 ## Consequences
 
 - The canvas depends on Avalonia's Skia backend, which every desktop platform uses. Headless tests have no Skia, so they test input and maths, and the painter is tested on a plain Skia bitmap.
-- Space + drag pans, so step 1.5 must decide how Space behaves while typing.
+- Space + drag pans only when the active tool allows it; the text tool doesn't (ADR 0017).
+- How wheel events become scrolling or zooming is in ADR 0018.
+
+Updated 2026-10-31: Space + drag depends on the tool, and the wheel works in gestures (step 1.5).

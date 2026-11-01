@@ -1,0 +1,32 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder yes-or-cancel dialog, for actions that remove something (step 1.5). -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dialogs="using:AskiiArt.App.Shell.Dialogs"
+        xmlns:res="using:AskiiArt.App.Resources"
+        x:Class="AskiiArt.App.Shell.Dialogs.ConfirmWindow"
+        x:DataType="dialogs:ConfirmViewModel"
+        Title="{Binding Title}"
+        SizeToContent="WidthAndHeight"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="{StaticResource AppDialogPadding}"
+              Spacing="{StaticResource AppSpacingMedium}"
+              MinWidth="{StaticResource AppDialogMinWidth}"
+              MaxWidth="{StaticResource AppDialogMaxWidth}">
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="{StaticResource AppDialogButtonsMargin}"
+                Spacing="{StaticResource AppSpacingMedium}">
+      <Button Content="{Binding ConfirmLabel}"
+              Click="OnConfirmClick" />
+      <Button Content="{x:Static res:Strings.DialogCancel}"
+              IsDefault="True"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </StackPanel>
+</Window>

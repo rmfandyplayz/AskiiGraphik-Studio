@@ -16,13 +16,13 @@ ARCHITECTURE §14.2–14.3 requires every user-invocable operation to be an acti
 - **Menus are data:** `MenuLayout` lists menus and action ids (plus separators), and `MenuLayout.CreateDefault(isMacOS, includeDebugMenu)` builds the default layout. `NativeMenuBuilder` turns it into Avalonia `NativeMenu`s. On Windows and Linux, a `NativeMenuBar` shows them in the window; on macOS they go to the system menu bar.
 - **macOS:** the application menu holds "About AskiiGraphiks Studio". Avalonia adds its standard items below it (Services, Hide, Hide Others, Show All, Quit ⌘Q), and its Quit calls the same `TryShutdown` as our Quit action. There's no File menu on macOS until File has more items.
   - `App.Initialize` sets the application menu. Avalonia's macOS exporter reads it only once, after `Initialize` and before `OnFrameworkInitializationCompleted`. If no menu is set by then, it puts its own "About Avalonia" menu there and ignores any menu set later. `AppTests` covers this.
-- **Key bindings:** on Windows and Linux, `NativeMenuBar` only *displays* a gesture, so every action's shortcuts are added as window `KeyBinding`s. On macOS, a menu item's key equivalent triggers it natively, so actions shown in a menu get no window key binding (it would run them twice). Actions in no menu still get one.
+- **Key bindings:** on Windows and Linux, `NativeMenuBar` only *displays* a gesture, so every action's shortcuts are added as window `KeyBinding`s. On macOS, a menu item's key equivalent (its action's first shortcut) triggers it natively, so that shortcut gets no window key binding (it would run the action twice). The action's other shortcuts, and actions in no menu, still get one.
 
 ## Alternatives
 
 - **An in-window `Menu` control on every OS.** Simpler, but on a Mac it feels foreign, and Avalonia still shows its default "About Avalonia" application menu.
 - **Turning off Avalonia's standard macOS items** (`DisableDefaultApplicationMenuItems`) and building them ourselves. Hide, Hide Others and Services need native calls that NativeMenu doesn't expose.
-- **Defining actions in Core.** Core can't use Avalonia's `Key` or `ICommand`-based UI binding. Tool descriptors in Core (§8.1) will get their own neutral shortcut type when tools arrive.
+- **Defining actions in Core.** Core can't use Avalonia's `Key` or `ICommand`-based UI binding. Tool descriptors in Core (§8.1) will get their own neutral shortcut type when a tool needs a shortcut (ADR 0017).
 
 ## Consequences
 
@@ -32,3 +32,4 @@ ARCHITECTURE §14.2–14.3 requires every user-invocable operation to be an acti
 
 Updated 2026-10-30: the application menu is now set in `App.Initialize`. It used to be set in `OnFrameworkInitializationCompleted`, which was too late, so macOS showed "About Avalonia".
 Updated 2026-10-31: toggle actions have an `ActionCheckedState` (step 1.4), and there's a View menu on every OS.
+Updated 2026-10-31: on macOS, a menu action's second and later shortcuts get window key bindings (step 1.5); before, only the first worked. There's an Edit menu.
