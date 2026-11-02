@@ -78,6 +78,17 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void ClosedWindow_IgnoresLatePositionReports()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        window.KeepMinimumSizeOnScreen();
+    }
+
+    [AvaloniaFact]
     public void ClosedWindow_StopsFollowingTheTitle()
     {
         // On macOS later windows follow the same title, so a closed one mustn't keep listening.
@@ -101,7 +112,11 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp],
+        Assert.Equal(
+            [
+                Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuView,
+                Strings.MenuWindow, Strings.MenuHelp
+            ],
             topLevelItems.Select(item => item.Header));
 
         var quit = Assert.IsType<NativeMenuItem>(topLevelItems[0].Menu!.Items[^1]);
@@ -328,10 +343,10 @@ public sealed class MainWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         return
-    [
-        .. window.GetVisualDescendants().OfType<StackPanel>().Single(bar => bar.Name == ToolbarBuilder.ControlName)
-            .GetVisualDescendants().OfType<Button>()
-    ];
+        [
+            .. window.GetVisualDescendants().OfType<StackPanel>().Single(bar => bar.Name == ToolbarBuilder.ControlName)
+                .GetVisualDescendants().OfType<Button>()
+        ];
     }
 
     private MainWindow BuildWindow(MenuLayout layout, KeyModifiers commandModifiers = KeyModifiers.Control)

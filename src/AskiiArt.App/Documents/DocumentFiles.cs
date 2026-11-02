@@ -77,7 +77,11 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
             return;
         }
 
-        activeDocument.Replace(new EditingSession(contents.Document), new DocumentFile(path, contents.Variant));
+        var session = new EditingSession(contents.Document);
+        if (contents.ActiveLayerId is { } activeLayer)
+            session.SetActiveLayer(activeLayer);
+
+        activeDocument.Replace(session, new DocumentFile(path, contents.Variant));
 
         // The document keeps asking for its own font (ARCHITECTURE §5.10), so saving doesn't lose it.
         var font = contents.Document.Font;
@@ -151,7 +155,7 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
         var savePoint = session.History.BeginSave();
         try
         {
-            await DocumentFileFormat.SaveAsync(session.Document, file.Path, file.Variant);
+            await DocumentFileFormat.SaveAsync(session.Document, file.Path, file.Variant, session.ActiveLayer.Id);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

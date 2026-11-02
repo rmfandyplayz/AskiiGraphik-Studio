@@ -37,3 +37,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0028](0028-named-undo-steps.md) | Named undo steps and the History panel | Accepted |
 | [0029](0029-menu-strip-and-toolbar-panel.md) | The menu bar is a plain strip, and the toolbar is a Dock panel | Accepted |
 | [0030](0030-active-layer-and-layer-operations.md) | The active layer and layer operations | Accepted |
+| [0031](0031-saved-active-layer.md) | A saved file remembers its active layer | Accepted |
+| [0032](0032-colour-and-plugins-are-planned.md) | Colour and plugins are planned, not just reserved | Accepted |

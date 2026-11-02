@@ -122,6 +122,23 @@ public sealed class DocumentFilesTests : IDisposable
     }
 
     [Fact]
+    public async Task Open_GoesBackToTheLayerThatWasActiveWhenSaved_WithoutCountingAsAChange()
+    {
+        var bottom = _canvas.Session.ActiveLayer.Id;
+        History.Execute(new AddLayerCommand(1, new LayerProperties("Top")));
+        var file = FileIn("art.asciiart", DocumentFileVariant.Plain);
+        _dialogs.FileToSave = file;
+        _canvas.Session.SetActiveLayer(bottom);
+        await _files.SaveAsync();
+        _dialogs.FileToOpen = file.Path;
+
+        await _files.OpenAsync();
+
+        Assert.Equal(bottom, _canvas.Session.ActiveLayer.Id);
+        Assert.False(History.HasUnsavedChanges);
+    }
+
+    [Fact]
     public async Task Open_WithUnsavedChanges_CancelledAtTheQuestion_DoesNothing()
     {
         MakeAChange();
@@ -281,9 +298,10 @@ public sealed class DocumentFilesTests : IDisposable
 
     private async Task<string> SaveSomewhereAsync(DocumentFileVariant variant, string fontName)
     {
-        var document = Document.Create(new CanvasSize(3, 2), "Layer", CharacterSet.Unicode, new FontReference(fontName));
+        var document = Document.Create(new CanvasSize(3, 2), "Layer", CharacterSet.Unicode,
+            new FontReference(fontName));
         var path = Path.Combine(_folder, $"saved{DocumentFile.ExtensionOf(variant)}");
-        await DocumentFileFormat.SaveAsync(document, path, variant, TestContext.Current.CancellationToken);
+        await DocumentFileFormat.SaveAsync(document, path, variant, cancellationToken: TestContext.Current.CancellationToken);
         return path;
     }
 }

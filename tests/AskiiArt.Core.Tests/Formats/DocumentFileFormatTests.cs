@@ -27,6 +27,45 @@ public sealed class DocumentFileFormatTests
         Assert.Equal(variant, contents.Variant);
     }
 
+    [Theory]
+    [InlineData(DocumentFileVariant.Plain)]
+    [InlineData(DocumentFileVariant.Compressed)]
+    public void ActiveLayer_SurvivesSavingAndOpening(DocumentFileVariant variant)
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var bottom = document.ActiveFrame.Layers[0].Id;
+
+        var contents = DocumentFileFormat.Decode(DocumentFileFormat.Encode(document, variant, bottom));
+
+        Assert.Equal(bottom, contents.ActiveLayerId);
+    }
+
+    [Fact]
+    public void AFileThatDoesntNameAnActiveLayer_OpensWithoutOne()
+    {
+        var file = DocumentFileFormat.Encode(TestCells.CreateDocument(3, 2), DocumentFileVariant.Plain);
+
+        Assert.DoesNotContain("activeLayer", Encoding.UTF8.GetString(file), StringComparison.Ordinal);
+        Assert.Null(DocumentFileFormat.Decode(file).ActiveLayerId);
+    }
+
+    [Theory]
+    [InlineData("\"11111111-1111-1111-1111-111111111111\"")]
+    [InlineData("\"not a guid\"")]
+    [InlineData("7")]
+    public void AnActiveLayerThatsNoUse_IsIgnored_RatherThanRefusingTheFile(string value)
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var id = document.ActiveFrame.Layers[0].Id;
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(document, DocumentFileVariant.Plain, id));
+        var changed = text.Replace($"\"activeLayer\": \"{id:D}\"", $"\"activeLayer\": {value}", StringComparison.Ordinal);
+        Assert.NotEqual(text, changed);
+
+        var contents = DocumentFileFormat.Decode(Encoding.UTF8.GetBytes(changed));
+
+        Assert.Null(contents.ActiveLayerId);
+    }
+
     [Fact]
     public void PlainFile_ShowsTheArtAsRows_WithUnixLineEndings()
     {

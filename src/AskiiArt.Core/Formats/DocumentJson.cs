@@ -20,6 +20,8 @@ namespace AskiiArt.Core.Formats;
 /// </summary>
 internal static class DocumentJson
 {
+    private const string ActiveLayerProperty = "activeLayer";
+
     private static readonly JsonWriterOptions _writerOptions = new()
     {
         Indented = true,
@@ -33,7 +35,7 @@ internal static class DocumentJson
     private static readonly JsonDocumentOptions _readerOptions = new() { MaxDepth = 16 };
 
     /// <summary>Writes <paramref name="document"/> as UTF-8 JSON, ending with a line break.</summary>
-    public static byte[] Write(Document document)
+    public static byte[] Write(Document document, Guid? activeLayerId = null)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer, _writerOptions))
@@ -45,6 +47,9 @@ internal static class DocumentJson
             writer.WriteEndObject();
             writer.WriteString("characterSet", NameOf(document.CharacterSet));
             writer.WriteString("font", document.Font.FamilyName);
+            if (activeLayerId is { } activeLayer)
+                writer.WriteString(ActiveLayerProperty, activeLayer.ToString("D"));
+
             writer.WriteStartArray("frames");
             foreach (var frame in document.Frames)
             {
@@ -146,6 +151,21 @@ internal static class DocumentJson
         }
 
         return Document.CreateWithLayers(size, characterSet, new FontReference(fontName), layers);
+    }
+
+    /// <summary>
+    /// The layer the file says was active, or null. It only saves a click, so a value that's no use
+    /// (say, after a layer was removed by hand from a plain file) isn't worth refusing the file over.
+    /// </summary>
+    public static Guid? ReadActiveLayerId(JsonObject root, Document document)
+    {
+        if (root[ActiveLayerProperty] is JsonValue value && value.GetValueKind() == JsonValueKind.String
+            && Guid.TryParseExact(value.GetValue<string>(), "D", out var id) && document.TryGetLayer(id, out _))
+        {
+            return id;
+        }
+
+        return null;
     }
 
     private static void WriteLayer(Utf8JsonWriter writer, Layer layer)

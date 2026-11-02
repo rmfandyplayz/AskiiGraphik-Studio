@@ -51,8 +51,13 @@ internal sealed partial class MainWindow : Window
         MenuBarStrip.IsVisible = menuBar is not null;
     }
 
-    private void KeepMinimumSizeOnScreen()
+    internal void KeepMinimumSizeOnScreen()
     {
+        // macOS can still report a closed window's position, for example when the displays change, and
+        // a closed window has no screen to ask about.
+        if (PlatformImpl is null)
+            return;
+
         var wanted = new Size(_metrics.WindowMinWidth, _metrics.WindowMinHeight);
         var minimum = wanted;
 

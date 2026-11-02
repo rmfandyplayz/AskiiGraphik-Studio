@@ -37,7 +37,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Merge Down needs both layers visible and unlocked. The result keeps the lower layer's name and settings, and the picture doesn't change | `LayersPanelViewModel`, `MergeLayerDown` | 2.3 |
 | Typing does nothing on a hidden layer, as on a locked one, and gives no message | `EditingSession.CanEditActiveLayer` | 2.3 |
 | Clicking a row or a checkbox doesn't take the keyboard from the canvas. Hiding or locking a row that isn't active leaves the active layer alone | `LayersPanelView`, `MainWindow` | 2.3 |
-| The active layer isn't saved or undone. A reopened document starts on its top layer, and when the active layer goes away because of an undo, the top one takes over | `EditingSession` | 2.3 |
+| The active layer isn't undone, and choosing one doesn't mark the document unsaved, so changing only that and closing asks nothing and loses the choice. The file remembers it from the last save (the owner asked for that part). When the active layer goes away because of an undo, the top one takes over | `EditingSession`, `DocumentFiles` | 2.3 |
 | History panel: a plain list, oldest step first and newest at the bottom, below a "Start" row. The current row is highlighted and undone rows are dimmed. A single click jumps, and focus then returns to the canvas | `Editing/HistoryPanelView.axaml` | 2.2 |
 | Step names: Typing, Edit Cells, Resize Canvas, Change Font, Change Character Set, Add Layer, Duplicate Layer, Delete Layer, Move Layer, Merge Down, Rename Layer, Show or Hide Layer, Lock or Unlock Layer, Change Layer. Backspace and Delete count as Typing, because they merge into the same burst | `Strings.resx`, `TextTool` | 2.2 |
 | "Start" stays at the top even after the oldest steps are dropped to save memory, when it means the oldest point still reachable | `HistoryPanelViewModel` | 2.2 |
@@ -133,5 +133,5 @@ The owner's ideas, parked until the stage they belong to.
 - **Rebinding the caret keys and jump sizes** (raised in 1.5; the jumps were built in 1.6): part of the shortcut settings (M8).
 - **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
-- **Color and plugins**: possible colour for Discord ANSI art; opacity as a plugin only; wide (CJK) characters as a plugin.
+- **Color and plugins** (decided after 2.3's testing, ADR 0032): colour and ANSI are in, as milestone M2b. Plugins are in, as M8b, with a built-in Discord ANSI message plugin. Opacity isn't planned; wide (CJK) characters could be a plugin.
 - **Notice when a file changes outside the app** (raised in 1.7): a message when the open document's file is deleted or changed elsewhere, instead of locking the file (ADR 0024). It's on the roadmap for M9.

@@ -42,6 +42,7 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         factory.DockableClosed += OnPanelsChanged;
         factory.DockableAdded += OnPanelsChanged;
         factory.WindowClosed += OnPanelsChanged;
+        factory.WindowAdded += OnPanelsChanged;
         factory.WindowMoveDragBegin += OnFloatingPanelDragStarted;
         factory.WindowMoveDragEnd += OnFloatingPanelDragEnded;
 
@@ -63,6 +64,7 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         _factory.DockableClosed -= OnPanelsChanged;
         _factory.DockableAdded -= OnPanelsChanged;
         _factory.WindowClosed -= OnPanelsChanged;
+        _factory.WindowAdded -= OnPanelsChanged;
         _factory.WindowMoveDragBegin -= OnFloatingPanelDragStarted;
         _factory.WindowMoveDragEnd -= OnFloatingPanelDragEnded;
         _host = null;
@@ -128,6 +130,8 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         }
     }
 
+    // WindowAdded matters for floating a panel: Dock adds the panel to its new window before it adds that
+    // window to the layout, so at the panel's own event the layout doesn't hold it anywhere.
     private void OnPanelsChanged(object? sender, EventArgs e) => PanelsChanged?.Invoke(this, EventArgs.Empty);
 
     // Dock only sets this flag for a docked panel's drag. Moving a floating panel needs it too: the

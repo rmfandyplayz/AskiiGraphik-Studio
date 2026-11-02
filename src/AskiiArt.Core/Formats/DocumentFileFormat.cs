@@ -11,7 +11,8 @@ namespace AskiiArt.Core.Formats;
 /// <summary>A document read from a file, with how the file stored it.</summary>
 /// <param name="Document">The document.</param>
 /// <param name="Variant">Plain or compressed, from the file's header (not its name).</param>
-public sealed record DocumentFileContents(Document Document, DocumentFileVariant Variant);
+/// <param name="ActiveLayerId">The layer that was active when it was saved, or null when the file doesn't say.</param>
+public sealed record DocumentFileContents(Document Document, DocumentFileVariant Variant, Guid? ActiveLayerId = null);
 
 /// <summary>
 /// The document file format (ARCHITECTURE §13, ADR 0021). Both variants hold the same JSON:
@@ -62,11 +63,14 @@ public static class DocumentFileFormat
     }
 
     /// <summary>The whole file for <paramref name="document"/>.</summary>
-    public static byte[] Encode(Document document, DocumentFileVariant variant)
+    /// <param name="document">The document.</param>
+    /// <param name="variant">Plain or compressed.</param>
+    /// <param name="activeLayerId">The layer to reopen on, or null to leave that out.</param>
+    public static byte[] Encode(Document document, DocumentFileVariant variant, Guid? activeLayerId = null)
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        return EncodeJson(DocumentJson.Write(document), variant);
+        return EncodeJson(DocumentJson.Write(document, activeLayerId), variant);
     }
 
     /// <summary>Reads a whole file, sniffing its variant, and migrates older format versions.</summary>
@@ -81,12 +85,12 @@ public static class DocumentFileFormat
     /// in the background.
     /// </summary>
     public static async Task SaveAsync(Document document, string path, DocumentFileVariant variant,
-        CancellationToken cancellationToken = default)
+        Guid? activeLayerId = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrEmpty(path);
 
-        var json = DocumentJson.Write(document);
+        var json = DocumentJson.Write(document, activeLayerId);
         var file = await Task.Run(() => EncodeJson(json, variant), cancellationToken).ConfigureAwait(false);
         await AtomicFile.WriteAsync(path, file, cancellationToken).ConfigureAwait(false);
     }
@@ -126,7 +130,8 @@ public static class DocumentFileFormat
 
         var root = DocumentJson.Parse(json);
         FormatMigrations.Apply(root, version, currentVersion, migrations);
-        return new DocumentFileContents(DocumentJson.Read(root), variant);
+        var document = DocumentJson.Read(root);
+        return new DocumentFileContents(document, variant, DocumentJson.ReadActiveLayerId(root, document));
     }
 
     private static byte[] EncodeJson(byte[] json, DocumentFileVariant variant)

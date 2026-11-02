@@ -37,7 +37,10 @@ internal sealed partial class LayersPanelView : UserControl
 
         _viewModel = DataContext as LayersPanelViewModel;
         if (_viewModel is not null)
+        {
             _viewModel.RenameRequested += OnRenameRequested;
+            _viewModel.StateChanged += OnViewModelStateChanged;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -45,9 +48,21 @@ internal sealed partial class LayersPanelView : UserControl
         base.OnDetachedFromVisualTree(e);
 
         if (_viewModel is not null)
+        {
             _viewModel.RenameRequested -= OnRenameRequested;
+            _viewModel.StateChanged -= OnViewModelStateChanged;
+        }
 
         _viewModel = null;
+    }
+
+    // A list loses its selection when the selected row goes away, as all of them do when another
+    // document opens. If the active row's number is the same as before, the binding sees no change
+    // and doesn't put the selection back.
+    private void OnViewModelStateChanged(object? sender, EventArgs e)
+    {
+        if (_viewModel is { } viewModel && Rows.SelectedIndex != viewModel.ActiveRow)
+            Rows.SelectedIndex = viewModel.ActiveRow;
     }
 
     private void OnRowDoubleTapped(object? sender, TappedEventArgs e)

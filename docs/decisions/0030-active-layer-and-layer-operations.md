@@ -11,7 +11,7 @@ Step 2.3 lets the user choose the active layer and add, delete, duplicate, reord
 
 ## Decision
 
-- **The active layer belongs to the session, not the document.** `EditingSession.SetActiveLayer` chooses it and raises `ActiveLayerChanged`. It isn't saved or undone, so a reopened document starts on its top layer. If the layer goes away, for example when its Add is undone, the top layer takes over.
+- **The active layer belongs to the session, not the document.** `EditingSession.SetActiveLayer` chooses it and raises `ActiveLayerChanged`. It isn't undone. If the layer goes away, for example when its Add is undone, the top layer takes over.
 - **Tools ask `EditingSession.CanEditActiveLayer`**, which is false for a locked layer and for a hidden one, since an edit there couldn't be seen.
 - **`DuplicateLayerCommand`** copies its source each time it's applied, and holds no cells. Undo order means the source is just as it was the first time.
 - **`MergeLayerDown.Create`** builds one undo step from what already exists: a `CellEditCommand` on the lower layer and a `RemoveLayerCommand`, in a `CompositeCommand`. A cell goes down exactly when the `CompositingPolicy` says it hides what's below, so the picture doesn't change. The caller supplies the policy, which the per-layer space option (2.4) will affect.
@@ -21,7 +21,7 @@ Step 2.3 lets the user choose the active layer and add, delete, duplicate, reord
 
 ## Alternatives
 
-- **The active layer in the document, saved and undoable:** reopening would pick up where you left off, but choosing a layer would mark the document unsaved, and clicking between layers would fill History.
+- **The active layer in the document, undoable:** choosing a layer would mark the document unsaved, and clicking between layers would fill History.
 - **A dedicated merge command that stores both layers:** more code and more memory than the composite, for the same result.
 - **Letting tools edit hidden layers:** matches the old behaviour, but changes nobody can see are easy to make by accident.
 
@@ -30,3 +30,5 @@ Step 2.3 lets the user choose the active layer and add, delete, duplicate, reord
 - Merge Down is only offered when both layers are visible and unlocked, because a hidden layer's cells would suddenly show or vanish. Delete is only offered for an unlocked layer when another remains. These rules live in the view model, so a future plugin calling the commands directly isn't bound by them.
 - A merge reads the whole layer once, in time proportional to the canvas, which is fine at the sizes in ARCHITECTURE §21.
 - Undoing a delete doesn't reselect the restored layer, since the active layer isn't undone.
+
+Updated 2026-11-02: a saved file now remembers the active layer (ADR 0031).

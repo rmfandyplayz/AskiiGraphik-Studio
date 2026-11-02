@@ -43,6 +43,16 @@ Two to four plain-language sentences: what you can do now that you couldn't befo
 
 - [ ] Pass  - [ ] Fail. Notes:
 
+### T<last>: Tests to revisit
+
+The last test is always this table, when anything is left over: tests from earlier steps that still need another platform or a retest. Leave it out when nothing is.
+
+| Step | Test | Where | Why |
+|---|---|---|---|
+| <id> | <T#> | <Windows / macOS> | <e.g. "passed on a Mac, not tried on Windows yet"> |
+
+- [ ] Pass  - [ ] Fail. Notes:
+
 ## Worth poking at (optional, unscripted)
 
 - <Edge cases where bugs might hide, e.g. "resize to 1×1", "type at the last column">

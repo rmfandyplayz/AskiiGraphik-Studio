@@ -113,13 +113,19 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 - [~] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
 
   *Owner checks:* each operation, its undo, and saving and reopening.
-  *Note:* Built (ADR 0030), with a Layer menu whose actions the panel's buttons share.
+  *Note:* Built (ADRs 0030, 0031), with a Layer menu whose actions the panel's buttons share. The owner passed it on a Mac; T3, T6 and T8 still need Windows, and the fixes from that testing (the highlight after opening, saving the active layer) a retest. Listed in 2.4's test doc.
 - [ ] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
 
   *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
 - [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`.
 
   *Owner checks:* decided in the pass.
+
+## M2b: Colour
+
+Added after 2.3's testing, when the owner decided colour is in (ADR 0032). It comes before M3 so every tool from there on writes colour from the start. Later milestones keep their numbers.
+
+A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23).
 
 ## M3: Ramps and brushes
 
@@ -139,11 +145,15 @@ As described in ARCHITECTURE §17: an import dialog with a live preview, the str
 
 ## M7: Export and import
 
-PNG export (font, scale, padding, colors, and a transparent-background option), HTML export, text import, pasting text from the clipboard, and export options (line endings, trimming trailing spaces).
+PNG export (font, scale, padding, colors, and a transparent-background option), HTML export, text import, ANSI import, pasting text from the clipboard, and export options (line endings, trimming trailing spaces). PNG and HTML carry the document's colours (M2b).
 
 ## M8: Customization
 
 Rearrangeable toolbars and tool palette, a shortcut-rebinding UI, a settings window, light/dark theme switching, and layout presets.
+
+## M8b: Plugins
+
+Added with M2b (ADR 0032). Loading plugins, a versioned public API for tools, importers, exporters, actions and panels, a way to manage installed plugins, and a Discord ANSI message plugin built in as the API's first user. How plugins are written, what they're allowed to do and how they're licensed get decided with the owner first (ARCHITECTURE §23).
 
 ## M9: Ship-readiness
 
@@ -159,4 +169,4 @@ Whenever the owner delivers designs (layout, icons, text), Claude Code adds an i
 
 ## Reserved, not planned
 
-Color and ANSI, per-cell alpha, blend modes, animation, plugins and wide characters. See ARCHITECTURE §18.
+Per-cell alpha, layer opacity, blend modes, animation and wide characters. See ARCHITECTURE §18. The owner doesn't plan opacity for the base app; it and wide characters could come from plugins.

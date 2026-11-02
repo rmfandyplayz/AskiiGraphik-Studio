@@ -11,8 +11,9 @@
 
 A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspired by the old Windows freeware *ASCII Art Studio*, but it should feel like a modern image editor: layers, selections, customizable brushes, real undo history, dockable panels.
 
-- **Primary use:** plain monochrome, density-based ASCII art.
-- **Must stay cheap to add later:** Unicode beyond ASCII, ANSI-style color, per-cell alpha, layer blend modes, animation frames, plugins. These are **reserved**. The model has room for them, but nothing designs, builds or exposes them (§18).
+- **Primary use:** density-based ASCII art, in plain monochrome or with ANSI-style color.
+- **Planned:** color and ANSI (milestone M2b) and plugins (M8b). See ADR 0032.
+- **Must stay cheap to add later:** Unicode beyond ASCII, per-cell alpha, layer blend modes, animation frames. These are **reserved**. The model has room for them, but nothing designs, builds or exposes them (§18).
 - **Roles:** the owner designs all UI/UX (layout, icons, wording) and tests by hand. Claude Code owns implementation. Placeholder UI is allowed and expected (§14.6).
 - **Pace:** long-term, with quality first. Work proceeds in small steps, each covered by automated tests and then tested by the owner by hand.
 - **License:** GPL-3.0-or-later. The repo is public, but the project isn't looking for contributors.
@@ -97,8 +98,8 @@ A cell is a small value type, stored densely, with a target size of 16 bytes or 
 |---|---|---|
 | `Glyph` (`System.Text.Rune`) | the character | any Unicode scalar value |
 | `Occupied` (flag) | **live**: empty vs. has a glyph | n/a |
-| `Foreground`, `Background` | always "unset" | color update |
-| `Attributes` (flags) | always none | bold, underline, etc. |
+| `Foreground`, `Background` | always "unset" | color (M2b) |
+| `Attributes` (flags) | always none | bold, underline, etc. (M2b) |
 | `Alpha` | always fully opaque | alpha update |
 
 Use `Rune`, never `char`. A `char` is a UTF-16 code unit and can't hold characters outside the Basic Multilingual Plane.
@@ -245,6 +246,7 @@ compressed:  binary magic bytes + format version + Brotli-compressed UTF-8 JSON 
 - **Every file has a format version,** and every version bump comes with a migration so old files keep opening. If a file's version is newer than the app understands, refuse to open it with a clear message rather than guessing.
 - **Saves are atomic:** write to a temp file in the same directory, then replace the original. A half-written file is never left behind.
 - **Line endings** inside the JSON are always `\n`, on every OS.
+- **The active layer** is saved as an optional id, so a document reopens where it was left. It isn't content: choosing a layer doesn't mark the document unsaved, and an id that's no use is ignored (ADR 0031).
 - **Round-trip guarantee:** load(save(doc)) == doc for both variants. This is tested (§19).
 
 ## 14. App shell and UI decoupling
@@ -299,7 +301,7 @@ Importers and exporters implement the `IImporter` and `IExporter` interfaces, wh
 | PNG (rendered with the document font; scale, padding and color options) | export | M7 |
 | HTML (`<pre>`) | export | M7 |
 | Image → ASCII | import | M6 |
-| ANSI (`.ans`) | both | reserved |
+| ANSI (`.ans`, clipboard) | both | export in M2b, import in M7 |
 
 Text export always flattens the visible layers and writes `\n` line endings by default, with an option for `\r\n` and an option to trim trailing spaces.
 
@@ -316,13 +318,15 @@ Here quality matters more than speed. This gets its own milestone, and the detai
 
 ## 18. Reserved features (hooks only, no design)
 
+Color and plugins now have milestones (M2b and M8b, ADR 0032). Until those start, they stay hooks like the rest. The owner doesn't plan opacity or blend modes for the base app.
+
 | Feature | Hook that exists now | Not built |
 |---|---|---|
 | Animation | The document holds a list of frames (exactly one); everything works on the active frame | Frame UI, timeline, playback, export |
-| Color / ANSI | `Foreground`, `Background` and `Attributes` on Cell; optional in the file format | Color tools, palettes, ANSI import/export |
+| Color / ANSI (M2b) | `Foreground`, `Background` and `Attributes` on Cell; optional in the file format | Color tools, palettes, ANSI import/export |
 | Per-cell alpha | `Alpha` on Cell | Alpha compositing, alpha eraser |
 | Layer opacity / blend modes | Fields on Layer; compositing goes through one policy object | Any mode other than normal |
-| Plugins | Tools, importers, exporters and actions use interfaces and DI registries | Loading external assemblies, sandboxing, plugin API versioning |
+| Plugins (M8b) | Tools, importers, exporters and actions use interfaces and DI registries | Loading external assemblies, sandboxing, plugin API versioning |
 | Wide characters | `CharWidth` service; one-column grid | Double-width cells |
 
 If implementing something would require making a reserved feature real, stop and ask.
@@ -376,10 +380,12 @@ Ask the owner about each of these at the milestone that needs it.
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should the space-as-empty option be per layer, per document or app-wide? *Decided in M2 planning:* per layer, built in step 2.4 | M2 |
+| The color model: which palettes (Discord's ANSI has 8 text and 8 background colors; terminals reach 16, 256 or RGB), indexed or RGB, per document like the character set, and which attributes. Also whether a colored space still counts for the space-as-empty option | M2b |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |
 | Exact behavior of each tool | That tool's milestone |
 | Big-text font format (FIGlet?), and which fonts can legally be bundled | M5 |
+| How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M8b; the license before accepting outside code |
 | How to flag wide characters visually | When Unicode input is allowed |
 | When the owner's UI design will arrive, and in what form (Figma, AXAML, screenshots) | Any time |
 

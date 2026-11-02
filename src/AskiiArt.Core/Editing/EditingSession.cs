@@ -43,7 +43,7 @@ public sealed class EditingSession
     /// <summary>
     /// The layer tools draw on. It starts as the top layer of the active frame. If the layer is
     /// removed, the top layer takes over. Which layer is active isn't part of the document, so it
-    /// isn't saved or undone.
+    /// isn't undone and choosing one isn't a change, though a saved file remembers it (ADR 0031).
     /// </summary>
     public Layer ActiveLayer
     {

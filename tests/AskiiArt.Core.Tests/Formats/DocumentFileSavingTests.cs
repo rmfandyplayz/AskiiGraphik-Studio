@@ -23,7 +23,7 @@ public sealed class DocumentFileSavingTests : IDisposable
         var document = DocumentFileFormatTests.CreateSampleDocument();
         var path = Path.Combine(_folder, "art.asciiart");
 
-        await DocumentFileFormat.SaveAsync(document, path, variant, TestContext.Current.CancellationToken);
+        await DocumentFileFormat.SaveAsync(document, path, variant, cancellationToken: TestContext.Current.CancellationToken);
         var contents = await DocumentFileFormat.OpenAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(TestCommands.Snapshot(document), TestCommands.Snapshot(contents.Document));
@@ -37,7 +37,7 @@ public sealed class DocumentFileSavingTests : IDisposable
         await File.WriteAllTextAsync(path, "old contents", TestContext.Current.CancellationToken);
 
         await DocumentFileFormat.SaveAsync(TestCells.CreateDocument(2, 2), path, DocumentFileVariant.Plain,
-            TestContext.Current.CancellationToken);
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.StartsWith("ASKIIART 1\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken),
             StringComparison.Ordinal);
@@ -52,7 +52,7 @@ public sealed class DocumentFileSavingTests : IDisposable
         Directory.CreateDirectory(path);
 
         var exception = await Record.ExceptionAsync(() => DocumentFileFormat.SaveAsync(TestCells.CreateDocument(2, 2),
-            path, DocumentFileVariant.Plain, TestContext.Current.CancellationToken));
+            path, DocumentFileVariant.Plain, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.True(exception is IOException or UnauthorizedAccessException, $"Threw {exception}");
         Assert.True(Directory.Exists(path));

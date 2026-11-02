@@ -13,6 +13,7 @@ using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Editing;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -268,7 +269,8 @@ public sealed class ClickRoutingTests : IDisposable
         var usableLeft = viewport.Insets.Left;
         var usableRight = viewport.ViewportSize.Width - viewport.Insets.Right;
         var toolbarBottom = (RectIn(ToolbarView).Bottom - RectIn(Canvas).Top) * scaling;
-        Assert.True(viewport.Insets.Top >= toolbarBottom, $"Insets start at {viewport.Insets.Top}, and the toolbar ends at {toolbarBottom}.");
+        Assert.True(viewport.Insets.Top >= toolbarBottom,
+            $"Insets start at {viewport.Insets.Top}, and the toolbar ends at {toolbarBottom}.");
         Assert.True(viewport.Insets.Right >=
                     ShellLayoutMetrics.FromResources(Application.Current!).SideWidth * scaling);
         Assert.Equal(0, viewport.Insets.Bottom);
@@ -504,6 +506,59 @@ public sealed class ClickRoutingTests : IDisposable
         Assert.Equal(0, history.UndoCount);
     }
 
+    [AvaloniaTheory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void OpeningADocument_HighlightsItsActiveLayer(int layersBefore)
+    {
+        var layers =
+            (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
+        for (var added = 1; added < layersBefore; added++)
+            layers.AddLayer();
+
+        Pump();
+        var rows = LayerRows();
+        var opened = new EditingSession(Document.Create(new CanvasSize(10, 10), "Bottom"));
+        opened.History.Execute(new AddLayerCommand(1, new LayerProperties("Middle")));
+        opened.History.Execute(new AddLayerCommand(2, new LayerProperties("Top")));
+        opened.SetActiveLayer(opened.Document.ActiveFrame.Layers[^1].Id);
+
+        _canvas.ActiveDocument.Replace(opened);
+        Pump();
+
+        Assert.Equal(3, rows.ItemCount);
+        Assert.Equal(0, rows.SelectedIndex);
+        Assert.Equal(opened.ActiveLayer.Id, ((LayerRow)rows.SelectedItem!).LayerId);
+    }
+
+    [AvaloniaFact]
+    public void FloatingAPanel_KeepsItOpenAsFarAsTheWindowMenuKnows()
+    {
+        var lastAnswer = false;
+        _dock.PanelsChanged += (_, _) => lastAnswer = _dock.IsPanelOpen(ShellDockIds.HistoryPanel);
+        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
+
+        _window.Panels.Factory!.FloatDockable(panel);
+        Pump();
+
+        Assert.True(lastAnswer);
+    }
+
+    [AvaloniaFact]
+    public void ClosingAFloatingPanel_TellsTheWindowMenu()
+    {
+        var lastAnswer = true;
+        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
+        _window.Panels.Factory!.FloatDockable(panel);
+        Pump();
+        _dock.PanelsChanged += (_, _) => lastAnswer = _dock.IsPanelOpen(ShellDockIds.HistoryPanel);
+
+        _dock.TogglePanel(ShellDockIds.HistoryPanel);
+        Pump();
+
+        Assert.False(lastAnswer);
+    }
+
     [AvaloniaFact]
     public void ClickingALayerRow_MakesItActive_AndTypingStaysWithTheCanvas()
     {
@@ -571,7 +626,8 @@ public sealed class ClickRoutingTests : IDisposable
     public void TheRenameAction_OpensTheActiveRowsName_AndEscapeLeavesTheNameAlone()
     {
         var name = _canvas.Session.ActiveLayer.Properties.Name;
-        var layers = (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
+        var layers =
+            (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
 
         layers.RenameActiveLayer();
         Pump();
@@ -588,7 +644,8 @@ public sealed class ClickRoutingTests : IDisposable
     [AvaloniaFact]
     public void ClickingAwayFromARename_KeepsTheNewName()
     {
-        var layers = (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
+        var layers =
+            (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
         layers.RenameActiveLayer();
         Pump();
         var box = Assert.IsType<TextBox>(_window.FocusManager!.GetFocusedElement());
