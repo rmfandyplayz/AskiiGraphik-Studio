@@ -211,7 +211,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 ## 11. Fonts and glyph rasterization (Imaging)
 
 - **Bundled fonts:** JetBrains Mono (the default), Roboto Mono, IBM Plex Mono and Fira Code, Regular weight only, all OFL-1.1. Each one ships with its license file and is listed in THIRD-PARTY-NOTICES.md (ADR 0013).
-- **User fonts:** any TTF or OTF file the user picks, or any installed system font. Fonts loaded from a file are remembered until the app closes, until the user font list is stored in settings (§15, ADR 0019).
+- **User fonts:** any TTF or OTF file the user picks, or any installed system font. Fonts loaded from a file are remembered by path between runs, in the user font list in settings (§15, ADR 0034).
   - **Cell size comes from font metrics:** the advance width of a reference glyph (`0`) × the line height (ascent + descent + line gap), read from the font file so it's the same on every OS (ADR 0013). It is never hardcoded.
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
   - **Damaged files:** a file that isn't a readable font, or whose name, glyphs or cell size are broken, is rejected with a message and never crashes the app (ADR 0019).
@@ -379,7 +379,7 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| The color model: which palettes (Discord's ANSI has 8 text and 8 background colors; terminals reach 16, 256 or RGB), indexed or RGB, per document like the character set, and which attributes. Also whether a colored space still counts for the space-as-empty option | M2b |
+| The color model. Decided by the owner on 2026-11-02: a new document picks monochrome, RGB color or ANSI color, like the character set. Still open: what ANSI color means (Discord's ANSI has 8 text and 8 background colors; terminals reach 16 or 256), whether a document can change its mode later, which attributes there are, and whether a colored space still counts for the space-as-empty option | M2b |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |
 | Exact behavior of each tool | That tool's milestone |

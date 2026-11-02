@@ -60,7 +60,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Resize Canvas starts at the current size, anchored in the centre. The anchor is a 3 × 3 grid of arrows, and shrinking shows "cells outside the new size will be removed" | `Documents/ResizeCanvasWindow.axaml` | 1.6 |
 | The font picker: a search box, one list (the bundled fonts, marked "comes with the app", then fonts loaded from files, then installed fonts), Load from File, and a warning when the selected font isn't monospaced. No preview | `Fonts/FontPickerWindow.axaml` | 1.6 |
 | A font file whose family is already available isn't added; the picker says the one already there is used (ADR 0019) | `FontCatalog.AddFile` | 1.6 |
-| Fonts loaded from files are forgotten when the app closes (until settings, M2) | `FontCatalog` | 1.6 |
+| Fonts loaded from files are remembered by path. If the file is moved, deleted or damaged, its font quietly leaves the picker (with a line in the log) and comes back if the file does. There's no way to remove one from the picker | `FontCatalog`, `RememberedFontFiles` | 1.6, 2.4b |
 | Warnings in dialogs are orange text | `AppWarningTextBrush` | 1.6 |
 
 ### Files (ADR 0021)

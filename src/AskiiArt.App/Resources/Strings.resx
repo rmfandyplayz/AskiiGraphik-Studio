@@ -274,7 +274,7 @@
   </data>
   <data name="FontSourceFileFormat" xml:space="preserve">
     <value>{0} (from a file)</value>
-    <comment>A font loaded from a file since the app started. {0} is its family name.</comment>
+    <comment>A font loaded from a file. {0} is its family name.</comment>
   </data>
   <data name="FontNotMonospaceWarning" xml:space="preserve">
     <value>This font's characters aren't all the same width, so some won't line up with the grid.</value>

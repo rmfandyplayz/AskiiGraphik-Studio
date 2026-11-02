@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.App.Settings;
 using AskiiArt.Core.Documents;
 using AskiiArt.Imaging.Fonts;
+using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Fonts;
 
@@ -11,7 +13,7 @@ internal enum FontSource
 {
     Bundled,
 
-    /// <summary>A TTF or OTF file the user loaded since the app started.</summary>
+    /// <summary>A TTF or OTF file the user loaded, now or on an earlier run.</summary>
     File,
 
     System
@@ -21,8 +23,8 @@ internal enum FontSource
 internal sealed record FontChoice(FontReference Font, FontSource Source);
 
 /// <summary>
-/// Every font the app can draw with: the bundled fonts, fonts loaded from files since the app
-/// started, and the installed ones (ARCHITECTURE §11, ADR 0019). It turns a document's font
+/// Every font the app can draw with: the bundled fonts, fonts loaded from files, and the installed
+/// ones (ARCHITECTURE §11, ADRs 0019 and 0034). It turns a document's font
 /// reference into a loaded font, loading each font once and keeping it until the app closes,
 /// because glyph atlases are cached per loaded font.
 /// </summary>
@@ -30,19 +32,21 @@ internal sealed record FontChoice(FontReference Font, FontSource Source);
 /// Documents store font names, not files, so two fonts with the same family name can't be told
 /// apart. When a file holds a family that's already available, the one already available wins.
 /// </remarks>
-internal sealed class FontCatalog : IDisposable
+internal sealed partial class FontCatalog : IDisposable
 {
     private readonly IReadOnlyList<BundledFont> _bundledFonts;
     private readonly Func<IReadOnlyList<string>> _getSystemFamilyNames;
     private readonly Func<string, LoadedFont?> _loadSystemFont;
+    private readonly RememberedFontFiles? _rememberedFiles;
     private readonly Dictionary<FontReference, LoadedFont> _loadedFonts = [];
     private readonly Dictionary<FontReference, MonospaceCheckResult> _monospaceChecks = [];
     private readonly List<FontReference> _fileFonts = [];
     private IReadOnlyList<string>? _systemFamilyNames;
     private bool _isDisposed;
 
-    public FontCatalog()
-        : this(BundledFonts.All, FontLoader.GetSystemFamilyNames, FontLoader.LoadSystem)
+    public FontCatalog(IAppSettings settings, ILogger<FontCatalog> logger)
+        : this(BundledFonts.All, FontLoader.GetSystemFamilyNames, FontLoader.LoadSystem,
+            new RememberedFontFiles(settings), logger)
     {
     }
 
@@ -50,15 +54,20 @@ internal sealed class FontCatalog : IDisposable
     /// <param name="bundledFonts">The bundled fonts to offer; they must include the default font.</param>
     /// <param name="getSystemFamilyNames">Lists the installed font families.</param>
     /// <param name="loadSystemFont">Loads an installed family by name, or returns null.</param>
+    /// <param name="rememberedFiles">The font files to load now and to add to; null remembers nothing.</param>
+    /// <param name="logger">Records why a remembered file couldn't be loaded; null records nothing.</param>
     internal FontCatalog(IReadOnlyList<BundledFont> bundledFonts, Func<IReadOnlyList<string>> getSystemFamilyNames,
-        Func<string, LoadedFont?> loadSystemFont)
+        Func<string, LoadedFont?> loadSystemFont, RememberedFontFiles? rememberedFiles = null, ILogger? logger = null)
     {
         _bundledFonts = bundledFonts;
         _getSystemFamilyNames = getSystemFamilyNames;
         _loadSystemFont = loadSystemFont;
+        _rememberedFiles = rememberedFiles;
 
         DefaultFont = Load(FontReference.Default) ??
                       throw new InvalidOperationException("The default font is missing.");
+
+        LoadRememberedFiles(logger);
     }
 
     /// <summary>The font a document falls back to when its own font isn't available (§5.10).</summary>
@@ -120,9 +129,9 @@ internal sealed class FontCatalog : IDisposable
     }
 
     /// <summary>
-    /// Loads the font in <paramref name="path"/> and adds it to the choices until the app closes.
-    /// Returns the font to use and whether the file's own font was added; it isn't when a font
-    /// with that family name was already available.
+    /// Loads the font in <paramref name="path"/>, adds it to the choices and remembers the file for
+    /// the next run. Returns the font to use and whether the file's own font was added; it isn't
+    /// when a font with that family name was already available.
     /// </summary>
     /// <exception cref="FontLoadException">The file isn't a font that can be loaded, or it's damaged.</exception>
     /// <exception cref="IOException">The file can't be read.</exception>
@@ -130,6 +139,27 @@ internal sealed class FontCatalog : IDisposable
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
+        var result = LoadFile(path);
+        if (result.WasAdded)
+            _rememberedFiles?.Add(path);
+
+        return result;
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed)
+            return;
+
+        _isDisposed = true;
+        foreach (var font in _loadedFonts.Values)
+            font.Dispose();
+
+        _loadedFonts.Clear();
+    }
+
+    private (FontReference Font, bool WasAdded) LoadFile(string path)
+    {
         var loaded = FontLoader.LoadFromFile(path);
         var font = new FontReference(loaded.FamilyName);
         if (Load(font) is not null)
@@ -143,16 +173,24 @@ internal sealed class FontCatalog : IDisposable
         return (font, true);
     }
 
-    public void Dispose()
+    // A file that can't be loaded stays remembered, since it may be on a drive that's unplugged for now.
+    private void LoadRememberedFiles(ILogger? logger)
     {
-        if (_isDisposed)
+        if (_rememberedFiles is null)
             return;
 
-        _isDisposed = true;
-        foreach (var font in _loadedFonts.Values)
-            font.Dispose();
-
-        _loadedFonts.Clear();
+        foreach (var path in _rememberedFiles.Load())
+        {
+            try
+            {
+                LoadFile(path);
+            }
+            catch (Exception exception) when (exception is FontLoadException or IOException or UnauthorizedAccessException)
+            {
+                if (logger is not null)
+                    LogCouldNotLoadRememberedFile(logger, exception, path);
+            }
+        }
     }
 
     private LoadedFont? Load(FontReference font)
@@ -177,4 +215,7 @@ internal sealed class FontCatalog : IDisposable
 
         return _loadSystemFont(font.FamilyName);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The remembered font file {FontPath} could not be loaded")]
+    private static partial void LogCouldNotLoadRememberedFile(ILogger logger, Exception exception, string fontPath);
 }

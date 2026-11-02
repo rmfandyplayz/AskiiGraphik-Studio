@@ -26,8 +26,9 @@ Step 1.6 adds a font picker: the bundled fonts, installed fonts, and fonts loade
 
 ## Consequences
 
-- A document whose font came from a file falls back to the default font once the app restarts, until the user font list is stored in settings (M2). Open tells the user about the fallback, and the document keeps its font (ADR 0021).
+- A document whose font came from a file falls back to the default font when that file can't be found (ADR 0034). Open tells the user about the fallback, and the document keeps its font (ADR 0021).
 - Hundreds of installed fonts are listed by name only; nothing is loaded until one is selected.
 
 Updated 2026-11-01: from the owner's 1.6 testing, damaged font files are rejected when loaded.
 Updated 2026-11-01: Open says when a document's font is missing (step 1.7).
+Updated 2026-11-02: fonts loaded from a file are now remembered between runs (ADR 0034, step 2.4b).

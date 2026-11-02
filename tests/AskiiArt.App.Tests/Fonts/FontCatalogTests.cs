@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Fonts;
+using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
 using AskiiArt.Imaging.Fonts;
 
@@ -11,7 +12,7 @@ public sealed class FontCatalogTests : IDisposable
 {
     private readonly string _folder = Directory.CreateTempSubdirectory("askiiart-fonts-").FullName;
 
-    /// <summary>The Fira Code file copied next to the tests, which isn't bundled in <see cref="CreateCatalog"/>.</summary>
+    /// <summary>The Fira Code file copied next to the tests, which isn't bundled in <see cref="CreateCatalog()"/>.</summary>
     internal static string FiraCodeFile { get; } =
         Path.Combine(AppContext.BaseDirectory, "TestFonts", "FiraCode-Regular.ttf");
 
@@ -96,8 +97,97 @@ public sealed class FontCatalogTests : IDisposable
         Assert.All(BundledFonts.All, font => Assert.True(catalog.IsMonospace(new FontReference(font.FamilyName))));
     }
 
+    [Fact]
+    public void AddFile_IsStillThereAfterARestart()
+    {
+        var settings = new FakeAppSettings();
+        using (var firstRun = CreateCatalog(settings))
+            firstRun.AddFile(FiraCodeFile);
+
+        using var secondRun = CreateCatalog(settings);
+
+        var font = new FontReference("Fira Code");
+        Assert.Contains(new FontChoice(font, FontSource.File), secondRun.GetChoices());
+        Assert.True(secondRun.IsAvailable(font));
+        Assert.Equal(FontOrigin.File, secondRun.Resolve(font).Origin);
+    }
+
+    [Fact]
+    public void AddFile_WithAFamilyAlreadyAvailable_IsNotRemembered()
+    {
+        var settings = new FakeAppSettings();
+        using var catalog = new FontCatalog(BundledFonts.All, () => [], _ => null, new RememberedFontFiles(settings));
+
+        catalog.AddFile(FiraCodeFile);
+
+        Assert.Empty(new RememberedFontFiles(settings).Load());
+    }
+
+    [Fact]
+    public void AddFile_ThatIsNotAFont_IsNotRemembered()
+    {
+        var settings = new FakeAppSettings();
+        using var catalog = CreateCatalog(settings);
+        var path = Path.Combine(_folder, "notes.ttf");
+        File.WriteAllText(path, "not a font");
+
+        Assert.Throws<FontLoadException>(() => catalog.AddFile(path));
+
+        Assert.Empty(new RememberedFontFiles(settings).Load());
+    }
+
+    [Fact]
+    public void ARememberedFileThatIsGone_IsLeftOut_AndComesBackWithTheFile()
+    {
+        var settings = new FakeAppSettings();
+        var path = Path.Combine(_folder, "font.ttf");
+        File.Copy(FiraCodeFile, path);
+        using (var firstRun = CreateCatalog(settings))
+            firstRun.AddFile(path);
+
+        File.Delete(path);
+        using (var whileGone = CreateCatalog(settings))
+        {
+            Assert.False(whileGone.IsAvailable(new FontReference("Fira Code")));
+            Assert.DoesNotContain(whileGone.GetChoices(), choice => choice.Source == FontSource.File);
+        }
+
+        File.Copy(FiraCodeFile, path);
+        using var afterReturning = CreateCatalog(settings);
+
+        Assert.True(afterReturning.IsAvailable(new FontReference("Fira Code")));
+    }
+
+    [Fact]
+    public void ARememberedFileThatIsDamaged_IsLeftOut()
+    {
+        var settings = new FakeAppSettings();
+        var path = Path.Combine(_folder, "damaged.ttf");
+        File.WriteAllText(path, "not a font");
+        new RememberedFontFiles(settings).Add(path);
+
+        using var catalog = CreateCatalog(settings);
+
+        Assert.DoesNotContain(catalog.GetChoices(), choice => choice.Source == FontSource.File);
+    }
+
+    [Fact]
+    public void ARememberedFileWhoseFamilyIsNowAvailable_UsesTheOneAlreadyThere()
+    {
+        var settings = new FakeAppSettings();
+        new RememberedFontFiles(settings).Add(FiraCodeFile);
+
+        using var catalog = new FontCatalog(BundledFonts.All, () => [], _ => null, new RememberedFontFiles(settings));
+
+        Assert.DoesNotContain(catalog.GetChoices(), choice => choice.Source == FontSource.File);
+        Assert.Equal(FontOrigin.Bundled, catalog.Resolve(new FontReference("Fira Code")).Origin);
+    }
+
     public void Dispose() => Directory.Delete(_folder, recursive: true);
 
     /// <summary>A catalog with only the default font bundled and nothing installed.</summary>
     internal static FontCatalog CreateCatalog() => new([BundledFonts.Default], () => [], _ => null);
+
+    private static FontCatalog CreateCatalog(FakeAppSettings settings) =>
+        new([BundledFonts.Default], () => [], _ => null, new RememberedFontFiles(settings));
 }

@@ -105,20 +105,24 @@ Docking is adopted here, before most panels exist, so later panels don't need to
   - the settings file, a saved layout, and a Window menu with panel toggles and Reset Layout
 
   *Owner checks:* art shows around the widgets, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts.
+  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts. On 2026-11-02 the owner moved that retest into 2.5, so everything about docking and windows is checked together. This step stays open until then.
 - [x] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
 
   *Owner checks:* the list stays in sync with undo and redo, including while the panel floats.
   *Note:* Built (ADR 0028), at the owner's suggestion alongside the 2.1 fixes, so both were tested together.
-- [~] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
+- [x] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
 
   *Owner checks:* each operation, its undo, and saving and reopening.
-  *Note:* Built (ADRs 0030, 0031), with a Layer menu whose actions the panel's buttons share. The owner passed it on a Mac; T3, T6 and T8 still need Windows, and the fixes from that testing (the highlight after opening, saving the active layer) a retest. Listed in 2.4's test doc.
-- [~] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
+  *Note:* Built (ADRs 0030, 0031), with a Layer menu whose actions the panel's buttons share. The owner confirmed it on both platforms on 2026-11-02, along with the fixes from its testing (the highlight after opening, saving the active layer).
+- [x] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
 
   *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
-  *Note:* Built (ADR 0033). Also has the fixes from 2.3's testing (ADR 0031) and a fix for a crash on a Mac when a closed window reported its position.
-- [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`.
+  *Note:* Built (ADR 0033). Also has the fixes from 2.3's testing (ADR 0031) and a fix for a crash on a Mac when a closed window reported its position. The owner confirmed it on 2026-11-02.
+- [~] **2.4b Remembered font files.** Fonts loaded from a file are still there after a restart. Added at the owner's request on 2026-11-02, so documents using them stop falling back to the default font.
+
+  *Owner checks:* a loaded font survives a restart, a document using it opens without a warning, and a moved or damaged file does no harm.
+  *Note:* Built (ADR 0034). Fonts are remembered by file path in settings.
+- [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`. It also takes in 2.1's last retest.
 
   *Owner checks:* decided in the pass.
 
@@ -126,7 +130,7 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 
 Added after 2.3's testing, when the owner decided colour is in (ADR 0032). It comes before M3 so every tool from there on writes colour from the start. Later milestones keep their numbers.
 
-A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23).
+A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23). The owner's direction so far: a new document picks monochrome, RGB color or ANSI color, the way it picks its character set.
 
 ## M3: Ramps and brushes
 
