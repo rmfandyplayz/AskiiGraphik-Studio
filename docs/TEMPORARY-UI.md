@@ -102,3 +102,4 @@ The owner's ideas, parked until the stage they belong to.
 - **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
 - **Color and plugins**: possible colour for Discord ANSI art; opacity as a plugin only; wide (CJK) characters as a plugin.
+- **Notice when a file changes outside the app** (raised in 1.7): a message when the open document's file is deleted or changed elsewhere, instead of locking the file (ADR 0024). It's on the roadmap for M9.

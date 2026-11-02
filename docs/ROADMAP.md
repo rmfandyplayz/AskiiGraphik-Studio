@@ -84,14 +84,14 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
   *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, and the unsaved-changes prompts behave correctly.
   *Note:* Built (ADR 0021). The fixes from 1.6 testing are in too (damaged fonts, Ctrl+Shift+arrow, size boxes that clamp). The fixes from its own testing (a damaged escape that failed CI on macOS, the open picker that didn't appear after saving on Windows) land in 1.8.
-- [~] **1.8 Output and macOS windows.** Adds:
+- [x] **1.8 Output and macOS windows.** Adds:
   - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New or Open with no window opens one (requested in 0.3 testing; one window at a time)
   - Copy as Text (to the clipboard) and Export .txt
 
   *Owner checks:* copied art pastes correctly into a text editor, the exported file matches, and on a Mac, closing the window leaves the app running.
-  *Note:* Built (ADRs 0022, 0023), not pushed. On a Mac the File menu can't exist with no window open, so New and Open are in the Dock menu then; Mac windows also show the unsaved dot. The fixes from 1.7 testing are in too.
+  *Note:* Built (ADRs 0022, 0023). On a Mac the File menu can't exist with no window open, so New and Open are in the Dock menu then; Mac windows also show the unsaved dot. The fixes from 1.7 testing are in too.
 
-**The MVP is complete after 1.8.** (1.7 was split in two after 1.6 testing, with the owner's OK.)
+**The MVP is complete: the owner confirmed 1.8 on 2026-11-01.** (1.7 was split in two after 1.6 testing, with the owner's OK.)
 
 ## M2: Shell and layers
 
@@ -125,7 +125,7 @@ Rearrangeable toolbars and tool palette, a shortcut-rebinding UI, a settings win
 
 ## M9: Ship-readiness
 
-Autosave and crash recovery, recent files, a file association for the document extension, the app icon, and an About / credits / licenses screen. Packaging for Windows (installer or zip), macOS (an unsigned `.app` bundle, with instructions in the README) and Linux (AppImage or tarball). A release workflow that runs when a tag is pushed.
+Autosave and crash recovery, recent files, a notice when the open file is deleted or changed outside the app (ADR 0024), a file association for the document extension, the app icon, and an About / credits / licenses screen. Packaging for Windows (installer or zip), macOS (an unsigned `.app` bundle, with instructions in the README) and Linux (AppImage or tarball). A release workflow that runs when a tag is pushed.
 
 ---
 

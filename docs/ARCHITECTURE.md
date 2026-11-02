@@ -340,6 +340,7 @@ If implementing something would require making a reserved feature real, stop and
 ## 20. Threading, errors and logging
 
 - The document is changed **only on the UI thread**. Heavy work (image conversion, global fill on large canvases, export, compression) runs as a background task. It reports progress, supports cancellation, and returns a result that the UI thread applies as a command.
+- **Saving and text export are the exception so far:** reading the document has to happen on the UI thread, so turning it into JSON or text happens there, and only compressing and writing run in the background, with no progress or cancel (ADRs 0021, 0022). The owner tried this at 4096 × 4096 and text export felt instant. Revisit it with PNG export (M7), where rendering takes real time.
 - No `async void` except in event handlers, and no fire-and-forget work without error handling.
 - Unhandled exceptions are logged with context and shown to the user as a clear message, and the app tries to keep the document safe by offering to save a recovery copy. Exceptions are never swallowed silently. How each kind of exception is handled is in ADR 0008.
 - Logs go to a rolling file in the per-machine (local, non-roaming) app-data folder, under `Logs` (ADR 0006). A Help → "Open log folder" menu item makes bug reports easy.

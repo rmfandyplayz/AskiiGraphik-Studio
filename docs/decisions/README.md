@@ -30,3 +30,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0021](0021-document-files-and-unsaved-changes.md) | Document files and unsaved changes | Accepted |
 | [0022](0022-text-output.md) | Text output: Copy as Text and Export as Text | Accepted |
 | [0023](0023-macos-window-lifetime.md) | On macOS the app outlives its window | Accepted |
+| [0024](0024-open-documents-are-not-locked.md) | Open documents are not locked | Accepted |
