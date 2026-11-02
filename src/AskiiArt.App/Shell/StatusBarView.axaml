@@ -1,0 +1,18 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder status bar: the zoom, canvas size, character set, font and hovered cell. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:canvas="using:AskiiArt.App.Canvas"
+             x:Class="AskiiArt.App.Shell.StatusBarView"
+             x:DataType="canvas:CanvasViewModel">
+  <StackPanel Orientation="Horizontal"
+              Margin="{DynamicResource AppStatusBarPadding}"
+              Spacing="{DynamicResource AppStatusBarSpacing}">
+    <TextBlock Text="{Binding ZoomText}" />
+    <TextBlock Text="{Binding CanvasSizeText}" />
+    <TextBlock Text="{Binding CharacterSetText}" />
+    <TextBlock Text="{Binding FontText}" />
+    <TextBlock Text="{Binding HoveredCellText}" />
+  </StackPanel>
+</UserControl>

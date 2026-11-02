@@ -4,7 +4,6 @@
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
@@ -45,8 +44,7 @@ public sealed class CanvasViewTests : IDisposable
         Control.ZoomFactor = 1;
 
         var after = Control.Viewport!;
-        var centre = new Point(before.ViewportSize.Width / 2.0, before.ViewportSize.Height / 2.0);
-        Assert.Equal(before.Zoomed(after.CellSize, centre).ScrollOffset, after.ScrollOffset);
+        Assert.Equal(before.Zoomed(after.CellSize, before.UsableCentre).ScrollOffset, after.ScrollOffset);
         Assert.Equal(after.ScrollOffset.X, Control.HorizontalOffset);
         Assert.Equal(after.ScrollOffset.Y, Control.VerticalOffset);
         Assert.Equal(after.ScrollOffset.X, ScrollBar(Avalonia.Layout.Orientation.Horizontal).Value);
@@ -64,9 +62,22 @@ public sealed class CanvasViewTests : IDisposable
         Control.ZoomFactor = 4;
 
         var after = Control.Viewport!;
-        var centre = new Point(before.ViewportSize.Width / 2.0, before.ViewportSize.Height / 2.0);
-        Assert.Equal(before.Zoomed(after.CellSize, centre).ScrollOffset, after.ScrollOffset);
+        Assert.Equal(before.Zoomed(after.CellSize, before.UsableCentre).ScrollOffset, after.ScrollOffset);
         Assert.Equal(after.ScrollOffset.X, ScrollBar(Avalonia.Layout.Orientation.Horizontal).Value);
+    }
+
+    [AvaloniaFact]
+    public void WidgetsCoveringTheEdges_MoveTheScrollbarsAndShrinkWhatTheyScroll()
+    {
+        var viewportBefore = Control.VerticalViewport;
+
+        _view.SetCoveredByWidgets(new Avalonia.Thickness(10, 20, 30, 40));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(30, ScrollBar(Avalonia.Layout.Orientation.Vertical).Margin.Right);
+        Assert.Equal(40, ScrollBar(Avalonia.Layout.Orientation.Horizontal).Margin.Bottom);
+        Assert.True(Control.VerticalViewport < viewportBefore);
+        Assert.Equal(20, Control.Viewport!.Insets.Top);
     }
 
     public void Dispose()

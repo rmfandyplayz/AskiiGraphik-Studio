@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Shell.Docking;
 
 namespace AskiiArt.App.Shell.Menus;
 
@@ -80,6 +81,14 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(CanvasActionIds.ShowGrid)
         ]);
 
+        var panelMenu = new MenuDefinition(nameof(Strings.MenuWindow),
+        [
+            new ActionMenuEntry(ShellDockActionIds.ToggleLayers),
+            new ActionMenuEntry(ShellDockActionIds.ToggleHistory),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(ShellDockActionIds.ResetLayout)
+        ]);
+
         if (isMacOS)
         {
             // macOS convention: About and Quit live in the application menu. Avalonia supplies
@@ -89,7 +98,9 @@ internal sealed record MenuLayout(
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
-            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp), [new ActionMenuEntry(ShellActionIds.OpenLogFolder)]));
+            windowMenus.Add(panelMenu);
+            windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
+                [new ActionMenuEntry(ShellActionIds.OpenLogFolder)]));
         }
         else
         {
@@ -103,6 +114,7 @@ internal sealed record MenuLayout(
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(viewMenu);
+            windowMenus.Add(panelMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
             [
                 new ActionMenuEntry(ShellActionIds.OpenLogFolder),

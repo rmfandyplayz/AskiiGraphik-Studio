@@ -7,6 +7,7 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
@@ -38,6 +39,7 @@ public sealed class MenuLayoutTests
             AssertIsEditMenu,
             AssertIsDocumentMenu,
             AssertIsViewMenu,
+            AssertIsWindowMenu,
             help =>
             {
                 Assert.Equal(nameof(Strings.MenuHelp), help.LabelKey);
@@ -69,6 +71,7 @@ public sealed class MenuLayoutTests
             AssertIsEditMenu,
             AssertIsDocumentMenu,
             AssertIsViewMenu,
+            AssertIsWindowMenu,
             help =>
             {
                 Assert.Equal(nameof(Strings.MenuHelp), help.LabelKey);
@@ -120,6 +123,13 @@ public sealed class MenuLayoutTests
 
         foreach (var menu in layout.WindowMenus)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(menu.LabelKey)));
+    }
+
+    private static void AssertIsWindowMenu(MenuDefinition window)
+    {
+        Assert.Equal(nameof(Strings.MenuWindow), window.LabelKey);
+        Assert.Equal([ShellDockActionIds.ToggleLayers, ShellDockActionIds.ToggleHistory, ShellDockActionIds.ResetLayout],
+            ActionIdsIn(window.Entries));
     }
 
     private static void AssertIsEditMenu(MenuDefinition edit)

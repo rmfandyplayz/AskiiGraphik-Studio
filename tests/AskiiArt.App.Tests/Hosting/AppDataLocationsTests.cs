@@ -16,6 +16,32 @@ public sealed class AppDataLocationsTests
     }
 
     [Fact]
+    public void SettingsFile_IsInTheSettingsFolder_OrTheRootFolderWithoutOne()
+    {
+        Assert.Equal(Path.Combine("root", "settings.json"), new AppDataLocations("root").SettingsFile);
+        Assert.Equal(Path.Combine("config", "settings.json"), new AppDataLocations("root", "config").SettingsFile);
+    }
+
+    [Fact]
+    public void ForCurrentUser_PutsSettingsWhereArchitecture15Says()
+    {
+        var folder = Environment.GetFolderPath(AppDataLocations.SettingsFolder, Environment.SpecialFolderOption.Create);
+
+        Assert.Equal(Path.Combine(folder, AppDataLocations.FolderName, "settings.json"),
+            AppDataLocations.ForCurrentUser().SettingsFile);
+    }
+
+    [Fact]
+    public void SettingsFolder_OnMacOS_IsApplicationSupport_NotDotConfig()
+    {
+        if (!OperatingSystem.IsMacOS())
+            return;
+
+        Assert.EndsWith(Path.Combine("Library", "Application Support"),
+            Environment.GetFolderPath(AppDataLocations.SettingsFolder), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ForCurrentUser_IsAnAbsolutePathEndingInTheAppFolderName()
     {
         var locations = AppDataLocations.ForCurrentUser();

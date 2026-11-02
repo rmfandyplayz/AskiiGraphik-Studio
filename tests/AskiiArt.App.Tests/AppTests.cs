@@ -3,13 +3,16 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests;
 
@@ -59,6 +62,9 @@ public sealed class AppTests : IDisposable
         services.AddSingleton(new WindowTitle(_canvas.ActiveDocument));
         services.AddSingleton(_canvas.CreateDocumentFiles(dialogs, shell));
         services.AddSingleton<IAppShell>(shell);
+        var settings = new FakeAppSettings();
+        services.AddSingleton<IAppSettings>(settings);
+        services.AddSingleton(new ShellDock(settings, NullLogger<ShellDock>.Instance));
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ToolbarLayout.CreateDefault());

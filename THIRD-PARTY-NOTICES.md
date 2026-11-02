@@ -13,6 +13,7 @@ AskiiArt uses the components below. Every one is under a license compatible with
 | SkiaSharp | MIT | https://github.com/mono/SkiaSharp |
 | HarfBuzzSharp (dependency of Avalonia.Skia) | MIT | https://github.com/mono/SkiaSharp |
 | CommunityToolkit.Mvvm | MIT | https://github.com/CommunityToolkit/dotnet |
+| Dock (Dock.Avalonia, Dock.Avalonia.Themes.Fluent, Dock.Model.Mvvm, Dock.Serializer.SystemTextJson, and the Dock packages they depend on) | MIT | https://github.com/wieslawsoltes/Dock |
 | Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Logging | MIT | https://github.com/dotnet/runtime |
 | Serilog, Serilog.Extensions.Logging, Serilog.Sinks.File | Apache-2.0 | https://github.com/serilog/serilog |
 

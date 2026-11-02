@@ -32,3 +32,5 @@ Step 0.3 adds the DI container and a rolling log file that the owner attaches to
 
 - Serilog can be swapped out by changing `FileLogging` alone.
 - ARCHITECTURE §15 expects settings in `~/Library/Application Support` on macOS, but `SpecialFolder.ApplicationData` on macOS is `~/.config`. That has to be resolved when settings are built.
+
+Updated 2026-11-01: resolved in ADR 0026. Settings on macOS use .NET's `LocalApplicationData`, which is `~/Library/Application Support`.

@@ -5,8 +5,12 @@ using System.ComponentModel;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
+using AskiiArt.App.Resources;
+using AskiiArt.App.Settings;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -19,8 +23,16 @@ namespace AskiiArt.App.Shell;
 /// title follows the document, and closing it asks about unsaved changes first. On macOS a new
 /// window is built each time one opens (ADR 0023).
 /// </summary>
-internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layout, ToolbarLayout toolbar,
-    CanvasViewModel canvas, WindowTitle title, DocumentFiles files, IAppShell shell)
+internal sealed class MainWindowBuilder(
+    ActionRegistry actions,
+    MenuLayout layout,
+    ToolbarLayout toolbar,
+    CanvasViewModel canvas,
+    WindowTitle title,
+    DocumentFiles files,
+    IAppShell shell,
+    ShellDock panels,
+    IAppSettings settings)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -29,11 +41,45 @@ internal sealed class MainWindowBuilder(ActionRegistry actions, MenuLayout layou
 
         FollowTitle(window);
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
-        window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
+        ShowPanels(window);
         AddKeyBindings(window, platformCommandModifiers);
         AskAboutUnsavedChangesBeforeClosing(window);
+        SayWhenTheSettingsWereDamaged(window);
 
         return window;
+    }
+
+    private void ShowPanels(MainWindow window)
+    {
+        var views = new Dictionary<string, Func<Control>>(StringComparer.Ordinal)
+        {
+            [ShellDockIds.ToolbarPanel] = () => new ToolbarBuilder(actions).Build(toolbar),
+            [ShellDockIds.StatusBarPanel] = () => new StatusBarView { DataContext = canvas },
+            [ShellDockIds.HistoryPanel] = () => new PanelPlaceholderView(),
+            [ShellDockIds.LayersPanel] = () => new PanelPlaceholderView(),
+        };
+
+        // On macOS the menus are in the system menu bar. This shows the window's native menu.
+        if (!layout.IsSystemMenuBar)
+            views[ShellDockIds.MenuBarPanel] = () => new NativeMenuBar();
+
+        var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
+        panels.Attach(window.Panels, new ShellDockFactory(metrics, hasMenuBarPanel: !layout.IsSystemMenuBar),
+            new ShellPanelTemplates(views));
+        window.Closed += (_, _) => panels.SaveAndDetach();
+    }
+
+    // After the window has opened, so the message has a window to belong to.
+    private void SayWhenTheSettingsWereDamaged(Window window)
+    {
+        window.Opened += (_, _) =>
+        {
+            if (settings.TakeDamageNotice())
+            {
+                Dispatcher.UIThread.Post(() =>
+                    _ = shell.ShowMessageAsync(Strings.SettingsDamagedTitle, Strings.SettingsDamagedMessage));
+            }
+        };
     }
 
     /// <summary>The macOS application menu, or null on platforms that don't have one.</summary>

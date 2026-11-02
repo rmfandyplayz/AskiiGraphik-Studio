@@ -10,8 +10,8 @@ namespace AskiiArt.Core.Compositing;
 /// This is the one place for that rule: nothing else checks for spaces.
 /// </summary>
 /// <remarks>
-/// Whether the space option is set per layer, per document or app-wide is still open
-/// (ARCHITECTURE §23, M2). Until then callers pass <see cref="Default"/>.
+/// The space option will be set per layer (ARCHITECTURE §23, step 2.4). Until then callers pass
+/// <see cref="Default"/>.
 /// </remarks>
 public sealed class CompositingPolicy
 {

@@ -36,7 +36,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | MVVM | CommunityToolkit.Mvvm | Source-generated and minimal |
 | DI | Microsoft.Extensions.DependencyInjection | Holds the registries for tools, importers, exporters and actions |
 | Graphics | SkiaSharp | **Use the exact version Avalonia depends on.** Never pin a different one. |
-| Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line | Adopted in M2 (§14.4) |
+| Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line: Dock.Avalonia, Dock.Avalonia.Themes.Fluent, Dock.Model.Mvvm, Dock.Serializer.SystemTextJson | A see-through layer over the canvas (§14.4, ADR 0025) |
 | Tests | xUnit v3, Verify (snapshot tests), CsCheck (property-based tests), Avalonia.Headless | Run on Microsoft.Testing.Platform. xUnit v3 stays on 3.x and Verify on 32.x until Avalonia.Headless.XUnit supports xUnit 4 (ADR 0002) |
 | Logging | Microsoft.Extensions.Logging, writing to a rolling file through Serilog (Serilog.Extensions.Logging, Serilog.Sinks.File) | The owner attaches the log to bug reports (ADR 0006) |
 | CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push and pull request, and check formatting (ADR 0005) |
@@ -262,11 +262,13 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings.
 
-Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and a menu bar inside the window on Windows and Linux (ADR 0007).
+Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a widget that can't be removed (ADR 0007, ADR 0025).
 
 ### 14.4 Panels and docking
 
-Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. In M2 the shell adopts **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings. Before M2, panels can sit in a simple fixed placeholder layout.
+Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The shell uses **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings.
+
+The canvas is the main character (ADR 0025). It paints the whole window, and Dock lies on top as a see-through layer: panels are widgets over the canvas, art shows around them and slides under them, and they always get input first. Docked widgets still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. Floating panels stay inside the main window.
 
 ### 14.5 Theming, icons and text
 
@@ -280,7 +282,7 @@ Claude Code may build any temporary UI it needs to exercise a feature. Keep it p
 
 ## 15. Settings and user data
 
-- Settings are stored as versioned JSON in the platform's app-data folder (`%APPDATA%` on Windows, `~/Library/Application Support` on macOS, `$XDG_CONFIG_HOME` or `~/.config` on Linux). Resolve the folder with `Environment.GetFolderPath`; never hardcode paths.
+- Settings are stored as versioned JSON in the platform's app-data folder (`%APPDATA%` on Windows, `~/Library/Application Support` on macOS, `$XDG_CONFIG_HOME` or `~/.config` on Linux). Resolve the folder with `Environment.GetFolderPath`; never hardcode paths (ADR 0026).
 - Settings hold preferences, ramps and brush presets, the dock layout, shortcut bindings, recent files and the user font list.
 - Corrupt settings never stop the app from starting. Back up the bad file, load defaults, and tell the user.
 
@@ -372,7 +374,7 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| Should the space-as-empty option be per layer, per document or app-wide? | M2 |
+| Should the space-as-empty option be per layer, per document or app-wide? *Decided in M2 planning:* per layer, built in step 2.4 | M2 |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |
 | Exact behavior of each tool | That tool's milestone |

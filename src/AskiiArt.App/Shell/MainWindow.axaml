@@ -1,29 +1,19 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder main window: a menu bar, a toolbar, the canvas, and a status bar. The menus and
-     the toolbar are built in code from the MenuLayout and ToolbarLayout (see MainWindowBuilder). -->
+<!-- The main window: the canvas fills it, and the dock layout lies on top of it, passing clicks
+     through wherever it has no widget (ADR 0025). MainWindowBuilder fills in the layout. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:res="using:AskiiArt.App.Resources"
         xmlns:canvas="using:AskiiArt.App.Canvas"
+        xmlns:dock="using:Dock.Avalonia.Controls"
         x:Class="AskiiArt.App.Shell.MainWindow"
         x:DataType="canvas:CanvasViewModel"
         Title="{x:Static res:Strings.AppDisplayName}">
-  <DockPanel>
-    <!-- Shows the window's native menu on Windows and Linux; hides itself on macOS, where the
-         menu goes to the system menu bar instead. -->
-    <NativeMenuBar DockPanel.Dock="Top" />
-    <ContentControl x:Name="ToolbarHost" DockPanel.Dock="Top" />
-    <StackPanel DockPanel.Dock="Bottom"
-                Orientation="Horizontal"
-                Margin="{DynamicResource AppStatusBarPadding}"
-                Spacing="{DynamicResource AppStatusBarSpacing}">
-      <TextBlock Text="{Binding ZoomText}" />
-      <TextBlock Text="{Binding CanvasSizeText}" />
-      <TextBlock Text="{Binding CharacterSetText}" />
-      <TextBlock Text="{Binding FontText}" />
-      <TextBlock Text="{Binding HoveredCellText}" />
-    </StackPanel>
+  <Panel>
     <canvas:CanvasView x:Name="CanvasView" />
-  </DockPanel>
+    <dock:DockControl x:Name="PanelDock"
+                      InitializeFactory="True"
+                      EnableManagedWindowLayer="True" />
+  </Panel>
 </Window>

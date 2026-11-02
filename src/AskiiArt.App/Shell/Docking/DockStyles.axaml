@@ -1,0 +1,34 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Makes Dock's layout a see-through layer over the canvas (ADR 0025). Dock's templates give empty
+     areas an invisible background, which catches clicks. Each selector below depends on a property,
+     which gives its setters a higher priority than a template's values. While a panel is being dragged
+     the backgrounds come back, because Dock finds its drop areas by hit testing them.
+     tests/AskiiArt.App.Tests/Shell/Docking/ClickRoutingTests.cs fails if a Dock update breaks this. -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:dockCore="using:Dock.Model.Core"
+        xmlns:panels="using:Dock.Controls.ProportionalStackPanel"
+        xmlns:docking="using:AskiiArt.App.Shell.Docking">
+  <Style Selector="dock|DockControl[IsDraggingDock=False] dock|ToolDockControl">
+    <Setter Property="Background" Value="{x:Null}" />
+  </Style>
+  <Style Selector="dock|DockControl[IsDraggingDock=False] dock|DockableControl">
+    <Setter Property="Background" Value="{x:Null}" />
+  </Style>
+  <Style Selector="dock|DockControl[IsDraggingDock=False] panels|ProportionalStackPanel">
+    <Setter Property="Background" Value="{x:Null}" />
+  </Style>
+  <Style Selector="dock|DockControl[IsDraggingDock=False] dock|RootDockControl /template/ DockPanel">
+    <Setter Property="Background" Value="{x:Null}" />
+  </Style>
+
+  <!-- The widget look. Placeholder: the owner designs the real one. -->
+  <Style Selector="dock|ToolChromeControl" x:DataType="dockCore:IDockable">
+    <Setter Property="Background" Value="{DynamicResource AppWidgetBrush}" />
+    <Setter Property="Margin" Value="{DynamicResource AppWidgetMargin}" />
+    <Setter Property="HorizontalAlignment"
+            Value="{Binding Id, Converter={x:Static docking:WidgetConverters.HorizontalAlignmentOf}}" />
+  </Style>
+</Styles>

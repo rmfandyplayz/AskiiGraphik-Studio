@@ -1,0 +1,12 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- What a panel shows until its real view is built. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Shell.Docking.PanelPlaceholderView">
+  <TextBlock Text="{x:Static res:Strings.PanelNotBuiltYet}"
+             Margin="{DynamicResource AppWidgetContentPadding}"
+             Foreground="{DynamicResource AppSecondaryTextBrush}"
+             TextWrapping="Wrap" />
+</UserControl>

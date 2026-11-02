@@ -22,6 +22,10 @@
     <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Dock.Serializer.SystemTextJson" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Serilog" />

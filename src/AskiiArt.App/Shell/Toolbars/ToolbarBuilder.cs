@@ -16,9 +16,12 @@ namespace AskiiArt.App.Shell.Toolbars;
 /// </summary>
 internal sealed class ToolbarBuilder(ActionRegistry actions)
 {
+    /// <summary>The toolbar's control name, so tests can find it among the other widgets.</summary>
+    public const string ControlName = "Toolbar";
+
     public Control Build(ToolbarLayout layout)
     {
-        var bar = new StackPanel { Orientation = Orientation.Horizontal };
+        var bar = new StackPanel { Name = ControlName, Orientation = Orientation.Horizontal };
         bar.Bind(StackPanel.SpacingProperty, bar.GetResourceObservable("AppSpacingSmall"));
         bar.Bind(Layoutable.MarginProperty, bar.GetResourceObservable("AppToolbarPadding"));
 

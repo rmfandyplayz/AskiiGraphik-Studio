@@ -45,3 +45,4 @@ Per-cell `DrawImage` also spends 13–38 ms just recording its operations on the
 - How wheel events become scrolling or zooming is in ADR 0018.
 
 Updated 2026-10-31: Space + drag depends on the tool, and the wheel works in gestures (step 1.5).
+Updated 2026-11-01: the control fills the window under the docked widgets, with the scrollbars just inside them. A canvas smaller than the free space is centred in that space (ADR 0025).

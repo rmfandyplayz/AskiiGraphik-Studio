@@ -5,6 +5,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
@@ -13,6 +14,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Shell;
 
@@ -20,6 +22,7 @@ public sealed class MainWindowLifetimeTests : IDisposable
 {
     private readonly FakeAppShell _shell = new();
     private readonly FakeDocumentDialogs _dialogs = new();
+    private readonly FakeAppSettings _settings = new();
     private readonly TestCanvas _canvas = new();
     private readonly List<MainWindowLifetime> _lifetimes = [];
     private readonly ActionRegistry _actions;
@@ -110,7 +113,8 @@ public sealed class MainWindowLifetimeTests : IDisposable
     {
         var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
             ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
-            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell);
+            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
+            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings);
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);
         _lifetimes.Add(lifetime);

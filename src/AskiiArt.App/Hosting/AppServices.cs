@@ -8,7 +8,9 @@ using AskiiArt.App.Editing;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Hosting.Logging;
+using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.Core.Compositing;
@@ -35,8 +37,12 @@ internal static class AppServices
         services.AddSingleton(locations);
         services.AddFileLogging(locations.LogFolder, BuildInfo.IsDebugBuild ? LogLevel.Debug : LogLevel.Information);
 
+        services.AddSingleton<IAppSettings>(provider =>
+            new AppSettingsFile(locations.SettingsFile, provider.GetRequiredService<ILogger<AppSettingsFile>>()));
+
         services.AddSingleton<IAppShell, AvaloniaAppShell>();
         services.AddSingleton<UnexpectedErrorHandler>();
+        services.AddSingleton<ShellDock>();
 
         services.AddSingleton<IActionProvider>(provider => new ShellActions(
             provider.GetRequiredService<IAppShell>(),
@@ -45,6 +51,7 @@ internal static class AppServices
             isMacOS: OperatingSystem.IsMacOS()));
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, EditActions>();
+        services.AddSingleton<IActionProvider, ShellDockActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),
             provider.GetRequiredService<DocumentFiles>(),
@@ -75,7 +82,8 @@ internal static class AppServices
         services.AddSingleton<GlyphAtlasCache>();
         services.AddSingleton<CanvasViewModel>();
 
-        services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(), includeDebugMenu: BuildInfo.IsDebugBuild));
+        services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(),
+            includeDebugMenu: BuildInfo.IsDebugBuild));
         services.AddSingleton(ToolbarLayout.CreateDefault());
         services.AddSingleton<MainWindowBuilder>();
 

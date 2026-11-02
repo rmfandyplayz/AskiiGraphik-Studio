@@ -95,9 +95,25 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
 ## M2: Shell and layers
 
-Adopt Dock: dockable, floating and tabbed panels, a saved layout, and a Reset Layout action. Add a placeholder layers panel (add, delete, duplicate, reorder, rename, visibility, lock, merge down) and the concept of an active layer. Add the space-policy option (with its scope decided with the owner), the hard eraser, and a history panel (also useful for testing undo).
-
 Docking is adopted here, before most panels exist, so later panels don't need to be rehoused.
+
+- [~] **2.1 Dock shell.** Adds:
+  - Dock, with the canvas painting the whole window and panels as widgets on top. Empty parts of the layout pass clicks to the canvas, and widgets always get clicks first
+  - the safe area: centering, zoom and scroll limits count the docked widgets
+  - the menu bar (except on a Mac), toolbar and status bar as fixed widgets; empty History and Layers panels that can be docked, tabbed, floated inside the window and closed
+  - the settings file, a saved layout, and a Window menu with panel toggles and Reset Layout
+
+  *Owner checks:* art shows around the widgets, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
+  *Note:* Built (ADRs 0025, 0026). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning.
+- [ ] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
+
+  *Owner checks:* the list stays in sync with undo and redo, including while the panel floats.
+- [ ] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
+
+  *Owner checks:* each operation, its undo, and saving and reopening.
+- [ ] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
+
+  *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
 
 ## M3: Ramps and brushes
 

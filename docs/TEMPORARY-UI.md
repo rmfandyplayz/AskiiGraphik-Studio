@@ -14,13 +14,24 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Choice | Where | Step |
 |---|---|---|
 | Menus: File (New, Open, Save, Save As, Export as Text, Quit), Edit (Undo, Redo, Copy as Text), Document (Resize Canvas, Font, ASCII Only), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8 |
-| A toolbar of plain text buttons under the menu bar: New, Open, Save; Undo, Redo; Resize Canvas, Font; Zoom Out, Zoom In, Actual Size, Show Grid (a toggle). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs` | 1.6, 1.7 |
+| A toolbar of plain text buttons, in a widget centered in its own row: New, Open, Save; Undo, Redo; Resize Canvas, Font; Zoom Out, Zoom In, Actual Size, Show Grid (a toggle). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs`, `Shell/Docking/ShellDockFactory.cs` | 1.6, 1.7, 2.1 |
+| A Window menu between View and Help: Layers and History (check-marked), Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/ShellDockActions.cs` | 2.1 |
+| Default layout: on Windows and Linux the menu bar at the top left in its own row; then the toolbar's row; Layers above History at the right, 240 wide; the status bar at the bottom left | `Shell/Docking/ShellDockFactory.cs`, `Theme/Tokens.axaml` | 2.1 |
+| The menu bar, toolbar and status bar can't be moved or closed, and panels can't be dropped into their rows. Rearranging waits for M8 | `ShellDockFactory.CreateFixedRow` | 2.1 |
+| Widgets look like plain square boxes with a 4-pixel gap. History and Layers keep Dock's standard header (title, a menu arrow, close) and fill their dock's height | `Shell/Docking/DockStyles.axaml` | 2.1 |
+| A panel can't be pinned to auto-hide, and can't be dropped onto the canvas itself: drop it on another panel to tab or split, on a window edge to dock there, or anywhere else to float it | `ShellDockFactory` | 2.1 |
+| A panel docked anew is 240 wide (or 240 tall above or below the canvas), whatever Dock would have given it | `ShellDockFactory.ApplySideSizes` | 2.1 |
+| Reopening a closed panel adds it as a tab beside another movable panel, or at the right of the canvas if there are none | `ShellDockFactory.OpenPanel` | 2.1 |
+| Clicking a widget hands keyboard focus back to the canvas, unless the click was in a text box | `MainWindow.OnPointerReleasedOnWidget` | 2.1 |
+| Floating panels don't count towards the safe area, and keep their position when the window resizes | `MainWindow.TellCanvasWhatWidgetsCover` | 2.1 |
+| A damaged settings file: a message says so when the window opens, and the old file is kept with "damaged" in its name. An unreadable saved layout alone resets silently | `Settings/AppSettingsFile.cs`, `Shell/Docking/ShellDock.cs` | 2.1 |
+| Empty History and Layers panels saying "This panel is empty for now" | `Shell/Docking/PanelPlaceholderView.axaml` | 2.1 |
 | A Debug menu (Open Sample Document, Throw Test Exception) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs` | 0.3, 1.7 |
 | Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Close Cmd+W (macOS only). Export as Text has none | each feature's `*Actions.cs` | 0.3–1.8 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
 | About window and unexpected-error dialog (Open Log Folder, Quit, Continue) | `Shell/Dialogs/` | 0.3 |
 | A plain yes-or-cancel dialog, with Cancel as the default button | `Shell/Dialogs/ConfirmWindow.axaml` | 1.5 |
-| Status bar along the bottom: zoom, canvas size, character set, font, cell under the pointer (counted from 0) | `Shell/MainWindow.axaml` | 1.4, 1.5, 1.6 |
+| Status bar, in a widget at the bottom left: zoom, canvas size, character set, font, cell under the pointer (counted from 0) | `Shell/StatusBarView.axaml` | 1.4, 1.5, 1.6, 2.1 |
 | A plain message dialog with OK, for files that can't be opened or saved and for a missing font | `Shell/Dialogs/MessageWindow.axaml` | 1.7 |
 
 ### Documents and fonts
@@ -68,7 +79,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Grid off by default, and not drawn when cells are under 4 device pixels wide (so it depends on display scaling) | `CanvasViewModel`, `CanvasScenePainter.MinimumCellWidthForGrid` | 1.4 |
 | Missing glyphs: an orange cell for "drawn with another font", a red cell and a hollow box for "no font has it" | `AppCanvasFallbackGlyphBrush`, `AppCanvasPlaceholderGlyphBrush`, `GlyphRasterizer` | 1.3, 1.4 |
 | A wide glyph from the document's font is squeezed sideways to fit its cell; box-drawing and block characters are clipped instead | `GlyphRasterizer` | 1.4 |
-| Scrollbars always visible; the wheel scrolls 50 pixels a notch | `CanvasView.axaml`, `CanvasControl` | 1.4 |
+| Scrollbars always visible, just inside the docked widgets; the wheel scrolls 50 pixels a notch | `CanvasView.axaml`, `CanvasControl` | 1.4, 2.1 |
 | Hand pointer while panning with Space or the middle button | `CanvasControl` | 1.4 |
 | A wheel gesture keeps the keys it started with: pressing Cmd during a touchpad glide doesn't zoom (ADR 0018) | `WheelGestureTracker` | 1.5 |
 | The busy 500 × 500 sample document, opened from the Debug menu (it was the startup document until 1.7) | `Canvas/SampleDocument.cs` | 1.4, 1.7 |
@@ -94,6 +105,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 The owner's ideas, parked until the stage they belong to.
 
+- **Canvas-first layout, like Sketchbook and Excalidraw** (raised in M2 planning): the canvas stays the main character. Controls are docks that look like small floating widgets, anchored to part of the screen with an offset, like a Unity UI element anchored to the right with a position offset. The canvas paints the whole window, so art shows around and between the widgets and slides under them when panned. Widgets take up space all the same: centering, zoom-to-fit and scroll limits count them, and they always get clicks and other input before the canvas. On Windows and Linux the menu bar (File, Edit, View, Window and so on) is its own dock widget that can't be removed, and it works like any other app's menu bar. On a Mac it stays in the system menu bar. The exact behavior gets designed with the owner in a later milestone.
 - **Debug menu in release builds** (raised in 1.5): hidden by default in release builds, but a setting, probably on an "Advanced" tab of the settings window (M8), turns it on for curious users and contributors hunting bugs. Today the Debug menu exists only in Debug builds.
 - **Draw mode and text mode** (raised in 1.5): two primary ways of working. Draw mode works like an image editor, painting with brushes; text mode is a tool for typing text. Space + drag pans in draw mode only.
 - **Document options** (raised in 1.5): the New dialog (1.6) chooses Unicode or ASCII only; document options should switch it later, with a warning that switching to ASCII removes every other character. Until then it's Document → ASCII Only.

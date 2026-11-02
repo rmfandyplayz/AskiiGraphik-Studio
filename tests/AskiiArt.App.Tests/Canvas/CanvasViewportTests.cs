@@ -36,6 +36,60 @@ public sealed class CanvasViewportTests
     }
 
     [Fact]
+    public void CanvasThatFitsBetweenTheInsets_IsCentredBetweenThem_AndCannotScroll()
+    {
+        // 100 x 100 pixels of canvas; 200 x 150 pixels left between the insets.
+        var viewport = new CanvasViewport(new CanvasSize(10, 5), CellSize, new PixelSize(300, 200), 8, default,
+            new CanvasInsets(20, 10, 80, 40));
+
+        Assert.Equal(new PixelSize(200, 150), viewport.UsableSize);
+        Assert.Equal(new PixelPoint(70, 35), viewport.CanvasOrigin);
+        Assert.Equal(new PixelPoint(0, 0), viewport.MaximumScrollOffset);
+        Assert.Equal(new Point(120, 85), viewport.UsableCentre);
+    }
+
+    [Fact]
+    public void CanvasLargerThanTheInsetsLeaveFree_CanBringEveryEdgeClearOfThem()
+    {
+        var insets = new CanvasInsets(20, 10, 80, 40);
+        var viewport = new CanvasViewport(new CanvasSize(100, 100), CellSize, new PixelSize(300, 200), 8, default, insets);
+
+        // Scrolled to the start, the canvas starts just past the left and top insets.
+        Assert.Equal(new PixelPoint(28, 18), viewport.CanvasOrigin);
+
+        // Scrolled to the end, it stops just before the right and bottom insets.
+        var end = viewport.ScrolledTo(viewport.MaximumScrollOffset);
+        Assert.Equal(300 - 80 - 8, end.CanvasBounds.Right);
+        Assert.Equal(200 - 40 - 8, end.CanvasBounds.Bottom);
+
+        // On the way it passes under them, so cells under the insets still get drawn.
+        Assert.Equal(0, viewport.ScrolledTo(new PixelPoint(28, 18)).VisibleCells.Left);
+    }
+
+    [Fact]
+    public void ZoomingWithInsets_KeepsTheAnchorSpotInPlace()
+    {
+        var viewport = new CanvasViewport(new CanvasSize(100, 100), CellSize, new PixelSize(300, 200), 8,
+            new PixelPoint(100, 100), new CanvasInsets(20, 10, 80, 40));
+        var anchor = viewport.UsableCentre;
+        var column = (anchor.X - viewport.CanvasOrigin.X) / viewport.CellSize.Width;
+
+        var zoomed = viewport.Zoomed(new PixelSize(20, 40), anchor);
+
+        Assert.Equal(anchor.X, zoomed.CanvasOrigin.X + column * zoomed.CellSize.Width, tolerance: 1);
+    }
+
+    [Fact]
+    public void WithInsets_KeepsThemThroughOtherChanges()
+    {
+        var insets = new CanvasInsets(1, 2, 3, 4);
+        var viewport = Create(new CanvasSize(10, 5), new PixelSize(300, 200)).WithInsets(insets);
+
+        Assert.Equal(insets, viewport.WithMargin(0).WithViewportSize(new PixelSize(50, 50)).WithCanvasSize(new CanvasSize(3, 3)).Insets);
+        Assert.Equal(insets, viewport.ScrolledBy(1, 1).Zoomed(new PixelSize(20, 40), default).Insets);
+    }
+
+    [Fact]
     public void VisibleCells_IncludesPartlyVisibleCells()
     {
         // Scrolled so the canvas starts 15 pixels left of and 25 pixels above the viewport.

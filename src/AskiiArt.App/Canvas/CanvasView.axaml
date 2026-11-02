@@ -1,13 +1,14 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder canvas view: the canvas control with a scrollbar on the right and at the bottom.
-     The scrollbars work in the control's device pixels. -->
+<!-- Placeholder canvas view: the canvas control filling the window, with a scrollbar on the right
+     and at the bottom of the part docked widgets leave free (ADR 0025). The scrollbars work in the
+     control's device pixels. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:canvas="using:AskiiArt.App.Canvas"
              x:Class="AskiiArt.App.Canvas.CanvasView"
              x:DataType="canvas:CanvasViewModel">
-  <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+  <Panel>
     <canvas:CanvasControl x:Name="Canvas"
                           Composite="{Binding Composite}"
                           Font="{Binding Font}"
@@ -27,19 +28,21 @@
                           PlaceholderGlyphBrush="{DynamicResource AppCanvasPlaceholderGlyphBrush}"
                           CaretBrush="{DynamicResource AppCanvasCaretBrush}"
                           CaretThickness="{DynamicResource AppCanvasCaretThickness}" />
-    <ScrollBar Grid.Column="1"
+    <ScrollBar x:Name="VerticalBar"
+               HorizontalAlignment="Right"
                Orientation="Vertical"
                AllowAutoHide="False"
                Maximum="{Binding #Canvas.VerticalMaximum}"
                ViewportSize="{Binding #Canvas.VerticalViewport}"
                LargeChange="{Binding #Canvas.VerticalViewport}"
                Value="{Binding #Canvas.VerticalOffset, Mode=TwoWay}" />
-    <ScrollBar Grid.Row="1"
+    <ScrollBar x:Name="HorizontalBar"
+               VerticalAlignment="Bottom"
                Orientation="Horizontal"
                AllowAutoHide="False"
                Maximum="{Binding #Canvas.HorizontalMaximum}"
                ViewportSize="{Binding #Canvas.HorizontalViewport}"
                LargeChange="{Binding #Canvas.HorizontalViewport}"
                Value="{Binding #Canvas.HorizontalOffset, Mode=TwoWay}" />
-  </Grid>
+  </Panel>
 </UserControl>

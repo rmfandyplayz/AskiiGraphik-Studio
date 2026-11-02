@@ -14,6 +14,13 @@
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.4" />
   </ItemGroup>
 
+  <ItemGroup Label="Dock (keep every Dock package on the same version, built for the Avalonia version above; see ADR 0025)">
+    <PackageVersion Include="Dock.Avalonia" Version="12.1.0.13" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.13" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0.13" />
+    <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.0.13" />
+  </ItemGroup>
+
   <ItemGroup Label="SkiaSharp (must equal the version Avalonia.Skia depends on; never pin a different one)">
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />

@@ -2,6 +2,7 @@
 <!-- Written with Claude Code (Anthropic). -->
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dockTheme="using:Dock.Avalonia.Themes.Fluent"
              x:Class="AskiiArt.App.App"
              RequestedThemeVariant="Default">
   <Application.Resources>
@@ -14,5 +15,7 @@
 
   <Application.Styles>
     <FluentTheme />
+    <dockTheme:DockFluentTheme />
+    <StyleInclude Source="avares://AskiiArt.App/Shell/Docking/DockStyles.axaml" />
   </Application.Styles>
 </Application>

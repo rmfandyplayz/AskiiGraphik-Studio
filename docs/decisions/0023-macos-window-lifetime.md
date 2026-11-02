@@ -37,3 +37,5 @@ Avalonia 12 sets the limits:
 - Every new window builds new menu items, and the check-mark items (ASCII Only, Show Grid) keep a subscription each. That's a small leak per window opened: fine with one window at a time, worth fixing if windows ever multiply.
 - The title keeps its `*` on macOS too, until the owner designs the title.
 - Headless tests can't cover the shutdown mode, the Dock or the dot; the manual test does.
+
+Updated 2026-11-01: each new window also gets the saved panel layout, and saves it when it closes (ADR 0025). The Window menu's check-mark items keep a subscription each, like the others.

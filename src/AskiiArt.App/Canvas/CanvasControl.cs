@@ -47,6 +47,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     public static readonly StyledProperty<double> CanvasMarginProperty =
         AvaloniaProperty.Register<CanvasControl, double>(nameof(CanvasMargin), 32);
 
+    public static readonly StyledProperty<Thickness> SafeAreaProperty =
+        AvaloniaProperty.Register<CanvasControl, Thickness>(nameof(SafeArea));
+
     public static readonly StyledProperty<IBrush?> PasteboardBrushProperty =
         AvaloniaProperty.Register<CanvasControl, IBrush?>(nameof(PasteboardBrush));
 
@@ -179,6 +182,16 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         get => GetValue(CanvasMarginProperty);
         set => SetValue(CanvasMarginProperty, value);
+    }
+
+    /// <summary>
+    /// How much of each edge docked widgets cover, in logical pixels. The canvas centres itself and
+    /// scrolls within the rest (ADR 0025).
+    /// </summary>
+    public Thickness SafeArea
+    {
+        get => GetValue(SafeAreaProperty);
+        set => SetValue(SafeAreaProperty, value);
     }
 
     public IBrush? PasteboardBrush
@@ -324,7 +337,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         }
         else if (change.Property == CompositeProperty || change.Property == FontProperty ||
                  change.Property == AtlasesProperty || change.Property == BaseFontSizeProperty ||
-                 change.Property == CanvasMarginProperty)
+                 change.Property == CanvasMarginProperty || change.Property == SafeAreaProperty)
         {
             UpdateViewport();
         }
@@ -579,14 +592,17 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var cellSize = new PixelSize(atlas.Metrics.Width, atlas.Metrics.Height);
         var viewportSize = PixelSize.FromSize(Bounds.Size, _renderScaling);
         var margin = (int)Math.Round(CanvasMargin * _renderScaling);
+        var insets = new CanvasInsets(ToDevicePixels(SafeArea.Left), ToDevicePixels(SafeArea.Top),
+            ToDevicePixels(SafeArea.Right), ToDevicePixels(SafeArea.Bottom));
 
         if (_viewport is null)
         {
-            SetViewport(new CanvasViewport(Composite.Size, cellSize, viewportSize, margin, default));
+            SetViewport(new CanvasViewport(Composite.Size, cellSize, viewportSize, margin, default, insets));
             return;
         }
 
-        var resized = _viewport.WithCanvasSize(Composite.Size).WithViewportSize(viewportSize).WithMargin(margin);
+        var resized = _viewport.WithCanvasSize(Composite.Size).WithViewportSize(viewportSize).WithMargin(margin)
+            .WithInsets(insets);
         SetViewport(cellSize == resized.CellSize ? resized : resized.Zoomed(cellSize, zoomAnchor ?? ViewportCentre()));
     }
 
@@ -602,8 +618,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         {
             HorizontalMaximum = viewport?.MaximumScrollOffset.X ?? 0;
             VerticalMaximum = viewport?.MaximumScrollOffset.Y ?? 0;
-            HorizontalViewport = viewport?.ViewportSize.Width ?? 0;
-            VerticalViewport = viewport?.ViewportSize.Height ?? 0;
+            HorizontalViewport = viewport?.UsableSize.Width ?? 0;
+            VerticalViewport = viewport?.UsableSize.Height ?? 0;
             SetAndRaise(HorizontalOffsetProperty, ref _horizontalOffset, viewport?.ScrollOffset.X ?? 0);
             SetAndRaise(VerticalOffsetProperty, ref _verticalOffset, viewport?.ScrollOffset.Y ?? 0);
         }
@@ -678,21 +694,22 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             return;
 
         var cell = _viewport.GetCellBounds(caret);
-        var size = _viewport.ViewportSize;
-        var deltaX = DistanceToShow(cell.X, cell.Right, size.Width);
-        var deltaY = DistanceToShow(cell.Y, cell.Bottom, size.Height);
+        var insets = _viewport.Insets;
+        var size = _viewport.UsableSize;
+        var deltaX = DistanceToShow(cell.X, cell.Right, insets.Left, insets.Left + size.Width);
+        var deltaY = DistanceToShow(cell.Y, cell.Bottom, insets.Top, insets.Top + size.Height);
         if (deltaX != 0 || deltaY != 0)
             SetViewport(_viewport.ScrolledBy(deltaX, deltaY));
     }
 
-    // How far to scroll so the span from start to end is on screen, preferring its start.
-    private static int DistanceToShow(int start, int end, int viewportLength)
+    // How far to scroll so the span from start to end is in the usable area, preferring its start.
+    private static int DistanceToShow(int start, int end, int usableStart, int usableEnd)
     {
-        if (start < 0)
-            return start;
+        if (start < usableStart)
+            return start - usableStart;
 
-        if (end > viewportLength)
-            return Math.Min(end - viewportLength, start);
+        if (end > usableEnd)
+            return Math.Min(end - usableEnd, start - usableStart);
 
         return 0;
     }
@@ -754,11 +771,11 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     private void OnScalingChanged(object? sender, EventArgs e) => UpdateViewport();
 
-    private Point ViewportCentre() => _viewport is null
-        ? default
-        : new Point(_viewport.ViewportSize.Width / 2.0, _viewport.ViewportSize.Height / 2.0);
+    private Point ViewportCentre() => _viewport?.UsableCentre ?? default;
 
     private Point ToDevicePixels(Point logical) => logical * _renderScaling;
+
+    private int ToDevicePixels(double logical) => (int)Math.Round(logical * _renderScaling);
 
     // Ctrl on Windows and Linux, Cmd on macOS.
     private static KeyModifiers PlatformCommandModifiers() =>

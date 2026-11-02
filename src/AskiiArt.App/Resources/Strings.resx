@@ -402,4 +402,44 @@
     <value>“{0}” couldn't be written. {1}</value>
     <comment>{0} is the file name, {1} the reason from the operating system.</comment>
   </data>
+  <data name="MenuWindow" xml:space="preserve">
+    <value>_Window</value>
+  </data>
+  <data name="ActionToggleLayers" xml:space="preserve">
+    <value>_Layers</value>
+    <comment>Window menu: shows or hides the Layers panel.</comment>
+  </data>
+  <data name="ActionToggleHistory" xml:space="preserve">
+    <value>_History</value>
+    <comment>Window menu: shows or hides the History panel.</comment>
+  </data>
+  <data name="ActionResetLayout" xml:space="preserve">
+    <value>_Reset Layout</value>
+    <comment>Window menu: puts every panel back where it started.</comment>
+  </data>
+  <data name="PanelMenuBar" xml:space="preserve">
+    <value>Menu</value>
+  </data>
+  <data name="PanelToolbar" xml:space="preserve">
+    <value>Toolbar</value>
+  </data>
+  <data name="PanelStatusBar" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="PanelLayers" xml:space="preserve">
+    <value>Layers</value>
+  </data>
+  <data name="PanelHistory" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="PanelNotBuiltYet" xml:space="preserve">
+    <value>This panel is empty for now.</value>
+    <comment>Placeholder text in a panel whose contents arrive in a later step.</comment>
+  </data>
+  <data name="SettingsDamagedTitle" xml:space="preserve">
+    <value>Settings were reset</value>
+  </data>
+  <data name="SettingsDamagedMessage" xml:space="preserve">
+    <value>The settings file couldn't be read, so the default settings are in use. The old file was kept next to the new one with “damaged” in its name.</value>
+  </data>
 </root>

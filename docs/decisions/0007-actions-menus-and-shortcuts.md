@@ -36,3 +36,4 @@ Updated 2026-10-31: on macOS, a menu action's second and later shortcuts get win
 Updated 2026-11-01: a placeholder toolbar binds to actions the same way (ADR 0020). There's a Document menu, and macOS has a File menu with New.
 Updated 2026-11-01: File has Open (Cmd+O), Save (Cmd+S) and Save As (Cmd+Shift+S), also on the toolbar, and Debug has Open Sample Document (step 1.7).
 Updated 2026-11-01: Edit has Copy as Text (Cmd+Shift+C) and File has Export as Text (step 1.8, ADR 0022). On macOS, File has Close (Cmd+W), and the Dock menu has New and Open, built from `MenuLayout.DockMenu` (ADR 0023).
+Updated 2026-11-01: there's a Window menu (step 2.1). On Windows and Linux the in-window menu bar now sits in a dock widget that can't be removed (ADR 0025); the shortcut handling is unchanged.

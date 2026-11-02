@@ -31,3 +31,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0022](0022-text-output.md) | Text output: Copy as Text and Export as Text | Accepted |
 | [0023](0023-macos-window-lifetime.md) | On macOS the app outlives its window | Accepted |
 | [0024](0024-open-documents-are-not-locked.md) | Open documents are not locked | Accepted |
+| [0025](0025-dock-as-a-see-through-layer.md) | Dock as a see-through layer over the canvas | Accepted |
+| [0026](0026-settings-file.md) | The settings file | Accepted |

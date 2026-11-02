@@ -7,7 +7,9 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Tests.Fakes;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Resources;
 
@@ -28,7 +30,8 @@ public sealed class StringsTests
     {
         var shellActions = new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: true,
             isMacOS: true);
-        var registry = new ActionRegistry([shellActions]);
+        var dockActions = new ShellDockActions(new ShellDock(new FakeAppSettings(), NullLogger<ShellDock>.Instance));
+        var registry = new ActionRegistry([shellActions, dockActions]);
 
         foreach (var action in registry.All)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(action.LabelKey)), action.Id);

@@ -6,6 +6,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
@@ -19,6 +20,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Shell;
 
@@ -26,6 +28,7 @@ public sealed class MainWindowTests : IDisposable
 {
     private readonly FakeAppShell _shell = new();
     private readonly FakeDocumentDialogs _dialogs = new();
+    private readonly FakeAppSettings _settings = new();
     private readonly TestCanvas _canvas = new();
     private readonly List<Window> _windows = [];
     private readonly ActionRegistry _actions;
@@ -61,6 +64,18 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void DamagedSettings_AreReportedOnce_WhenTheWindowOpens()
+    {
+        _settings.HasDamageNotice = true;
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal([Strings.SettingsDamagedMessage], _shell.Messages.Select(message => message.Message));
+    }
+
+    [AvaloniaFact]
     public void ClosedWindow_StopsFollowingTheTitle()
     {
         // On macOS later windows follow the same title, so a closed one mustn't keep listening.
@@ -84,7 +99,7 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuView, Strings.MenuHelp],
+        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp],
             topLevelItems.Select(item => item.Header));
 
         var quit = Assert.IsType<NativeMenuItem>(topLevelItems[0].Menu!.Items[^1]);
@@ -92,7 +107,7 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[4].Menu!.Items;
+        var helpItems = topLevelItems[5].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -303,11 +318,19 @@ public sealed class MainWindowTests : IDisposable
         return window;
     }
 
-    private static Button[] ToolbarButtons(MainWindow window) =>
+    // Dock builds a panel's contents once it has laid out, so that has to happen first.
+    private static Button[] ToolbarButtons(MainWindow window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        return
     [
-        .. window.GetVisualDescendants().OfType<ContentControl>().Single(host => host.Name == "ToolbarHost")
+        .. window.GetVisualDescendants().OfType<StackPanel>().Single(bar => bar.Name == ToolbarBuilder.ControlName)
             .GetVisualDescendants().OfType<Button>()
     ];
+    }
 
     private MainWindow BuildWindow(MenuLayout layout, KeyModifiers commandModifiers = KeyModifiers.Control)
     {
@@ -318,5 +341,6 @@ public sealed class MainWindowTests : IDisposable
 
     private MainWindowBuilder CreateBuilder(MenuLayout layout) =>
         new(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
-            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell);
+            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
+            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings);
 }
