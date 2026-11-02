@@ -114,9 +114,10 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 
   *Owner checks:* each operation, its undo, and saving and reopening.
   *Note:* Built (ADRs 0030, 0031), with a Layer menu whose actions the panel's buttons share. The owner passed it on a Mac; T3, T6 and T8 still need Windows, and the fixes from that testing (the highlight after opening, saving the active layer) a retest. Listed in 2.4's test doc.
-- [ ] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
+- [~] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
 
   *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
+  *Note:* Built (ADR 0033). Also has the fixes from 2.3's testing (ADR 0031) and a fix for a crash on a Mac when a closed window reported its position.
 - [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`.
 
   *Owner checks:* decided in the pass.

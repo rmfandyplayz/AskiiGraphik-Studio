@@ -14,7 +14,7 @@ Step 2.3 lets the user choose the active layer and add, delete, duplicate, reord
 - **The active layer belongs to the session, not the document.** `EditingSession.SetActiveLayer` chooses it and raises `ActiveLayerChanged`. It isn't undone. If the layer goes away, for example when its Add is undone, the top layer takes over.
 - **Tools ask `EditingSession.CanEditActiveLayer`**, which is false for a locked layer and for a hidden one, since an edit there couldn't be seen.
 - **`DuplicateLayerCommand`** copies its source each time it's applied, and holds no cells. Undo order means the source is just as it was the first time.
-- **`MergeLayerDown.Create`** builds one undo step from what already exists: a `CellEditCommand` on the lower layer and a `RemoveLayerCommand`, in a `CompositeCommand`. A cell goes down exactly when the `CompositingPolicy` says it hides what's below, so the picture doesn't change. The caller supplies the policy, which the per-layer space option (2.4) will affect.
+- **`MergeLayerDown.Create`** builds one undo step from what already exists: a `CellEditCommand` on the lower layer and a `RemoveLayerCommand`, in a `CompositeCommand`. A cell goes down exactly when the `CompositingPolicy` says it hides what's below, so the picture doesn't change.
 - **`SetLayerPropertiesCommand` takes a step name**, so History says "Rename Layer" or "Show or Hide Layer" rather than "Change Layer".
 - **The Layer menu and the panel's buttons are one set of actions** (`LayerActions`, ARCHITECTURE §14.2). `LayersPanelViewModel` does the work and lives as long as the app, like the History panel's. Rows show the document's state rather than keeping their own, so undo and a checkbox can't disagree.
 - **A panel hands typing back** by raising `PanelEvents.DoneTypingEvent`, which `MainWindow` listens for. The panel doesn't need to know where it's hosted.
@@ -31,4 +31,4 @@ Step 2.3 lets the user choose the active layer and add, delete, duplicate, reord
 - A merge reads the whole layer once, in time proportional to the canvas, which is fine at the sizes in ARCHITECTURE §21.
 - Undoing a delete doesn't reselect the restored layer, since the active layer isn't undone.
 
-Updated 2026-11-02: a saved file now remembers the active layer (ADR 0031).
+Updated 2026-11-02: a saved file now remembers the active layer (ADR 0031). Merge Down takes each layer's space option from the layer, not from the caller (ADR 0033).

@@ -32,6 +32,13 @@ internal sealed class LayerRow(Guid layerId, LayersPanelViewModel panel) : Obser
         set => panel.SetLayerLocked(this, value);
     }
 
+    /// <summary>True when the layers below show through this layer's spaces.</summary>
+    public bool AreSpacesSeeThrough
+    {
+        get => _properties?.SpaceHandling == SpaceHandling.TreatedAsEmpty;
+        set => panel.SetSpacesSeeThrough(this, value);
+    }
+
     /// <summary>True while the name is being edited in place.</summary>
     public bool IsRenaming
     {
@@ -60,5 +67,6 @@ internal sealed class LayerRow(Guid layerId, LayersPanelViewModel panel) : Obser
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(IsShown));
         OnPropertyChanged(nameof(IsLocked));
+        OnPropertyChanged(nameof(AreSpacesSeeThrough));
     }
 }

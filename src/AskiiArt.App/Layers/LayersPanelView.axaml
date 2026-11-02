@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 <!-- Placeholder Layers panel: the layers, top one first, with the active one selected and buttons
-     below. Each row has checkboxes for visible and locked; double-clicking a row renames it. -->
+     below. Each row has checkboxes for visible, locked and see-through spaces; double-clicking a row
+     renames it. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:layers="using:AskiiArt.App.Layers"
@@ -29,19 +30,22 @@
       </ListBox.Styles>
       <ListBox.ItemTemplate>
         <DataTemplate x:DataType="layers:LayerRow">
-          <Grid ColumnDefinitions="Auto,Auto,*">
+          <Grid ColumnDefinitions="Auto,Auto,Auto,*">
             <CheckBox IsChecked="{Binding IsShown}"
                       ToolTip.Tip="{x:Static res:Strings.LayerRowVisibleTip}" />
             <CheckBox Grid.Column="1"
                       IsChecked="{Binding IsLocked}"
                       ToolTip.Tip="{x:Static res:Strings.LayerRowLockedTip}" />
-            <TextBlock Grid.Column="2"
+            <CheckBox Grid.Column="2"
+                      IsChecked="{Binding AreSpacesSeeThrough}"
+                      ToolTip.Tip="{x:Static res:Strings.LayerRowSpacesTip}" />
+            <TextBlock Grid.Column="3"
                        VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
                        Text="{Binding Name}"
                        Classes.hidden="{Binding !IsShown}"
                        IsVisible="{Binding !IsRenaming}" />
-            <TextBox Grid.Column="2"
+            <TextBox Grid.Column="3"
                      Text="{Binding NameBeingEdited}"
                      IsVisible="{Binding IsRenaming}" />
           </Grid>

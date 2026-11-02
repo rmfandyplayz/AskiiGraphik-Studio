@@ -2,7 +2,6 @@
 // Written with Claude Code (Anthropic).
 
 using System.Text;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Exporting;
 
@@ -10,7 +9,7 @@ namespace AskiiArt.Core.Tests.Exporting;
 
 public sealed class TextExporterTests
 {
-    private readonly TextExporter _exporter = new(CompositingPolicy.Default);
+    private readonly TextExporter _exporter = new();
 
     [Fact]
     public void Export_FlattensTheVisibleLayers_FullWidth_WithALineBreakAfterEveryRow()
@@ -48,13 +47,15 @@ public sealed class TextExporterTests
     [Theory]
     [InlineData(SpaceHandling.HidesLayersBelow, " ")]
     [InlineData(SpaceHandling.TreatedAsEmpty, "a")]
-    public void ToText_FlattensWithTheGivenPolicy(SpaceHandling spaceHandling, string expected)
+    public void ToText_FollowsTheLayersSpaceOption(SpaceHandling spaceHandling, string expected)
     {
         var document = TestCells.CreateDocument(1, 1);
         TestCells.Paint(document.ActiveFrame.Layers[0], "a");
-        TestCells.Paint(TestCells.AddLayer(document), " ");
+        var top = TestCells.AddLayer(document);
+        TestCells.Paint(top, " ");
+        top.SetProperties(top.Properties with { SpaceHandling = spaceHandling });
 
-        var text = new TextExporter(new CompositingPolicy(spaceHandling)).ToText(document, "\n");
+        var text = _exporter.ToText(document, "\n");
 
         Assert.Equal(expected, text);
     }

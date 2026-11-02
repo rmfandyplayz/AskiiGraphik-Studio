@@ -21,6 +21,8 @@ namespace AskiiArt.Core.Formats;
 internal static class DocumentJson
 {
     private const string ActiveLayerProperty = "activeLayer";
+    private const string SpacesProperty = "spaces";
+    private const string SpacesAreEmptyValue = "empty";
 
     private static readonly JsonWriterOptions _writerOptions = new()
     {
@@ -176,6 +178,8 @@ internal static class DocumentJson
         writer.WriteString("name", properties.Name);
         writer.WriteBoolean("visible", properties.IsVisible);
         writer.WriteBoolean("locked", properties.IsLocked);
+        if (properties.SpaceHandling != SpaceHandling.HidesLayersBelow)
+            writer.WriteString(SpacesProperty, NameOf(properties.SpaceHandling));
 
         // Reserved (ARCHITECTURE §18): written only once they hold something.
         if (properties.Opacity != 1.0)
@@ -224,6 +228,7 @@ internal static class DocumentJson
         {
             IsVisible = RequireBool(layerObject, "visible"),
             IsLocked = RequireBool(layerObject, "locked"),
+            SpaceHandling = ReadSpaceHandling(layerObject),
             Opacity = ReadOpacity(layerObject),
             BlendMode = ReadBlendMode(layerObject)
         };
@@ -299,6 +304,18 @@ internal static class DocumentJson
         return opacity;
     }
 
+    private static SpaceHandling ReadSpaceHandling(JsonObject layerObject)
+    {
+        if (layerObject[SpacesProperty] is null)
+            return SpaceHandling.HidesLayersBelow;
+
+        return RequireString(layerObject, SpacesProperty) switch
+        {
+            SpacesAreEmptyValue => SpaceHandling.TreatedAsEmpty,
+            var other => throw Damaged($"'{other}' isn't a way of treating spaces.")
+        };
+    }
+
     private static LayerBlendMode ReadBlendMode(JsonObject layerObject)
     {
         if (layerObject["blendMode"] is null)
@@ -323,6 +340,12 @@ internal static class DocumentJson
         CharacterSet.Unicode => "unicode",
         CharacterSet.Ascii => "ascii",
         _ => throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null)
+    };
+
+    private static string NameOf(SpaceHandling spaceHandling) => spaceHandling switch
+    {
+        SpaceHandling.TreatedAsEmpty => SpacesAreEmptyValue,
+        _ => throw new ArgumentOutOfRangeException(nameof(spaceHandling), spaceHandling, null)
     };
 
     private static string NameOf(LayerBlendMode blendMode) => blendMode switch

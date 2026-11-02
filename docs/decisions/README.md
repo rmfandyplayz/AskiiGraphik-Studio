@@ -39,3 +39,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0030](0030-active-layer-and-layer-operations.md) | The active layer and layer operations | Accepted |
 | [0031](0031-saved-active-layer.md) | A saved file remembers its active layer | Accepted |
 | [0032](0032-colour-and-plugins-are-planned.md) | Colour and plugins are planned, not just reserved | Accepted |
+| [0033](0033-space-option-tool-switching-and-eraser.md) | The space option, tool switching and the hard eraser | Accepted |

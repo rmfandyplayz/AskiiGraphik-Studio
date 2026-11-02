@@ -19,16 +19,6 @@ public sealed class TextExporter : IExporter
 
     private const char EmptyCellCharacter = ' ';
 
-    private readonly CompositingPolicy _policy;
-
-    /// <summary>Creates an exporter that flattens with <paramref name="policy"/>, as the canvas does.</summary>
-    public TextExporter(CompositingPolicy policy)
-    {
-        ArgumentNullException.ThrowIfNull(policy);
-
-        _policy = policy;
-    }
-
     /// <inheritdoc />
     public string Id => "askiiart.export.text";
 
@@ -59,7 +49,7 @@ public sealed class TextExporter : IExporter
         Span<char> glyph = stackalloc char[2];
         for (var y = 0; y < size.Height; y++)
         {
-            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, y, size.Width, 1), _policy, row);
+            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, y, size.Width, 1), row);
             foreach (var cell in row)
             {
                 if (cell.IsEmpty)

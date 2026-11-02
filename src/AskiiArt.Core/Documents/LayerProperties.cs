@@ -32,6 +32,9 @@ public sealed record LayerProperties
     /// <summary>True protects the layer's cells from tools (ARCHITECTURE §8.1).</summary>
     public bool IsLocked { get; init; }
 
+    /// <summary>How compositing treats this layer's spaces (ARCHITECTURE §5.4).</summary>
+    public SpaceHandling SpaceHandling { get; init; }
+
     /// <summary>
     /// Reserved (ARCHITECTURE §18): stored, but compositing ignores it, so every layer is fully
     /// opaque in v1. A value from 0 to 1.

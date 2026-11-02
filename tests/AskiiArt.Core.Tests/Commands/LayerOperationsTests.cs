@@ -81,23 +81,53 @@ public sealed class LayerOperationsTests
         Paint(Bottom, 2, 0, 'd');
         var before = Composite();
 
-        _history.Execute(MergeLayerDown.Create(_document, top.Id, CompositingPolicy.Default));
+        _history.Execute(MergeLayerDown.Create(_document, top.Id));
 
         Assert.Single(_document.ActiveFrame.Layers);
         Assert.Equal(before, Composite());
     }
 
     [Fact]
-    public void MergeDown_FollowsThePolicyOnSpaces()
+    public void MergeDown_DoesntCopySeeThroughSpaces()
     {
         var top = AddLayer("Top");
         Paint(Bottom, 0, 0, 'a');
         Paint(top, 0, 0, ' ');
-        var spacesAreEmpty = new CompositingPolicy(SpaceHandling.TreatedAsEmpty);
+        _history.Execute(new SetLayerPropertiesCommand(top.Id, top.Properties with { SpaceHandling = SpaceHandling.TreatedAsEmpty }));
 
-        _history.Execute(MergeLayerDown.Create(_document, top.Id, spacesAreEmpty));
+        _history.Execute(MergeLayerDown.Create(_document, top.Id));
 
         Assert.Equal(new Rune('a'), Bottom.GetCell(new CellPoint(0, 0)).Glyph);
+    }
+
+    // Three layers, so a change in what the lower two hide would show the one at the bottom.
+    [Theory]
+    [InlineData(SpaceHandling.HidesLayersBelow, SpaceHandling.HidesLayersBelow)]
+    [InlineData(SpaceHandling.HidesLayersBelow, SpaceHandling.TreatedAsEmpty)]
+    [InlineData(SpaceHandling.TreatedAsEmpty, SpaceHandling.HidesLayersBelow)]
+    [InlineData(SpaceHandling.TreatedAsEmpty, SpaceHandling.TreatedAsEmpty)]
+    public void MergeDown_KeepsThePicture_WhateverTheSpaceOptions(SpaceHandling upperOption, SpaceHandling lowerOption)
+    {
+        var lower = AddLayer("Lower");
+        var upper = AddLayer("Upper");
+        for (var x = 0; x < 4; x++)
+            Paint(Bottom, x, 0, 'b');
+
+        Paint(lower, 0, 0, ' ');
+        Paint(lower, 1, 0, 'l');
+        Paint(upper, 1, 0, ' ');
+        Paint(upper, 2, 0, ' ');
+        Paint(upper, 3, 0, 'u');
+        _history.Execute(new SetLayerPropertiesCommand(lower.Id, lower.Properties with { SpaceHandling = lowerOption }));
+        _history.Execute(new SetLayerPropertiesCommand(upper.Id, upper.Properties with { SpaceHandling = upperOption }));
+        var before = Composite();
+
+        _history.Execute(MergeLayerDown.Create(_document, upper.Id));
+        Assert.Equal(before, Composite());
+
+        _history.Undo();
+        Assert.Equal(before, Composite());
+        Assert.Equal(lowerOption, lower.Properties.SpaceHandling);
     }
 
     [Fact]
@@ -106,7 +136,7 @@ public sealed class LayerOperationsTests
         var top = AddLayer("Top");
         var lowerId = Bottom.Id;
 
-        _history.Execute(MergeLayerDown.Create(_document, top.Id, CompositingPolicy.Default));
+        _history.Execute(MergeLayerDown.Create(_document, top.Id));
 
         Assert.Equal(lowerId, Bottom.Id);
         Assert.Equal("Bottom", Bottom.Properties.Name);
@@ -120,7 +150,7 @@ public sealed class LayerOperationsTests
         Paint(top, 0, 0, 'b');
         var steps = _history.StepCount;
 
-        _history.Execute(MergeLayerDown.Create(_document, top.Id, CompositingPolicy.Default));
+        _history.Execute(MergeLayerDown.Create(_document, top.Id));
 
         Assert.Equal(steps + 1, _history.StepCount);
         Assert.Equal(UndoStepNames.MergeLayerDown, _history.GetStepNameKey(steps));
@@ -143,7 +173,7 @@ public sealed class LayerOperationsTests
         var top = AddLayer("Top");
         Paint(Bottom, 0, 0, 'a');
 
-        _history.Execute(MergeLayerDown.Create(_document, top.Id, CompositingPolicy.Default));
+        _history.Execute(MergeLayerDown.Create(_document, top.Id));
 
         Assert.Single(_document.ActiveFrame.Layers);
         Assert.Equal(new Rune('a'), Bottom.GetCell(new CellPoint(0, 0)).Glyph);
@@ -155,7 +185,7 @@ public sealed class LayerOperationsTests
         AddLayer("Top");
 
         Assert.Throws<InvalidOperationException>(() =>
-            MergeLayerDown.Create(_document, Bottom.Id, CompositingPolicy.Default));
+            MergeLayerDown.Create(_document, Bottom.Id));
     }
 
     [Fact]
@@ -185,7 +215,7 @@ public sealed class LayerOperationsTests
     private Cell[] Composite()
     {
         var cells = new Cell[_document.CanvasSize.CellCount];
-        Compositor.CompositeRegion(_document.ActiveFrame, _document.CanvasSize.Bounds, CompositingPolicy.Default, cells);
+        Compositor.CompositeRegion(_document.ActiveFrame, _document.CanvasSize.Bounds, cells);
         return cells;
     }
 }

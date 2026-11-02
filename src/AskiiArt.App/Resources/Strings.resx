@@ -142,6 +142,12 @@
   <data name="ToolText" xml:space="preserve">
     <value>Text</value>
   </data>
+  <data name="ToolEraser" xml:space="preserve">
+    <value>Eraser</value>
+  </data>
+  <data name="MenuTools" xml:space="preserve">
+    <value>_Tools</value>
+  </data>
 
   <!-- Switching a document to ASCII only -->
   <data name="AsciiOnlyConfirmTitle" xml:space="preserve">
@@ -452,6 +458,10 @@
     <value>Locked</value>
     <comment>Tooltip on the checkbox that locks or unlocks a layer.</comment>
   </data>
+  <data name="LayerRowSpacesTip" xml:space="preserve">
+    <value>Spaces are see-through</value>
+    <comment>Tooltip on the checkbox that makes a layer's spaces show the layers below.</comment>
+  </data>
   <data name="ActionToggleToolbar" xml:space="preserve">
     <value>_Toolbar</value>
     <comment>Window menu: shows or hides the toolbar.</comment>
@@ -524,6 +534,12 @@
   </data>
   <data name="UndoStepLockOrUnlockLayer" xml:space="preserve">
     <value>Lock or Unlock Layer</value>
+  </data>
+  <data name="UndoStepSetSpaceHandling" xml:space="preserve">
+    <value>Change Space Option</value>
+  </data>
+  <data name="UndoStepErase" xml:space="preserve">
+    <value>Erase</value>
   </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>

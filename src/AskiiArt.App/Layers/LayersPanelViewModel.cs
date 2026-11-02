@@ -6,7 +6,6 @@ using System.Globalization;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Commands;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -127,7 +126,7 @@ internal sealed class LayersPanelViewModel : ObservableObject
             return;
 
         var merged = Session.ActiveLayer.Id;
-        var command = MergeLayerDown.Create(Session.Document, merged, CompositingPolicy.Default);
+        var command = MergeLayerDown.Create(Session.Document, merged);
         Session.SetActiveLayer(Layers[ActiveIndex - 1].Id);
         Session.History.Execute(command);
     }
@@ -157,6 +156,12 @@ internal sealed class LayersPanelViewModel : ObservableObject
     public void SetLayerLocked(LayerRow row, bool isLocked)
     {
         ChangeProperties(row, properties => properties with { IsLocked = isLocked }, UndoStepNames.LockOrUnlockLayer);
+    }
+
+    public void SetSpacesSeeThrough(LayerRow row, bool areSeeThrough)
+    {
+        var spaceHandling = areSeeThrough ? SpaceHandling.TreatedAsEmpty : SpaceHandling.HidesLayersBelow;
+        ChangeProperties(row, properties => properties with { SpaceHandling = spaceHandling }, UndoStepNames.SetSpaceHandling);
     }
 
     private void ChangeProperties(LayerRow row, Func<LayerProperties, LayerProperties> change, string stepNameKey)

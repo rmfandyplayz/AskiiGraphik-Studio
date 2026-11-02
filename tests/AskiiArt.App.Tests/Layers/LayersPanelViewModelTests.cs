@@ -32,6 +32,23 @@ public sealed class LayersPanelViewModelTests : IDisposable
     private string[] RowNames => [.. _panel.Rows.Select(row => row.Name)];
 
     [AvaloniaFact]
+    public void TheSpaceBox_ChangesTheLayer_AsOneNamedStep_AndFollowsUndo()
+    {
+        var row = _panel.Rows[0];
+        Assert.False(row.AreSpacesSeeThrough);
+
+        row.AreSpacesSeeThrough = true;
+
+        Assert.Equal(SpaceHandling.TreatedAsEmpty, Layers[0].Properties.SpaceHandling);
+        Assert.True(row.AreSpacesSeeThrough);
+        Assert.Equal(UndoStepNames.SetSpaceHandling, Session.History.GetStepNameKey(0));
+
+        Session.History.Undo();
+
+        Assert.False(row.AreSpacesSeeThrough);
+    }
+
+    [AvaloniaFact]
     public void Rows_ShowTheTopLayerFirst()
     {
         _panel.AddLayer();

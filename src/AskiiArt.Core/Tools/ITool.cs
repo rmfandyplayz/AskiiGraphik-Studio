@@ -10,7 +10,8 @@ namespace AskiiArt.Core.Tools;
 /// <param name="NameKey">The App's resource key for the tool's localized name.</param>
 /// <param name="IconKey">The tool's icon key in the icon lookup (§14.5).</param>
 /// <param name="Category">Groups tools in the tool palette, for example "text" or "paint".</param>
-public sealed record ToolDescriptor(string Id, string NameKey, string IconKey, string Category);
+/// <param name="ShortcutLetter">The capital letter that picks this tool, if any (ADR 0033).</param>
+public sealed record ToolDescriptor(string Id, string NameKey, string IconKey, string Category, char? ShortcutLetter = null);
 
 /// <summary>
 /// A canvas tool (ARCHITECTURE §8.1). One instance edits one <see cref="Editing.EditingSession"/>,
@@ -26,6 +27,9 @@ public interface ITool
     /// says no, so Space types a space instead (ADR 0017).
     /// </summary>
     bool AllowsSpacePanning { get; }
+
+    /// <summary>True while typed characters go to this tool, so letter keys can't pick another tool.</summary>
+    bool IsTakingText { get; }
 
     /// <summary>What the canvas draws on top of the document for this tool.</summary>
     ToolOverlay Overlay { get; }

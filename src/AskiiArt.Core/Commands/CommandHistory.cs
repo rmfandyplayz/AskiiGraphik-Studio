@@ -128,6 +128,21 @@ public sealed class CommandHistory
     }
 
     /// <summary>
+    /// Undoes the newest step and forgets it, as if it never happened. It's for cancelling a gesture
+    /// that applied as it went. The redo steps it replaced stay gone.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">There's nothing to undo.</exception>
+    public void CancelNewestStep()
+    {
+        if (!CanUndo)
+            throw new InvalidOperationException("There's nothing to undo.");
+
+        UndoOneStep();
+        DropRedoEntries();
+        RaiseStateChanged();
+    }
+
+    /// <summary>
     /// Undoes or redoes as many steps as it takes for <see cref="UndoCount"/> to be
     /// <paramref name="undoCount"/>. The document sees ordinary undos and redos, one per step.
     /// </summary>

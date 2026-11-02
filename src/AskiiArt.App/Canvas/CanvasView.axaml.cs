@@ -4,6 +4,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 
 namespace AskiiArt.App.Canvas;
 
@@ -39,6 +40,19 @@ internal sealed partial class CanvasView : UserControl
 
         _coveredByWidgets = covered;
         UpdateCanvasSafeArea();
+    }
+
+    // Here rather than as action shortcuts, which would fire while typing in any text box. It runs
+    // only for keys the canvas itself didn't use.
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        if (!e.Handled && e.KeyModifiers == KeyModifiers.None && e.KeySymbol is { Length: 1 } letter &&
+            DataContext is CanvasViewModel canvas && canvas.TrySelectToolByLetter(letter[0]))
+        {
+            e.Handled = true;
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

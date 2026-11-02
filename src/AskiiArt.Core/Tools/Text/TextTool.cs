@@ -31,7 +31,7 @@ public sealed class TextTool : ITool
     public const int LongJump = 10;
 
     /// <summary>The text tool's identity. The name key is the App's resource key.</summary>
-    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text");
+    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text", 'T');
 
     /// <summary>Registers the text tool, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, session => new TextTool(session));
@@ -61,6 +61,9 @@ public sealed class TextTool : ITool
 
     /// <summary>The cell the next typed character goes into, or null before the first click and after Esc.</summary>
     public CellPoint? Caret { get; private set; }
+
+    /// <summary>True while there's a caret. Esc removes it.</summary>
+    public bool IsTakingText => Caret is not null;
 
     /// <inheritdoc/>
     public ToolOverlay Overlay => Caret is null ? ToolOverlay.None : new ToolOverlay(Caret);

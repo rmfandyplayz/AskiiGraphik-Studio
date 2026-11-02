@@ -6,7 +6,6 @@ using System.Globalization;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
@@ -31,6 +30,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     private readonly ActiveDocument _activeDocument;
     private readonly ToolRegistry _tools;
     private readonly FontCatalog _fonts;
+    private string _selectedToolId = TextTool.Id;
 
     public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, FontCatalog fonts, GlyphAtlasCache atlases)
     {
@@ -51,6 +51,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     public EditingSession Session { get; private set; }
 
     public ITool ActiveTool { get; private set; }
+
+    /// <summary>The tools that can be chosen.</summary>
+    public IReadOnlyList<ToolDefinition> Tools => _tools.All;
 
     public CompositeCache Composite { get; private set; }
 
@@ -137,22 +140,51 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     public void ToggleGrid() => IsGridVisible = !IsGridVisible;
 
+    /// <summary>Makes another tool active. It stays chosen when New or Open replaces the document.</summary>
+    public void SelectTool(string toolId)
+    {
+        if (toolId == _selectedToolId)
+            return;
+
+        var definition = _tools.Get(toolId);
+        ActiveTool.Deactivate();
+        _selectedToolId = toolId;
+        ActiveTool = definition.Create(Session);
+        OnPropertyChanged(nameof(ActiveTool));
+    }
+
+    /// <summary>
+    /// Picks the tool with this shortcut letter. Returns false when none has it, or when the active
+    /// tool is taking text, which is what the letter is for then.
+    /// </summary>
+    public bool TrySelectToolByLetter(char letter)
+    {
+        if (ActiveTool.IsTakingText)
+            return false;
+
+        var wanted = char.ToUpperInvariant(letter);
+        if (Tools.FirstOrDefault(tool => tool.Descriptor.ShortcutLetter == wanted) is not { } definition)
+            return false;
+
+        SelectTool(definition.Descriptor.Id);
+        return true;
+    }
+
     public void Dispose()
     {
         _activeDocument.SessionChanged -= OnSessionChanged;
         Detach();
     }
 
-    // The text tool is the only tool until M3, so it's always active.
     [MemberNotNull(nameof(Session), nameof(Composite), nameof(ActiveTool), nameof(Font))]
     private void Attach(EditingSession session)
     {
         Session = session;
-        Composite = new CompositeCache(session.Document, CompositingPolicy.Default);
+        Composite = new CompositeCache(session.Document);
         Composite.Changed += OnCompositeChanged;
         session.Document.Changed += OnDocumentChanged;
         Font = _fonts.Resolve(session.Document.Font);
-        ActiveTool = _tools.Get(TextTool.Id).Create(session);
+        ActiveTool = _tools.Get(_selectedToolId).Create(session);
     }
 
     private void Detach()

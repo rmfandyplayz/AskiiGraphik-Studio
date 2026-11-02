@@ -22,6 +22,7 @@ internal static class TestActions
     [
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel),
+        new ToolActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument, canvas.TextExporter, shell),
         new ShellDockActions(new ShellDock(new FakeAppSettings(), NullLogger<ShellDock>.Instance)),
         new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),

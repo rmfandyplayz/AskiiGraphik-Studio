@@ -14,10 +14,10 @@ using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -51,6 +51,7 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild,
             isMacOS: OperatingSystem.IsMacOS()));
         services.AddSingleton<IActionProvider, CanvasActions>();
+        services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider, ShellDockActions>();
         services.AddSingleton<IActionProvider, LayerActions>();
@@ -64,6 +65,7 @@ internal static class AppServices
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(TextTool.Definition);
+        services.AddSingleton(EraserTool.Definition);
         services.AddSingleton<ToolRegistry>();
 
         // The document being edited. The app starts with an empty one, as New would make it.
@@ -77,7 +79,7 @@ internal static class AppServices
 
         // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). Text
         // flattens with the same policy as the canvas.
-        services.AddSingleton(new TextExporter(CompositingPolicy.Default));
+        services.AddSingleton<TextExporter>();
         services.AddSingleton<IExporter>(provider => provider.GetRequiredService<TextExporter>());
 
         // Fonts and glyphs.

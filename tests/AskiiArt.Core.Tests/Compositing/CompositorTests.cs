@@ -8,14 +8,12 @@ namespace AskiiArt.Core.Tests.Compositing;
 
 public sealed class CompositorTests
 {
-    private static CompositingPolicy SpacesAsEmpty { get; } = new(SpaceHandling.TreatedAsEmpty);
-
     [Fact]
     public void TheTopmostOccupiedCellWins_AndEmptyCellsShowTheLayerBelow()
     {
         var document = CreateLayered(["abc", "def"], ["X··", "·Y·"]);
 
-        Assert.Equal(["Xbc", "dYf"], CompositeAll(document, CompositingPolicy.Default));
+        Assert.Equal(["Xbc", "dYf"], CompositeAll(document));
     }
 
     [Fact]
@@ -23,15 +21,26 @@ public sealed class CompositorTests
     {
         var document = CreateLayered(["abc"], ["· ·"]);
 
-        Assert.Equal(["a c"], CompositeAll(document, CompositingPolicy.Default));
+        Assert.Equal(["a c"], CompositeAll(document));
     }
 
     [Fact]
-    public void ASpace_ShowsTheLayerBelow_WhenSpacesAreTreatedAsEmpty()
+    public void ASpace_ShowsTheLayerBelow_WhenItsLayerTreatsSpacesAsEmpty()
     {
         var document = CreateLayered(["abc"], ["   "]);
+        SetSpaceHandling(document.ActiveFrame.Layers[1], SpaceHandling.TreatedAsEmpty);
 
-        Assert.Equal(["abc"], CompositeAll(document, SpacesAsEmpty));
+        Assert.Equal(["abc"], CompositeAll(document));
+    }
+
+    [Fact]
+    public void TheSpaceOption_OnlyAffectsItsOwnLayer()
+    {
+        var document = CreateLayered(["aaa"], ["  b"], [" c "]);
+        SetSpaceHandling(document.ActiveFrame.Layers[2], SpaceHandling.TreatedAsEmpty);
+
+        // The top layer's spaces show the middle layer, whose own space still hides the bottom layer.
+        Assert.Equal([" cb"], CompositeAll(document));
     }
 
     [Fact]
@@ -39,8 +48,10 @@ public sealed class CompositorTests
     {
         var document = CreateLayered([" "]);
 
-        Assert.Equal(["·"], CompositeAll(document, SpacesAsEmpty));
-        Assert.Equal([" "], CompositeAll(document, CompositingPolicy.Default));
+        Assert.Equal([" "], CompositeAll(document));
+
+        SetSpaceHandling(document.ActiveFrame.Layers[0], SpaceHandling.TreatedAsEmpty);
+        Assert.Equal(["·"], CompositeAll(document));
     }
 
     [Fact]
@@ -50,7 +61,7 @@ public sealed class CompositorTests
         var top = document.ActiveFrame.Layers[1];
         top.SetProperties(top.Properties with { IsVisible = false });
 
-        Assert.Equal(["abc"], CompositeAll(document, CompositingPolicy.Default));
+        Assert.Equal(["abc"], CompositeAll(document));
     }
 
     [Fact]
@@ -58,7 +69,7 @@ public sealed class CompositorTests
     {
         var document = CreateLayered(["··"], ["··"]);
 
-        Assert.Equal(["··"], CompositeAll(document, CompositingPolicy.Default));
+        Assert.Equal(["··"], CompositeAll(document));
     }
 
     [Fact]
@@ -67,7 +78,7 @@ public sealed class CompositorTests
         var document = CreateLayered(["abcd", "efgh", "ijkl"], ["····", "··X·", "····"]);
         var destination = new Cell[4];
 
-        Compositor.CompositeRegion(document.ActiveFrame, new CellRect(1, 1, 2, 2), CompositingPolicy.Default, destination);
+        Compositor.CompositeRegion(document.ActiveFrame, new CellRect(1, 1, 2, 2), destination);
 
         Assert.Equal(["fX", "jk"], TestCells.Describe(destination, 2));
     }
@@ -78,7 +89,7 @@ public sealed class CompositorTests
         var document = CreateLayered(["··"]);
         var destination = new[] { TestCells.Glyph('?'), TestCells.Glyph('?') };
 
-        Compositor.CompositeRegion(document.ActiveFrame, document.CanvasSize.Bounds, CompositingPolicy.Default, destination);
+        Compositor.CompositeRegion(document.ActiveFrame, document.CanvasSize.Bounds, destination);
 
         Assert.Equal(["··"], TestCells.Describe(destination, 2));
     }
@@ -100,17 +111,19 @@ public sealed class CompositorTests
         var middle = document.ActiveFrame.Layers[1];
         middle.SetProperties(middle.Properties with { IsVisible = false });
 
-        foreach (var policy in new[] { CompositingPolicy.Default, SpacesAsEmpty })
+        foreach (var spaceHandling in Enum.GetValues<SpaceHandling>())
         {
+            SetSpaceHandling(document.ActiveFrame.Layers[^1], spaceHandling);
             var region = new CellRect(1, 2, 7, 4);
             var destination = new Cell[region.Area];
-            Compositor.CompositeRegion(document.ActiveFrame, region, policy, destination);
+            Compositor.CompositeRegion(document.ActiveFrame, region, destination);
 
             for (var y = 0; y < region.Height; y++)
             {
                 for (var x = 0; x < region.Width; x++)
                 {
-                    var expected = Compositor.CompositeCell(document.ActiveFrame, new CellPoint(region.X + x, region.Y + y), policy);
+                    var expected =
+                        Compositor.CompositeCell(document.ActiveFrame, new CellPoint(region.X + x, region.Y + y));
                     Assert.Equal(expected, destination[(y * region.Width) + x]);
                 }
             }
@@ -123,9 +136,9 @@ public sealed class CompositorTests
         var document = TestCells.CreateDocument(3, 3);
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(2, 2, 2, 2), CompositingPolicy.Default, new Cell[4]));
+            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(2, 2, 2, 2), new Cell[4]));
         Assert.Throws<ArgumentException>(() =>
-            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, 0, 2, 2), CompositingPolicy.Default, new Cell[3]));
+            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, 0, 2, 2), new Cell[3]));
     }
 
     [Fact]
@@ -134,16 +147,17 @@ public sealed class CompositorTests
         var document = TestCells.CreateDocument(3, 3);
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Compositor.CompositeCell(document.ActiveFrame, new CellPoint(3, 0), CompositingPolicy.Default));
+            Compositor.CompositeCell(document.ActiveFrame, new CellPoint(3, 0)));
     }
 
     [Fact]
     public void ThePolicy_OnlyTreatsU0020AsASpace()
     {
-        Assert.False(SpacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
-        Assert.True(SpacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
-        Assert.False(SpacesAsEmpty.HidesLayersBelow(Cell.Empty));
-        Assert.False(CompositingPolicy.Default.HidesLayersBelow(Cell.Empty));
+        var spacesAsEmpty = CompositingPolicy.For(SpaceHandling.TreatedAsEmpty);
+        Assert.False(spacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
+        Assert.True(spacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
+        Assert.False(spacesAsEmpty.HidesLayersBelow(Cell.Empty));
+        Assert.False(CompositingPolicy.For(SpaceHandling.HidesLayersBelow).HidesLayersBelow(Cell.Empty));
     }
 
     /// <summary>Creates a document with one layer per array, bottom first, painted with <see cref="TestCells.Paint"/>.</summary>
@@ -157,17 +171,20 @@ public sealed class CompositorTests
         return document;
     }
 
-    private static string[] CompositeAll(Document document, CompositingPolicy policy)
+    private static void SetSpaceHandling(Layer layer, SpaceHandling spaceHandling) =>
+        layer.SetProperties(layer.Properties with { SpaceHandling = spaceHandling });
+
+    private static string[] CompositeAll(Document document)
     {
         var destination = new Cell[document.CanvasSize.CellCount];
-        Compositor.CompositeRegion(document.ActiveFrame, document.CanvasSize.Bounds, policy, destination);
+        Compositor.CompositeRegion(document.ActiveFrame, document.CanvasSize.Bounds, destination);
 
         var perCell = TestCells.Describe(destination, document.CanvasSize.Width);
         for (var y = 0; y < document.CanvasSize.Height; y++)
         {
             for (var x = 0; x < document.CanvasSize.Width; x++)
             {
-                var cell = Compositor.CompositeCell(document.ActiveFrame, new CellPoint(x, y), policy);
+                var cell = Compositor.CompositeCell(document.ActiveFrame, new CellPoint(x, y));
                 Assert.Equal(destination[(y * document.CanvasSize.Width) + x], cell);
             }
         }

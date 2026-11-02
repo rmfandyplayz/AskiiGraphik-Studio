@@ -13,17 +13,14 @@ namespace AskiiArt.App.Canvas;
 /// </summary>
 internal sealed class CompositeCache : IDisposable
 {
-    private readonly CompositingPolicy _policy;
     private Cell[] _cells = [];
     private bool _isDisposed;
 
-    public CompositeCache(Document document, CompositingPolicy policy)
+    public CompositeCache(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(policy);
 
         Document = document;
-        _policy = policy;
         CompositeEverything();
         document.Changed += OnDocumentChanged;
     }
@@ -101,7 +98,7 @@ internal sealed class CompositeCache : IDisposable
         for (var y = region.Top; y < region.Bottom; y++)
         {
             var row = new CellRect(region.X, y, region.Width, 1);
-            Compositor.CompositeRegion(frame, row, _policy, _cells.AsSpan(y * Size.Width + region.X, region.Width));
+            Compositor.CompositeRegion(frame, row, _cells.AsSpan(y * Size.Width + region.X, region.Width));
         }
     }
 }

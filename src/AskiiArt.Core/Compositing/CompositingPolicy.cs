@@ -10,27 +10,32 @@ namespace AskiiArt.Core.Compositing;
 /// This is the one place for that rule: nothing else checks for spaces.
 /// </summary>
 /// <remarks>
-/// The space option will be set per layer (ARCHITECTURE §23, step 2.4). Until then callers pass
-/// <see cref="Default"/>.
+/// Each layer chooses its own <see cref="SpaceHandling"/> (ADR 0033). A policy is read for every cell
+/// of every layer, so there's one shared instance per choice.
 /// </remarks>
 public sealed class CompositingPolicy
 {
     private const int SpaceCodePoint = ' ';
 
-    /// <summary>Creates a policy.</summary>
-    public CompositingPolicy(SpaceHandling spaceHandling)
-    {
-        if (!Enum.IsDefined(spaceHandling))
-            throw new ArgumentOutOfRangeException(nameof(spaceHandling), spaceHandling, null);
+    private static readonly CompositingPolicy _spacesHide = new(SpaceHandling.HidesLayersBelow);
+    private static readonly CompositingPolicy _spacesAreEmpty = new(SpaceHandling.TreatedAsEmpty);
 
+    private CompositingPolicy(SpaceHandling spaceHandling)
+    {
         SpaceHandling = spaceHandling;
     }
 
-    /// <summary>The default policy: spaces hide the layers below.</summary>
-    public static CompositingPolicy Default { get; } = new(SpaceHandling.HidesLayersBelow);
-
     /// <summary>How spaces are treated. Only U+0020 counts as a space.</summary>
     public SpaceHandling SpaceHandling { get; }
+
+    /// <summary>The policy for a layer that treats spaces this way.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">There's no such way of treating spaces.</exception>
+    public static CompositingPolicy For(SpaceHandling spaceHandling) => spaceHandling switch
+    {
+        SpaceHandling.HidesLayersBelow => _spacesHide,
+        SpaceHandling.TreatedAsEmpty => _spacesAreEmpty,
+        _ => throw new ArgumentOutOfRangeException(nameof(spaceHandling), spaceHandling, null)
+    };
 
     /// <summary>True when <paramref name="cell"/>, on a visible layer, hides whatever is below it.</summary>
     public bool HidesLayersBelow(Cell cell)

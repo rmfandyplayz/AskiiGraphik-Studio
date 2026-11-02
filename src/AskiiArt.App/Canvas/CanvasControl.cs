@@ -453,7 +453,15 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         base.OnPointerCaptureLost(e);
         _panStart = null;
-        _isToolGestureActive = false;
+
+        // Still active means the system took the pointer mid-gesture, so no release is coming.
+        if (_isToolGestureActive)
+        {
+            _isToolGestureActive = false;
+            if (Tool is { } tool && ToToolInput(_pointerPosition ?? default, KeyModifiers.None) is { } input)
+                tool.PointerReleased(input);
+        }
+
         UpdateCursor();
     }
 

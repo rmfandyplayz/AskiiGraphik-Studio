@@ -24,7 +24,7 @@ public sealed class CompositeCacheTests
     {
         Write(BottomLayerId, new CellPoint(2, 1), 'A');
 
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
 
         AssertMatchesTheDocument(cache);
     }
@@ -32,7 +32,7 @@ public sealed class CompositeCacheTests
     [Fact]
     public void CellEdit_UpdatesTheCacheAndRaisesChanged()
     {
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
         var changedCount = 0;
         cache.Changed += (_, _) => changedCount++;
 
@@ -50,7 +50,7 @@ public sealed class CompositeCacheTests
         _history.Execute(new AddLayerCommand(1, new LayerProperties("Top")));
         var topLayerId = _document.ActiveFrame.Layers[1].Id;
         Write(topLayerId, new CellPoint(1, 1), 't');
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
 
         _history.Execute(new SetLayerPropertiesCommand(topLayerId, new LayerProperties("Top") { IsVisible = false }));
 
@@ -61,7 +61,7 @@ public sealed class CompositeCacheTests
     [Fact]
     public void UndoingALayerAdd_RecompositesEverything()
     {
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
         _history.Execute(new AddLayerCommand(1, new LayerProperties("Top")));
         Write(_document.ActiveFrame.Layers[1].Id, new CellPoint(0, 0), 'x');
 
@@ -76,7 +76,7 @@ public sealed class CompositeCacheTests
     public void CanvasResize_ResizesTheCache()
     {
         Write(BottomLayerId, new CellPoint(0, 0), 'q');
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
 
         _history.Execute(new ResizeCanvasCommand(new CanvasSize(10, 2), ResizeAnchor.TopLeft));
 
@@ -88,7 +88,7 @@ public sealed class CompositeCacheTests
     [Fact]
     public void GetCell_OutsideTheCanvas_Throws()
     {
-        using var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        using var cache = new CompositeCache(_document);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => cache.GetCell(new CellPoint(6, 0)));
     }
@@ -96,7 +96,7 @@ public sealed class CompositeCacheTests
     [Fact]
     public void Dispose_StopsFollowingTheDocument()
     {
-        var cache = new CompositeCache(_document, CompositingPolicy.Default);
+        var cache = new CompositeCache(_document);
         var changedCount = 0;
         cache.Changed += (_, _) => changedCount++;
 
@@ -123,7 +123,7 @@ public sealed class CompositeCacheTests
             for (var x = 0; x < cache.Size.Width; x++)
             {
                 var point = new CellPoint(x, y);
-                Assert.Equal(Compositor.CompositeCell(_document.ActiveFrame, point, CompositingPolicy.Default),
+                Assert.Equal(Compositor.CompositeCell(_document.ActiveFrame, point),
                     cache.GetCell(point));
             }
         }

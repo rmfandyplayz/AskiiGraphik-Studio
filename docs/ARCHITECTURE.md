@@ -110,11 +110,11 @@ Use `Rune`, never `char`. A `char` is a UTF-16 code unit and can't hold characte
 
 - An **empty** cell holds nothing, so the layer below shows through. Erasing makes a cell empty.
 - An **occupied** cell holding a **space** is a deliberate blank. By default it **hides** the layer below.
-- The space rule is a **policy, not hardcoded behavior**. An option lets spaces be treated as empty during compositing; whether it applies per layer or per document is an open question (§23). Implement it as one compositing policy object, not as `if (glyph == ' ')` checks scattered through the code.
+- The space rule is a **policy, not hardcoded behavior**. A per-layer option lets that layer's spaces be treated as empty during compositing (ADR 0033). It's one compositing policy object, not `if (glyph == ' ')` checks scattered through the code.
 
 ### 5.5 Layers
 
-Each layer has a stable `Id` (a GUID; commands reference layers by id, never by index), plus `Name`, `Visible` and `Locked`. It also has the reserved fields `Opacity` and `BlendMode` (§18). Every layer operation is a command: add, delete, duplicate, reorder, rename, merge down and property changes.
+Each layer has a stable `Id` (a GUID; commands reference layers by id, never by index), plus `Name`, `Visible`, `Locked` and the space option. It also has the reserved fields `Opacity` and `BlendMode` (§18). Every layer operation is a command: add, delete, duplicate, reorder, rename, merge down and property changes.
 
 ### 5.6 Compositing
 
@@ -165,10 +165,10 @@ Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging imple
 
 Tools are **Core** classes with no UI dependencies. Each tool has:
 
-- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a default shortcut (added with the second tool) and a category.
+- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a category and a shortcut letter. The letter works while the canvas has focus and the active tool isn't taking text (ADR 0033).
 - **Options:** a plain model object (size, ramp id, mode, …) that the UI binds to. The tool doesn't know what draws its options panel.
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
-- **Preview, then commit:** during a gesture, a tool can draw a preview overlay that isn't part of the document. When the gesture ends, it emits **exactly one** command. Pressing Esc cancels the gesture and discards the preview.
+- **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
 - **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017).
 
@@ -180,7 +180,7 @@ Planned tools, built over several milestones: text, brush, eraser, fill, pickup 
 
 ### 8.3 Eraser
 
-The eraser has two modes. Hard mode arrives with layers (M2). Soft mode needs glyph density, so it arrives with ramps (M3).
+The eraser has two modes. Hard mode arrived with layers (step 2.4), one cell wide until brushes have sizes. Soft mode needs glyph density, so it arrives with ramps (M3).
 
 - **Hard:** everything inside the brush footprint becomes empty, and everything outside it is untouched.
 - **Soft:** lowers intensity. Each affected glyph is mapped to a lighter one using glyph density and the active ramp. When intensity reaches zero, the cell becomes empty.
@@ -379,7 +379,6 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| Should the space-as-empty option be per layer, per document or app-wide? *Decided in M2 planning:* per layer, built in step 2.4 | M2 |
 | The color model: which palettes (Discord's ANSI has 8 text and 8 background colors; terminals reach 16, 256 or RGB), indexed or RGB, per document like the character set, and which attributes. Also whether a colored space still counts for the space-as-empty option | M2b |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |

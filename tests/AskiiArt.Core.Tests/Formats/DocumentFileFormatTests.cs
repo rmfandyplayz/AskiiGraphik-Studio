@@ -40,6 +40,44 @@ public sealed class DocumentFileFormatTests
         Assert.Equal(bottom, contents.ActiveLayerId);
     }
 
+    [Theory]
+    [InlineData(DocumentFileVariant.Plain)]
+    [InlineData(DocumentFileVariant.Compressed)]
+    public void TheSpaceOption_SurvivesSavingAndOpening(DocumentFileVariant variant)
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var layer = document.ActiveFrame.Layers[0];
+        layer.SetProperties(layer.Properties with { SpaceHandling = SpaceHandling.TreatedAsEmpty });
+
+        var contents = DocumentFileFormat.Decode(DocumentFileFormat.Encode(document, variant));
+
+        Assert.Equal(SpaceHandling.TreatedAsEmpty, contents.Document.ActiveFrame.Layers[0].Properties.SpaceHandling);
+    }
+
+    [Fact]
+    public void TheSpaceOption_IsLeftOutOfTheFile_AtItsDefault()
+    {
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(TestCells.CreateDocument(3, 2),
+            DocumentFileVariant.Plain));
+
+        Assert.DoesNotContain("\"spaces\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnUnknownSpaceOption_MakesTheFileDamaged()
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var layer = document.ActiveFrame.Layers[0];
+        layer.SetProperties(layer.Properties with { SpaceHandling = SpaceHandling.TreatedAsEmpty });
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(document, DocumentFileVariant.Plain));
+        var changed = text.Replace("\"spaces\": \"empty\"", "\"spaces\": \"sometimes\"", StringComparison.Ordinal);
+        Assert.NotEqual(text, changed);
+
+        var exception = Assert.Throws<DocumentFileException>(() => DocumentFileFormat.Decode(Encoding.UTF8.GetBytes(changed)));
+
+        Assert.Equal(DocumentFileProblem.Damaged, exception.Problem);
+    }
+
     [Fact]
     public void AFileThatDoesntNameAnActiveLayer_OpensWithoutOne()
     {

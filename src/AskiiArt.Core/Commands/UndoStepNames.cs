@@ -50,4 +50,10 @@ public static class UndoStepNames
 
     /// <summary>Locking or unlocking a layer.</summary>
     public const string LockOrUnlockLayer = "UndoStepLockOrUnlockLayer";
+
+    /// <summary>Changing whether a layer's spaces are see-through.</summary>
+    public const string SetSpaceHandling = "UndoStepSetSpaceHandling";
+
+    /// <summary>A stroke of the eraser.</summary>
+    public const string Erase = "UndoStepErase";
 }

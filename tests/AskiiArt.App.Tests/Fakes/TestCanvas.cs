@@ -6,11 +6,11 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Shell;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -31,7 +31,7 @@ internal sealed class TestCanvas : IDisposable
         Atlases = new GlyphAtlasCache(NoFallbackFonts.Instance);
         ActiveDocument = new ActiveDocument(
             new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet)));
-        ViewModel = new CanvasViewModel(ActiveDocument, new ToolRegistry([TextTool.Definition]), Fonts, Atlases);
+        ViewModel = new CanvasViewModel(ActiveDocument, new ToolRegistry([TextTool.Definition, EraserTool.Definition]), Fonts, Atlases);
     }
 
     public ActiveDocument ActiveDocument { get; }
@@ -48,7 +48,7 @@ internal sealed class TestCanvas : IDisposable
 
     public CanvasViewModel ViewModel { get; }
 
-    public TextExporter TextExporter { get; } = new(CompositingPolicy.Default);
+    public TextExporter TextExporter { get; } = new();
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>

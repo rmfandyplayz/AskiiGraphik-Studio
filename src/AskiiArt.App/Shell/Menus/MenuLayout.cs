@@ -86,6 +86,12 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(LayerActionIds.MergeDown)
         ]);
 
+        var toolsMenu = new MenuDefinition(nameof(Strings.MenuTools),
+        [
+            new ActionMenuEntry(ToolActionIds.Text),
+            new ActionMenuEntry(ToolActionIds.Eraser)
+        ]);
+
         var viewMenu = new MenuDefinition(nameof(Strings.MenuView),
         [
             new ActionMenuEntry(CanvasActionIds.ZoomIn),
@@ -113,6 +119,7 @@ internal sealed record MenuLayout(
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(layerMenu);
+            windowMenus.Add(toolsMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(panelMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
@@ -130,6 +137,7 @@ internal sealed record MenuLayout(
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(layerMenu);
+            windowMenus.Add(toolsMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(panelMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),

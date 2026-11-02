@@ -114,8 +114,8 @@ public sealed class MainWindowTests : IDisposable
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
         Assert.Equal(
             [
-                Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuView,
-                Strings.MenuWindow, Strings.MenuHelp
+                Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuTools,
+                Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp
             ],
             topLevelItems.Select(item => item.Header));
 
@@ -124,7 +124,7 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[6].Menu!.Items;
+        var helpItems = topLevelItems[^1].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -260,7 +260,8 @@ public sealed class MainWindowTests : IDisposable
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
         window.Show();
-        var showGrid = ToolbarButtons(window).OfType<ToggleButton>().Single();
+        var showGrid = ToolbarButtons(window).OfType<ToggleButton>()
+            .Single(button => (string?)button.Content == UiText.WithoutAccessKey(Strings.ActionShowGrid));
 
         _canvas.ViewModel.ToggleGrid();
 

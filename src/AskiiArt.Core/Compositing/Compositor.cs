@@ -10,7 +10,7 @@ namespace AskiiArt.Core.Compositing;
 /// compositing implementation: the renderer, exporters, clipboard and magic wand all use it.
 /// </summary>
 /// <remarks>
-/// At each cell, the topmost visible layer whose cell hides the layers below (by the
+/// At each cell, the topmost visible layer whose cell hides the layers below (by that layer's
 /// <see cref="CompositingPolicy"/>) wins. If no layer does, the result is <see cref="Cell.Empty"/>.
 /// Layer opacity and blend modes are reserved and ignored (§18).
 /// </remarks>
@@ -18,10 +18,9 @@ public static class Compositor
 {
     /// <summary>Returns the composited cell at <paramref name="point"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The point is outside the canvas.</exception>
-    public static Cell CompositeCell(Frame frame, CellPoint point, CompositingPolicy policy)
+    public static Cell CompositeCell(Frame frame, CellPoint point)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(policy);
 
         var layers = frame.Layers;
         for (var index = layers.Count - 1; index >= 0; index--)
@@ -31,7 +30,7 @@ public static class Compositor
                 continue;
 
             var cell = layer.GetCell(point);
-            if (policy.HidesLayersBelow(cell))
+            if (CompositingPolicy.For(layer.Properties.SpaceHandling).HidesLayersBelow(cell))
                 return cell;
         }
 
@@ -44,10 +43,9 @@ public static class Compositor
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The region isn't inside the canvas.</exception>
     /// <exception cref="ArgumentException">The destination is shorter than the region's area.</exception>
-    public static void CompositeRegion(Frame frame, CellRect region, CompositingPolicy policy, Span<Cell> destination)
+    public static void CompositeRegion(Frame frame, CellRect region, Span<Cell> destination)
     {
         ArgumentNullException.ThrowIfNull(frame);
-        ArgumentNullException.ThrowIfNull(policy);
 
         var canvasSize = frame.Document.CanvasSize;
         if (!canvasSize.Bounds.Contains(region))
@@ -66,6 +64,7 @@ public static class Compositor
             if (!layer.Properties.IsVisible)
                 continue;
 
+            var policy = CompositingPolicy.For(layer.Properties.SpaceHandling);
             for (var row = 0; row < region.Height; row++)
             {
                 var source = layer.GetRow(region.Y + row).Slice(region.X, region.Width);

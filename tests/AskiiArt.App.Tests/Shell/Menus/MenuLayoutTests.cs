@@ -24,7 +24,7 @@ public sealed class MenuLayoutTests
     ];
 
     [Fact]
-    public void WindowsAndLinux_HaveFile_Edit_Document_View_AndHelpWithOpenLogFolderAndAbout()
+    public void WindowsAndLinux_HaveTheirMenus_AndHelpWithOpenLogFolderAndAbout()
     {
         var layout = MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false);
 
@@ -40,6 +40,7 @@ public sealed class MenuLayoutTests
             AssertIsEditMenu,
             AssertIsDocumentMenu,
             AssertIsLayerMenu,
+            AssertIsToolsMenu,
             AssertIsViewMenu,
             AssertIsWindowMenu,
             help =>
@@ -73,6 +74,7 @@ public sealed class MenuLayoutTests
             AssertIsEditMenu,
             AssertIsDocumentMenu,
             AssertIsLayerMenu,
+            AssertIsToolsMenu,
             AssertIsViewMenu,
             AssertIsWindowMenu,
             help =>
@@ -161,6 +163,12 @@ public sealed class MenuLayoutTests
             LayerActionIds.MoveDown,
             LayerActionIds.MergeDown
         ], ActionIdsIn(menu.Entries));
+    }
+
+    private static void AssertIsToolsMenu(MenuDefinition menu)
+    {
+        Assert.Equal(nameof(Strings.MenuTools), menu.LabelKey);
+        Assert.Equal([ToolActionIds.Text, ToolActionIds.Eraser], ActionIdsIn(menu.Entries));
     }
 
     private static void AssertIsViewMenu(MenuDefinition view)
