@@ -28,6 +28,9 @@ public sealed class MoveLayerCommand : IDocumentCommand
     public int NewIndex { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.MoveLayer;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes => EstimatedSizeInBytes;
 
     /// <inheritdoc/>

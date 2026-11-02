@@ -7,9 +7,12 @@ using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Tests.Fakes;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Dock.Avalonia.Controls;
+using Dock.Model;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -37,45 +40,18 @@ public sealed class ShellDockTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void DefaultLayout_HasEveryPanel_WithTheMenuBarOutsideMacOS()
+    public void DefaultLayout_HasEveryPanel()
     {
-        ShowWindow(hasMenuBarPanel: true);
+        ShowWindow();
 
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.MenuBarPanel));
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.ToolbarPanel));
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.StatusBarPanel));
         Assert.True(_dock.IsPanelOpen(ShellDockIds.LayersPanel));
         Assert.True(_dock.IsPanelOpen(ShellDockIds.HistoryPanel));
     }
 
     [AvaloniaFact]
-    public void OnMacOS_ThereIsNoMenuBarPanel()
-    {
-        ShowWindow(hasMenuBarPanel: false);
-
-        Assert.False(_dock.IsPanelOpen(ShellDockIds.MenuBarPanel));
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.ToolbarPanel));
-    }
-
-    [AvaloniaFact]
-    public void TheMenuBarToolbarAndStatusBar_CantBeClosedMovedOrFloated()
-    {
-        var host = ShowWindow(hasMenuBarPanel: true);
-        var root = (IRootDock)host.Layout!;
-
-        foreach (var id in new[] { ShellDockIds.MenuBarPanel, ShellDockIds.ToolbarPanel, ShellDockIds.StatusBarPanel })
-        {
-            var panel = ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == id);
-            Assert.False(panel.CanClose);
-            Assert.False(panel.CanDrag);
-            Assert.False(panel.CanFloat);
-        }
-    }
-
-    [AvaloniaFact]
     public void TogglingAPanel_ClosesItAndBringsItBack_AndEachChangeIsAnnounced()
     {
-        ShowWindow(hasMenuBarPanel: true);
+        ShowWindow();
         var changes = 0;
         _dock.PanelsChanged += (_, _) => changes++;
 
@@ -92,7 +68,7 @@ public sealed class ShellDockTests : IDisposable
     [AvaloniaFact]
     public void ClosingBothMovablePanels_ThenReopeningOne_PutsItBesideTheCanvasAtTheSideWidth()
     {
-        var host = ShowWindow(hasMenuBarPanel: true);
+        var host = ShowWindow();
         _dock.TogglePanel(ShellDockIds.HistoryPanel);
         _dock.TogglePanel(ShellDockIds.LayersPanel);
         Pump();
@@ -104,20 +80,21 @@ public sealed class ShellDockTests : IDisposable
         var layers = ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == ShellDockIds.LayersPanel);
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!);
         Assert.Equal(metrics.SideWidth, layers.Owner!.MaxWidth);
-        Assert.False(ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == ShellDockIds.CanvasDock).Owner is null);
+        Assert.False(ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == ShellDockIds.CanvasDock)
+            .Owner is null);
     }
 
     [AvaloniaFact]
     public void ALayout_SurvivesSavingAndABuiltFromScratchWindow()
     {
         // On macOS each opening builds a new window (ADR 0023), so restoring has to work more than once.
-        ShowWindow(hasMenuBarPanel: true);
+        ShowWindow();
         _dock.TogglePanel(ShellDockIds.HistoryPanel);
         _dock.SaveAndDetach();
 
         for (var opening = 0; opening < 2; opening++)
         {
-            ShowWindow(hasMenuBarPanel: true);
+            ShowWindow();
             Assert.False(_dock.IsPanelOpen(ShellDockIds.HistoryPanel));
             Assert.True(_dock.IsPanelOpen(ShellDockIds.LayersPanel));
             _dock.SaveAndDetach();
@@ -127,16 +104,17 @@ public sealed class ShellDockTests : IDisposable
     [AvaloniaFact]
     public void AFloatingPanel_SurvivesSaving_AndStaysInsideTheWindow()
     {
-        var host = ShowWindow(hasMenuBarPanel: true);
+        var host = ShowWindow();
         var root = (IRootDock)host.Layout!;
         var factory = (ShellDockFactory)host.Factory!;
-        factory.FloatDockable(ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel));
+        factory.FloatDockable(ShellDockFactory.AllDockables(root)
+            .Single(dockable => dockable.Id == ShellDockIds.HistoryPanel));
         Pump();
         Assert.Equal(DockFloatingWindowHostMode.Managed, root.FloatingWindowHostMode);
         Assert.Single(root.Windows!);
         _dock.SaveAndDetach();
 
-        var rebuilt = ShowWindow(hasMenuBarPanel: true);
+        var rebuilt = ShowWindow();
 
         var restored = (IRootDock)rebuilt.Layout!;
         Assert.Single(restored.Windows!);
@@ -144,13 +122,104 @@ public sealed class ShellDockTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void AFloatingPanel_ComesBackOnScreen_WhereItWas()
+    {
+        var host = ShowWindow();
+        var factory = (ShellDockFactory)host.Factory!;
+        factory.FloatDockable(Panel(host, ShellDockIds.HistoryPanel));
+        Pump();
+        ((IRootDock)host.Layout!).Windows!.Single().Host!.SetPosition(150, 120);
+        _dock.SaveAndDetach();
+
+        var rebuilt = ShowWindow();
+
+        var restored = ((IRootDock)rebuilt.Layout!).Windows!.Single();
+        Assert.Contains(restored.Host, ((ShellDockFactory)rebuilt.Factory!).HostWindows);
+        restored.Host!.GetPosition(out var x, out var y);
+        Assert.Equal((150, 120), (x, y));
+        Assert.Contains(rebuilt.GetVisualDescendants().OfType<ToolChromeControl>(),
+            chrome => chrome.DataContext is IDock { ActiveDockable.Id: ShellDockIds.HistoryPanel });
+    }
+
+    [AvaloniaFact]
+    public void AFloatingPanelSavedOutsideASmallerWindow_ComesBackInsideIt()
+    {
+        var host = ShowWindow();
+        ((ShellDockFactory)host.Factory!).FloatDockable(Panel(host, ShellDockIds.HistoryPanel));
+        Pump();
+        var floating = ((IRootDock)host.Layout!).Windows!.Single();
+        floating.Host!.SetSize(200, 100);
+        floating.Host.SetPosition(5000, 5000);
+        _dock.SaveAndDetach();
+
+        var rebuilt = ShowWindow();
+
+        ((IRootDock)rebuilt.Layout!).Windows!.Single().Host!.GetPosition(out var x, out var y);
+        Assert.Equal((rebuilt.Bounds.Width - 200, rebuilt.Bounds.Height - 100), (x, y));
+    }
+
+    [AvaloniaFact]
+    public void FloatingAPanelThatAlreadyFloatsAlone_DoesNothing()
+    {
+        var host = ShowWindow();
+        var factory = (ShellDockFactory)host.Factory!;
+        factory.FloatDockable(Panel(host, ShellDockIds.HistoryPanel));
+        Pump();
+        var floating = ((IRootDock)host.Layout!).Windows!.Single();
+
+        factory.FloatDockable(Panel(host, ShellDockIds.HistoryPanel));
+        Pump();
+
+        Assert.Same(floating, ((IRootDock)host.Layout!).Windows!.Single());
+    }
+
+    [AvaloniaFact]
+    public void ReopeningAPanel_DocksIt_EvenWhenTheOnlyOtherPanelFloats()
+    {
+        var host = ShowWindow();
+        var root = (IRootDock)host.Layout!;
+        _dock.TogglePanel(ShellDockIds.LayersPanel);
+        ((ShellDockFactory)host.Factory!).FloatDockable(Panel(host, ShellDockIds.HistoryPanel));
+        Pump();
+
+        _dock.TogglePanel(ShellDockIds.LayersPanel);
+        Pump();
+
+        var floatingLayout = (IRootDock)root.Windows!.Single().Layout!;
+        Assert.DoesNotContain(ShellDockFactory.AllDockables(floatingLayout),
+            dockable => dockable.Id == ShellDockIds.LayersPanel);
+        Assert.True(_dock.IsPanelOpen(ShellDockIds.LayersPanel));
+    }
+
+    [AvaloniaFact]
+    public void APanelDockedAroundTheWholeLayout_SurvivesSaving()
+    {
+        var host = ShowWindow();
+        var root = (IRootDock)host.Layout!;
+        var outermost = root.VisibleDockables!.OfType<IDock>().Single();
+        var dock = new DockManager(new DockService());
+        Assert.True(dock.ValidateDockable(Panel(host, ShellDockIds.HistoryPanel), outermost, DragAction.Move,
+            DockOperation.Left, bExecute: true));
+        Pump();
+        _dock.SaveAndDetach();
+
+        var rebuilt = ShowWindow();
+
+        Assert.Contains(rebuilt.GetVisualDescendants().OfType<ToolChromeControl>(),
+            chrome => chrome.DataContext is IDock { ActiveDockable.Id: ShellDockIds.HistoryPanel });
+        Assert.Contains(rebuilt.GetVisualDescendants().OfType<ToolChromeControl>(),
+            chrome => chrome.DataContext is IDock { ActiveDockable.Id: ShellDockIds.LayersPanel });
+    }
+
+    [AvaloniaFact]
     public void ResetLayout_RestoresEveryPanel_AndClosesFloatingOnes()
     {
-        var host = ShowWindow(hasMenuBarPanel: true);
+        var host = ShowWindow();
         var factory = (ShellDockFactory)host.Factory!;
         _dock.TogglePanel(ShellDockIds.LayersPanel);
         var root = (IRootDock)host.Layout!;
-        factory.FloatDockable(ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel));
+        factory.FloatDockable(ShellDockFactory.AllDockables(root)
+            .Single(dockable => dockable.Id == ShellDockIds.HistoryPanel));
         Pump();
 
         _dock.ResetLayout();
@@ -169,28 +238,16 @@ public sealed class ShellDockTests : IDisposable
     {
         _settings.SetText(ShellDock.LayoutSettingKey, saved);
 
-        ShowWindow(hasMenuBarPanel: true);
+        ShowWindow();
 
         Assert.True(_dock.IsPanelOpen(ShellDockIds.LayersPanel));
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.MenuBarPanel));
-    }
-
-    [AvaloniaFact]
-    public void ALayoutSavedWithoutTheMenuBar_IsNotUsedWhereTheMenuBarIsNeeded()
-    {
-        ShowWindow(hasMenuBarPanel: false);
-        _dock.SaveAndDetach();
-
-        ShowWindow(hasMenuBarPanel: true);
-
-        Assert.True(_dock.IsPanelOpen(ShellDockIds.MenuBarPanel));
     }
 
     [AvaloniaFact]
     public void WindowMenuToggles_FollowThePanels()
     {
         var actions = new ActionRegistry([new ShellDockActions(_dock)]);
-        ShowWindow(hasMenuBarPanel: true);
+        ShowWindow();
         var toggle = actions.Get(ShellDockActionIds.ToggleHistory);
         var notifications = 0;
         toggle.CheckedState!.Changed += (_, _) => notifications++;
@@ -213,14 +270,14 @@ public sealed class ShellDockTests : IDisposable
         Assert.Equal(Strings.PanelHistory, ShellDockIds.PanelTitle(ShellDockIds.HistoryPanel));
     }
 
-    private DockControl ShowWindow(bool hasMenuBarPanel)
+    private DockControl ShowWindow()
     {
         var host = new DockControl { InitializeFactory = true, EnableManagedWindowLayer = true };
         var window = new Window { Width = 1000, Height = 700, Content = host };
         _windows.Add(window);
 
         var views = new Dictionary<string, Func<Control>>(StringComparer.Ordinal);
-        _dock.Attach(host, new ShellDockFactory(ShellLayoutMetrics.FromResources(Application.Current!), hasMenuBarPanel),
+        _dock.Attach(host, new ShellDockFactory(ShellLayoutMetrics.FromResources(Application.Current!)),
             new ShellPanelTemplates(views));
 
         window.Show();
@@ -228,5 +285,15 @@ public sealed class ShellDockTests : IDisposable
         return host;
     }
 
-    private static void Pump() => Dispatcher.UIThread.RunJobs();
+    private static IDockable Panel(DockControl host, string panelId) =>
+        ShellDockFactory.AllDockables((IRootDock)host.Layout!).Single(dockable => dockable.Id == panelId);
+
+    private static void Pump()
+    {
+        for (var pass = 0; pass < 5; pass++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        }
+    }
 }

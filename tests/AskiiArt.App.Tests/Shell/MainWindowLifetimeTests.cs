@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -114,7 +115,8 @@ public sealed class MainWindowLifetimeTests : IDisposable
         var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
             ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
-            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings);
+            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings,
+            new HistoryPanelViewModel(_canvas.ActiveDocument));
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);
         _lifetimes.Add(lifetime);

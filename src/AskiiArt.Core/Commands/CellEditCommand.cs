@@ -21,10 +21,11 @@ public sealed class CellEditCommand : IMergeableCommand
 
     private readonly CellEdit[] _edits;
 
-    internal CellEditCommand(Guid layerId, CellEdit[] edits)
+    internal CellEditCommand(Guid layerId, CellEdit[] edits, string stepNameKey = UndoStepNames.EditCells)
     {
         LayerId = layerId;
         _edits = edits;
+        StepNameKey = stepNameKey;
     }
 
     /// <summary>The layer whose cells change.</summary>
@@ -32,6 +33,9 @@ public sealed class CellEditCommand : IMergeableCommand
 
     /// <summary>The changes, ordered by cell index, at most one per cell.</summary>
     public IReadOnlyList<CellEdit> Edits => _edits;
+
+    /// <inheritdoc/>
+    public string StepNameKey { get; }
 
     /// <inheritdoc/>
     public long EstimatedMemoryInBytes => FixedOverheadInBytes + ((long)_edits.Length * Unsafe.SizeOf<CellEdit>());
@@ -55,6 +59,7 @@ public sealed class CellEditCommand : IMergeableCommand
     /// <summary>
     /// Merges with a later cell edit of the same layer. Each cell keeps its first "before" and its
     /// last "after"; cells that end up unchanged are dropped, so the merged command may be empty.
+    /// The merged step keeps this command's name.
     /// </summary>
     public bool TryMergeWith(IDocumentCommand following, [NotNullWhen(true)] out IDocumentCommand? merged)
     {
@@ -77,7 +82,7 @@ public sealed class CellEditCommand : IMergeableCommand
             .Where(edit => edit.Before != edit.After)
             .OrderBy(edit => edit.Index)
             .ToArray();
-        merged = new CellEditCommand(LayerId, combined);
+        merged = new CellEditCommand(LayerId, combined, StepNameKey);
         return true;
     }
 

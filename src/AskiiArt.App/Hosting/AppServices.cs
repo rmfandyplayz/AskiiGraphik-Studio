@@ -70,6 +70,7 @@ internal static class AppServices
         services.AddSingleton<IDocumentDialogs, AvaloniaDocumentDialogs>();
         services.AddSingleton<DocumentFiles>();
         services.AddSingleton<WindowTitle>();
+        services.AddSingleton<HistoryPanelViewModel>();
 
         // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). Text
         // flattens with the same policy as the canvas.

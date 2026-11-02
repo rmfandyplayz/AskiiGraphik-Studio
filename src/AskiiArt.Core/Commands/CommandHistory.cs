@@ -57,6 +57,9 @@ public sealed class CommandHistory
     /// <summary>The number of steps that can be redone.</summary>
     public int RedoCount => _entries.Count - _position;
 
+    /// <summary>The number of steps in the history, undoable and redoable together.</summary>
+    public int StepCount => _entries.Count;
+
     /// <summary>True when there's a step to undo.</summary>
     public bool CanUndo => UndoCount > 0;
 
@@ -68,6 +71,12 @@ public sealed class CommandHistory
     /// Undoing or redoing back to that point makes it false again.
     /// </summary>
     public bool HasUnsavedChanges => _savedPosition != _position;
+
+    /// <summary>
+    /// The name of a step: a key from <see cref="UndoStepNames"/>. Steps are numbered oldest first,
+    /// so those below <see cref="UndoCount"/> can be undone and the rest can be redone.
+    /// </summary>
+    public string GetStepNameKey(int step) => _entries[step].Command.StepNameKey;
 
     /// <summary>
     /// Applies <paramref name="command"/> and records it as a new step, dropping any redo steps.
@@ -103,11 +112,7 @@ public sealed class CommandHistory
         if (!CanUndo)
             throw new InvalidOperationException("There's nothing to undo.");
 
-        using (Document.BeginChanges())
-            _entries[_position - 1].Command.Revert(Document);
-
-        _position--;
-        _mergeTarget = null;
+        UndoOneStep();
         RaiseStateChanged();
     }
 
@@ -118,12 +123,34 @@ public sealed class CommandHistory
         if (!CanRedo)
             throw new InvalidOperationException("There's nothing to redo.");
 
-        using (Document.BeginChanges())
-            _entries[_position].Command.Apply(Document);
-
-        _position++;
-        _mergeTarget = null;
+        RedoOneStep();
         RaiseStateChanged();
+    }
+
+    /// <summary>
+    /// Undoes or redoes as many steps as it takes for <see cref="UndoCount"/> to be
+    /// <paramref name="undoCount"/>. The document sees ordinary undos and redos, one per step.
+    /// </summary>
+    public void JumpTo(int undoCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(undoCount);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(undoCount, StepCount);
+
+        if (undoCount == _position)
+            return;
+
+        try
+        {
+            while (_position > undoCount)
+                UndoOneStep();
+
+            while (_position < undoCount)
+                RedoOneStep();
+        }
+        finally
+        {
+            RaiseStateChanged();
+        }
     }
 
     /// <summary>Records that the document was just saved, so it has no unsaved changes.</summary>
@@ -168,6 +195,24 @@ public sealed class CommandHistory
 
         _savedPosition = isReachable ? (int)position : null;
         RaiseStateChanged();
+    }
+
+    private void UndoOneStep()
+    {
+        using (Document.BeginChanges())
+            _entries[_position - 1].Command.Revert(Document);
+
+        _position--;
+        _mergeTarget = null;
+    }
+
+    private void RedoOneStep()
+    {
+        using (Document.BeginChanges())
+            _entries[_position].Command.Apply(Document);
+
+        _position++;
+        _mergeTarget = null;
     }
 
     private bool TryMergeIntoLastEntry(IDocumentCommand command, CoalescingGroup? group)

@@ -67,8 +67,34 @@ public sealed class CanvasViewTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void TheScrollbars_AreOffByDefault_AndTakeNoSpace()
+    {
+        _view.SetCoveredByWidgets(new Avalonia.Thickness(10, 20, 30, 40));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(ScrollBar(Avalonia.Layout.Orientation.Vertical).IsEffectivelyVisible);
+        Assert.False(ScrollBar(Avalonia.Layout.Orientation.Horizontal).IsEffectivelyVisible);
+        Assert.Equal(30, Control.Viewport!.Insets.Right);
+        Assert.Equal(40, Control.Viewport!.Insets.Bottom);
+    }
+
+    [AvaloniaFact]
+    public void TurningTheScrollbarsOn_ShowsThem_AndKeepsTheCanvasClearOfThem()
+    {
+        _view.SetCoveredByWidgets(new Avalonia.Thickness(10, 20, 30, 40));
+
+        _view.ShowScrollBars = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(ScrollBar(Avalonia.Layout.Orientation.Vertical).IsEffectivelyVisible);
+        Assert.True(Control.Viewport!.Insets.Right > 30);
+        Assert.True(Control.Viewport!.Insets.Bottom > 40);
+    }
+
+    [AvaloniaFact]
     public void WidgetsCoveringTheEdges_MoveTheScrollbarsAndShrinkWhatTheyScroll()
     {
+        _view.ShowScrollBars = true;
         var viewportBefore = Control.VerticalViewport;
 
         _view.SetCoveredByWidgets(new Avalonia.Thickness(10, 20, 30, 40));

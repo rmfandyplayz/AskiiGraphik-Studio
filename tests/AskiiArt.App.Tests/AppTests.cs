@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
@@ -65,6 +66,7 @@ public sealed class AppTests : IDisposable
         var settings = new FakeAppSettings();
         services.AddSingleton<IAppSettings>(settings);
         services.AddSingleton(new ShellDock(settings, NullLogger<ShellDock>.Instance));
+        services.AddSingleton(new HistoryPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ToolbarLayout.CreateDefault());

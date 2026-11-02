@@ -5,6 +5,7 @@ using System.ComponentModel;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
+using AskiiArt.App.Editing;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
@@ -32,7 +33,8 @@ internal sealed class MainWindowBuilder(
     DocumentFiles files,
     IAppShell shell,
     ShellDock panels,
-    IAppSettings settings)
+    IAppSettings settings,
+    HistoryPanelViewModel history)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -41,6 +43,7 @@ internal sealed class MainWindowBuilder(
 
         FollowTitle(window);
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
+        ShowTopBar(window);
         ShowPanels(window);
         AddKeyBindings(window, platformCommandModifiers);
         AskAboutUnsavedChangesBeforeClosing(window);
@@ -49,23 +52,23 @@ internal sealed class MainWindowBuilder(
         return window;
     }
 
+    // On macOS the menus are in the system menu bar. Elsewhere NativeMenuBar shows the window's native menu.
+    private void ShowTopBar(MainWindow window)
+    {
+        window.SetMenuBar(layout.IsSystemMenuBar ? null : new NativeMenuBar());
+        window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
+    }
+
     private void ShowPanels(MainWindow window)
     {
         var views = new Dictionary<string, Func<Control>>(StringComparer.Ordinal)
         {
-            [ShellDockIds.ToolbarPanel] = () => new ToolbarBuilder(actions).Build(toolbar),
-            [ShellDockIds.StatusBarPanel] = () => new StatusBarView { DataContext = canvas },
-            [ShellDockIds.HistoryPanel] = () => new PanelPlaceholderView(),
+            [ShellDockIds.HistoryPanel] = () => new HistoryPanelView { DataContext = history },
             [ShellDockIds.LayersPanel] = () => new PanelPlaceholderView(),
         };
 
-        // On macOS the menus are in the system menu bar. This shows the window's native menu.
-        if (!layout.IsSystemMenuBar)
-            views[ShellDockIds.MenuBarPanel] = () => new NativeMenuBar();
-
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
-        panels.Attach(window.Panels, new ShellDockFactory(metrics, hasMenuBarPanel: !layout.IsSystemMenuBar),
-            new ShellPanelTemplates(views));
+        panels.Attach(window.Panels, new ShellDockFactory(metrics), new ShellPanelTemplates(views));
         window.Closed += (_, _) => panels.SaveAndDetach();
     }
 

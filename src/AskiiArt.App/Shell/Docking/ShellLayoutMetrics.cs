@@ -5,14 +5,19 @@ using Avalonia.Controls;
 
 namespace AskiiArt.App.Shell.Docking;
 
-/// <summary>The sizes of the docks, from the theme tokens, in logical pixels.</summary>
-internal sealed record ShellLayoutMetrics(double SideWidth, double MenuBarHeight, double ToolbarHeight, double StatusBarHeight)
+/// <summary>The shell's sizes, from the theme tokens, in logical pixels.</summary>
+internal sealed record ShellLayoutMetrics(
+    double SideWidth,
+    double WindowMinWidth,
+    double WindowMinHeight,
+    double ToolbarWheelStep)
 {
-    public static ShellLayoutMetrics FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
+    public static ShellLayoutMetrics
+        FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
         Token(resources, "AppDockSideWidth", theme),
-        Token(resources, "AppDockMenuBarHeight", theme),
-        Token(resources, "AppDockToolbarHeight", theme),
-        Token(resources, "AppDockStatusBarHeight", theme));
+        Token(resources, "AppWindowMinWidth", theme),
+        Token(resources, "AppWindowMinHeight", theme),
+        Token(resources, "AppToolbarWheelStep", theme));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

@@ -18,6 +18,7 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#FFF3F3F3" />
+      <SolidColorBrush x:Key="AppWidgetBorderBrush" Color="#FFC8C8C8" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -31,6 +32,7 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#FF2B2B2B" />
+      <SolidColorBrush x:Key="AppWidgetBorderBrush" Color="#FF5A5A5A" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -57,14 +59,21 @@
   <Thickness x:Key="AppToolbarPadding">8,4</Thickness>
   <!-- The extra gap between groups of toolbar buttons. -->
   <x:Double x:Key="AppToolbarGroupGap">12</x:Double>
+  <!-- How far one notch of the wheel moves a toolbar that doesn't fit. -->
+  <x:Double x:Key="AppToolbarWheelStep">50</x:Double>
 
   <!-- Widgets and the docks that hold them -->
   <Thickness x:Key="AppWidgetMargin">4</Thickness>
   <Thickness x:Key="AppWidgetContentPadding">8</Thickness>
+  <Thickness x:Key="AppWidgetBorderThickness">1</Thickness>
   <x:Double x:Key="AppDockSideWidth">240</x:Double>
-  <x:Double x:Key="AppDockMenuBarHeight">44</x:Double>
-  <x:Double x:Key="AppDockToolbarHeight">52</x:Double>
-  <x:Double x:Key="AppDockStatusBarHeight">36</x:Double>
+
+  <!-- History panel -->
+  <Thickness x:Key="AppHistoryRowPadding">8,4</Thickness>
+
+  <!-- The main window's smallest size, unless the screen has less room (WindowMinimumSize). -->
+  <x:Double x:Key="AppWindowMinWidth">1280</x:Double>
+  <x:Double x:Key="AppWindowMinHeight">720</x:Double>
 
   <!-- Dialogs -->
   <Thickness x:Key="AppDialogButtonsMargin">0,16,0,0</Thickness>

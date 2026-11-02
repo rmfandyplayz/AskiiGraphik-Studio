@@ -10,27 +10,13 @@ namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>
 /// Creates the shell's default layout and its panels (ADR 0025), and keeps layouts within its rules:
-/// the menu bar, toolbar and status bar stay put, and side panels keep a fixed size however they got
-/// docked. On macOS the menu bar lives in the system menu bar, so there's no panel for it.
+/// nothing lands on the canvas's dock, and side panels keep a fixed size however they got docked.
 /// </summary>
-internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuBarPanel) : Factory
+internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
 {
     public override IRootDock CreateLayout()
     {
-        var rows = new List<IDockable>();
-        if (hasMenuBarPanel)
-            rows.Add(CreateFixedRow(ShellDockIds.MenuBarDock, ShellDockIds.MenuBarPanel, metrics.MenuBarHeight));
-
-        rows.Add(CreateFixedRow(ShellDockIds.ToolbarDock, ShellDockIds.ToolbarPanel, metrics.ToolbarHeight));
-        rows.Add(CreateMiddleRow());
-        rows.Add(CreateFixedRow(ShellDockIds.StatusBarDock, ShellDockIds.StatusBarPanel, metrics.StatusBarHeight));
-
-        var main = new ProportionalDock
-        {
-            Orientation = Orientation.Vertical,
-            VisibleDockables = CreateList([.. rows]),
-        };
-
+        var main = CreateMainRow();
         var root = CreateRootDock();
         root.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
         root.VisibleDockables = CreateList<IDockable>(main);
@@ -68,15 +54,15 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuB
     }
 
     /// <summary>
-    /// False when a saved layout lacks something the shell can't do without, for example because
-    /// it came from an older version.
+    /// False when a saved layout lacks the canvas's dock or holds panels the shell doesn't have, for
+    /// example because it came from another version.
     /// </summary>
-    public bool IsUsable(IRootDock root)
+    public static bool IsUsable(IRootDock root)
     {
-        var ids = AllDockables(root).Select(dockable => dockable.Id).ToHashSet(StringComparer.Ordinal);
+        var dockables = AllDockables(root).ToList();
 
-        return ids.Contains(ShellDockIds.CanvasDock) && ids.Contains(ShellDockIds.ToolbarPanel) &&
-               ids.Contains(ShellDockIds.StatusBarPanel) && ids.Contains(ShellDockIds.MenuBarPanel) == hasMenuBarPanel;
+        return dockables.Any(dockable => dockable.Id == ShellDockIds.CanvasDock) &&
+               dockables.OfType<ITool>().All(panel => ShellDockIds.IsPanel(panel.Id));
     }
 
     /// <summary>Shows titles in the current language; a saved layout has the old language's.</summary>
@@ -86,12 +72,12 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuB
             dockable.Title = ShellDockIds.PanelTitle(dockable.Id);
     }
 
-    /// <summary>Puts a panel back: beside another movable panel, or at the side of the canvas if there's none.</summary>
+    /// <summary>Puts a panel back: beside a docked panel, or at the side of the canvas if there's none.</summary>
     public void OpenPanel(IRootDock root, string panelId)
     {
         var panel = CreatePanel(panelId);
-        var host = AllDockables(root).OfType<IToolDock>()
-            .FirstOrDefault(dock => dock.CanDrop && dock.VisibleDockables is { Count: > 0 });
+        var host = Descendants(root).OfType<IToolDock>()
+            .FirstOrDefault(dock => dock.VisibleDockables is { Count: > 0 });
 
         if (host is not null)
         {
@@ -117,6 +103,18 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuB
         if (dockable is not null && FindRoot(dockable, _ => true) is { } root)
             ApplySideSizes(root);
     }
+
+    // Dock's menu offers Float on a panel that already floats alone. Floating it again would only
+    // make a new window, a little smaller than the last.
+    public override void FloatDockable(IDockable dockable, DockWindowOptions? options)
+    {
+        if (!IsFloatingAlone(dockable))
+            base.FloatDockable(dockable, options);
+    }
+
+    private bool IsFloatingAlone(IDockable dockable) =>
+        FindRoot(dockable, _ => true) is { } root && !ContainsCanvasDock(root) &&
+        Descendants(root).Count(descendant => descendant is ITool) == 1;
 
     // A new split doesn't know the shell's sizes. Without this, a panel dropped beside the canvas
     // would take half of the canvas's space.
@@ -157,13 +155,16 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuB
         }
     }
 
-    private ProportionalDock CreateMiddleRow()
+    private ProportionalDock CreateMainRow()
     {
+        // With CanDrop off, Dock shows no targets at all over this dock, not even the window-edge
+        // ones. So it accepts drops, and its docking group is what keeps panels off it: it offers no
+        // target of its own, and releasing a panel over it floats the panel.
         var canvas = new ToolDock
         {
             Id = ShellDockIds.CanvasDock,
+            DockGroup = ShellDockIds.CanvasDockGroup,
             IsCollapsable = false,
-            CanDrop = false,
             CanDrag = false,
             CanFloat = false,
             CanClose = false,
@@ -193,35 +194,4 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics, bool hasMenuB
         VisibleDockables = CreateList<IDockable>(panel),
         ActiveDockable = panel,
     };
-
-    private ToolDock CreateFixedRow(string dockId, string panelId, double height)
-    {
-        var panel = new Tool
-        {
-            Id = panelId,
-            Title = ShellDockIds.PanelTitle(panelId),
-            CanClose = false,
-            CanDrag = false,
-            CanDrop = false,
-            CanFloat = false,
-            CanPin = false,
-            CanDockAsDocument = false,
-        };
-
-        return new ToolDock
-        {
-            Id = dockId,
-            GripMode = GripMode.Hidden,
-            IsCollapsable = false,
-            CanClose = false,
-            CanDrag = false,
-            CanDrop = false,
-            CanFloat = false,
-            CanPin = false,
-            MinHeight = height,
-            MaxHeight = height,
-            VisibleDockables = CreateList<IDockable>(panel),
-            ActiveDockable = panel,
-        };
-    }
 }

@@ -54,13 +54,14 @@ public sealed class CellEditBuilder
     }
 
     /// <summary>Returns the command, or null when no cell would actually change.</summary>
-    public CellEditCommand? Build()
+    /// <param name="stepNameKey">Names the step in the history: a key from <see cref="UndoStepNames"/>.</param>
+    public CellEditCommand? Build(string stepNameKey = UndoStepNames.EditCells)
     {
         var edits = _editsByIndex.Values
             .Where(edit => edit.Before != edit.After)
             .OrderBy(edit => edit.Index)
             .ToArray();
 
-        return edits.Length == 0 ? null : new CellEditCommand(_layer.Id, edits);
+        return edits.Length == 0 ? null : new CellEditCommand(_layer.Id, edits, stepNameKey);
     }
 }

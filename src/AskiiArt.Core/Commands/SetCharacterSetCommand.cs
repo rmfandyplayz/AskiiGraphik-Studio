@@ -30,6 +30,9 @@ public sealed class SetCharacterSetCommand : IDocumentCommand
     public CharacterSet NewCharacterSet { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.SetCharacterSet;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes =>
         FixedOverheadInBytes + ((long)_removedCells.Count * Unsafe.SizeOf<RemovedCell>());
 

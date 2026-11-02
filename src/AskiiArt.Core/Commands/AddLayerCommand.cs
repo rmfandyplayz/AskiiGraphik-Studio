@@ -33,6 +33,9 @@ public sealed class AddLayerCommand : IDocumentCommand
     public LayerProperties Properties { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.AddLayer;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes => EstimatedSizeInBytes;
 
     /// <inheritdoc/>

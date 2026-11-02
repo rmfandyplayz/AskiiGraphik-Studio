@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Commands;
+using AskiiArt.Core.Documents;
 
 namespace AskiiArt.Core.Tests.Commands;
 
@@ -26,6 +27,157 @@ public sealed class CommandHistoryTests
         Assert.Equal(["abc"], TestCells.Read(layer));
         Assert.True(history.CanUndo);
         Assert.False(history.CanRedo);
+    }
+
+    [Fact]
+    public void Steps_AreListedOldestFirst_WithTheirNames()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layer = document.ActiveFrame.Layers[0];
+        var history = new CommandHistory(document);
+
+        history.Execute(TestCommands.Paint(document, layer.Id, "a"));
+        history.Execute(new SetFontCommand(new FontReference("Another")));
+
+        Assert.Equal(2, history.StepCount);
+        Assert.Equal(UndoStepNames.EditCells, history.GetStepNameKey(0));
+        Assert.Equal(UndoStepNames.SetFont, history.GetStepNameKey(1));
+    }
+
+    [Fact]
+    public void MergedSteps_KeepTheFirstName()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layer = document.ActiveFrame.Layers[0];
+        var history = new CommandHistory(document);
+        var group = new CoalescingGroup();
+        var first = new CellEditBuilder(document, layer.Id);
+        first.Set(new CellPoint(0, 0), TestCells.Glyph('a'));
+        var second = new CellEditBuilder(document, layer.Id);
+        second.Set(new CellPoint(1, 0), TestCells.Glyph('b'));
+
+        history.Execute(first.Build(UndoStepNames.Typing)!, group);
+        history.Execute(second.Build()!, group);
+
+        Assert.Equal(1, history.StepCount);
+        Assert.Equal(UndoStepNames.Typing, history.GetStepNameKey(0));
+    }
+
+    [Fact]
+    public void ACompositeStep_TakesItsOwnNameOrItsFirstCommands()
+    {
+        var font = new SetFontCommand(new FontReference("Another"));
+
+        Assert.Equal(UndoStepNames.SetFont, new CompositeCommand([font]).StepNameKey);
+        Assert.Equal(UndoStepNames.Typing, new CompositeCommand([font], UndoStepNames.Typing).StepNameKey);
+    }
+
+    [Fact]
+    public void JumpTo_GoesBackAndForward_ThroughOrdinaryUndoAndRedo()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layer = document.ActiveFrame.Layers[0];
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, layer.Id, "a"));
+        history.Execute(TestCommands.Paint(document, layer.Id, "~b"));
+        history.Execute(TestCommands.Paint(document, layer.Id, "~~c"));
+
+        history.JumpTo(1);
+        Assert.Equal(["a··"], TestCells.Read(layer));
+        Assert.Equal((1, 2), (history.UndoCount, history.RedoCount));
+
+        history.JumpTo(3);
+        Assert.Equal(["abc"], TestCells.Read(layer));
+
+        history.JumpTo(0);
+        Assert.Equal(["···"], TestCells.Read(layer));
+        Assert.Equal((0, 3), (history.UndoCount, history.RedoCount));
+    }
+
+    [Fact]
+    public void JumpTo_AcrossAResize_RestoresTheCanvas()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layer = document.ActiveFrame.Layers[0];
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, layer.Id, "abc"));
+        history.Execute(new ResizeCanvasCommand(new CanvasSize(1, 1), ResizeAnchor.TopLeft));
+
+        history.JumpTo(0);
+        Assert.Equal(new CanvasSize(3, 1), layer.Size);
+        Assert.Equal(["···"], TestCells.Read(layer));
+
+        history.JumpTo(2);
+        Assert.Equal(new CanvasSize(1, 1), layer.Size);
+    }
+
+    [Fact]
+    public void JumpTo_ReportsOnce_AndNotAtAllWhenAlreadyThere()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layerId = document.ActiveFrame.Layers[0].Id;
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, layerId, "a"));
+        history.Execute(TestCommands.Paint(document, layerId, "~b"));
+        var reports = 0;
+        history.StateChanged += (_, _) => reports++;
+
+        history.JumpTo(0);
+        Assert.Equal(1, reports);
+
+        history.JumpTo(0);
+        Assert.Equal(1, reports);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(2)]
+    public void JumpTo_OutsideTheHistory_Throws(int undoCount)
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, document.ActiveFrame.Layers[0].Id, "a"));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => history.JumpTo(undoCount));
+    }
+
+    [Fact]
+    public void JumpTo_TheSavedStep_ClearsUnsavedChanges()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layerId = document.ActiveFrame.Layers[0].Id;
+        var history = new CommandHistory(document);
+        history.Execute(TestCommands.Paint(document, layerId, "a"));
+        history.MarkSaved();
+        history.Execute(TestCommands.Paint(document, layerId, "~b"));
+        history.Execute(TestCommands.Paint(document, layerId, "~~c"));
+        Assert.True(history.HasUnsavedChanges);
+
+        history.JumpTo(1);
+
+        Assert.False(history.HasUnsavedChanges);
+    }
+
+    [Fact]
+    public void AfterAJump_NewEdits_StartANewStep()
+    {
+        var document = TestCells.CreateDocument(3, 1);
+        var layer = document.ActiveFrame.Layers[0];
+        var history = new CommandHistory(document);
+        var group = new CoalescingGroup();
+        var first = new CellEditBuilder(document, layer.Id);
+        first.Set(new CellPoint(0, 0), TestCells.Glyph('a'));
+        history.Execute(first.Build()!, group);
+        var second = new CellEditBuilder(document, layer.Id);
+        second.Set(new CellPoint(1, 0), TestCells.Glyph('b'));
+        history.Execute(second.Build()!);
+        history.JumpTo(1);
+
+        var third = new CellEditBuilder(document, layer.Id);
+        third.Set(new CellPoint(2, 0), TestCells.Glyph('c'));
+        history.Execute(third.Build()!, group);
+
+        Assert.Equal(2, history.StepCount);
     }
 
     [Fact]

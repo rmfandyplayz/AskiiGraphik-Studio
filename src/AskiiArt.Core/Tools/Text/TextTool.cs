@@ -174,7 +174,7 @@ public sealed class TextTool : ITool
 
         // Stuck at the right edge, the caret is on what was just typed, so Backspace erases that.
         _backspaceErasesCaretCell = isStuckAtRightEdge;
-        Execute(cells.Build());
+        Execute(cells.Build(UndoStepNames.Typing));
         SetCaret(caret);
         return true;
     }
@@ -211,7 +211,7 @@ public sealed class TextTool : ITool
 
         var cells = new CellEditBuilder(Document, _session.ActiveLayer.Id);
         cells.Set(point, cell);
-        Execute(cells.Build());
+        Execute(cells.Build(UndoStepNames.Typing));
         _backspaceErasesCaretCell = false;
         SetCaret(nextCaret);
     }

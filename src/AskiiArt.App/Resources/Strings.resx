@@ -417,15 +417,6 @@
     <value>_Reset Layout</value>
     <comment>Window menu: puts every panel back where it started.</comment>
   </data>
-  <data name="PanelMenuBar" xml:space="preserve">
-    <value>Menu</value>
-  </data>
-  <data name="PanelToolbar" xml:space="preserve">
-    <value>Toolbar</value>
-  </data>
-  <data name="PanelStatusBar" xml:space="preserve">
-    <value>Status</value>
-  </data>
   <data name="PanelLayers" xml:space="preserve">
     <value>Layers</value>
   </data>
@@ -441,5 +432,35 @@
   </data>
   <data name="SettingsDamagedMessage" xml:space="preserve">
     <value>The settings file couldn't be read, so the default settings are in use. The old file was kept next to the new one with “damaged” in its name.</value>
+  </data>
+  <data name="HistoryStart" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="UndoStepEditCells" xml:space="preserve">
+    <value>Edit Cells</value>
+  </data>
+  <data name="UndoStepTyping" xml:space="preserve">
+    <value>Typing</value>
+  </data>
+  <data name="UndoStepResizeCanvas" xml:space="preserve">
+    <value>Resize Canvas</value>
+  </data>
+  <data name="UndoStepSetFont" xml:space="preserve">
+    <value>Change Font</value>
+  </data>
+  <data name="UndoStepSetCharacterSet" xml:space="preserve">
+    <value>Change Character Set</value>
+  </data>
+  <data name="UndoStepAddLayer" xml:space="preserve">
+    <value>Add Layer</value>
+  </data>
+  <data name="UndoStepRemoveLayer" xml:space="preserve">
+    <value>Delete Layer</value>
+  </data>
+  <data name="UndoStepMoveLayer" xml:space="preserve">
+    <value>Move Layer</value>
+  </data>
+  <data name="UndoStepSetLayerProperties" xml:space="preserve">
+    <value>Change Layer</value>
   </data>
 </root>

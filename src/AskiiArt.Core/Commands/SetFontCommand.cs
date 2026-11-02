@@ -27,6 +27,9 @@ public sealed class SetFontCommand : IDocumentCommand
     public FontReference NewFont { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.SetFont;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes => EstimatedSizeInBytes;
 
     /// <inheritdoc/>

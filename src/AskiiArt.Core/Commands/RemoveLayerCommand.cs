@@ -28,6 +28,9 @@ public sealed class RemoveLayerCommand : IDocumentCommand
     public Guid LayerId { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.RemoveLayer;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes =>
         FixedOverheadInBytes + ((long)(_removedLayer?.Size.CellCount ?? 0) * Unsafe.SizeOf<Cell>());
 

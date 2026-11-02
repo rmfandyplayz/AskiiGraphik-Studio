@@ -33,3 +33,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0024](0024-open-documents-are-not-locked.md) | Open documents are not locked | Accepted |
 | [0025](0025-dock-as-a-see-through-layer.md) | Dock as a see-through layer over the canvas | Accepted |
 | [0026](0026-settings-file.md) | The settings file | Accepted |
+| [0027](0027-top-bar-and-status-bar-outside-dock.md) | The top bar and status bar sit outside Dock | Accepted |
+| [0028](0028-named-undo-steps.md) | Named undo steps and the History panel | Accepted |

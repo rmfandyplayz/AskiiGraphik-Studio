@@ -31,6 +31,9 @@ public sealed class SetLayerPropertiesCommand : IDocumentCommand
     public LayerProperties NewProperties { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.SetLayerProperties;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes => EstimatedSizeInBytes;
 
     /// <inheritdoc/>

@@ -8,9 +8,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:dock="using:Dock.Avalonia.Controls"
-        xmlns:dockCore="using:Dock.Model.Core"
-        xmlns:panels="using:Dock.Controls.ProportionalStackPanel"
-        xmlns:docking="using:AskiiArt.App.Shell.Docking">
+        xmlns:panels="using:Dock.Controls.ProportionalStackPanel">
   <Style Selector="dock|DockControl[IsDraggingDock=False] dock|ToolDockControl">
     <Setter Property="Background" Value="{x:Null}" />
   </Style>
@@ -25,10 +23,14 @@
   </Style>
 
   <!-- The widget look. Placeholder: the owner designs the real one. -->
-  <Style Selector="dock|ToolChromeControl" x:DataType="dockCore:IDockable">
+  <Style Selector="dock|ToolChromeControl">
     <Setter Property="Background" Value="{DynamicResource AppWidgetBrush}" />
     <Setter Property="Margin" Value="{DynamicResource AppWidgetMargin}" />
-    <Setter Property="HorizontalAlignment"
-            Value="{Binding Id, Converter={x:Static docking:WidgetConverters.HorizontalAlignmentOf}}" />
+  </Style>
+  <Style Selector="Border.widget">
+    <Setter Property="Background" Value="{DynamicResource AppWidgetBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AppWidgetBorderBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource AppWidgetBorderThickness}" />
+    <Setter Property="Margin" Value="{DynamicResource AppWidgetMargin}" />
   </Style>
 </Styles>

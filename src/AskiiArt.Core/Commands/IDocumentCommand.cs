@@ -22,6 +22,9 @@ namespace AskiiArt.Core.Commands;
 /// </remarks>
 public interface IDocumentCommand
 {
+    /// <summary>Names this step in the history: a key from <see cref="UndoStepNames"/>.</summary>
+    string StepNameKey { get; }
+
     /// <summary>
     /// Roughly how much memory the command holds while it's in the history, in bytes. The history
     /// reads it after <see cref="Apply"/>, so a command may compute it then.

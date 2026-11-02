@@ -36,6 +36,9 @@ public sealed class ResizeCanvasCommand : IDocumentCommand
     public ResizeAnchor Anchor { get; }
 
     /// <inheritdoc/>
+    public string StepNameKey => UndoStepNames.ResizeCanvas;
+
+    /// <inheritdoc/>
     public long EstimatedMemoryInBytes =>
         FixedOverheadInBytes
         + _croppedCells.Sum(layer => PerLayerOverheadInBytes + ((long)layer.Cells.Length * Unsafe.SizeOf<CroppedCell>()));

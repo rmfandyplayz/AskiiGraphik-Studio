@@ -65,6 +65,8 @@ public sealed class CompositeCommandTests
 
     private sealed class LoggingCommand(string name, List<string> log, bool throwOnApply = false) : IDocumentCommand
     {
+        public string StepNameKey => name;
+
         public const long Size = 10;
 
         public long EstimatedMemoryInBytes => Size;

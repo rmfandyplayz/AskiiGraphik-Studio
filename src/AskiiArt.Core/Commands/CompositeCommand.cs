@@ -16,17 +16,24 @@ public sealed class CompositeCommand : IDocumentCommand
     private readonly IDocumentCommand[] _commands;
 
     /// <summary>Groups <paramref name="commands"/>, which must not be empty.</summary>
-    public CompositeCommand(IEnumerable<IDocumentCommand> commands)
+    /// <param name="commands">The commands, in the order they apply.</param>
+    /// <param name="stepNameKey">Names the step in the history. Without one it takes the first command's name.</param>
+    public CompositeCommand(IEnumerable<IDocumentCommand> commands, string? stepNameKey = null)
     {
         ArgumentNullException.ThrowIfNull(commands);
 
         _commands = [.. commands];
         if (_commands.Length == 0)
             throw new ArgumentException("A composite command needs at least one command.", nameof(commands));
+
+        StepNameKey = stepNameKey ?? _commands[0].StepNameKey;
     }
 
     /// <summary>The grouped commands, in the order they apply.</summary>
     public IReadOnlyList<IDocumentCommand> Commands => _commands;
+
+    /// <inheritdoc/>
+    public string StepNameKey { get; }
 
     /// <inheritdoc/>
     public long EstimatedMemoryInBytes => FixedOverheadInBytes + _commands.Sum(command => command.EstimatedMemoryInBytes);

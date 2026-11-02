@@ -4,6 +4,7 @@
 using System.Text.Json;
 using AskiiArt.App.Settings;
 using Avalonia.Controls.Templates;
+using Avalonia.Interactivity;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Serializer.SystemTextJson;
@@ -40,6 +41,8 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         factory.DockableAdded += OnPanelsChanged;
         factory.WindowClosed += OnPanelsChanged;
 
+        host.Loaded += ShowFloatingPanels;
+
         ShowLayout(LoadSavedLayout(factory) ?? factory.CreateLayout());
         PanelsChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -52,6 +55,7 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
 
         Save();
 
+        _host.Loaded -= ShowFloatingPanels;
         _factory.DockableClosed -= OnPanelsChanged;
         _factory.DockableAdded -= OnPanelsChanged;
         _factory.WindowClosed -= OnPanelsChanged;
@@ -100,6 +104,24 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         _host!.Layout = layout;
     }
 
+    // Dock only shows a window when it's made or told to: a restored layout's windows stay hidden until
+    // then. This waits for the host to have a size, because a window can reopen smaller than it was,
+    // and a panel saved outside it would be out of reach.
+    private void ShowFloatingPanels(object? sender, RoutedEventArgs e)
+    {
+        if (_host is not { } host)
+            return;
+
+        host.Loaded -= ShowFloatingPanels;
+
+        foreach (var window in Root?.Windows ?? [])
+        {
+            window.X = Math.Clamp(window.X, 0, Math.Max(0, host.Bounds.Width - window.Width));
+            window.Y = Math.Clamp(window.Y, 0, Math.Max(0, host.Bounds.Height - window.Height));
+            window.Present(window.IsModal);
+        }
+    }
+
     private void OnPanelsChanged(object? sender, EventArgs e) => PanelsChanged?.Invoke(this, EventArgs.Empty);
 
     private IRootDock? LoadSavedLayout(ShellDockFactory factory)
@@ -109,7 +131,7 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
 
         try
         {
-            if (_serializer.Deserialize<IRootDock>(saved) is { } layout && factory.IsUsable(layout))
+            if (_serializer.Deserialize<IRootDock>(saved) is { } layout && ShellDockFactory.IsUsable(layout))
             {
                 ShellDockFactory.RefreshPanelTitles(layout);
                 return layout;
@@ -133,6 +155,10 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         if (Root is not { } root)
             return;
 
+        // A floating panel's position lives in its host until it's asked for.
+        foreach (var window in root.Windows ?? [])
+            window.Save();
+
         try
         {
             settings.SetText(LayoutSettingKey, _serializer.Serialize(root));
@@ -143,10 +169,12 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The saved panel layout can't be used here. Using the default layout.")]
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "The saved panel layout can't be used here. Using the default layout.")]
     private static partial void LogLayoutUnusable(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The saved panel layout couldn't be read. Using the default layout.")]
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "The saved panel layout couldn't be read. Using the default layout.")]
     private static partial void LogLayoutUnreadable(ILogger logger, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The panel layout couldn't be saved.")]

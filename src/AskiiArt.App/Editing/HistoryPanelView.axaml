@@ -1,0 +1,28 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder History panel: the undo steps, oldest first, with the current one selected and any
+     undone ones dimmed. Choosing a row jumps there. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:editing="using:AskiiArt.App.Editing"
+             x:Class="AskiiArt.App.Editing.HistoryPanelView"
+             x:DataType="editing:HistoryPanelViewModel">
+  <ListBox x:Name="Steps"
+           Background="{x:Null}"
+           ItemsSource="{Binding Rows}"
+           SelectedIndex="{Binding CurrentRow, Mode=TwoWay}">
+    <ListBox.Styles>
+      <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="{DynamicResource AppHistoryRowPadding}" />
+      </Style>
+      <Style Selector="TextBlock.undone">
+        <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+      </Style>
+    </ListBox.Styles>
+    <ListBox.ItemTemplate>
+      <DataTemplate x:DataType="editing:HistoryRow">
+        <TextBlock Text="{Binding Name}" Classes.undone="{Binding IsUndone}" />
+      </DataTemplate>
+    </ListBox.ItemTemplate>
+  </ListBox>
+</UserControl>

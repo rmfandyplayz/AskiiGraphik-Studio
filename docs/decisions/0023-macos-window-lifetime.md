@@ -39,3 +39,4 @@ Avalonia 12 sets the limits:
 - Headless tests can't cover the shutdown mode, the Dock or the dot; the manual test does.
 
 Updated 2026-11-01: each new window also gets the saved panel layout, and saves it when it closes (ADR 0025). The Window menu's check-mark items keep a subscription each, like the others.
+Updated 2026-11-01: floating panels are part of what each new window restores (ADR 0025).
