@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- The main window. The status bar is a plain strip along the bottom. Above it the canvas fills the
-     space, with the widgets on top of it: the top bar's row, and below that the dock layout, which
-     passes clicks through wherever it has no widget (ADR 0025). MainWindowBuilder fills them in. -->
+<!-- The main window. The menu bar and the status bar are plain strips along the top and bottom (ADR 0029).
+     Between them the canvas fills the space, with the dock layout on top of it, which passes clicks
+     through wherever it has no widget (ADR 0025). MainWindowBuilder fills them in. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:res="using:AskiiArt.App.Resources"
@@ -13,26 +13,13 @@
         x:DataType="canvas:CanvasViewModel"
         Title="{x:Static res:Strings.AppDisplayName}">
   <DockPanel>
+    <Border x:Name="MenuBarStrip" DockPanel.Dock="Top" />
     <shell:StatusBarView DockPanel.Dock="Bottom" />
     <Panel>
       <canvas:CanvasView x:Name="CanvasView" />
-      <Grid RowDefinitions="Auto,*">
-        <!-- The toolbar scrolls when it doesn't fit beside the menu bar; the menu bar never does. -->
-        <Grid x:Name="TopBar" ColumnDefinitions="Auto,*">
-          <Border x:Name="MenuBarWidget" Classes="widget" />
-          <ScrollViewer x:Name="ToolbarScroller"
-                        Grid.Column="1"
-                        HorizontalAlignment="Right"
-                        HorizontalScrollBarVisibility="Hidden"
-                        VerticalScrollBarVisibility="Disabled">
-            <Border x:Name="ToolbarWidget" Classes="widget" />
-          </ScrollViewer>
-        </Grid>
-        <dock:DockControl x:Name="PanelDock"
-                          Grid.Row="1"
-                          InitializeFactory="True"
-                          EnableManagedWindowLayer="True" />
-      </Grid>
+      <dock:DockControl x:Name="PanelDock"
+                        InitializeFactory="True"
+                        EnableManagedWindowLayer="True" />
     </Panel>
   </DockPanel>
 </Window>

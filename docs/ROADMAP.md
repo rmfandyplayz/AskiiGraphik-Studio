@@ -100,22 +100,26 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 - [~] **2.1 Dock shell.** Adds:
   - Dock, with the canvas painting the whole window and panels as widgets on top. Empty parts of the layout pass clicks to the canvas, and widgets always get clicks first
   - the safe area: centering, zoom and scroll limits count the docked widgets
-  - the menu bar (except on a Mac) and toolbar as fixed widgets sharing a row, and the status bar as a plain strip; empty History and Layers panels that can be docked, tabbed, floated inside the window and closed
+  - the menu bar (except on a Mac) and the status bar as plain strips, and the toolbar and empty History and Layers panels as panels that can be docked, tabbed, floated inside the window and closed
   - no canvas scrollbars for now, and a minimum window size
   - the settings file, a saved layout, and a Window menu with panel toggles and Reset Layout
 
   *Owner checks:* art shows around the widgets, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADRs 0025, 0026, 0027). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. The first round of testing led to fixes and design changes, awaiting a retest.
-- [~] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
+  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts.
+- [x] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
 
   *Owner checks:* the list stays in sync with undo and redo, including while the panel floats.
-  *Note:* Built (ADR 0028), at the owner's suggestion alongside the 2.1 fixes, so both are tested together.
-- [ ] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
+  *Note:* Built (ADR 0028), at the owner's suggestion alongside the 2.1 fixes, so both were tested together.
+- [~] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
 
   *Owner checks:* each operation, its undo, and saving and reopening.
+  *Note:* Built (ADR 0030), with a Layer menu whose actions the panel's buttons share.
 - [ ] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
 
   *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
+- [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`.
+
+  *Owner checks:* decided in the pass.
 
 ## M3: Ramps and brushes
 
@@ -150,6 +154,8 @@ Autosave and crash recovery, recent files, a notice when the open file is delete
 ## Parallel track: the owner's UI design
 
 Whenever the owner delivers designs (layout, icons, text), Claude Code adds an integration step at the front of the queue.
+
+**When the work turns mostly to UI design, remind the owner of the parked ideas in `docs/TEMPORARY-UI.md`,** the minimap in particular.
 
 ## Reserved, not planned
 

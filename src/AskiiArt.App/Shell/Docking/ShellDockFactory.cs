@@ -16,12 +16,18 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
 {
     public override IRootDock CreateLayout()
     {
-        var main = CreateMainRow();
+        var whole = new ProportionalDock
+        {
+            Orientation = Orientation.Vertical,
+            IsCollapsable = false,
+            VisibleDockables = CreateList<IDockable>(CreateToolbarRow(), CreateMainRow()),
+        };
+
         var root = CreateRootDock();
         root.FloatingWindowHostMode = DockFloatingWindowHostMode.Managed;
-        root.VisibleDockables = CreateList<IDockable>(main);
-        root.DefaultDockable = main;
-        root.ActiveDockable = main;
+        root.VisibleDockables = CreateList<IDockable>(whole);
+        root.DefaultDockable = whole;
+        root.ActiveDockable = whole;
         return root;
     }
 
@@ -72,12 +78,21 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
             dockable.Title = ShellDockIds.PanelTitle(dockable.Id);
     }
 
-    /// <summary>Puts a panel back: beside a docked panel, or at the side of the canvas if there's none.</summary>
+    /// <summary>
+    /// Puts a panel back. The toolbar goes along the top; another panel goes beside a docked panel,
+    /// or at the side of the canvas if there's none.
+    /// </summary>
     public void OpenPanel(IRootDock root, string panelId)
     {
+        if (panelId == ShellDockIds.ToolbarPanel)
+        {
+            OpenToolbar(root);
+            return;
+        }
+
         var panel = CreatePanel(panelId);
         var host = Descendants(root).OfType<IToolDock>()
-            .FirstOrDefault(dock => dock.VisibleDockables is { Count: > 0 });
+            .FirstOrDefault(dock => dock.VisibleDockables?.Any(IsMovablePanel) == true);
 
         if (host is not null)
         {
@@ -95,6 +110,17 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
 
         ApplySideSizes(root);
     }
+
+    private void OpenToolbar(IRootDock root)
+    {
+        var row = CreateToolbarRow();
+        InitDockable(row, null);
+        SplitToDock((IDock)root.VisibleDockables![0], row, DockOperation.Top);
+        ApplySideSizes(root);
+    }
+
+    private static bool IsMovablePanel(IDockable dockable) =>
+        dockable is ITool && dockable.Id != ShellDockIds.ToolbarPanel;
 
     public override void OnDockableDocked(IDockable? dockable, DockOperation operation)
     {
@@ -117,7 +143,8 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
         Descendants(root).Count(descendant => descendant is ITool) == 1;
 
     // A new split doesn't know the shell's sizes. Without this, a panel dropped beside the canvas
-    // would take half of the canvas's space.
+    // would take half of the canvas's space. Only the maximums are set: the canvas's dock takes what's
+    // left, and Dock passes a dock's minimum on to the controls inside it, which then overflow it.
     private void ApplySideSizes(IRootDock root)
     {
         foreach (var parent in Descendants(root).OfType<IProportionalDock>())
@@ -128,15 +155,18 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
                     continue;
 
                 if (parent.Orientation == Orientation.Horizontal && double.IsNaN(child.MaxWidth))
-                    child.MinWidth = child.MaxWidth = metrics.SideWidth;
+                    child.MaxWidth = metrics.SideWidth;
 
                 // Inside the side column, panels share its height. Beside the canvas, they don't.
                 var isBesideCanvas = parent.VisibleDockables?.Any(ContainsCanvasDock) == true;
                 if (parent.Orientation == Orientation.Vertical && isBesideCanvas && double.IsNaN(child.MaxHeight))
-                    child.MinHeight = child.MaxHeight = metrics.SideWidth;
+                    child.MaxHeight = HoldsOnlyTheToolbar(child) ? metrics.ToolbarHeight : metrics.SideWidth;
             }
         }
     }
+
+    private static bool HoldsOnlyTheToolbar(IDockable dockable) =>
+        Descendants(dockable).OfType<ITool>().All(tool => tool.Id == ShellDockIds.ToolbarPanel);
 
     private static bool ContainsCanvasDock(IDockable dockable) =>
         dockable.Id == ShellDockIds.CanvasDock ||
@@ -153,6 +183,14 @@ internal sealed class ShellDockFactory(ShellLayoutMetrics metrics) : Factory
             foreach (var descendant in Descendants(child))
                 yield return descendant;
         }
+    }
+
+    private ToolDock CreateToolbarRow()
+    {
+        var row = CreateSideDock(CreatePanel(ShellDockIds.ToolbarPanel));
+        row.Alignment = Alignment.Top;
+        row.MaxHeight = metrics.ToolbarHeight;
+        return row;
     }
 
     private ProportionalDock CreateMainRow()

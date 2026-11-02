@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Editing;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
@@ -67,6 +68,7 @@ public sealed class AppTests : IDisposable
         services.AddSingleton<IAppSettings>(settings);
         services.AddSingleton(new ShellDock(settings, NullLogger<ShellDock>.Instance));
         services.AddSingleton(new HistoryPanelViewModel(_canvas.ActiveDocument));
+        services.AddSingleton(new LayersPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ToolbarLayout.CreateDefault());

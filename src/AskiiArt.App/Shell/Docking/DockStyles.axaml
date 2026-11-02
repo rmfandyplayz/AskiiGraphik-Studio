@@ -8,7 +8,9 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:dock="using:Dock.Avalonia.Controls"
-        xmlns:panels="using:Dock.Controls.ProportionalStackPanel">
+        xmlns:panels="using:Dock.Controls.ProportionalStackPanel"
+        xmlns:docking="using:AskiiArt.App.Shell.Docking"
+        xmlns:dockcore="using:Dock.Model.Core">
   <Style Selector="dock|DockControl[IsDraggingDock=False] dock|ToolDockControl">
     <Setter Property="Background" Value="{x:Null}" />
   </Style>
@@ -22,15 +24,18 @@
     <Setter Property="Background" Value="{x:Null}" />
   </Style>
 
-  <!-- The widget look. Placeholder: the owner designs the real one. -->
-  <Style Selector="dock|ToolChromeControl">
-    <Setter Property="Background" Value="{DynamicResource AppWidgetBrush}" />
-    <Setter Property="Margin" Value="{DynamicResource AppWidgetMargin}" />
+  <!-- A floating panel's title has a small handle that starts a different kind of drag, one that would
+       dock Dock's internal wrapper instead of the panel. Without hits it's plain header, which moves
+       the panel like the rest of the header does. -->
+  <Style Selector="dock|MdiDocumentWindow /template/ Border#PART_DragHandle">
+    <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
-  <Style Selector="Border.widget">
+
+  <!-- The widget look. Placeholder: the owner designs the real one. -->
+  <Style Selector="dock|ToolChromeControl" x:DataType="dockcore:IDock">
     <Setter Property="Background" Value="{DynamicResource AppWidgetBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource AppWidgetBorderBrush}" />
-    <Setter Property="BorderThickness" Value="{DynamicResource AppWidgetBorderThickness}" />
     <Setter Property="Margin" Value="{DynamicResource AppWidgetMargin}" />
+    <Setter Property="HorizontalAlignment"
+            Value="{Binding ActiveDockable.Id, Converter={x:Static docking:PanelAlignment.ForPanelId}, FallbackValue=Stretch}" />
   </Style>
 </Styles>

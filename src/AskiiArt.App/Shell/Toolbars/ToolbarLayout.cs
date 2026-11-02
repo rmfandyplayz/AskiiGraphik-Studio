@@ -4,6 +4,7 @@
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Shell.Menus;
 
 namespace AskiiArt.App.Shell.Toolbars;
@@ -31,6 +32,18 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
         new ActionMenuEntry(CanvasActionIds.ZoomIn),
         new ActionMenuEntry(CanvasActionIds.ActualSize),
         new ActionMenuEntry(CanvasActionIds.ShowGrid)
+    ]);
+
+    /// <summary>The buttons under the Layers panel's list.</summary>
+    public static ToolbarLayout CreateLayersPanel() => new(
+    [
+        new ActionMenuEntry(LayerActionIds.New),
+        new ActionMenuEntry(LayerActionIds.Duplicate),
+        new ActionMenuEntry(LayerActionIds.Delete),
+        new ActionMenuEntry(LayerActionIds.Rename),
+        new ActionMenuEntry(LayerActionIds.MoveUp),
+        new ActionMenuEntry(LayerActionIds.MoveDown),
+        new ActionMenuEntry(LayerActionIds.MergeDown)
     ]);
 
     /// <summary>Every action id on the toolbar.</summary>

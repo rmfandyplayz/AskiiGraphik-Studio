@@ -256,7 +256,7 @@ public sealed class TextTool : ITool
         _block is { } block && block.Continues(caret) ? block : TextBlock.StartingAt(caret);
 
     // A locked layer can't be typed into (§8.1). Nothing happens, and the caret stays put.
-    private bool CanEdit() => !_session.ActiveLayer.Properties.IsLocked;
+    private bool CanEdit() => _session.CanEditActiveLayer;
 
     private void Execute(CellEditCommand? command)
     {

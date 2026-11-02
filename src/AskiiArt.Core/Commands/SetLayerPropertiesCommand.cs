@@ -16,12 +16,18 @@ public sealed class SetLayerPropertiesCommand : IDocumentCommand
     private LayerProperties? _oldProperties;
 
     /// <summary>Creates a command that gives the layer with <paramref name="layerId"/> the <paramref name="newProperties"/>.</summary>
-    public SetLayerPropertiesCommand(Guid layerId, LayerProperties newProperties)
+    /// <param name="layerId">The layer to change.</param>
+    /// <param name="newProperties">The properties after the change.</param>
+    /// <param name="stepNameKey">Names the step in the history: a key from <see cref="UndoStepNames"/>.</param>
+    public SetLayerPropertiesCommand(Guid layerId, LayerProperties newProperties,
+        string stepNameKey = UndoStepNames.SetLayerProperties)
     {
         ArgumentNullException.ThrowIfNull(newProperties);
+        ArgumentNullException.ThrowIfNull(stepNameKey);
 
         LayerId = layerId;
         NewProperties = newProperties;
+        StepNameKey = stepNameKey;
     }
 
     /// <summary>The layer to change.</summary>
@@ -31,7 +37,7 @@ public sealed class SetLayerPropertiesCommand : IDocumentCommand
     public LayerProperties NewProperties { get; }
 
     /// <inheritdoc/>
-    public string StepNameKey => UndoStepNames.SetLayerProperties;
+    public string StepNameKey { get; }
 
     /// <inheritdoc/>
     public long EstimatedMemoryInBytes => EstimatedSizeInBytes;

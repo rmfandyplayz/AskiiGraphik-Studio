@@ -61,6 +61,10 @@ public sealed class Layer
         _cells.CopyTo(region, destination);
     }
 
+    /// <summary>Returns a copy of this layer's cells as a new layer that isn't part of a document.</summary>
+    internal Layer Duplicate(Guid id, LayerProperties properties) =>
+        new(id, properties, Size) { _cells = _cells.Resized(Size, default) };
+
     internal int IndexOf(CellPoint point) => _cells.IndexOf(point);
 
     internal CellPoint PointAt(int index) => _cells.PointAt(index);

@@ -37,9 +37,13 @@ public sealed class EditingSession
     /// <summary>The time source for timing rules, such as when a pause ends a typing burst.</summary>
     public TimeProvider Clock { get; }
 
+    /// <summary>Raised when <see cref="SetActiveLayer"/> chooses another layer.</summary>
+    public event EventHandler? ActiveLayerChanged;
+
     /// <summary>
-    /// The layer tools draw on. Until layers have a UI (M2) it's the top layer of the active
-    /// frame. If the layer is removed, the top layer takes over.
+    /// The layer tools draw on. It starts as the top layer of the active frame. If the layer is
+    /// removed, the top layer takes over. Which layer is active isn't part of the document, so it
+    /// isn't saved or undone.
     /// </summary>
     public Layer ActiveLayer
     {
@@ -51,6 +55,21 @@ public sealed class EditingSession
             _activeLayerId = TopLayerId();
             return Document.GetLayer(_activeLayerId);
         }
+    }
+
+    /// <summary>False when tools must leave the active layer alone: it's locked, or hidden, where a change couldn't be seen.</summary>
+    public bool CanEditActiveLayer => ActiveLayer.Properties is { IsLocked: false, IsVisible: true };
+
+    /// <summary>Makes the layer with <paramref name="layerId"/> the one tools draw on.</summary>
+    /// <exception cref="KeyNotFoundException">The document has no such layer.</exception>
+    public void SetActiveLayer(Guid layerId)
+    {
+        var layer = Document.GetLayer(layerId);
+        if (layer.Id == ActiveLayer.Id)
+            return;
+
+        _activeLayerId = layerId;
+        ActiveLayerChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private Guid TopLayerId() => Document.ActiveFrame.Layers[^1].Id;

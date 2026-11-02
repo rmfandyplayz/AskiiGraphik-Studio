@@ -6,6 +6,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
@@ -34,7 +35,8 @@ internal sealed class MainWindowBuilder(
     IAppShell shell,
     ShellDock panels,
     IAppSettings settings,
-    HistoryPanelViewModel history)
+    HistoryPanelViewModel history,
+    LayersPanelViewModel layers)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -43,7 +45,7 @@ internal sealed class MainWindowBuilder(
 
         FollowTitle(window);
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
-        ShowTopBar(window);
+        window.SetMenuBar(layout.IsSystemMenuBar ? null : new NativeMenuBar());
         ShowPanels(window);
         AddKeyBindings(window, platformCommandModifiers);
         AskAboutUnsavedChangesBeforeClosing(window);
@@ -52,22 +54,27 @@ internal sealed class MainWindowBuilder(
         return window;
     }
 
-    // On macOS the menus are in the system menu bar. Elsewhere NativeMenuBar shows the window's native menu.
-    private void ShowTopBar(MainWindow window)
-    {
-        window.SetMenuBar(layout.IsSystemMenuBar ? null : new NativeMenuBar());
-        window.SetToolbar(new ToolbarBuilder(actions).Build(toolbar));
-    }
-
     private void ShowPanels(MainWindow window)
     {
+        var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
+        var bars = new ToolbarBuilder(actions);
+
+        // Each view is built when its panel shows, and again if the panel is reopened.
         var views = new Dictionary<string, Func<Control>>(StringComparer.Ordinal)
         {
+            [ShellDockIds.ToolbarPanel] = () => new ToolbarPanelView
+            {
+                Bar = bars.Build(toolbar),
+                WheelStep = metrics.ToolbarWheelStep,
+            },
             [ShellDockIds.HistoryPanel] = () => new HistoryPanelView { DataContext = history },
-            [ShellDockIds.LayersPanel] = () => new PanelPlaceholderView(),
+            [ShellDockIds.LayersPanel] = () => new LayersPanelView
+            {
+                DataContext = layers,
+                Buttons = bars.BuildWrapping(ToolbarLayout.CreateLayersPanel()),
+            },
         };
 
-        var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
         panels.Attach(window.Panels, new ShellDockFactory(metrics), new ShellPanelTemplates(views));
         window.Closed += (_, _) => panels.SaveAndDetach();
     }

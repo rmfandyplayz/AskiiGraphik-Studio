@@ -35,24 +35,21 @@ internal sealed partial class MainWindow : Window
         PanelDock.LayoutUpdated += (_, _) => TellCanvasWhatWidgetsCover();
         PanelDock.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
             handledEventsToo: true);
-        TopBar.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
+        PanelDock.AddHandler(PanelEvents.DoneTypingEvent, (_, _) => GiveTypingBackToCanvas());
+        MenuBarStrip.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
             handledEventsToo: true);
-        TopBar.AddHandler(MenuBase.ClosedEvent, (_, _) => GiveTypingBackToCanvas());
-        ToolbarScroller.PointerWheelChanged += OnWheelOverToolbar;
+        MenuBarStrip.AddHandler(MenuBase.ClosedEvent, (_, _) => GiveTypingBackToCanvas());
     }
 
     /// <summary>The panel layout's host.</summary>
     public DockControl Panels => PanelDock;
 
-    /// <summary>Puts the menu bar in its widget, or removes the widget when there's none (macOS).</summary>
+    /// <summary>Puts the menu bar in its strip, or removes the strip when there's none (macOS).</summary>
     public void SetMenuBar(Control? menuBar)
     {
-        MenuBarWidget.Child = menuBar;
-        MenuBarWidget.IsVisible = menuBar is not null;
+        MenuBarStrip.Child = menuBar;
+        MenuBarStrip.IsVisible = menuBar is not null;
     }
-
-    /// <summary>Puts the toolbar in its widget.</summary>
-    public void SetToolbar(Control toolbar) => ToolbarWidget.Child = toolbar;
 
     private void KeepMinimumSizeOnScreen()
     {
@@ -102,14 +99,5 @@ internal sealed partial class MainWindow : Window
             if (FocusManager?.GetFocusedElement() is not TextBox)
                 CanvasView.FocusCanvas();
         });
-    }
-
-    // A mouse's wheel only turns one way, and this row only scrolls sideways. The scroller handles a
-    // sideways wheel or trackpad itself, so this only sees the rest.
-    private void OnWheelOverToolbar(object? sender, PointerWheelEventArgs e)
-    {
-        var offset = ToolbarScroller.Offset;
-        ToolbarScroller.Offset = offset.WithX(offset.X - e.Delta.Y * _metrics.ToolbarWheelStep);
-        e.Handled = true;
     }
 }

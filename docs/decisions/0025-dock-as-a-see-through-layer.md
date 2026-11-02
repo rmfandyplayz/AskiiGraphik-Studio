@@ -13,11 +13,11 @@ Dock is built for tiled layouts, where panels take space from the content. A thr
 
 ## Decision
 
-- **Layers:** `MainWindow` stacks the `CanvasView`, filling the space above the status bar, under the top bar and a `DockControl` (ADR 0027). The layout's middle is an empty `ToolDock` (`ShellDockIds.CanvasDock`).
+- **Layers:** `MainWindow` stacks the `CanvasView`, filling the space between the menu bar and status bar strips, under a `DockControl` (ADR 0029). The layout's middle is an empty `ToolDock` (`ShellDockIds.CanvasDock`).
 - **Nothing lands on the canvas's dock:** it accepts drops, because with `CanDrop` off Dock shows no targets at all over it, not even the window-edge ones. Its own docking group, which no panel has, makes Dock offer no target of its own there, and releasing a panel over it floats the panel.
 - **Clicks pass through empty areas:** Dock's templates give empty areas an invisible background, which catches clicks. `DockStyles.axaml` removes those backgrounds, using selectors on `DockControl.IsDraggingDock`. A selector that depends on a property has a higher priority than a template's values. While a panel is being dragged the backgrounds return, because Dock finds its drop areas by hit testing them. `ClickRoutingTests` fails if a Dock update breaks this.
 - **Safe area:** `MainWindow` measures what's around the canvas dock and passes it to `CanvasView`, which adds any visible scrollbars and sets `CanvasControl.SafeArea`. `CanvasViewport` centres the canvas in what's left and sets its scroll limits so every cell can reach that area. Cells still draw under widgets. Floating panels don't count, because they can be dragged away.
-- **Fixed widgets:** the menu bar (not on macOS, where the system menu bar stays) and toolbar can't be closed, moved or floated, and sit outside Dock (ADR 0027). They hug their content, so art shows beside them.
+- **Fixed strips:** the menu bar (not on macOS, where the system menu bar stays) and status bar are plain strips outside Dock (ADR 0029). The toolbar is an ordinary panel, which hugs its content in its default row, so art shows beside it.
 - **Movable panels** (History and Layers so far) can be docked, tabbed, floated and closed. A new split gets the fixed side width, because Dock's default would give a panel half of the canvas's space.
 - **Floating stays inside the window:** `IRootDock.FloatingWindowHostMode` is `Managed`, so one window still holds everything. Shortcuts keep working, dialogs block panels too, and macOS keeps its menu bar. Dock doesn't show a restored layout's floating windows by itself, so `ShellDock` presents them once the host has loaded, moved back inside if the window is now smaller. `ShellDockFactory` ignores Float on a panel that already floats alone.
 - **Panels are plain Dock `Tool`s, found by id:** `ShellPanelTemplates` maps an id to a view. The saved layout holds no type of ours, so renaming our classes can't break it, and titles are refreshed on load.
@@ -39,3 +39,4 @@ Dock is built for tiled layouts, where panels take space from the content. A thr
 - The widget look is a placeholder. Rounded corners and Dock's panel header are left for the owner's design step.
 
 Updated 2026-11-01: from 2.1 testing, the top bar and status bar moved out of Dock (ADR 0027), the canvas's dock now accepts drops so window-edge targets show over it, and restored floating panels are shown.
+Updated 2026-11-02: the menu bar became a plain strip and the toolbar a Dock panel (ADR 0029). Moving a floating panel now also makes the see-through areas catch hits, so targets show over the canvas.

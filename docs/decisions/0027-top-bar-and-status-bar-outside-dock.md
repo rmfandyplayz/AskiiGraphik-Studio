@@ -3,7 +3,9 @@
 
 # 0027: The top bar and status bar sit outside Dock
 
-Status: Accepted
+Status: Superseded by 0029
+
+> The owner's plan for a layout builder moved the toolbar back into Dock and made the menu bar a plain strip. See [ADR 0029](0029-menu-strip-and-toolbar-panel.md).
 
 ## Context
 

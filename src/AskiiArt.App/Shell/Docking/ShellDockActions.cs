@@ -12,6 +12,7 @@ internal sealed class ShellDockActions(ShellDock dock) : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
+        yield return CreatePanelToggle(ShellDockActionIds.ToggleToolbar, nameof(Strings.ActionToggleToolbar), ShellDockIds.ToolbarPanel);
         yield return CreatePanelToggle(ShellDockActionIds.ToggleLayers, nameof(Strings.ActionToggleLayers), ShellDockIds.LayersPanel);
         yield return CreatePanelToggle(ShellDockActionIds.ToggleHistory, nameof(Strings.ActionToggleHistory), ShellDockIds.HistoryPanel);
         yield return new AppAction(ShellDockActionIds.ResetLayout, nameof(Strings.ActionResetLayout), new RelayCommand(dock.ResetLayout));

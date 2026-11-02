@@ -19,7 +19,9 @@ namespace AskiiArt.App.Shell.Docking;
 /// </summary>
 internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock> logger)
 {
-    internal const string LayoutSettingKey = "dockLayout";
+    // Changes when the default layout gains something a saved one wouldn't have, because a saved layout
+    // without it means the user closed it. The toolbar joined the layout in V2 (ADR 0029).
+    internal const string LayoutSettingKey = "dockLayoutV2";
 
     private static readonly DockSerializer _serializer = new();
 
@@ -40,6 +42,8 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         factory.DockableClosed += OnPanelsChanged;
         factory.DockableAdded += OnPanelsChanged;
         factory.WindowClosed += OnPanelsChanged;
+        factory.WindowMoveDragBegin += OnFloatingPanelDragStarted;
+        factory.WindowMoveDragEnd += OnFloatingPanelDragEnded;
 
         host.Loaded += ShowFloatingPanels;
 
@@ -59,6 +63,8 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
         _factory.DockableClosed -= OnPanelsChanged;
         _factory.DockableAdded -= OnPanelsChanged;
         _factory.WindowClosed -= OnPanelsChanged;
+        _factory.WindowMoveDragBegin -= OnFloatingPanelDragStarted;
+        _factory.WindowMoveDragEnd -= OnFloatingPanelDragEnded;
         _host = null;
         _factory = null;
     }
@@ -123,6 +129,19 @@ internal sealed partial class ShellDock(IAppSettings settings, ILogger<ShellDock
     }
 
     private void OnPanelsChanged(object? sender, EventArgs e) => PanelsChanged?.Invoke(this, EventArgs.Empty);
+
+    // Dock only sets this flag for a docked panel's drag. Moving a floating panel needs it too: the
+    // layer's see-through areas only catch hits while it's set (DockStyles.axaml), and without those
+    // hits Dock finds nothing to offer over the canvas.
+    private void OnFloatingPanelDragStarted(object? sender, EventArgs e) => SetDragging(true);
+
+    private void OnFloatingPanelDragEnded(object? sender, EventArgs e) => SetDragging(false);
+
+    private void SetDragging(bool isDragging)
+    {
+        if (_host is { } host)
+            host.IsDraggingDock = isDragging;
+    }
 
     private IRootDock? LoadSavedLayout(ShellDockFactory factory)
     {

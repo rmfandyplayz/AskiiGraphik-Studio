@@ -11,20 +11,37 @@ using Avalonia.Layout;
 namespace AskiiArt.App.Shell.Toolbars;
 
 /// <summary>
-/// Builds the placeholder toolbar: a row of text buttons, one per action, bound to the action's
-/// command. A toggle action, such as Show Grid, gets a toggle button that follows its state.
+/// Builds placeholder button bars: text buttons, one per action, bound to the action's command. A
+/// toggle action, such as Show Grid, gets a toggle button that follows its state.
 /// </summary>
 internal sealed class ToolbarBuilder(ActionRegistry actions)
 {
     /// <summary>The toolbar's control name, so tests can find it among the other widgets.</summary>
     public const string ControlName = "Toolbar";
 
+    /// <summary>A single row, for the toolbar.</summary>
     public Control Build(ToolbarLayout layout)
     {
         var bar = new StackPanel { Name = ControlName, Orientation = Orientation.Horizontal };
         bar.Bind(StackPanel.SpacingProperty, bar.GetResourceObservable("AppSpacingSmall"));
         bar.Bind(Layoutable.MarginProperty, bar.GetResourceObservable("AppToolbarPadding"));
+        AddEntries(bar, layout);
+        return bar;
+    }
 
+    /// <summary>As many rows as it needs, for a bar inside a narrow panel.</summary>
+    public Control BuildWrapping(ToolbarLayout layout)
+    {
+        var bar = new WrapPanel();
+        bar.Bind(WrapPanel.ItemSpacingProperty, bar.GetResourceObservable("AppSpacingSmall"));
+        bar.Bind(WrapPanel.LineSpacingProperty, bar.GetResourceObservable("AppSpacingSmall"));
+        bar.Bind(Layoutable.MarginProperty, bar.GetResourceObservable("AppToolbarPadding"));
+        AddEntries(bar, layout);
+        return bar;
+    }
+
+    private void AddEntries(Panel bar, ToolbarLayout layout)
+    {
         foreach (var entry in layout.Entries)
         {
             switch (entry)
@@ -39,8 +56,6 @@ internal sealed class ToolbarBuilder(ActionRegistry actions)
                     break;
             }
         }
-
-        return bar;
     }
 
     // Toolbar buttons don't take keyboard focus, so typing keeps going to the canvas after a click.

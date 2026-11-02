@@ -405,6 +405,57 @@
   <data name="MenuWindow" xml:space="preserve">
     <value>_Window</value>
   </data>
+  <data name="MenuLayer" xml:space="preserve">
+    <value>_Layer</value>
+  </data>
+  <data name="ActionLayerNew" xml:space="preserve">
+    <value>_New</value>
+    <comment>Layer menu and Layers panel: adds an empty layer above the active one.</comment>
+  </data>
+  <data name="ActionLayerDuplicate" xml:space="preserve">
+    <value>_Duplicate</value>
+    <comment>Layer menu and Layers panel: copies the active layer.</comment>
+  </data>
+  <data name="ActionLayerDelete" xml:space="preserve">
+    <value>De_lete</value>
+    <comment>Layer menu and Layers panel: deletes the active layer.</comment>
+  </data>
+  <data name="ActionLayerRename" xml:space="preserve">
+    <value>_Rename</value>
+    <comment>Layer menu and Layers panel: opens the active layer&apos;s name for editing.</comment>
+  </data>
+  <data name="ActionLayerMoveUp" xml:space="preserve">
+    <value>Move _Up</value>
+    <comment>Layer menu and Layers panel: moves the active layer up the stack.</comment>
+  </data>
+  <data name="ActionLayerMoveDown" xml:space="preserve">
+    <value>Move Do_wn</value>
+    <comment>Layer menu and Layers panel: moves the active layer down the stack.</comment>
+  </data>
+  <data name="ActionLayerMergeDown" xml:space="preserve">
+    <value>_Merge Down</value>
+    <comment>Layer menu and Layers panel: merges the active layer into the one below.</comment>
+  </data>
+  <data name="LayerNameFormat" xml:space="preserve">
+    <value>Layer {0}</value>
+    <comment>A new layer&apos;s name. {0} is a number.</comment>
+  </data>
+  <data name="LayerCopyNameFormat" xml:space="preserve">
+    <value>{0} copy</value>
+    <comment>A duplicated layer&apos;s name. {0} is the original&apos;s name.</comment>
+  </data>
+  <data name="LayerRowVisibleTip" xml:space="preserve">
+    <value>Visible</value>
+    <comment>Tooltip on the checkbox that shows or hides a layer.</comment>
+  </data>
+  <data name="LayerRowLockedTip" xml:space="preserve">
+    <value>Locked</value>
+    <comment>Tooltip on the checkbox that locks or unlocks a layer.</comment>
+  </data>
+  <data name="ActionToggleToolbar" xml:space="preserve">
+    <value>_Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar.</comment>
+  </data>
   <data name="ActionToggleLayers" xml:space="preserve">
     <value>_Layers</value>
     <comment>Window menu: shows or hides the Layers panel.</comment>
@@ -417,15 +468,14 @@
     <value>_Reset Layout</value>
     <comment>Window menu: puts every panel back where it started.</comment>
   </data>
+  <data name="PanelToolbar" xml:space="preserve">
+    <value>Toolbar</value>
+  </data>
   <data name="PanelLayers" xml:space="preserve">
     <value>Layers</value>
   </data>
   <data name="PanelHistory" xml:space="preserve">
     <value>History</value>
-  </data>
-  <data name="PanelNotBuiltYet" xml:space="preserve">
-    <value>This panel is empty for now.</value>
-    <comment>Placeholder text in a panel whose contents arrive in a later step.</comment>
   </data>
   <data name="SettingsDamagedTitle" xml:space="preserve">
     <value>Settings were reset</value>
@@ -459,6 +509,21 @@
   </data>
   <data name="UndoStepMoveLayer" xml:space="preserve">
     <value>Move Layer</value>
+  </data>
+  <data name="UndoStepDuplicateLayer" xml:space="preserve">
+    <value>Duplicate Layer</value>
+  </data>
+  <data name="UndoStepMergeLayerDown" xml:space="preserve">
+    <value>Merge Down</value>
+  </data>
+  <data name="UndoStepRenameLayer" xml:space="preserve">
+    <value>Rename Layer</value>
+  </data>
+  <data name="UndoStepShowOrHideLayer" xml:space="preserve">
+    <value>Show or Hide Layer</value>
+  </data>
+  <data name="UndoStepLockOrUnlockLayer" xml:space="preserve">
+    <value>Lock or Unlock Layer</value>
   </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>

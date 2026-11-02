@@ -9,14 +9,14 @@
 
 ## What changed
 
-The canvas paints everything above the status bar, and the controls sit on top of it as widgets. Art shows around the widgets and slides under them, but the canvas centers and scrolls within the space they leave free. The History and Layers panels are empty for now, but you can dock, tab, float, close and reopen them. Your layout is remembered, and the new Window menu can reset it.
+The canvas paints everything between the menu bar and status bar, and the panels sit on top of it as widgets. Art shows around the widgets and slides under them, but the canvas centers and scrolls within the space they leave free. You can dock, tab, float, close and reopen the panels, including the toolbar. Your layout is remembered, and the new Window menu can reset it.
 
-**Since your first round of testing:**
-- Fixed: window-edge drop targets now show over the canvas (T4), floating panels come back after a restart (T6, T8), closing a menu gives typing back to the canvas (T7), and floating an already floating panel does nothing (T5).
-- Changed as you asked: the status bar is a plain strip, the toolbar shares the menu bar's row, the canvas has no scrollbars, and the window has a minimum size.
-- Your saved layout resets to the default once, because the old one included the widgets that moved out of Dock.
+**Since your second round of testing:**
+- Fixed: an already floating panel now gets the window-edge targets over the canvas, and docks there (T5). Dragging a floating panel by its title text no longer risks a broken layout.
+- Changed as you asked: the menu bar is a plain built-in strip, and the toolbar is a panel that can go anywhere.
+- Your saved layout resets to the default once, because the old one had no toolbar in it.
 
-**To retest:** T1, T4, T5 row 9, T6, T7, T8 (Mac), T11 and T12. T2, T3, T5, T9 and T10 passed before and shouldn't have changed, but T3 is worth a quick look because it now scrolls without scrollbars.
+**To retest:** T1, T4 rows 4 to 8, T5 rows 7 and 10 to 12, T7 and T11. The rest passed and shouldn't have changed.
 
 ## Setup
 
@@ -31,8 +31,8 @@ The canvas paints everything above the status bar, and the controls sit on top o
 
 | # | Do this | Expected result |
 |---|---|---|
-| 1 | Start the app | One top row: the menu bar at the left and the toolbar at the right. Layers is above History at the right. The status bar is a plain strip along the bottom of the window. The canvas is centered in the space between them, with no scrollbars |
-| 2 | Choose Debug → Open Sample Document, then zoom in with View → Zoom In until the art is wider and taller than the window | The art shows between the menu bar and toolbar, and in the thin gaps around each widget. It stops at the top of the status bar |
+| 1 | Start the app | The menu bar is a plain strip along the top, and the status bar one along the bottom. Below the menu bar, the toolbar hugs the right. Layers is above History at the right. The canvas is centered in the space left free, with no scrollbars |
+| 2 | Choose Debug → Open Sample Document, then zoom in with View → Zoom In until the art is wider and taller than the window | The art shows to the left of the toolbar, and in the thin gaps around each widget. It stops below the menu bar and above the status bar |
 | 3 | Scroll around with the wheel, Shift + wheel and middle-drag | The art slides under the widgets. No widget ever shows art on top of it |
 
 - [ ] Pass  - [ ] Fail. Notes:
@@ -43,7 +43,7 @@ The canvas paints everything above the status bar, and the controls sit on top o
 
 | # | Do this | Expected result |
 |---|---|---|
-| 1 | With the art still large, click on art between the menu bar and toolbar, then type a letter | The caret appears where you clicked, and the letter lands there |
+| 1 | With the art still large, click on art to the left of the toolbar, then type a letter | The caret appears where you clicked, and the letter lands there |
 | 2 | Click in the middle of the Layers panel | Nothing changes on the canvas, and no caret moves there |
 | 3 | Click the toolbar's Show Grid button twice | The grid turns on, then off. The canvas behind the button doesn't get the click |
 | 4 | Hover over a panel, then scroll the mouse wheel | The canvas doesn't scroll or zoom |
@@ -76,11 +76,15 @@ The canvas paints everything above the status bar, and the controls sit on top o
 | 1 | Drag History's title bar over the Layers panel | Drop targets appear over Layers |
 | 2 | Drop it on the center target | History and Layers become tabs in one panel. Clicking a tab switches between them |
 | 3 | Drag the History tab back out and drop it on an edge target of Layers | The two panels sit side by side or stacked, depending on the edge |
-| 4 | Drag a panel out over the canvas | Four targets stay visible at the edges of the area below the top bar, the whole time the pointer is over the canvas |
-| 5 | Drop it on the left target | It docks along the left side at the same width as before. The canvas re-centers in the new free space, and the menu bar stays at the top left |
+| 4 | Drag a panel out over the canvas | Four targets stay visible at the edges of the area below the menu bar, the whole time the pointer is over the canvas |
+| 5 | Drop it on the left target | It docks along the left side at the same width as before. The canvas re-centers in the new free space, and the menu bar stays across the top |
 | 6 | Look at the middle of the canvas during a drag | No target offers to drop onto the canvas itself. Releasing there, away from a target, floats the panel (T5) |
-| 7 | Drag a panel up over the top bar or down over the status bar, and release | The targets disappear while the pointer is over those, and the panel floats |
-| 8 | Try to drag the menu bar, toolbar or status bar | They don't move and have no title bar |
+| 7 | Drag a panel up over the menu bar or down over the status bar, and release | The targets disappear while the pointer is over those, and the panel floats |
+| 8 | Try to drag the menu bar or status bar | They don't move and have no title bar |
+| 9 | Drag the toolbar by its title bar to the left target, then the bottom target, then back to the top target | It docks there each time. Along the bottom or top it keeps its height, and at the side it's as wide as the other panels. The canvas re-centers each time |
+| 10 | In the side position, hover over the toolbar and turn the wheel | It scrolls sideways, and all its buttons can be reached |
+| 11 | Close the toolbar with its X | Its space goes to the canvas, and Window → Toolbar loses its check mark |
+| 12 | Choose Window → Toolbar | It's back along the top |
 
 - [ ] Pass  - [ ] Fail. Notes:
 
@@ -96,9 +100,14 @@ The canvas paints everything above the status bar, and the controls sit on top o
 | 4 | Type a letter, click inside the floating panel, then press Ctrl+Z (Cmd+Z on a Mac) | The typing is undone |
 | 5 | On a Mac: click inside the floating panel and look at the menu bar | The File menu and the others are still there |
 | 6 | Choose File → New while it floats, and try clicking the floating panel while the dialog is open | The panel doesn't respond until you close the dialog |
-| 7 | Drag the floating panel back onto Layers and drop it on a target | It docks again |
+| 7 | Drag the floating panel by its title, including the title text itself, over the canvas | Four targets stay at the edges of the area, and no target offers to drop onto the canvas itself |
+| 7a | Drop it on the left target | It docks along the left side at the usual width |
+| 7b | Float it again, and drag it back onto Layers, dropping it on a target | It docks again |
 | 8 | Float it again and click its close button | It closes, and Window → History has no check mark |
 | 9 | Reopen History, float it, then choose Float from its arrow menu several times | Nothing happens: the panel keeps its size and place |
+| 10 | Float the toolbar and drag it around | It floats like any other panel, and its buttons work |
+| 11 | Release a floating panel over the canvas, away from any target | It stays floating where you left it, and clicking the art around it works |
+| 12 | Choose Window → Reset Layout | Everything is back in the default layout, with the toolbar along the top |
 
 - [ ] Pass  - [ ] Fail. Notes:
 
@@ -118,15 +127,15 @@ The canvas paints everything above the status bar, and the controls sit on top o
 
 ### T7: The menu bar
 
-**Also on macOS:** Yes, because only Windows and Linux have this widget
+**Also on macOS:** Yes, because only Windows and Linux have this strip
 
 | # | Do this | Expected result |
 |---|---|---|
-| 1 | On Windows: open each menu with the mouse, and try one item from each | They open over the art and work like before |
+| 1 | On Windows: look at the menu bar, then open each menu with the mouse, and try one item from each | It's a plain strip across the whole window. The menus open over the art and work like before |
 | 2 | On Windows: press Alt, then F | The File menu opens, as it did before this step |
 | 3 | On Windows: press Esc until the menu closes, then type a letter without clicking anything | The letter lands at the caret on the canvas |
-| 4 | On a Mac: look at the window | There's no menu bar widget. The toolbar is at the top right, with art beside it |
-| 5 | On a Mac: look at the system menu bar | It has File, Edit, Document, View, Window and Help, and their items work |
+| 4 | On a Mac: look at the window | There's no menu bar strip. The toolbar is at the top right, with art beside it |
+| 5 | On a Mac: look at the system menu bar | It has File, Edit, Document, Layer, View, Window and Help, and their items work |
 
 - [ ] Pass  - [ ] Fail. Notes:
 
@@ -178,9 +187,9 @@ The canvas paints everything above the status bar, and the controls sit on top o
 
 | # | Do this | Expected result |
 |---|---|---|
-| 1 | Make the window narrower until the toolbar no longer fits beside the menu bar (about 1620 pixels wide today) | The toolbar gets cut off at its right end. No scrollbar appears, and the menu bar keeps every menu |
+| 1 | Dock the toolbar at the side of the window, or float it and make it narrow | The toolbar gets cut off at its right end, and no scrollbar appears |
 | 2 | Hover over the toolbar and turn the wheel | The toolbar scrolls sideways, and all its buttons can be reached and clicked |
-| 3 | Make the window wide again | The whole toolbar shows, at the top right |
+| 3 | Choose Window → Reset Layout | The whole toolbar shows, at the top right |
 
 - [ ] Pass  - [ ] Fail. Notes:
 
@@ -199,19 +208,19 @@ The canvas paints everything above the status bar, and the controls sit on top o
 
 - Tabbing both panels together, then closing the tab group and reopening each from the Window menu.
 - Dragging a panel very quickly, or pressing Esc in the middle of a drag.
-- Docking a panel along the top or bottom of the Dock area, below the top bar.
+- Docking a panel along the top or bottom of the Dock area, below the menu bar.
 
 ## Known limitations (not bugs)
 
 - The widget look is placeholder: square boxes, and Dock's own header on panels. Your design step replaces it.
 - Panels fill their dock's height rather than shrinking to their contents, so art only shows in the gaps around them.
-- Floating panels can't cover the top bar, because they stay within the area below it.
+- Floating panels can't cover the menu bar or status bar, because they stay within the area between them.
 - Float stays in the arrow menu of a panel that already floats, where it does nothing.
-- The History and Layers panels are empty until steps 2.2 and 2.3.
-- The toolbar and status bar can't be rearranged yet (M8).
+- The toolbar's title bar makes its row taller than its buttons. The docking pass can slim that.
+- There's only one toolbar, and what's in it can't be changed yet (M8).
 - Widgets sit in rows and columns rather than anchoring anywhere with any offset. That waits for your design.
 - Floating panels can't leave the main window, so there are no panels on a second monitor (ADR 0025).
-- General docking feel: you said it might deserve its own pass. Fixing these failures may have helped, so please note whatever still feels janky after this retest.
+- General docking feel: that's step 2.5, the docking pass.
 
 ## Reporting a problem
 

@@ -497,6 +497,34 @@ public sealed class TextToolTests
     }
 
     [Fact]
+    public void OnAHiddenLayer_TypingChangesNothing()
+    {
+        History.Execute(new SetLayerPropertiesCommand(Layer.Id, Layer.Properties with { IsVisible = false }));
+        Click(0, 0);
+
+        Assert.True(_tool.TextEntered("ab"));
+        Press(ToolKey.Delete);
+
+        Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(0, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void Typing_GoesToTheLayerMadeActive()
+    {
+        var first = Layer;
+        var command = new AddLayerCommand(0, new LayerProperties("Below"));
+        History.Execute(command);
+        _session.SetActiveLayer(command.LayerId);
+        Click(0, 0);
+
+        _tool.TextEntered("ab");
+
+        Assert.Equal(["ab····", "······", "······"], TestCells.Read(_session.Document.GetLayer(command.LayerId)));
+        Assert.Equal(["······", "······", "······"], TestCells.Read(first));
+    }
+
+    [Fact]
     public void AfterTheCanvasShrinks_TheCaretMovesBackInside()
     {
         Click(5, 2);

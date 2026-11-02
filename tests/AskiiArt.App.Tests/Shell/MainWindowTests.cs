@@ -5,6 +5,7 @@ using System.Globalization;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -100,7 +101,7 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.NotNull(menuBar);
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
-        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp],
+        Assert.Equal([Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp],
             topLevelItems.Select(item => item.Header));
 
         var quit = Assert.IsType<NativeMenuItem>(topLevelItems[0].Menu!.Items[^1]);
@@ -108,7 +109,7 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(new KeyGesture(Key.Q, KeyModifiers.Control), quit.Gesture);
         Assert.Same(_actions.Get(ShellActionIds.Quit).Command, quit.Command);
 
-        var helpItems = topLevelItems[5].Menu!.Items;
+        var helpItems = topLevelItems[6].Menu!.Items;
         Assert.Equal(3, helpItems.Count);
         Assert.IsType<NativeMenuItemSeparator>(helpItems[1]);
     }
@@ -344,5 +345,5 @@ public sealed class MainWindowTests : IDisposable
         new(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
             new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings,
-            new HistoryPanelViewModel(_canvas.ActiveDocument));
+            new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument));
 }

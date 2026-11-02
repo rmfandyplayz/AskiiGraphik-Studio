@@ -29,3 +29,4 @@ Step 2.2 shows undo steps by name, and clicking one jumps to that point using or
 - A jump across many steps raises one document change event per step. Painting waits for the next frame, so the cost is small, though a very long jump does that much compositing work.
 - The panel rebuilds its row data on each history change, in time proportional to the number of steps. That's fine at realistic lengths; it's worth a look if very long histories ever feel slow while the panel is open.
 - History isn't saved in files.
+Updated 2026-11-02: `SetLayerPropertiesCommand` takes a step name, and there are names for duplicating, merging, renaming, showing and locking layers (ADR 0030).

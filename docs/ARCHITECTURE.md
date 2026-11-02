@@ -194,7 +194,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **Composite commands** group several commands into one undo step (for example, paste = add layer + write cells).
 - History has a **memory budget** that's configurable, with a default such as 256 MB. When the budget is exceeded, the oldest entries are dropped. There is no fixed limit on the number of steps.
 - The document's **dirty state** comes from comparing the history position with the last-saved position. Undoing back to the saved state clears "unsaved changes".
-- Each command names its step with a key the app turns into text, and the History panel can jump to any step using ordinary undo and redo (ADR 0028).
+- Each command names its step with a key the app turns into text, and the History panel can jump to any step using ordinary undo and redo (ADR 0028). Which layer is active belongs to the editing session, and isn't saved or undone (ADR 0030).
 - Whether selection changes count as undo steps is an open question (§23).
 
 ## 10. Selection
@@ -226,7 +226,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
 - **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
 - **Draw order:** composite → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
-- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0027). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
+- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0029). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
 - **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015).
@@ -263,13 +263,13 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings.
 
-Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a widget that can't be removed (ADR 0007, ADR 0027).
+Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a plain strip along the top of the window (ADR 0007, ADR 0029).
 
 ### 14.4 Panels and docking
 
 Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The shell uses **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings.
 
-The canvas is the main character (ADR 0025). It paints everything above the status bar, which is a plain strip, and Dock lies on top as a see-through layer: panels are widgets over the canvas, art shows around them and slides under them, and they always get input first. The top bar's row holds the menu bar and toolbar widgets, outside Dock (ADR 0027). Docked widgets still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. Floating panels stay inside the Dock layer. The window has a minimum size, lowered to fit small screens.
+The canvas is the main character (ADR 0025). It paints everything between the menu bar and the status bar, which are plain strips (ADR 0029), and Dock lies on top as a see-through layer: panels are widgets over the canvas, art shows around them and slides under them, and they always get input first. The toolbar is a panel like any other, so it can go anywhere a panel can. Docked widgets still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. Floating panels stay inside the Dock layer. The window has a minimum size, lowered to fit small screens.
 
 ### 14.5 Theming, icons and text
 

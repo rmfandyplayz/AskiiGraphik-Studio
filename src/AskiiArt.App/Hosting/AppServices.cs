@@ -8,6 +8,7 @@ using AskiiArt.App.Editing;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Hosting.Logging;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -52,6 +53,7 @@ internal static class AppServices
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider, ShellDockActions>();
+        services.AddSingleton<IActionProvider, LayerActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),
             provider.GetRequiredService<DocumentFiles>(),
@@ -71,6 +73,7 @@ internal static class AppServices
         services.AddSingleton<DocumentFiles>();
         services.AddSingleton<WindowTitle>();
         services.AddSingleton<HistoryPanelViewModel>();
+        services.AddSingleton<LayersPanelViewModel>();
 
         // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). Text
         // flattens with the same policy as the canvas.

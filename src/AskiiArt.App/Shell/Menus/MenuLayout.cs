@@ -4,6 +4,7 @@
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell.Docking;
 
@@ -72,6 +73,19 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(DocumentActionIds.AsciiOnly)
         ]);
 
+        var layerMenu = new MenuDefinition(nameof(Strings.MenuLayer),
+        [
+            new ActionMenuEntry(LayerActionIds.New),
+            new ActionMenuEntry(LayerActionIds.Duplicate),
+            new ActionMenuEntry(LayerActionIds.Delete),
+            new ActionMenuEntry(LayerActionIds.Rename),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(LayerActionIds.MoveUp),
+            new ActionMenuEntry(LayerActionIds.MoveDown),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(LayerActionIds.MergeDown)
+        ]);
+
         var viewMenu = new MenuDefinition(nameof(Strings.MenuView),
         [
             new ActionMenuEntry(CanvasActionIds.ZoomIn),
@@ -83,6 +97,7 @@ internal sealed record MenuLayout(
 
         var panelMenu = new MenuDefinition(nameof(Strings.MenuWindow),
         [
+            new ActionMenuEntry(ShellDockActionIds.ToggleToolbar),
             new ActionMenuEntry(ShellDockActionIds.ToggleLayers),
             new ActionMenuEntry(ShellDockActionIds.ToggleHistory),
             new SeparatorMenuEntry(),
@@ -97,6 +112,7 @@ internal sealed record MenuLayout(
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [.. FileEntries(isMacOS)]));
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
+            windowMenus.Add(layerMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(panelMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),
@@ -113,6 +129,7 @@ internal sealed record MenuLayout(
             ]));
             windowMenus.Add(editMenu);
             windowMenus.Add(documentMenu);
+            windowMenus.Add(layerMenu);
             windowMenus.Add(viewMenu);
             windowMenus.Add(panelMenu);
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuHelp),

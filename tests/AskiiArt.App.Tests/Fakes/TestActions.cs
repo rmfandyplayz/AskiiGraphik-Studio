@@ -6,6 +6,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
+using AskiiArt.App.Layers;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,12 +17,14 @@ namespace AskiiArt.App.Tests.Fakes;
 internal static class TestActions
 {
     public static IActionProvider[] CreateProviders(TestCanvas canvas, FakeAppShell shell,
-        FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false, bool isMacOS = false) =>
+        FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false, bool isMacOS = false,
+        LayersPanelViewModel? layers = null) =>
     [
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument, canvas.TextExporter, shell),
         new ShellDockActions(new ShellDock(new FakeAppSettings(), NullLogger<ShellDock>.Instance)),
+        new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

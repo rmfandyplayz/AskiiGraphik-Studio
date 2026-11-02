@@ -11,6 +11,7 @@ namespace AskiiArt.App.Shell.Docking;
 /// </summary>
 internal static class ShellDockIds
 {
+    public const string ToolbarPanel = "panel.toolbar";
     public const string HistoryPanel = "panel.history";
     public const string LayersPanel = "panel.layers";
 
@@ -20,10 +21,11 @@ internal static class ShellDockIds
     /// <summary>The canvas dock's docking group, which no panel belongs to, so no panel can land on it.</summary>
     public const string CanvasDockGroup = "group.canvas";
 
-    public static bool IsPanel(string panelId) => panelId is HistoryPanel or LayersPanel;
+    public static bool IsPanel(string panelId) => panelId is ToolbarPanel or HistoryPanel or LayersPanel;
 
     public static string PanelTitle(string panelId) => panelId switch
     {
+        ToolbarPanel => Strings.PanelToolbar,
         HistoryPanel => Strings.PanelHistory,
         LayersPanel => Strings.PanelLayers,
         _ => throw new ArgumentOutOfRangeException(nameof(panelId), panelId, null),

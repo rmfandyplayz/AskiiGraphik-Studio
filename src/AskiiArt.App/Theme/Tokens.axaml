@@ -18,7 +18,6 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#FFF3F3F3" />
-      <SolidColorBrush x:Key="AppWidgetBorderBrush" Color="#FFC8C8C8" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -32,7 +31,6 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#FF2B2B2B" />
-      <SolidColorBrush x:Key="AppWidgetBorderBrush" Color="#FF5A5A5A" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -64,12 +62,16 @@
 
   <!-- Widgets and the docks that hold them -->
   <Thickness x:Key="AppWidgetMargin">4</Thickness>
-  <Thickness x:Key="AppWidgetContentPadding">8</Thickness>
-  <Thickness x:Key="AppWidgetBorderThickness">1</Thickness>
   <x:Double x:Key="AppDockSideWidth">240</x:Double>
+  <!-- A toolbar row's height: the panel's title, its buttons and the widget's margin. -->
+  <x:Double x:Key="AppDockToolbarHeight">84</x:Double>
 
   <!-- History panel -->
   <Thickness x:Key="AppHistoryRowPadding">8,4</Thickness>
+
+  <!-- Layers panel -->
+  <Thickness x:Key="AppLayerRowPadding">4,0</Thickness>
+  <x:Double x:Key="AppLayerCheckBoxWidth">28</x:Double>
 
   <!-- The main window's smallest size, unless the screen has less room (WindowMinimumSize). -->
   <x:Double x:Key="AppWindowMinWidth">1280</x:Double>

@@ -33,6 +33,21 @@ public static class UndoStepNames
     /// <summary>Moving a layer in the stack.</summary>
     public const string MoveLayer = "UndoStepMoveLayer";
 
-    /// <summary>Changing a layer's properties.</summary>
+    /// <summary>Changing a layer's properties, with nothing more specific to call it.</summary>
     public const string SetLayerProperties = "UndoStepSetLayerProperties";
+
+    /// <summary>Duplicating a layer.</summary>
+    public const string DuplicateLayer = "UndoStepDuplicateLayer";
+
+    /// <summary>Merging a layer into the one below it.</summary>
+    public const string MergeLayerDown = "UndoStepMergeLayerDown";
+
+    /// <summary>Renaming a layer.</summary>
+    public const string RenameLayer = "UndoStepRenameLayer";
+
+    /// <summary>Showing or hiding a layer.</summary>
+    public const string ShowOrHideLayer = "UndoStepShowOrHideLayer";
+
+    /// <summary>Locking or unlocking a layer.</summary>
+    public const string LockOrUnlockLayer = "UndoStepLockOrUnlockLayer";
 }
