@@ -43,7 +43,7 @@ internal static class AppServices
 
         services.AddSingleton<IAppShell, AvaloniaAppShell>();
         services.AddSingleton<UnexpectedErrorHandler>();
-        services.AddSingleton<ShellDock>();
+        services.AddSingleton<ShellDocking>();
 
         services.AddSingleton<IActionProvider>(provider => new ShellActions(
             provider.GetRequiredService<IAppShell>(),
@@ -53,7 +53,7 @@ internal static class AppServices
         services.AddSingleton<IActionProvider, CanvasActions>();
         services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
-        services.AddSingleton<IActionProvider, ShellDockActions>();
+        services.AddSingleton<IActionProvider, WindowMenuActions>();
         services.AddSingleton<IActionProvider, LayerActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),
@@ -90,7 +90,7 @@ internal static class AppServices
 
         services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(),
             includeDebugMenu: BuildInfo.IsDebugBuild));
-        services.AddSingleton(ToolbarLayout.CreateDefault());
+        services.AddSingleton(ShellToolbars.CreateDefault());
         services.AddSingleton<MainWindowBuilder>();
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

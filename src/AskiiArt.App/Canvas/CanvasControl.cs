@@ -185,8 +185,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     }
 
     /// <summary>
-    /// How much of each edge docked widgets cover, in logical pixels. The canvas centres itself and
-    /// scrolls within the rest (ADR 0025).
+    /// How much of each edge windows and toolbars cover, in logical pixels. The canvas centres itself and
+    /// scrolls within the rest (ADR 0035).
     /// </summary>
     public Thickness SafeArea
     {

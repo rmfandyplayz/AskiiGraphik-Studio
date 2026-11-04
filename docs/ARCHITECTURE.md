@@ -37,7 +37,6 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | MVVM | CommunityToolkit.Mvvm | Source-generated and minimal |
 | DI | Microsoft.Extensions.DependencyInjection | Holds the registries for tools, importers, exporters and actions |
 | Graphics | SkiaSharp | **Use the exact version Avalonia depends on.** Never pin a different one. |
-| Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line: Dock.Avalonia, Dock.Avalonia.Themes.Fluent, Dock.Model.Mvvm, Dock.Serializer.SystemTextJson | A see-through layer over the canvas (§14.4, ADR 0025). Step 2.5b replaces it with our own system (ADR 0035) |
 | Tests | xUnit v3, Verify (snapshot tests), CsCheck (property-based tests), Avalonia.Headless | Run on Microsoft.Testing.Platform. xUnit v3 stays on 3.x and Verify on 32.x until Avalonia.Headless.XUnit supports xUnit 4 (ADR 0002) |
 | Logging | Microsoft.Extensions.Logging, writing to a rolling file through Serilog (Serilog.Extensions.Logging, Serilog.Sinks.File) | The owner attaches the log to bug reports (ADR 0006) |
 | CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push and pull request, and check formatting (ADR 0005) |
@@ -55,20 +54,23 @@ Directory.Packages.props     pinned package versions
 .github/workflows/ci.yml     build and test on Windows, macOS and Ubuntu (ADR 0005)
 docs/
   ARCHITECTURE.md  ROADMAP.md
+  DOCKING.md                 how windows and toolbars behave
   decisions/                 ADRs, named NNNN-short-title.md
   testing/                   TEMPLATE.md plus one manual test doc per step
 src/
   AskiiArt.Core/             model, commands, selection, ramps, tool logic, file format. BCL only.
   AskiiArt.Imaging/          fonts, glyph rasterization and atlas, glyph density, PNG export, image→ASCII. Core + SkiaSharp.
+  AskiiArt.Docking/          where windows and toolbars go: layout data, solver, edits. BCL only (ADR 0035).
   AskiiArt.App/              Avalonia app: shell, views, view models, canvas control, actions, settings.
 tests/
   Directory.Build.props      settings shared by the test projects
   AskiiArt.Core.Tests/
   AskiiArt.Imaging.Tests/
+  AskiiArt.Docking.Tests/
   AskiiArt.App.Tests/        Avalonia.Headless interaction tests (few and focused, see §19)
 ```
 
-Dependencies point strictly in the order `App → Imaging → Core`. Core never references the other two, and Imaging never references Avalonia. Inside each project, folders are organized by feature (`Documents/`, `Commands/`, `Selection/`, `Tools/`, `Ramps/`, `Formats/`, …), not by kind (`Interfaces/`, `Models/`).
+Dependencies point strictly in the order `App → Imaging → Core`, and `App → Docking`. Core never references the others, Imaging never references Avalonia, and Docking references nothing. Inside each project, folders are organized by feature (`Documents/`, `Commands/`, `Selection/`, `Tools/`, `Ramps/`, `Formats/`, …), not by kind (`Interfaces/`, `Models/`).
 
 ## 5. Document model
 
@@ -227,7 +229,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
 - **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
 - **Draw order:** composite → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
-- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0029). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
+- **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0035). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
 - **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015).
@@ -265,15 +267,15 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings.
 
-Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a plain strip along the top of the window (ADR 0007, ADR 0029).
+Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a plain strip along the top of the window (ADR 0007, ADR 0035).
 
 ### 14.4 Panels and docking
 
-*Step 2.5b replaces Dock with our own system (ADR 0035, `docs/DOCKING.md`). Until then this section describes the code.*
+Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The user calls these **windows**, and the code calls them panels, because `Window` is an Avalonia class. The shell has its own docking system (ADR 0035), and `docs/DOCKING.md` is its spec. Steps 2.5c to 2.5g are still building parts of that spec: so far, windows sit on the sides as widgets and toolbars sit on their anchors, and neither can be dragged.
 
-Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The shell uses **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings.
+The canvas is the main character. It paints everything between the menu bar and the status bar, which are plain strips, and `DockingHost` lies on top with no background: art shows around windows and toolbars and through them, and they always get input first. They still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. The window has a minimum size, lowered to fit small screens.
 
-The canvas is the main character (ADR 0025). It paints everything between the menu bar and the status bar, which are plain strips (ADR 0029), and Dock lies on top as a see-through layer: panels are widgets over the canvas, art shows around them and slides under them, and they always get input first. The toolbar is a panel like any other, so it can go anywhere a panel can. Docked widgets still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. Floating panels stay inside the Dock layer. The window has a minimum size, lowered to fit small screens.
+The layout is plain data (`DockingLayout`), saved in settings. `LayoutSolver` turns it and the current sizes into rectangles, and `LayoutEdits` turns one layout into the next. All of that is in `AskiiArt.Docking`, with no UI, so its rules are tested without one. Windows and toolbars are registered by id (`ShellCatalog`).
 
 ### 14.5 Theming, icons and text
 
@@ -396,9 +398,13 @@ Ask the owner about each of these at the milestone that needs it.
 - **Action:** an operation the user can invoke, bound to menus, toolbars and shortcuts (§14.2).
 - **Command:** an undoable change to the document (§9).
 - **Compositing / flattening:** combining the visible layers into one grid (§5.6).
+- **Dock:** opaque windows that touch the edge of the app window and each other, with tabs (§14.4, `docs/DOCKING.md`). Not the macOS Dock, or the library this project used to use.
 - **Glyph atlas:** a cache of pre-rendered character images (§11).
 - **Intensity:** a 0–1 value for how much ink a cell should have (§7).
 - **Occupancy:** whether a cell holds anything at all (§5.4).
 - **Ramp:** a mapping from intensity to glyphs, for example `" .:-=+*#%@"` (§7).
 - **Round-trip:** saving and then loading a document; the result must equal the original.
+- **Safe area:** what windows and toolbars leave free for centring the canvas (§14.4).
 - **Snapshot test (golden file):** a test that compares output against a saved, human-approved expected result.
+- **Widget:** a translucent window in a stack, with gaps around it (§14.4, `docs/DOCKING.md`).
+- **Window:** a content panel such as Layers or History, as the user sees it (§14.4). The whole program is the *app window*.

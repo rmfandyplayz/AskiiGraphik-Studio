@@ -1,14 +1,14 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- The main window. The menu bar and the status bar are plain strips along the top and bottom (ADR 0029).
-     Between them the canvas fills the space, with the dock layout on top of it, which passes clicks
-     through wherever it has no widget (ADR 0025). MainWindowBuilder fills them in. -->
+<!-- The main window. The menu bar and the status bar are plain strips along the top and bottom. Between
+     them the canvas fills the space, with windows and toolbars on top of it. Their host has no background,
+     so clicks reach the canvas wherever there's nothing (ADR 0035). MainWindowBuilder fills them in. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:res="using:AskiiArt.App.Resources"
         xmlns:canvas="using:AskiiArt.App.Canvas"
         xmlns:shell="using:AskiiArt.App.Shell"
-        xmlns:dock="using:Dock.Avalonia.Controls"
+        xmlns:docking="using:AskiiArt.App.Shell.Docking"
         x:Class="AskiiArt.App.Shell.MainWindow"
         x:DataType="canvas:CanvasViewModel"
         Title="{x:Static res:Strings.AppDisplayName}">
@@ -17,9 +17,7 @@
     <shell:StatusBarView DockPanel.Dock="Bottom" />
     <Panel>
       <canvas:CanvasView x:Name="CanvasView" />
-      <dock:DockControl x:Name="PanelDock"
-                        InitializeFactory="True"
-                        EnableManagedWindowLayer="True" />
+      <docking:DockingHost x:Name="DockingLayer" />
     </Panel>
   </DockPanel>
 </Window>

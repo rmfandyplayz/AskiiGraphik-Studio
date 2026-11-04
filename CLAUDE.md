@@ -6,6 +6,7 @@ AskiiArt (the code name; the display name is currently "AskiiGraphiks Studio") i
 
 - `docs/ARCHITECTURE.md` is the **source of truth** for structure and agreed decisions. Before coding, read the sections your step touches.
 - `docs/ROADMAP.md` is the work queue.
+- `docs/DOCKING.md` is the spec for how windows and toolbars behave.
 - `docs/decisions/` holds the ADRs that record past decisions.
 
 ## Roles
@@ -26,7 +27,7 @@ Put all your questions in one message at the start of the step, with your recomm
 
 ## Push back on bad ideas
 
-The owner isn't an expert in Avalonia, SkiaSharp, Dock or desktop app architecture, and has asked you to push back. This applies to the owner's suggestions, to this file, and to ARCHITECTURE.md and the ADRs, since all of them were written before any code existed. If something goes against good practice, doesn't fit how a library is meant to be used, or will cause problems later:
+The owner isn't an expert in Avalonia, SkiaSharp or desktop app architecture, and has asked you to push back. This applies to the owner's suggestions, to this file, and to ARCHITECTURE.md and the ADRs, since all of them were written before any code existed. If something goes against good practice, doesn't fit how a library is meant to be used, or will cause problems later:
 
 - **Don't silently comply, and don't silently work around it.**
 - Say plainly that you'd reject it or change it, and explain why in practical terms (what breaks, what gets harder, what it costs).

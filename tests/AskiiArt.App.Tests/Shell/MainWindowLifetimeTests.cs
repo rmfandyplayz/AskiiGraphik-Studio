@@ -114,9 +114,9 @@ public sealed class MainWindowLifetimeTests : IDisposable
     private MainWindowLifetime CreateLifetime(bool keepsRunningWithoutWindow)
     {
         var builder = new MainWindowBuilder(_actions, MenuLayout.CreateDefault(isMacOS: true, includeDebugMenu: false),
-            ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
+            ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
-            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings,
+            new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument));
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);

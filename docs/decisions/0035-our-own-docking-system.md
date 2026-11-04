@@ -5,8 +5,6 @@
 
 Status: Accepted
 
-> The decision is made, and the code follows in step 2.5b. Until then ADRs 0025 and 0029 still describe how the app works, and 2.5b marks them superseded.
-
 ## Context
 
 Testing 2.1 showed that docking felt like a programming IDE, not an art app. On 2026-11-04 the owner delivered a brief for what they want instead: Unity-style toolbars on 8 anchors, widget stacks that behave like iOS widgets, and Illustrator-style docks (`docs/DOCKING.md`).
@@ -17,14 +15,16 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 
 ## Decision
 
-- **Build our own system** and remove the 4 Dock packages in step 2.5b.
+- **Build our own system,** and remove the 4 Dock packages. Step 2.5b did this.
 - **New project:** `src/AskiiArt.Docking`, with no dependencies, tested by `tests/AskiiArt.Docking.Tests`. `App` references it. Views stay in `App/Shell/Docking`.
 - **Layout as data → pure solver → thin view.** The layout is immutable data. A solver turns it, the app window's size and measured sizes into rectangles. Edits are pure functions from layout to layout, and a drag preview solves the edited layout, so a preview can't disagree with its drop.
-- **A host panel with no background,** so empty pixels reach the canvas with no workaround.
+- **A host panel with no background** (`DockingHost`), so empty pixels reach the canvas with no workaround.
+- **Unchanged from ADR 0029:** the menu bar (except on macOS) and the status bar are plain strips outside the host, the canvas's scrollbars are off unless `CanvasView.ShowScrollBars` is set, and the window has a minimum size lowered to fit small screens.
+- **Safe area:** the solver works it out, and `MainWindow` passes it to `CanvasView` after each layout pass. Sides count, and so does an anchored toolbar along the edge it lies on.
 - **Windows and toolbars are registered by id,** ready for M8's customizer and M8b's plugins.
 - **Floating stays inside the app window,** as in ADR 0025, for the same reasons. It also keeps frosted glass possible.
 - **Words:** "dock" and "widget" replace "hard dock" and "soft dock". Code says *panel* for a window, because `Window` is an Avalonia class.
-- **A new settings key.** The old layout is ignored once, so everyone's layout resets when this arrives.
+- **A new settings key,** `dockingLayout`, so everyone's layout resets once when this arrives. `IAppSettings` has no way to remove an entry, and adding one for this alone isn't worth it, so the old `dockLayoutV2` stays in the file, unread. A layout with the wrong shape falls back to the default. One with the right shape is repaired (`LayoutRepair`), so a window or toolbar added in a later version appears rather than counting as closed.
 - **Built in steps 2.5b to 2.5g,** with dragging temporarily gone between 2.5b and the steps that bring it back.
 
 ## Alternatives
@@ -42,4 +42,4 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 - Windows can't be dragged to a second monitor, as is already true today.
 - Most of 2.1's retest list checks Dock behaviour that goes away. What still applies moves into the tests for 2.5b to 2.5g, and 2.5g closes 2.1.
 - M8's "layout builder" idea becomes a toolbar customizer, since this system already places things anywhere.
-- CLAUDE.md, ARCHITECTURE §3, §4, §14.4 and the glossary change in 2.5b, with the code.
+- The same word, "Dock", is still the macOS icon bar in the app's code and in test docs.

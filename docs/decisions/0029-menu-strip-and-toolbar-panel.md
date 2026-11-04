@@ -3,7 +3,9 @@
 
 # 0029: The menu bar is a plain strip, and the toolbar is a Dock panel
 
-Status: Accepted
+Status: Superseded by 0035
+
+> Step 2.5b replaced the Dock library with our own system, and the toolbar is no longer a panel. The menu bar and status bar stay plain strips. See [ADR 0035](0035-our-own-docking-system.md).
 
 ## Context
 
@@ -32,5 +34,3 @@ ADR 0027 put the menu bar and toolbar in a fixed row outside Dock, so they could
 - More toolbars (M8) mean more panels with the same view and their own `ToolbarLayout`, and nothing in the shell has to change.
 - Window-edge targets cover only the Dock layer, so nothing lands above the menu bar or below the status bar, and floating panels can't cover either.
 - Without scrollbars, nothing on screen shows where the view is within a big canvas. The owner has parked a minimap for that (`docs/TEMPORARY-UI.md`).
-
-Updated 2026-11-04: ADR 0035 replaces Dock with our own system. This ADR still describes the code until step 2.5b, which marks it superseded.

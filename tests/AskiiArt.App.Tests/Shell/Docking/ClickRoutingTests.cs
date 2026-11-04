@@ -6,6 +6,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
@@ -20,25 +21,23 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Dock.Avalonia.Controls;
-using Dock.Model.Core;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Shell.Docking;
 
 /// <summary>
-/// The real main window: the canvas underneath, the panel layout on top (ADR 0025). These guard the
-/// styles in DockStyles.axaml, which depend on how Dock builds its templates, so a Dock update that
-/// changes them fails here.
+/// The real main window: the canvas underneath, windows and toolbars on top of it (ADR 0035). Empty
+/// spots have to reach the canvas, and windows and toolbars have to get clicks first.
 /// </summary>
 public sealed class ClickRoutingTests : IDisposable
 {
     private readonly FakeAppShell _shell = new();
     private readonly FakeDocumentDialogs _dialogs = new();
     private readonly TestCanvas _canvas = new();
-    private readonly ShellDock _dock = new(new FakeAppSettings(), NullLogger<ShellDock>.Instance);
+    private readonly ShellDocking _docking = new(new FakeAppSettings(), NullLogger<ShellDocking>.Instance);
     private readonly MainWindow _window;
 
     public ClickRoutingTests()
@@ -46,8 +45,8 @@ public sealed class ClickRoutingTests : IDisposable
         var layers = new LayersPanelViewModel(_canvas.ActiveDocument);
         var actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, layers: layers));
         var builder = new MainWindowBuilder(actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
-            ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
-            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell, _dock, new FakeAppSettings(),
+            ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
+            _canvas.CreateDocumentFiles(_dialogs, _shell), _shell, _docking, new FakeAppSettings(),
             new HistoryPanelViewModel(_canvas.ActiveDocument), layers);
 
         _window = builder.Build(KeyModifiers.Control);
@@ -73,34 +72,101 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheToolbarHugsItsButtons_AndTheRestOfItsRowBelongsToTheCanvas()
+    public void AToolbar_HugsItsButtons_AndTheRestOfItsEdgeBelongsToTheCanvas()
     {
-        ToolbarView.Bar = new Border { Width = 100, Height = 20 };
+        var view = ToolbarView;
+        view.Bar = new Border { Width = 100, Height = 20 };
         Pump();
-        var toolbar = RectIn(ToolbarView);
-        Assert.True(toolbar.Left > 100);
+        var toolbar = RectIn(view);
 
-        Assert.Same(Canvas, _window.InputHitTest(new Point(toolbar.Left / 2, toolbar.Center.Y)));
+        Assert.Same(Canvas, _window.InputHitTest(new Point(toolbar.Right + 20, toolbar.Center.Y)));
     }
 
     [AvaloniaFact]
-    public void TheToolbar_GetsClicksFirst()
+    public void EveryToolbar_GetsClicksFirst()
     {
-        var hit = _window.InputHitTest(RectIn(ToolbarView).Center) as Visual;
+        Assert.Equal(4, Toolbars.Count);
+        Assert.All(Toolbars, toolbar =>
+        {
+            var hit = _window.InputHitTest(RectIn(toolbar).Center) as Visual;
 
-        Assert.NotNull(hit);
-        Assert.NotSame(Canvas, hit);
-        Assert.Contains(ToolbarView, hit.GetVisualAncestors().Append(hit));
+            Assert.NotNull(hit);
+            Assert.NotSame(Canvas, hit);
+            Assert.Contains(toolbar, hit.GetVisualAncestors().Append(hit));
+        });
     }
 
     [AvaloniaFact]
-    public void TheToolbarsRow_FitsItsButtons()
+    public void EveryToolbar_FitsItsButtons()
     {
-        var bar = ToolbarView.GetVisualDescendants().OfType<StackPanel>()
-            .Single(panel => panel.Name == ToolbarBuilder.ControlName);
+        Assert.All(Toolbars, toolbar =>
+        {
+            var bar = toolbar.GetVisualDescendants().OfType<StackPanel>()
+                .Single(panel => panel.Name == ToolbarBuilder.ControlName);
 
-        Assert.True(bar.DesiredSize.Height <= ToolbarView.Bounds.Height,
-            $"The buttons need {bar.DesiredSize.Height}, and the row gives them {ToolbarView.Bounds.Height}.");
+            Assert.True(bar.DesiredSize.Height <= toolbar.Bounds.Height,
+                $"The buttons need {bar.DesiredSize.Height}, and the toolbar gives them {toolbar.Bounds.Height}.");
+            Assert.True(bar.DesiredSize.Width <= toolbar.Bounds.Width,
+                $"The buttons need {bar.DesiredSize.Width}, and the toolbar gives them {toolbar.Bounds.Width}.");
+        });
+    }
+
+    [AvaloniaFact]
+    public void TheDefaultLayout_PutsToolbarsOnTheirAnchors_WithoutOverlapping()
+    {
+        var region = RectIn(Canvas);
+        var widgets = RectIn(Frames.First());
+        var file = RectIn(ToolbarWith(Strings.ActionNew));
+        var tools = RectIn(ToolbarWith(Strings.ToolText));
+        var edit = RectIn(ToolbarWith(Strings.ActionUndo));
+        var view = RectIn(ToolbarWith(Strings.ActionZoomIn));
+
+        Assert.True(file.Left < region.Width / 4 && file.Top < region.Center.Y);
+        Assert.True(tools.Bottom > region.Center.Y);
+        Assert.True(edit.Right <= widgets.Left && edit.Top < region.Center.Y);
+        Assert.True(view.Right <= widgets.Left && view.Bottom > region.Center.Y);
+        Assert.False(file.Intersects(edit));
+        Assert.False(tools.Intersects(view));
+    }
+
+    [AvaloniaFact]
+    public void NoToolbar_PassesTheWindowsTopOrBottomEdge()
+    {
+        var top = Frames.Min(frame => RectIn(frame).Top);
+        var bottom = Frames.Max(frame => RectIn(frame).Bottom);
+
+        Assert.All(Toolbars, toolbar =>
+        {
+            Assert.True(RectIn(toolbar).Top >= top - 1);
+            Assert.True(RectIn(toolbar).Bottom <= bottom + 1);
+        });
+    }
+
+    [AvaloniaFact]
+    public void WindowsAndToolbars_AreTranslucent()
+    {
+        Assert.True(Application.Current!.TryGetResource("AppWidgetBrush", _window.ActualThemeVariant, out var brush));
+
+        Assert.InRange(((ISolidColorBrush)brush!).Color.A, 1, 254);
+    }
+
+    [AvaloniaFact]
+    public void HidingAToolbar_GivesTheCanvasItsBand_OnlyOnceTheLastOneOnThatEdgeGoes()
+    {
+        var before = Canvas.Viewport!.Insets.Top;
+        Assert.True(before > 0);
+
+        _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
+        Pump();
+        Assert.Equal(before, Canvas.Viewport!.Insets.Top);
+
+        _docking.ToggleToolbar(ShellDockingIds.EditToolbar);
+        Pump();
+        Assert.Equal(0, Canvas.Viewport!.Insets.Top);
+
+        _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
+        Pump();
+        Assert.Equal(before, Canvas.Viewport!.Insets.Top);
     }
 
     [AvaloniaFact]
@@ -115,86 +181,20 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AToolbarThatDoesntFit_ScrollsWithTheWheel()
+    public void AToolbarThatDoesntFit_StaysInsideTheCanvasRegion_AndScrollsWithTheWheel()
     {
-        ToolbarView.Bar = new Border { Width = 5000, Height = 20 };
+        var view = ToolbarView;
+        view.Bar = new Border { Width = 5000, Height = 20 };
         Pump();
-        var scroller = ToolbarView.GetVisualDescendants().OfType<ScrollViewer>().Single();
+        var scroller = view.GetVisualDescendants().OfType<ScrollViewer>().Single();
         Assert.True(scroller.Extent.Width > scroller.Viewport.Width);
+        Assert.True(RectIn(view).Right <= RectIn(Frames.First()).Left);
         Assert.Equal(ScrollBarVisibility.Hidden, scroller.HorizontalScrollBarVisibility);
 
         _window.MouseWheel(RectIn(scroller).Center, new Vector(0, -1));
         Pump();
 
         Assert.True(scroller.Offset.X > 0);
-    }
-
-    [AvaloniaFact]
-    public void TheToolbar_DocksOnAWindowEdge_AndTheCanvasGetsItsRowBack()
-    {
-        StartDragging(ShellDockIds.ToolbarPanel);
-
-        DropOnWindowEdge("PART_LeftSelector");
-
-        var sideWidth = ShellLayoutMetrics.FromResources(Application.Current!).SideWidth * _window.RenderScaling;
-        Assert.InRange(Canvas.Viewport!.Insets.Left, sideWidth, sideWidth + 8);
-        Assert.Equal(0, Canvas.Viewport!.Insets.Top);
-    }
-
-    [AvaloniaFact]
-    public void TheToolbar_DockedAlongTheBottom_KeepsItsHeight()
-    {
-        StartDragging(ShellDockIds.ToolbarPanel);
-
-        DropOnWindowEdge("PART_BottomSelector");
-
-        var height = ShellLayoutMetrics.FromResources(Application.Current!).ToolbarHeight * _window.RenderScaling;
-        Assert.InRange(Canvas.Viewport!.Insets.Bottom, height, height + 8);
-        Assert.Equal(0, Canvas.Viewport!.Insets.Top);
-    }
-
-    [AvaloniaFact]
-    public void TheToolbar_Floats()
-    {
-        StartDragging(ShellDockIds.ToolbarPanel);
-
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(new Point(300, 400), MouseButton.Left);
-        Pump();
-
-        Assert.Single(Root.Windows!);
-        Assert.Single(_window.GetVisualDescendants().OfType<ToolbarPanelView>());
-        Assert.Equal(0, Canvas.Viewport!.Insets.Top);
-    }
-
-    [AvaloniaFact]
-    public void ReopeningTheToolbar_PutsItBackAlongTheTop()
-    {
-        var before = Canvas.Viewport!.Insets.Top;
-        Assert.True(before > 0);
-
-        _dock.TogglePanel(ShellDockIds.ToolbarPanel);
-        Pump();
-        Assert.Equal(0, Canvas.Viewport!.Insets.Top);
-        Assert.Empty(_window.GetVisualDescendants().OfType<ToolbarPanelView>());
-
-        _dock.TogglePanel(ShellDockIds.ToolbarPanel);
-        Pump();
-        Assert.InRange(Canvas.Viewport!.Insets.Top, before, before + 8);
-        Assert.Single(_window.GetVisualDescendants().OfType<ToolbarPanelView>());
-    }
-
-    [AvaloniaFact]
-    public void ReopeningAPanel_DoesntTabItWithTheToolbar()
-    {
-        _dock.TogglePanel(ShellDockIds.HistoryPanel);
-        _dock.TogglePanel(ShellDockIds.HistoryPanel);
-        Pump();
-
-        var host = ShellDockFactory.AllDockables(Root).OfType<IDock>().Single(dock =>
-            dock.VisibleDockables?.Any(dockable => dockable.Id == ShellDockIds.HistoryPanel) == true);
-        Assert.Contains(host.VisibleDockables!, dockable => dockable.Id == ShellDockIds.LayersPanel);
     }
 
     [AvaloniaFact]
@@ -213,16 +213,16 @@ public sealed class ClickRoutingTests : IDisposable
     {
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!);
 
-        Assert.Equal(1280, metrics.WindowMinWidth);
-        Assert.Equal(720, metrics.WindowMinHeight);
+        Assert.Equal(1280, metrics.MainWindowMinWidth);
+        Assert.Equal(720, metrics.MainWindowMinHeight);
         Assert.True(_window.MinWidth > 0);
         Assert.True(_window.MinHeight > 0);
-        Assert.True(_window.MinWidth <= metrics.WindowMinWidth);
-        Assert.True(_window.MinHeight <= metrics.WindowMinHeight);
+        Assert.True(_window.MinWidth <= metrics.MainWindowMinWidth);
+        Assert.True(_window.MinHeight <= metrics.MainWindowMinHeight);
     }
 
     [AvaloniaFact]
-    public void AMovablePanel_GetsClicksFirst()
+    public void AWindow_GetsClicksFirst()
     {
         var hit = _window.InputHitTest(new Point(_window.Bounds.Width - 100, 400));
 
@@ -231,7 +231,7 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void ClickingTheCanvas_ThroughTheLayout_Reaches_ItsTool()
+    public void ClickingTheCanvas_ThroughTheHost_ReachesItsTool()
     {
         var hovered = _canvas.ViewModel.HoveredCell;
         var middle = Canvas.Viewport!.CanvasBounds.Center;
@@ -244,205 +244,59 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void WhileAPanelIsBeingDragged_DropAreasCatchTheHit()
-    {
-        var host = _window.Panels;
-        var middle = new Point(300, 400);
-
-        host.IsDraggingDock = true;
-        Pump();
-        var hitWhileDragging = _window.InputHitTest(middle);
-
-        host.IsDraggingDock = false;
-        Pump();
-
-        Assert.NotSame(Canvas, hitWhileDragging);
-        Assert.Same(Canvas, _window.InputHitTest(middle));
-    }
-
-    [AvaloniaFact]
-    public void TheCanvas_KeepsItsMiddleClearOfWidgets()
+    public void TheCanvas_KeepsItsMiddleClearOfWindowsAndToolbars()
     {
         var viewport = Canvas.Viewport!;
         var scaling = _window.RenderScaling;
+        var canvas = RectIn(Canvas);
 
         var usableLeft = viewport.Insets.Left;
         var usableRight = viewport.ViewportSize.Width - viewport.Insets.Right;
-        var toolbarBottom = (RectIn(ToolbarView).Bottom - RectIn(Canvas).Top) * scaling;
-        Assert.True(viewport.Insets.Top >= toolbarBottom,
-            $"Insets start at {viewport.Insets.Top}, and the toolbar ends at {toolbarBottom}.");
-        Assert.True(viewport.Insets.Right >=
-                    ShellLayoutMetrics.FromResources(Application.Current!).SideWidth * scaling);
-        Assert.Equal(0, viewport.Insets.Bottom);
+        Assert.Equal(0, usableLeft);
+        Assert.True(viewport.Insets.Right >= (canvas.Right - RectIn(Frames.First()).Left) * scaling - 1);
+        Assert.True(viewport.Insets.Top >= (RectIn(ToolbarWith(Strings.ActionNew)).Bottom - canvas.Top) * scaling - 1);
+        Assert.True(viewport.Insets.Bottom >= (canvas.Bottom - RectIn(ToolbarWith(Strings.ActionZoomIn)).Top) * scaling - 1);
         Assert.Equal((usableLeft + usableRight) / 2.0, viewport.CanvasBounds.Center.X, tolerance: 1);
     }
 
     [AvaloniaFact]
-    public void ClosingEveryMovablePanel_GivesTheCanvasTheirSpace()
+    public void ClosingEveryWindow_GivesTheCanvasTheirSpace()
     {
         var before = Canvas.Viewport!.Insets.Right;
-        var layout = _window.Panels;
-        var root = (Dock.Model.Controls.IRootDock)layout.Layout!;
 
-        foreach (var id in new[] { ShellDockIds.LayersPanel, ShellDockIds.HistoryPanel })
-            layout.Factory!.CloseDockable(ShellDockFactory.AllDockables(root).Single(dockable => dockable.Id == id));
-
+        _docking.ToggleWindow(ShellDockingIds.LayersPanel);
+        _docking.ToggleWindow(ShellDockingIds.HistoryPanel);
         Pump();
 
-        Assert.True(Canvas.Viewport!.Insets.Right < before);
+        Assert.True(before > 0);
+        Assert.Equal(0, Canvas.Viewport!.Insets.Right);
     }
 
     [AvaloniaFact]
-    public void TheToolbarAndMenuBar_ShowInTheirPlaces()
+    public void ClosingAWindow_GivesItsHeightToTheOtherOne()
     {
-        Assert.Contains(ToolbarView.GetVisualDescendants(),
-            visual => visual is StackPanel { Name: ToolbarBuilder.ControlName });
+        var layers = Frames.First();
+        var before = RectIn(layers).Height;
+
+        _docking.ToggleWindow(ShellDockingIds.HistoryPanel);
+        Pump();
+
+        Assert.True(RectIn(layers).Height > before);
+    }
+
+    [AvaloniaFact]
+    public void AWindow_ShowsItsTitle()
+    {
+        Assert.Contains(Strings.PanelLayers, Frames.Select(frame => frame.Title));
+        Assert.Contains(Strings.PanelHistory, Frames.Select(frame => frame.Title));
+    }
+
+    [AvaloniaFact]
+    public void TheToolbarsAndMenuBar_ShowInTheirPlaces()
+    {
+        Assert.All(Toolbars, toolbar => Assert.Contains(toolbar.GetVisualDescendants(),
+            visual => visual is StackPanel { Name: ToolbarBuilder.ControlName }));
         Assert.Contains(Named<Border>("MenuBarStrip").GetVisualDescendants(), visual => visual is NativeMenuBar);
-    }
-
-    [AvaloniaFact]
-    public void DraggingAPanelOverTheCanvas_OffersTheWindowEdges_ButNotTheCanvasItself()
-    {
-        StartDragging(ShellDockIds.HistoryPanel);
-
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-
-        Assert.NotEmpty(_window.GetVisualDescendants().OfType<GlobalDockTarget>());
-        Assert.Empty(_window.GetVisualDescendants().OfType<DockTarget>());
-        _window.MouseUp(new Point(300, 400), MouseButton.Left);
-        Pump();
-    }
-
-    [AvaloniaFact]
-    public void ReleasingAPanelOverTheCanvas_FloatsIt()
-    {
-        StartDragging(ShellDockIds.HistoryPanel);
-
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(new Point(300, 400), MouseButton.Left);
-        Pump();
-
-        var floating = Assert.Single(Root.Windows!);
-        Assert.Contains(ShellDockFactory.AllDockables((Dock.Model.Controls.IRootDock)floating.Layout!),
-            dockable => dockable.Id == ShellDockIds.HistoryPanel);
-    }
-
-    [AvaloniaFact]
-    public void DroppingAPanelOnTheLeftEdge_DocksItLeftOfTheCanvas_AtTheSideWidth()
-    {
-        StartDragging(ShellDockIds.HistoryPanel);
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-
-        var leftTarget = _window.GetVisualDescendants().OfType<GlobalDockTarget>().Single()
-            .GetVisualDescendants().OfType<Image>().Single(image => image.Name == "PART_LeftSelector");
-        var onTarget = RectIn(leftTarget).Center;
-        _window.MouseMove(onTarget, RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(onTarget, MouseButton.Left);
-        Pump();
-
-        Assert.True(Root.Windows is null || Root.Windows.Count == 0);
-        var sideWidth = ShellLayoutMetrics.FromResources(Application.Current!).SideWidth * _window.RenderScaling;
-        Assert.InRange(Canvas.Viewport!.Insets.Left, sideWidth, sideWidth + 8);
-    }
-
-    [AvaloniaFact]
-    public void DraggingAFloatingPanelOverTheCanvas_OffersTheWindowEdges_ButNotTheCanvasItself()
-    {
-        FloatAndStartDragging(ShellDockIds.HistoryPanel);
-
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-
-        Assert.NotEmpty(_window.GetVisualDescendants().OfType<GlobalDockTarget>());
-        Assert.Empty(_window.GetVisualDescendants().OfType<DockTarget>());
-        _window.MouseUp(new Point(300, 400), MouseButton.Left);
-        Pump();
-    }
-
-    [AvaloniaFact]
-    public void DroppingAFloatingPanelOnTheLeftEdge_DocksItLeftOfTheCanvas_AtTheSideWidth()
-    {
-        FloatAndStartDragging(ShellDockIds.HistoryPanel);
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
-
-        var leftTarget = _window.GetVisualDescendants().OfType<GlobalDockTarget>().Single()
-            .GetVisualDescendants().OfType<Image>().Single(image => image.Name == "PART_LeftSelector");
-        var onTarget = RectIn(leftTarget).Center;
-        _window.MouseMove(onTarget, RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(onTarget, MouseButton.Left);
-        Pump();
-
-        Assert.True(Root.Windows is null || Root.Windows.Count == 0);
-        Assert.Contains(ShellDockFactory.AllDockables(Root), dockable => dockable.Id == ShellDockIds.HistoryPanel);
-        Assert.DoesNotContain(ShellDockFactory.AllDockables(Root), dockable => dockable is ManagedDockWindowDocument);
-        var sideWidth = ShellLayoutMetrics.FromResources(Application.Current!).SideWidth * _window.RenderScaling;
-        Assert.InRange(Canvas.Viewport!.Insets.Left, sideWidth, sideWidth + 8);
-    }
-
-    [AvaloniaFact]
-    public void ReleasingAFloatingPanelOverTheCanvas_LeavesItFloating_AndTheCanvasGetsClicksAgain()
-    {
-        FloatAndStartDragging(ShellDockIds.HistoryPanel);
-        var over = new Point(300, 400);
-        _window.MouseMove(over, RawInputModifiers.LeftMouseButton);
-        Pump();
-        Assert.True(_window.Panels.IsDraggingDock);
-
-        _window.MouseUp(over, MouseButton.Left);
-        Pump();
-
-        Assert.Single(Root.Windows!);
-        Assert.False(_window.Panels.IsDraggingDock);
-        Assert.Same(Canvas, _window.InputHitTest(new Point(600, 200)));
-    }
-
-    [AvaloniaTheory]
-    [InlineData("PART_DragHandle")]
-    [InlineData("PART_Grid")]
-    public void AFloatingPanel_MovesFromAnywhereOnItsHeader(string partOfHeader)
-    {
-        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
-        _window.Panels.Factory!.FloatDockable(panel);
-        Pump();
-        var floating = _window.GetVisualDescendants().OfType<MdiDocumentWindow>().Single();
-        var part = floating.GetVisualDescendants().OfType<Control>().First(control => control.Name == partOfHeader);
-        var before = RectIn(floating).TopLeft;
-        var start = RectIn(part).Center;
-
-        _window.MouseDown(start, MouseButton.Left);
-        _window.MouseMove(start + new Point(-400, 0), RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(start + new Point(-400, 0), MouseButton.Left);
-        Pump();
-
-        Assert.Equal(before.X - 400, RectIn(floating).X);
-    }
-
-    [AvaloniaFact]
-    public void DroppingAFloatingPanelOnADockedPanel_TabsThemTogether()
-    {
-        FloatAndStartDragging(ShellDockIds.HistoryPanel);
-        var layers = _window.GetVisualDescendants().OfType<ToolChromeControl>()
-            .Single(chrome => chrome.DataContext is IDock { ActiveDockable.Id: ShellDockIds.LayersPanel });
-        var over = RectIn(layers).Center;
-        _window.MouseMove(over, RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseMove(over + new Point(1, 1), RawInputModifiers.LeftMouseButton);
-        Pump();
-
-        _window.MouseUp(over + new Point(1, 1), MouseButton.Left);
-        Pump();
-
-        Assert.True(Root.Windows is null || Root.Windows.Count == 0);
-        var both = ShellDockFactory.AllDockables(Root).OfType<IDock>().Single(dock =>
-            dock.VisibleDockables?.Any(dockable => dockable.Id == ShellDockIds.HistoryPanel) == true);
-        Assert.Contains(both.VisibleDockables!, dockable => dockable.Id == ShellDockIds.LayersPanel);
     }
 
     [AvaloniaFact]
@@ -482,12 +336,10 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheHistoryPanel_StaysInStep_WhileItFloats()
+    public void TheHistoryPanel_StaysInStep()
     {
         Paint('a');
         var history = _canvas.Session.History;
-        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
-        _window.Panels.Factory!.FloatDockable(panel);
         Pump();
         var steps = HistoryList();
         Assert.Equal(1, steps.SelectedIndex);
@@ -529,34 +381,6 @@ public sealed class ClickRoutingTests : IDisposable
         Assert.Equal(3, rows.ItemCount);
         Assert.Equal(0, rows.SelectedIndex);
         Assert.Equal(opened.ActiveLayer.Id, ((LayerRow)rows.SelectedItem!).LayerId);
-    }
-
-    [AvaloniaFact]
-    public void FloatingAPanel_KeepsItOpenAsFarAsTheWindowMenuKnows()
-    {
-        var lastAnswer = false;
-        _dock.PanelsChanged += (_, _) => lastAnswer = _dock.IsPanelOpen(ShellDockIds.HistoryPanel);
-        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
-
-        _window.Panels.Factory!.FloatDockable(panel);
-        Pump();
-
-        Assert.True(lastAnswer);
-    }
-
-    [AvaloniaFact]
-    public void ClosingAFloatingPanel_TellsTheWindowMenu()
-    {
-        var lastAnswer = true;
-        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == ShellDockIds.HistoryPanel);
-        _window.Panels.Factory!.FloatDockable(panel);
-        Pump();
-        _dock.PanelsChanged += (_, _) => lastAnswer = _dock.IsPanelOpen(ShellDockIds.HistoryPanel);
-
-        _dock.TogglePanel(ShellDockIds.HistoryPanel);
-        Pump();
-
-        Assert.False(lastAnswer);
     }
 
     [AvaloniaFact]
@@ -686,22 +510,16 @@ public sealed class ClickRoutingTests : IDisposable
         return RectIn(name).Center;
     }
 
-    private void DropOnWindowEdge(string targetName)
-    {
-        _window.MouseMove(new Point(300, 400), RawInputModifiers.LeftMouseButton);
-        Pump();
+    private List<ToolbarPanelView> Toolbars => [.. _window.GetVisualDescendants().OfType<ToolbarPanelView>()];
 
-        var target = _window.GetVisualDescendants().OfType<GlobalDockTarget>().Single()
-            .GetVisualDescendants().OfType<Image>().Single(image => image.Name == targetName);
-        var onTarget = RectIn(target).Center;
-        _window.MouseMove(onTarget, RawInputModifiers.LeftMouseButton);
-        Pump();
-        _window.MouseUp(onTarget, MouseButton.Left);
-        Pump();
-    }
+    private List<WindowFrame> Frames => [.. _window.GetVisualDescendants().OfType<WindowFrame>()];
 
-    private ToolbarPanelView ToolbarView =>
-        _window.GetVisualDescendants().OfType<ToolbarPanelView>().Single();
+    // Any one toolbar, for tests about what a toolbar does.
+    private ToolbarPanelView ToolbarView => ToolbarWith(Strings.ActionNew);
+
+    private ToolbarPanelView ToolbarWith(string label) => Toolbars.Single(toolbar =>
+        toolbar.GetVisualDescendants().OfType<Button>()
+            .Any(button => Equals(button.Content, UiText.WithoutAccessKey(label))));
 
     private ListBox HistoryList() =>
         _window.GetVisualDescendants().OfType<ListBox>().Single(list => list.Name == "Steps");
@@ -711,35 +529,6 @@ public sealed class ClickRoutingTests : IDisposable
         var builder = new CellEditBuilder(_canvas.Document, _canvas.Document.ActiveFrame.Layers[0].Id);
         builder.Set(new CellPoint(0, 0), Cell.FromGlyph(new Rune(glyph)));
         _canvas.Session.History.Execute(builder.Build()!);
-    }
-
-    private Dock.Model.Controls.IRootDock Root => (Dock.Model.Controls.IRootDock)_window.Panels.Layout!;
-
-    private void StartDragging(string panelId)
-    {
-        var grip = _window.GetVisualDescendants().OfType<ToolChromeControl>()
-            .Single(chrome => chrome.DataContext is IDock { ActiveDockable.Id: var active } && active == panelId)
-            .GetVisualDescendants().OfType<Grid>().First(grid => grid.Name == "PART_Grip");
-        var start = RectIn(grip).TopLeft + new Point(20, grip.Bounds.Height / 2);
-
-        _window.MouseDown(start, MouseButton.Left);
-        _window.MouseMove(start + new Point(-30, 30), RawInputModifiers.LeftMouseButton);
-        Pump();
-    }
-
-    private void FloatAndStartDragging(string panelId)
-    {
-        var panel = ShellDockFactory.AllDockables(Root).Single(dockable => dockable.Id == panelId);
-        _window.Panels.Factory!.FloatDockable(panel);
-        Pump();
-
-        var floating = _window.GetVisualDescendants().OfType<MdiDocumentWindow>().Single();
-        var header = floating.GetVisualDescendants().OfType<Control>().First(control => control.Name == "PART_Header");
-        var start = RectIn(header).TopLeft + new Point(40, header.Bounds.Height / 2);
-
-        _window.MouseDown(start, MouseButton.Left);
-        _window.MouseMove(start + new Point(-30, 30), RawInputModifiers.LeftMouseButton);
-        Pump();
     }
 
     private T Named<T>(string name) where T : Control =>

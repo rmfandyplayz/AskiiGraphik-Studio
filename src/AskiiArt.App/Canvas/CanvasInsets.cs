@@ -4,6 +4,6 @@
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// How much of each edge of the canvas viewport docked widgets cover, in device pixels (ADR 0025).
+/// How much of each edge of the canvas viewport windows and toolbars cover, in device pixels (ADR 0035).
 /// </summary>
 internal readonly record struct CanvasInsets(int Left, int Top, int Right, int Bottom);

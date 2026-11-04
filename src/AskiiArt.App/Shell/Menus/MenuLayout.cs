@@ -103,11 +103,15 @@ internal sealed record MenuLayout(
 
         var panelMenu = new MenuDefinition(nameof(Strings.MenuWindow),
         [
-            new ActionMenuEntry(ShellDockActionIds.ToggleToolbar),
-            new ActionMenuEntry(ShellDockActionIds.ToggleLayers),
-            new ActionMenuEntry(ShellDockActionIds.ToggleHistory),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleLayers),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleHistory),
             new SeparatorMenuEntry(),
-            new ActionMenuEntry(ShellDockActionIds.ResetLayout)
+            new ActionMenuEntry(WindowMenuActionIds.ToggleFileToolbar),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleToolsToolbar),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleEditToolbar),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleViewToolbar),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(WindowMenuActionIds.ResetLayout)
         ]);
 
         if (isMacOS)

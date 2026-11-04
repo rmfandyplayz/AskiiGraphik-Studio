@@ -3,7 +3,9 @@
 
 # 0025: Dock as a see-through layer over the canvas
 
-Status: Accepted
+Status: Superseded by 0035
+
+> Step 2.5b replaced the Dock library with our own system. See [ADR 0035](0035-our-own-docking-system.md).
 
 ## Context
 
@@ -40,4 +42,3 @@ Dock is built for tiled layouts, where panels take space from the content. A thr
 
 Updated 2026-11-01: from 2.1 testing, the top bar and status bar moved out of Dock (ADR 0027), the canvas's dock now accepts drops so window-edge targets show over it, and restored floating panels are shown.
 Updated 2026-11-02: the menu bar became a plain strip and the toolbar a Dock panel (ADR 0029). Moving a floating panel now also makes the see-through areas catch hits, so targets show over the canvas.
-Updated 2026-11-04: ADR 0035 replaces Dock with our own system. This ADR still describes the code until step 2.5b, which marks it superseded.

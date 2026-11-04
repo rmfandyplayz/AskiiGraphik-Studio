@@ -1,0 +1,9 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Where windows and toolbars go: the layout as plain data, the solver that turns it into rectangles, and
+     the edits that change it. BCL only: no Avalonia, so every rule can be tested without a UI (ADR 0035). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <InternalsVisibleTo Include="AskiiArt.Docking.Tests" />
+  </ItemGroup>
+</Project>

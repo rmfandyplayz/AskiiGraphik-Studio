@@ -120,7 +120,7 @@ public sealed class MenuLayoutTests
         var registry = new ActionRegistry(TestActions.CreateProviders(canvas, new FakeAppShell(),
             includeDebugActions: includeDebugMenu, isMacOS: isMacOS));
 
-        foreach (var actionId in layout.ActionIds().Concat(ToolbarLayout.CreateDefault().ActionIds()))
+        foreach (var actionId in layout.ActionIds().Concat(ShellToolbars.CreateDefault().ActionIds()))
         {
             Assert.True(registry.Contains(actionId),
                 $"A menu or the toolbar uses the unregistered action '{actionId}'.");
@@ -133,8 +133,13 @@ public sealed class MenuLayoutTests
     private static void AssertIsWindowMenu(MenuDefinition window)
     {
         Assert.Equal(nameof(Strings.MenuWindow), window.LabelKey);
-        Assert.Equal([ShellDockActionIds.ToggleToolbar, ShellDockActionIds.ToggleLayers, ShellDockActionIds.ToggleHistory, ShellDockActionIds.ResetLayout],
-            ActionIdsIn(window.Entries));
+        Assert.Equal(
+        [
+            WindowMenuActionIds.ToggleLayers, WindowMenuActionIds.ToggleHistory,
+            WindowMenuActionIds.ToggleFileToolbar, WindowMenuActionIds.ToggleToolsToolbar,
+            WindowMenuActionIds.ToggleEditToolbar, WindowMenuActionIds.ToggleViewToolbar,
+            WindowMenuActionIds.ResetLayout
+        ], ActionIdsIn(window.Entries));
     }
 
     private static void AssertIsEditMenu(MenuDefinition edit)

@@ -31,11 +31,11 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0022](0022-text-output.md) | Text output: Copy as Text and Export as Text | Accepted |
 | [0023](0023-macos-window-lifetime.md) | On macOS the app outlives its window | Accepted |
 | [0024](0024-open-documents-are-not-locked.md) | Open documents are not locked | Accepted |
-| [0025](0025-dock-as-a-see-through-layer.md) | Dock as a see-through layer over the canvas | Accepted |
+| [0025](0025-dock-as-a-see-through-layer.md) | Dock as a see-through layer over the canvas | Superseded by 0035 |
 | [0026](0026-settings-file.md) | The settings file | Accepted |
 | [0027](0027-top-bar-and-status-bar-outside-dock.md) | The top bar and status bar sit outside Dock | Superseded by 0029 |
 | [0028](0028-named-undo-steps.md) | Named undo steps and the History panel | Accepted |
-| [0029](0029-menu-strip-and-toolbar-panel.md) | The menu bar is a plain strip, and the toolbar is a Dock panel | Accepted |
+| [0029](0029-menu-strip-and-toolbar-panel.md) | The menu bar is a plain strip, and the toolbar is a Dock panel | Superseded by 0035 |
 | [0030](0030-active-layer-and-layer-operations.md) | The active layer and layer operations | Accepted |
 | [0031](0031-saved-active-layer.md) | A saved file remembers its active layer | Accepted |
 | [0032](0032-colour-and-plugins-are-planned.md) | Colour and plugins are planned, not just reserved | Accepted |

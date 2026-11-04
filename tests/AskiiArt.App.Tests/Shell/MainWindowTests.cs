@@ -248,7 +248,7 @@ public sealed class MainWindowTests : IDisposable
 
         var buttons = ToolbarButtons(window);
         var zoomIn = buttons.Single(button => Equals(button.Content, UiText.WithoutAccessKey(Strings.ActionZoomIn)));
-        Assert.Equal(ToolbarLayout.CreateDefault().ActionIds().Count(), buttons.Length);
+        Assert.Equal(ShellToolbars.CreateDefault().ActionIds().Count(), buttons.Length);
         Assert.All(buttons, button => Assert.False(button.Focusable));
 
         zoomIn.Command!.Execute(null);
@@ -336,7 +336,7 @@ public sealed class MainWindowTests : IDisposable
         return window;
     }
 
-    // Dock builds a panel's contents once it has laid out, so that has to happen first.
+    // Every button on every toolbar. They're only in the visual tree once the window has laid out.
     private static Button[] ToolbarButtons(MainWindow window)
     {
         Dispatcher.UIThread.RunJobs();
@@ -345,8 +345,8 @@ public sealed class MainWindowTests : IDisposable
 
         return
         [
-            .. window.GetVisualDescendants().OfType<StackPanel>().Single(bar => bar.Name == ToolbarBuilder.ControlName)
-                .GetVisualDescendants().OfType<Button>()
+            .. window.GetVisualDescendants().OfType<StackPanel>().Where(bar => bar.Name == ToolbarBuilder.ControlName)
+                .SelectMany(bar => bar.GetVisualDescendants().OfType<Button>())
         ];
     }
 
@@ -358,8 +358,8 @@ public sealed class MainWindowTests : IDisposable
     }
 
     private MainWindowBuilder CreateBuilder(MenuLayout layout) =>
-        new(_actions, layout, ToolbarLayout.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
+        new(_actions, layout, ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
-            new ShellDock(_settings, NullLogger<ShellDock>.Instance), _settings,
+            new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument));
 }

@@ -15,7 +15,7 @@ namespace AskiiArt.App.Canvas;
 /// The scrollable content is the canvas plus <see cref="Margin"/> of empty space on every side.
 /// Along an axis where that content fits in the usable area (the viewport minus <see cref="Insets"/>),
 /// the canvas is centred in that area and can't scroll. Otherwise it scrolls far enough that every
-/// cell can reach the usable area, and passes under the insets on the way (ADR 0025).
+/// cell can reach the usable area, and passes under the insets on the way (ADR 0035).
 /// </remarks>
 internal sealed record CanvasViewport
 {
@@ -46,7 +46,7 @@ internal sealed record CanvasViewport
     /// <summary>The empty space around the canvas when it's scrolled to an edge.</summary>
     public int Margin { get; }
 
-    /// <summary>The parts of the viewport that docked widgets cover.</summary>
+    /// <summary>The parts of the viewport that windows and toolbars cover.</summary>
     public CanvasInsets Insets { get; }
 
     /// <summary>The viewport without its <see cref="Insets"/>: what the canvas is centred in and scrolled into.</summary>

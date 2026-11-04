@@ -26,3 +26,4 @@ The saved panel layout (ADR 0025) is the first setting. ARCHITECTURE §15 asks f
 
 - Windows and Linux settings can roam or be backed up apart from logs.
 - There's no migration code yet, since version 1 is the only version. A file from a newer version counts as damaged, which also keeps a copy of it.
+Updated 2026-11-04: the saved layout's entry is now `dockingLayout` (ADR 0035).

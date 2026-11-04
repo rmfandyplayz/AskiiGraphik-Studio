@@ -105,7 +105,7 @@ Docking is adopted here, before most panels exist, so later panels don't need to
   - the settings file, a saved layout, and a Window menu with panel toggles and Reset Layout
 
   *Owner checks:* art shows around the widgets, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts. On 2026-11-02 the owner moved that retest into 2.5, so everything about docking and windows is checked together. This step stays open until then.
+  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts. On 2026-11-02 the owner moved that retest into 2.5, so everything about docking and windows is checked together. This step stays open until then. Dock itself went in 2.5b, so what's left of its checks moved into 2.5b to 2.5g, and 2.5g closes it.
 - [x] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
 
   *Owner checks:* the list stays in sync with undo and redo, including while the panel floats.
@@ -127,14 +127,15 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 
 Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delivered a brief, and the pass became a replacement of the Dock library with our own system, split into these steps with the owner's OK (`docs/DOCKING.md`, ADR 0035). It also takes in 2.1's last retest.
 
-- [~] **2.5a Spec.** `docs/DOCKING.md`, ADR 0035, and this split. No code.
+- [x] **2.5a Spec.** `docs/DOCKING.md`, ADR 0035, and this split. No code.
 
   *Owner checks:* reads the spec and approves it or changes it. Nothing to test by hand.
-  *Note:* Written. Waiting for the owner's approval before 2.5b starts.
-- [ ] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
+  *Note:* The owner approved it on 2026-11-04, assumptions included.
+- [~] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
 
   *Owner checks:* art shows around the widgets, clicks on empty space reach the canvas, windows and toolbars get clicks first, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-- [ ] **2.5c Toolbars.** The 8 anchors and floating, several toolbars, dragging with zones and a live preview, right-click Horizontal and Vertical, sharing space, the corner rule, scrolling, fades and grips.
+  *Note:* Built (ADR 0035), and waiting for the owner's testing. Sharing an edge and the corner rule are already in the solver, because it's one piece of code, and came forward from 2.5c.
+- [ ] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
 
   *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
 - [ ] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.

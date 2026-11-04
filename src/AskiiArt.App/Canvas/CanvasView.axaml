@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 <!-- Placeholder canvas view: the canvas control filling the window. Its scrollbars, on the right and
-     at the bottom of the part docked widgets leave free (ADR 0025), are off unless ShowScrollBars is
+     at the bottom of the part windows and toolbars leave free (ADR 0035), are off unless ShowScrollBars is
      set. They work in the control's device pixels. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

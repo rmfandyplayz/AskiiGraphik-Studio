@@ -7,16 +7,12 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Dock.Avalonia.Controls;
-using Dock.Model.Core;
 
 namespace AskiiArt.App.Shell;
 
 internal sealed partial class MainWindow : Window
 {
     private readonly ShellLayoutMetrics _metrics;
-    private ToolDockControl? _canvasDock;
 
     public MainWindow()
     {
@@ -32,17 +28,17 @@ internal sealed partial class MainWindow : Window
             CanvasView.FocusCanvas();
         };
 
-        PanelDock.LayoutUpdated += (_, _) => TellCanvasWhatWidgetsCover();
-        PanelDock.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
+        DockingLayer.LayoutUpdated += (_, _) => TellCanvasWhatWidgetsCover();
+        DockingLayer.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
             handledEventsToo: true);
-        PanelDock.AddHandler(PanelEvents.DoneTypingEvent, (_, _) => GiveTypingBackToCanvas());
+        DockingLayer.AddHandler(PanelEvents.DoneTypingEvent, (_, _) => GiveTypingBackToCanvas());
         MenuBarStrip.AddHandler(PointerReleasedEvent, OnPointerReleasedOnWidget, RoutingStrategies.Bubble,
             handledEventsToo: true);
         MenuBarStrip.AddHandler(MenuBase.ClosedEvent, (_, _) => GiveTypingBackToCanvas());
     }
 
-    /// <summary>The panel layout's host.</summary>
-    public DockControl Panels => PanelDock;
+    /// <summary>The host of the windows and toolbars.</summary>
+    public DockingHost Panels => DockingLayer;
 
     /// <summary>Puts the menu bar in its strip, or removes the strip when there's none (macOS).</summary>
     public void SetMenuBar(Control? menuBar)
@@ -58,7 +54,7 @@ internal sealed partial class MainWindow : Window
         if (PlatformImpl is null)
             return;
 
-        var wanted = new Size(_metrics.WindowMinWidth, _metrics.WindowMinHeight);
+        var wanted = new Size(_metrics.MainWindowMinWidth, _metrics.MainWindowMinHeight);
         var minimum = wanted;
 
         if (Screens.ScreenFromWindow(this) is { } screen)
@@ -73,24 +69,10 @@ internal sealed partial class MainWindow : Window
         MinHeight = minimum.Height;
     }
 
-    // What's around the empty canvas dock is what widgets cover. Floating widgets don't count: they
-    // can be dragged out of the way.
     private void TellCanvasWhatWidgetsCover()
     {
-        // Replacing the layout replaces the dock's control too.
-        if (TopLevel.GetTopLevel(_canvasDock) is null)
-        {
-            _canvasDock = PanelDock.GetVisualDescendants().OfType<ToolDockControl>()
-                .FirstOrDefault(dock => dock.DataContext is IDockable { Id: ShellDockIds.CanvasDock });
-        }
-
-        if (_canvasDock?.TranslatePoint(default, CanvasView) is not { } origin)
-            return;
-
-        var size = _canvasDock.Bounds.Size;
-        var whole = CanvasView.Bounds.Size;
-        CanvasView.SetCoveredByWidgets(new Thickness(origin.X, origin.Y,
-            whole.Width - origin.X - size.Width, whole.Height - origin.Y - size.Height));
+        var covered = DockingLayer.SafeArea;
+        CanvasView.SetCoveredByWidgets(new Thickness(covered.Left, covered.Top, covered.Right, covered.Bottom));
     }
 
     // Typing should keep going to the canvas after clicking a widget, unless the click was to type

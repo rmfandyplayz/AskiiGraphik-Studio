@@ -20,7 +20,7 @@ using Avalonia.Threading;
 namespace AskiiArt.App.Shell;
 
 /// <summary>
-/// Creates the main window with its menus, toolbar and keyboard shortcuts, all taken from the
+/// Creates the main window with its menus, toolbars and keyboard shortcuts, all taken from the
 /// action registry and the menu and toolbar layouts, showing the canvas's document. The window's
 /// title follows the document, and closing it asks about unsaved changes first. On macOS a new
 /// window is built each time one opens (ADR 0023).
@@ -28,12 +28,12 @@ namespace AskiiArt.App.Shell;
 internal sealed class MainWindowBuilder(
     ActionRegistry actions,
     MenuLayout layout,
-    ToolbarLayout toolbar,
+    ShellToolbars toolbars,
     CanvasViewModel canvas,
     WindowTitle title,
     DocumentFiles files,
     IAppShell shell,
-    ShellDock panels,
+    ShellDocking docking,
     IAppSettings settings,
     HistoryPanelViewModel history,
     LayersPanelViewModel layers)
@@ -59,24 +59,25 @@ internal sealed class MainWindowBuilder(
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
         var bars = new ToolbarBuilder(actions);
 
-        // Each view is built when its panel shows, and again if the panel is reopened.
-        var views = new Dictionary<string, Func<Control>>(StringComparer.Ordinal)
-        {
-            [ShellDockIds.ToolbarPanel] = () => new ToolbarPanelView
-            {
-                Bar = bars.Build(toolbar),
-                WheelStep = metrics.ToolbarWheelStep,
-            },
-            [ShellDockIds.HistoryPanel] = () => new HistoryPanelView { DataContext = history },
-            [ShellDockIds.LayersPanel] = () => new LayersPanelView
-            {
-                DataContext = layers,
-                Buttons = bars.BuildWrapping(ToolbarLayout.CreateLayersPanel()),
-            },
-        };
+        // Each view is built when its window or toolbar shows, and again if it's reopened.
+        var catalog = new ShellCatalog(
+        [
+            new ShellWindowEntry(ShellDockingIds.LayersPanel, Strings.PanelLayers, metrics.WindowMinHeight,
+                () => new LayersPanelView
+                {
+                    DataContext = layers,
+                    Buttons = bars.BuildWrapping(ToolbarLayout.CreateLayersPanel()),
+                }),
+            new ShellWindowEntry(ShellDockingIds.HistoryPanel, Strings.PanelHistory, metrics.WindowMinHeight,
+                () => new HistoryPanelView { DataContext = history }),
+        ],
+        [
+            .. toolbars.Layouts.Select(toolbar => new ShellToolbarEntry(toolbar.Key,
+                () => new ToolbarPanelView { Bar = bars.Build(toolbar.Value), WheelStep = metrics.ToolbarWheelStep })),
+        ]);
 
-        panels.Attach(window.Panels, new ShellDockFactory(metrics), new ShellPanelTemplates(views));
-        window.Closed += (_, _) => panels.SaveAndDetach();
+        docking.Attach(window.Panels, catalog, metrics);
+        window.Closed += (_, _) => docking.SaveAndDetach();
     }
 
     // After the window has opened, so the message has a window to belong to.

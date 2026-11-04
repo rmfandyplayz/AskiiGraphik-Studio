@@ -66,12 +66,12 @@ public sealed class AppTests : IDisposable
         services.AddSingleton<IAppShell>(shell);
         var settings = new FakeAppSettings();
         services.AddSingleton<IAppSettings>(settings);
-        services.AddSingleton(new ShellDock(settings, NullLogger<ShellDock>.Instance));
+        services.AddSingleton(new ShellDocking(settings, NullLogger<ShellDocking>.Instance));
         services.AddSingleton(new HistoryPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton(new LayersPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
-        services.AddSingleton(ToolbarLayout.CreateDefault());
+        services.AddSingleton(ShellToolbars.CreateDefault());
         services.AddSingleton<MainWindowBuilder>();
         return services.BuildServiceProvider();
     }

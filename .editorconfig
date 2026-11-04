@@ -135,6 +135,9 @@ dotnet_diagnostic.CS1591.severity = none
 [src/AskiiArt.Core/**.cs]
 dotnet_diagnostic.CS1591.severity = warning
 
+[src/AskiiArt.Docking/**.cs]
+dotnet_diagnostic.CS1591.severity = warning
+
 # Test names use underscores to separate the parts (Method_Scenario_Result).
 [tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none

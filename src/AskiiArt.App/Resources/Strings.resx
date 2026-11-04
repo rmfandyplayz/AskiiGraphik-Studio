@@ -462,10 +462,6 @@
     <value>Spaces are see-through</value>
     <comment>Tooltip on the checkbox that makes a layer's spaces show the layers below.</comment>
   </data>
-  <data name="ActionToggleToolbar" xml:space="preserve">
-    <value>_Toolbar</value>
-    <comment>Window menu: shows or hides the toolbar.</comment>
-  </data>
   <data name="ActionToggleLayers" xml:space="preserve">
     <value>_Layers</value>
     <comment>Window menu: shows or hides the Layers panel.</comment>
@@ -474,12 +470,25 @@
     <value>_History</value>
     <comment>Window menu: shows or hides the History panel.</comment>
   </data>
+  <data name="ActionToggleFileToolbar" xml:space="preserve">
+    <value>_File Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with New, Open and Save.</comment>
+  </data>
+  <data name="ActionToggleToolsToolbar" xml:space="preserve">
+    <value>_Tools Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with the drawing tools.</comment>
+  </data>
+  <data name="ActionToggleEditToolbar" xml:space="preserve">
+    <value>_Edit Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with Undo, Redo and the document's settings.</comment>
+  </data>
+  <data name="ActionToggleViewToolbar" xml:space="preserve">
+    <value>_View Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with zoom and the grid.</comment>
+  </data>
   <data name="ActionResetLayout" xml:space="preserve">
     <value>_Reset Layout</value>
-    <comment>Window menu: puts every panel back where it started.</comment>
-  </data>
-  <data name="PanelToolbar" xml:space="preserve">
-    <value>Toolbar</value>
+    <comment>Window menu: puts every window and toolbar back where it started.</comment>
   </data>
   <data name="PanelLayers" xml:space="preserve">
     <value>Layers</value>

@@ -32,7 +32,7 @@ internal sealed partial class CanvasView : UserControl
     /// <summary>Gives the canvas keyboard focus, so Space + drag works without clicking first.</summary>
     public void FocusCanvas() => Canvas.Focus();
 
-    /// <summary>Tells the canvas how much of each edge docked widgets cover, in logical pixels (ADR 0025).</summary>
+    /// <summary>Tells the canvas how much of each edge windows and toolbars cover, in logical pixels (ADR 0035).</summary>
     public void SetCoveredByWidgets(Thickness covered)
     {
         if (covered == _coveredByWidgets)

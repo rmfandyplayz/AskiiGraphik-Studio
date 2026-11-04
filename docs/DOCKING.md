@@ -3,9 +3,9 @@
 
 # Docking spec
 
-How windows and toolbars behave, from the owner's brief of 2026-11-04 and their answers to the questions on it. This is the target for steps 2.5b to 2.5g. Until 2.5b lands the app still uses the Dock library (ADRs 0025 and 0029). The decision to replace it is ADR 0035.
+How windows and toolbars behave, from the owner's brief of 2026-11-04 and their answers to the questions on it. This is the target for steps 2.5b to 2.5g, which are building it in stages (`docs/ROADMAP.md`). The decision to replace the Dock library is ADR 0035.
 
-Anything marked *(assumed)* is Claude Code's reading of something the brief left open, and is meant to be easy to change. All sizes and speeds are theme tokens, tuned in testing. Menu wording is a placeholder.
+The owner approved all of this on 2026-11-04. All sizes and speeds are theme tokens, tuned in testing. Menu wording is a placeholder.
 
 ## 1. Words
 
@@ -58,9 +58,9 @@ Windows dock left and right only for now, and their contents read top to bottom.
 - A single widget, or a top-to-bottom stack of at most 4. Never side by side.
 - The stack always fills its side's height, less margins. There's a gap between widgets.
 - The widgets on a side share one width. Drag the inner edge to change it.
-- Drag the gap between two widgets to change their heights. Once one is title-only, the next one gives way *(assumed)*.
+- Drag the gap between two widgets to change their heights. Once one is title-only, the next one gives way.
 - A widget squeezed below its minimum height snaps to **title-only**, and can't go smaller. Dragging it back snaps it to its minimum height. In between sizes don't exist.
-- At least one widget in a stack always keeps its contents *(assumed)*.
+- At least one widget in a stack always keeps its contents.
 - A widget arriving in a stack takes a fair share of the height, from the largest widget first. Title-only widgets stay title-only.
 - Translucent for now. Frosted glass waits (section 10).
 
@@ -83,17 +83,17 @@ Widgets and floating windows have a title at the very top, and no visible button
  Window Title            ≡  ✕      title-only
 ```
 
-Right-clicking the title opens the same menu as the ≡ button *(assumed)*. Dragging the title moves the window.
+Right-clicking the title opens the same menu as the ≡ button. Dragging the title moves the window.
 
 | Window | Menu | Enabled when |
 |---|---|---|
 | Widget | Float | Always |
 | | Turn into Dock | Always. The whole side converts |
 | | Close | Always |
-| Floating | Turn into Widget | A side has room, using the opening rules (section 6) *(assumed)* |
+| Floating | Turn into Widget | A side has room, using the opening rules (section 6) |
 | | Close | Always |
 | Dock tab, on right-click | Float | Always |
-| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise *(assumed)* |
+| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise |
 | | Close | Always |
 
 The Window menu also opens and closes every window.
@@ -102,8 +102,8 @@ The Window menu also opens and closes every window.
 
 Works like Illustrator:
 
-- **Shape:** columns, each a top-to-bottom stack, each of those a group of tabs. No splits inside splits *(assumed)*.
-- **Look:** opaque, with no margins or gaps. Every dock window has a tab strip, even with one tab, and no hover buttons *(assumed)*.
+- **Shape:** columns, each a top-to-bottom stack, each of those a group of tabs. No splits inside splits.
+- **Look:** opaque, with no margins or gaps. Every dock window has a tab strip, even with one tab, and no hover buttons.
 - **Resizing:** drag a border. Title-only applies here too, the same way as widgets.
 - **Tabs:** drag a tab to reorder it or take it elsewhere. Too many tabs scroll, with fades like a toolbar's.
 - **Converting:** a stack keeps its order and heights when a side converts either way.
@@ -112,7 +112,7 @@ Works like Illustrator:
 
 - They stay inside the app window, and are single windows with no tabs (the owner's decision).
 - They look like widgets, and have the same hover buttons.
-- Drag the title to move, and the edges or corners to resize. Title-only works here too *(assumed)*.
+- Drag the title to move, and the edges or corners to resize. Title-only works here too.
 - Dropping a window on a floating window just floats it on top.
 
 ## 4. Toolbars
@@ -121,8 +121,8 @@ Works like Illustrator:
 
 - **At most one toolbar per anchor.**
 - **Corners:** the toolbar's origin is at the corner, horizontal or vertical. Right-click chooses.
-- **Edge middles:** centred on that edge, with no dead space around it. They follow the edge: horizontal on top and bottom, vertical on left and right *(assumed)*.
-- **Floating:** anywhere in the canvas region, horizontal or vertical. A floating toolbar may overlap an anchored one, which doesn't move for it *(assumed)*.
+- **Edge middles:** centred on that edge, with no dead space around it. They follow the edge: horizontal on top and bottom, vertical on left and right.
+- **Floating:** anywhere in the canvas region, horizontal or vertical. A floating toolbar may overlap an anchored one, which doesn't move for it.
 
 ### 4.2 The toolbar itself
 
@@ -135,7 +135,7 @@ Works like Illustrator:
 
 There are two kinds of collision, and they follow different rules.
 
-**Along the same edge, toolbars fight for length, and the middle one has slight priority.** A toolbar that fits its fair share keeps its natural size, and the rest share what remains. With even gaps, and all of them long, the middle toolbar ends up slightly longer than the corners *(assumed: 25% longer)*.
+**Along the same edge, toolbars fight for length, and the middle one has slight priority.** A toolbar that fits its fair share keeps its natural size, and the rest share what remains. With even gaps, and all of them long, the middle toolbar ends up slightly longer than the corners (25% longer to start with, tuned in testing).
 
 ```
  Plenty of room: corners stay in corners, the middle is centred.
@@ -145,7 +145,7 @@ There are two kinds of collision, and they follow different rules.
  [‹ File long ›] [‹ Tools long, a bit longer ›] [‹ Edit long ›]
 ```
 
-A middle toolbar stays centred until a corner toolbar reaches it, then moves aside.
+A middle toolbar stays centred until a corner toolbar reaches it, then moves aside. Two middle toolbars long enough to reach the same empty corner don't overlap: the horizontal one gets the corner.
 
 **At a corner, the corner toolbar wins.** A toolbar on the neighbouring edge starts after it. The owner's mockups show this, including a sub-toolbar pushing further:
 
@@ -159,12 +159,12 @@ A middle toolbar stays centred until a corner toolbar reaches it, then moves asi
                               [ g ]      only if it no longer fits
 ```
 
-Below the smallest size, toolbars hide until there's room again, corners first *(assumed)*.
+Below the smallest size, toolbars hide until there's room again, corners first.
 
 ### 4.4 Sub-toolbars
 
 - Only **one at a time**, since only one tool is active. The model has one slot.
-- It sits on the canvas side of its parent. It's aligned to the corner for a corner toolbar, and centred on the parent otherwise. A floating toolbar's flips to the other side if there's no room *(assumed)*.
+- It sits on the canvas side of its parent. It's aligned to the corner for a corner toolbar, and centred on the parent otherwise. A floating toolbar's flips to the other side if there's no room.
 - At most its parent's length if the parent is fighting for space, otherwise at most 50% longer. It scrolls if that's not enough.
 - It pushes other toolbars out of the way, with a short animation.
 - It can't be dragged. It never moves the canvas (section 8).
@@ -176,12 +176,12 @@ Common to every drag:
 
 - The dragged item follows the pointer.
 - The layout previews live what a drop would do, using the same code as the drop, so they can't disagree.
-- Movement is lightly animated. Esc cancels, and so does the app losing focus *(assumed)*.
+- Movement is lightly animated. Esc cancels, and so does the app losing focus.
 - Drop zones are worked out once when the drag starts and don't move during it, which stops zones flickering as the layout shifts under the pointer.
 
 ### 5.1 Toolbar drags
 
-Starting a drag shows a zone for each free anchor, and for its own. Occupied anchors show nothing *(assumed)*. Dropping anywhere else floats the toolbar there.
+Starting a drag shows a zone for each free anchor, and for its own. Occupied anchors show nothing. Dropping anywhere else floats the toolbar there.
 
 Dropping on a middle anchor sets its direction. A corner keeps the direction it had.
 
@@ -202,7 +202,7 @@ The first match, top to bottom, wins:
 | A dock window's left or right band | It becomes a new column beside that column |
 | Anywhere else, or a side already holding 4 widgets | It floats there |
 
-A title-only window that lands somewhere gets a normal size *(assumed)*. Dragging the last window off a side empties it, and toolbars move back.
+A title-only window that lands somewhere gets a normal size. Dragging the last window off a side empties it, and toolbars move back.
 
 ```
  Empty side           Widgets              Dock
@@ -225,14 +225,14 @@ A title-only window that lands somewhere gets a normal size *(assumed)*. Draggin
 4. If neither side can take one but a dock exists, it becomes a tab in the dock window with the largest area.
 5. If both sides are full of widgets, it floats. Opening a window never converts a side.
 
-It joins the bottom of a widget stack *(assumed)*.
+It joins the bottom of a widget stack.
 
-Showing a hidden toolbar puts it back on its anchor, or floats it there if the anchor has since been taken *(assumed)*.
+Showing a hidden toolbar puts it back on its anchor, or floats it there if the anchor has since been taken.
 
 ## 7. Resizing the app window
 
 - Saved sizes are what the user asked for. The solver fits them to the current window without changing them, so shrinking and regrowing restores everything.
-- Widgets squeezed below their minimum go title-only for as long as they have to, starting from the bottom of the stack *(assumed)*.
+- Widgets squeezed below their minimum go title-only for as long as they have to, starting from the bottom of the stack.
 - Floating items keep their position, moved just enough to stay inside. Regrowing puts them back.
 - If a window is too small for everything: toolbars scroll, then hide, then sides shrink to their minimum widths. The app's existing minimum window size makes this rare.
 
@@ -240,7 +240,7 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 
 - **Safe area:** the canvas region, less a band along each edge that has an anchored toolbar lying along it. Centring, zoom to fit and scroll limits use it, as they do today.
 - **Not counted:** floating items and sub-toolbars, so picking a tool never moves the view.
-- **During a drag,** the safe area stays as it was until the drop, so the art doesn't slide around under the preview *(assumed)*.
+- **During a drag,** the safe area stays as it was until the drop, so the art doesn't slide around under the preview.
 - **Clicks:** empty space, including the gaps around toolbars, reaches the canvas. A thin handle along a widget's gaps and inner edge catches clicks, because that's how they resize.
 - **Typing:** clicking a window or a toolbar hands the keyboard back to the canvas unless a text box has it, as today.
 
@@ -255,8 +255,8 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 | Layers above History | Widgets on the right |
 | File toolbar: New, Open, Save | Top-left, horizontal |
 | Tools toolbar: Text, Eraser | Bottom middle, horizontal |
-| Edit toolbar: Undo, Redo, Resize Canvas, Font | Top-right, horizontal *(assumed)* |
-| View toolbar: Zoom Out, Zoom In, Actual Size, Show Grid | Bottom-right, horizontal *(assumed)* |
+| Edit toolbar: Undo, Redo, Resize Canvas, Font | Top-right, horizontal |
+| View toolbar: Zoom Out, Zoom In, Actual Size, Show Grid | Bottom-right, horizontal |
 
 **Saving:** the layout is saved in settings as before, under a new name, so everyone's layout resets once when this arrives. On load, anything invalid is repaired rather than rejected, and a window the app no longer has is skipped.
 
@@ -299,4 +299,3 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 - **Headless UI tests** cover click-through, focus, menus and simulated drags.
 - **Manual tests** remain the only check of how it feels. Expect several tuning rounds, which is the real cost of owning this.
 
-**Starts in 2.5b, and until then:** ADRs 0025 and 0029 and ARCHITECTURE §3 and §14.4 still describe the code. 2.5b flips them.
