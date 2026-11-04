@@ -118,10 +118,10 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 
   *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
   *Note:* Built (ADR 0033). Also has the fixes from 2.3's testing (ADR 0031) and a fix for a crash on a Mac when a closed window reported its position. The owner confirmed it on 2026-11-02.
-- [~] **2.4b Remembered font files.** Fonts loaded from a file are still there after a restart. Added at the owner's request on 2026-11-02, so documents using them stop falling back to the default font.
+- [x] **2.4b Remembered font files.** Fonts loaded from a file are still there after a restart. Added at the owner's request on 2026-11-02, so documents using them stop falling back to the default font.
 
   *Owner checks:* a loaded font survives a restart, a document using it opens without a warning, and a moved or damaged file does no harm.
-  *Note:* Built (ADR 0034). Fonts are remembered by file path in settings.
+  *Note:* Built (ADR 0034). Fonts are remembered by file path in settings. The owner confirmed it on 2026-11-04.
 - [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`. It also takes in 2.1's last retest.
 
   *Owner checks:* decided in the pass.

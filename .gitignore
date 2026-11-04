@@ -20,6 +20,9 @@ riderModule.iml
 # Verify: a received file is a snapshot that hasn't been approved yet.
 *.received.*
 
+# Local planning material, such as screenshots of other apps, which can't go in a public repo.
+.local/
+
 # OS clutter
 .DS_Store
 Thumbs.db
