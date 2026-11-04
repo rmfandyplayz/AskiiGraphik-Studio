@@ -13,7 +13,10 @@ internal sealed record ShellLayoutMetrics(
     double WindowMinHeight,
     double MainWindowMinWidth,
     double MainWindowMinHeight,
-    double ToolbarWheelStep)
+    double ToolbarWheelStep,
+    double ToolbarFadeLength,
+    double DragThreshold,
+    TimeSpan MotionDuration)
 {
     public static ShellLayoutMetrics
         FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
@@ -25,12 +28,17 @@ internal sealed record ShellLayoutMetrics(
             MinimumCanvasRegionWidth: Token(resources, "AppCanvasRegionMinWidth", theme),
             ToolbarGap: Token(resources, "AppToolbarGap", theme),
             MinimumToolbarLength: Token(resources, "AppToolbarMinLength", theme),
-            MiddleToolbarPriority: Token(resources, "AppToolbarMiddlePriority", theme)),
+            MiddleToolbarPriority: Token(resources, "AppToolbarMiddlePriority", theme),
+            ToolbarZoneCornerSize: Token(resources, "AppToolbarZoneCornerSize", theme),
+            ToolbarZoneEdgeThickness: Token(resources, "AppToolbarZoneEdgeThickness", theme)),
         Token(resources, "AppWidgetWidth", theme),
         Token(resources, "AppWindowMinHeight", theme),
         Token(resources, "AppMainWindowMinWidth", theme),
         Token(resources, "AppMainWindowMinHeight", theme),
-        Token(resources, "AppToolbarWheelStep", theme));
+        Token(resources, "AppToolbarWheelStep", theme),
+        Token(resources, "AppToolbarFadeLength", theme),
+        Token(resources, "AppDockingDragThreshold", theme),
+        TimeSpan.FromMilliseconds(Token(resources, "AppDockingMotionMilliseconds", theme)));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

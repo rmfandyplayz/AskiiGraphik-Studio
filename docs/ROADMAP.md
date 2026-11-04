@@ -131,13 +131,14 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* reads the spec and approves it or changes it. Nothing to test by hand.
   *Note:* The owner approved it on 2026-11-04, assumptions included.
-- [~] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
+- [x] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
 
   *Owner checks:* art shows around the widgets, clicks on empty space reach the canvas, windows and toolbars get clicks first, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADR 0035), and waiting for the owner's testing. Sharing an edge and the corner rule are already in the solver, because it's one piece of code, and came forward from 2.5c.
-- [ ] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
+  *Note:* Built (ADR 0035). Sharing an edge and the corner rule are already in the solver, because it's one piece of code, and came forward from 2.5c. The owner confirmed it on 2026-11-04.
+- [~] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
 
   *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
+  *Note:* Built (ADR 0035), and waiting for the owner's testing. Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size.
 - [ ] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
 
   *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
@@ -149,7 +150,7 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
   *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.
 - [ ] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
 
-  *Owner checks:* the opening rules, and a last pass over how everything feels.
+  *Owner checks:* the opening rules, a last pass over how everything feels, and a new set of tests for what 2.1's old retest list was meant to cover, since that list checked Dock.
 
 ## M2b: Colour
 

@@ -15,4 +15,7 @@ internal static class ShellActionIds
 
     /// <summary>Debug builds only: raises an exception so the error handler can be tested by hand.</summary>
     public const string ThrowTestException = "askiiart.debug.throwTestException";
+
+    /// <summary>Debug builds only: lifts the main window's minimum size, to test how the layout copes with little room.</summary>
+    public const string AllowTinyWindow = "askiiart.debug.allowTinyWindow";
 }

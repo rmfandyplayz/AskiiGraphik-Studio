@@ -9,7 +9,8 @@ namespace AskiiArt.Docking.Solving;
 /// Puts each toolbar on its anchor, inside the canvas region less a margin. The margin equals the widgets',
 /// so a toolbar never passes a window's top or bottom edge. Toolbars along one edge share its length, and a
 /// toolbar on a neighbouring edge starts after a corner toolbar (docs/DOCKING.md §4.3). A toolbar with no room
-/// for even its minimum length is left out, corners first, until there's room again.
+/// for even its minimum length is left out, corners first, until there's room again. A floating toolbar goes
+/// where it was put, moved just enough to stay inside, and nothing moves for it.
 /// </summary>
 internal static class ToolbarSolver
 {
@@ -26,11 +27,11 @@ internal static class ToolbarSolver
     public static List<SolvedToolbar> Solve(IReadOnlyList<ToolbarPlacement> toolbars,
         IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region, DockingMetrics metrics)
     {
-        var inner = new LayoutRect(region.X + metrics.Margin, region.Y + metrics.Margin,
-            Math.Max(0, region.Width - metrics.Margin * 2), Math.Max(0, region.Height - metrics.Margin * 2));
+        var inner = InnerRegion(region, metrics);
+        var showing = toolbars.Where(toolbar => toolbar.IsVisible && sizes.ContainsKey(toolbar.ToolbarId)).ToList();
 
-        var byEdge = toolbars
-            .Where(toolbar => toolbar.IsVisible && sizes.ContainsKey(toolbar.ToolbarId))
+        var byEdge = showing
+            .Where(toolbar => !toolbar.IsFloating)
             .ToLookup(EdgeOf, toolbar => ToItem(toolbar, sizes[toolbar.ToolbarId], inner));
 
         // Horizontal edges first: where a vertical toolbar and a horizontal one could both reach a corner with
@@ -52,7 +53,42 @@ internal static class ToolbarSolver
             lead: BandAcross(top, inner.Right - rightColumn, inner.Right, gap),
             trail: BandAcross(bottom, inner.Right - rightColumn, inner.Right, gap));
 
-        return [.. top, .. bottom, .. left, .. right];
+        var floating = showing
+            .Where(toolbar => toolbar.IsFloating)
+            .Select(toolbar => PlaceFloating(toolbar, sizes[toolbar.ToolbarId], inner, metrics))
+            .OfType<SolvedToolbar>();
+
+        return [.. top, .. bottom, .. left, .. right, .. floating];
+    }
+
+    /// <summary>Where toolbars can go: the canvas region less a margin.</summary>
+    internal static LayoutRect InnerRegion(LayoutRect region, DockingMetrics metrics) => new(
+        region.X + metrics.Margin,
+        region.Y + metrics.Margin,
+        Math.Max(0, region.Width - metrics.Margin * 2),
+        Math.Max(0, region.Height - metrics.Margin * 2));
+
+    private static SolvedToolbar? PlaceFloating(ToolbarPlacement toolbar, LayoutSize size, LayoutRect inner,
+        DockingMetrics metrics)
+    {
+        var isHorizontal = toolbar.Orientation == ToolbarOrientation.Horizontal;
+        var length = isHorizontal ? size.Width : size.Height;
+        var room = isHorizontal ? inner.Width : inner.Height;
+        if (room < Math.Min(length, metrics.MinimumToolbarLength))
+            return null;
+
+        var width = Math.Min(size.Width, inner.Width);
+        var height = Math.Min(size.Height, inner.Height);
+        var wanted = toolbar.FloatingAt ?? default;
+
+        // Max last, so rounding can't put it outside when it exactly fills the room.
+        var bounds = new LayoutRect(
+            Math.Max(inner.X, Math.Min(wanted.X, inner.Right - width)),
+            Math.Max(inner.Y, Math.Min(wanted.Y, inner.Bottom - height)),
+            width,
+            height);
+
+        return new SolvedToolbar(toolbar.ToolbarId, null, toolbar.Orientation, bounds);
     }
 
     private static Edge EdgeOf(ToolbarPlacement toolbar) => toolbar.Anchor switch

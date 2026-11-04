@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Text.Json.Serialization;
+
 namespace AskiiArt.Docking.Layouts;
+
+/// <summary>A point in logical pixels, measured from the top left of the space between the strips.</summary>
+/// <param name="X">How far from the left.</param>
+/// <param name="Y">How far from the top.</param>
+public readonly record struct LayoutPoint(double X, double Y);
 
 /// <summary>
 /// Where every window and toolbar is meant to be (docs/DOCKING.md). This is what the user asked for, not
@@ -34,6 +41,13 @@ public sealed record DockingLayout(
     /// <summary>Whether the toolbar is showing.</summary>
     public bool IsToolbarVisible(string toolbarId) =>
         Toolbars.Any(toolbar => toolbar.IsVisible && toolbar.ToolbarId == toolbarId);
+
+    /// <summary>
+    /// Whether a toolbar other than <paramref name="toolbarId"/> holds the anchor. Only a showing, anchored
+    /// toolbar does: a hidden one gives way, and is floated if it's shown again.
+    /// </summary>
+    public bool IsAnchorTaken(ToolbarAnchor anchor, string toolbarId) => Toolbars.Any(toolbar =>
+        toolbar.IsVisible && !toolbar.IsFloating && toolbar.Anchor == anchor && toolbar.ToolbarId != toolbarId);
 }
 
 /// <summary>
@@ -58,14 +72,25 @@ public sealed record WindowGroup(IReadOnlyList<string> WindowIds, double Share =
 
 /// <summary>Where a toolbar goes. A hidden toolbar keeps its place for when it's shown again.</summary>
 /// <param name="ToolbarId">Which toolbar.</param>
-/// <param name="Anchor">Which of the 8 places it's on.</param>
+/// <param name="Anchor">Which of the 8 places it's on. A floating toolbar doesn't hold this anchor.</param>
 /// <param name="Orientation">Which way its buttons run.</param>
 /// <param name="IsVisible">Whether it's showing.</param>
+/// <param name="FloatingAt">Where its top left goes if it's floating, or null if it's on its anchor.</param>
 public sealed record ToolbarPlacement(
     string ToolbarId,
     ToolbarAnchor Anchor,
     ToolbarOrientation Orientation,
-    bool IsVisible = true);
+    bool IsVisible = true,
+    LayoutPoint? FloatingAt = null)
+{
+    /// <summary>Whether it's floating rather than on its anchor.</summary>
+    [JsonIgnore]
+    public bool IsFloating => FloatingAt is not null;
+
+    /// <summary>Whether the user can choose its direction. An edge middle's toolbar follows the edge.</summary>
+    [JsonIgnore]
+    public bool CanChooseOrientation => IsFloating || ToolbarAnchors.RequiredOrientation(Anchor) is null;
+}
 
 /// <summary>A closed window, and enough about where it was to put it back.</summary>
 /// <param name="WindowId">Which window.</param>

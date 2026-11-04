@@ -22,6 +22,10 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 - **Unchanged from ADR 0029:** the menu bar (except on macOS) and the status bar are plain strips outside the host, the canvas's scrollbars are off unless `CanvasView.ShowScrollBars` is set, and the window has a minimum size lowered to fit small screens.
 - **Safe area:** the solver works it out, and `MainWindow` passes it to `CanvasView` after each layout pass. Sides count, and so does an anchored toolbar along the edge it lies on.
 - **Windows and toolbars are registered by id,** ready for M8's customizer and M8b's plugins.
+- **A drag is data too.** `ToolbarDrag` holds the zones, worked out once at the start, and gives the layout for any pointer position. The preview and the drop both ask it, and nothing is committed until the drop. `ToolbarDragController` only connects the pointer to it.
+- **A floating toolbar stores its top left,** measured from the corner of the space between the strips. The solver moves it just enough to stay inside without changing what's stored, so regrowing the window puts it back. A drop stores where it landed rather than where the pointer was.
+- **A toolbar's right-click menu binds to actions (ARCHITECTURE §14.2), one per verb,** with the toolbar's id as the command parameter. An action per toolbar would mean new actions for each toolbar that M8's customizer makes.
+- **Movement is a small per-frame animation in `DockingHost`** (`LayoutMotions`), not Avalonia transitions, because the same rectangle has to be able to jump to the pointer, slide, or snap. A change from the user slides, and resizing the app window snaps, so nothing trails behind the window's edge.
 - **Floating stays inside the app window,** as in ADR 0025, for the same reasons. It also keeps frosted glass possible.
 - **Words:** "dock" and "widget" replace "hard dock" and "soft dock". Code says *panel* for a window, because `Window` is an Avalonia class.
 - **A new settings key,** `dockingLayout`, so everyone's layout resets once when this arrives. `IAppSettings` has no way to remove an entry, and adding one for this alone isn't worth it, so the old `dockLayoutV2` stays in the file, unread. A layout with the wrong shape falls back to the default. One with the right shape is repaired (`LayoutRepair`), so a window or toolbar added in a later version appears rather than counting as closed.
@@ -40,6 +44,6 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 - We own every drag and edge-case bug that Dock handled for us. Property tests check the rules, but only the owner's testing can check how it feels, so expect tuning rounds.
 - The dependency rule in ARCHITECTURE §4 gains `App → Docking`.
 - Windows can't be dragged to a second monitor, as is already true today.
-- Most of 2.1's retest list checks Dock behaviour that goes away. What still applies moves into the tests for 2.5b to 2.5g, and 2.5g closes 2.1.
+- Most of 2.1's retest list checks Dock behaviour that goes away. What still applies moves into the tests for 2.5b to 2.5g, and 2.5g closes 2.1 with a new set of tests.
 - M8's "layout builder" idea becomes a toolbar customizer, since this system already places things anywhere.
 - The same word, "Dock", is still the macOS icon bar in the app's code and in test docs.

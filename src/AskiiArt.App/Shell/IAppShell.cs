@@ -22,6 +22,9 @@ internal interface IAppShell
     /// </summary>
     void CloseMainWindow();
 
+    /// <summary>Lifts the main window's minimum size until it closes, for testing. Does nothing when no window is open.</summary>
+    void AllowTinyMainWindow();
+
     /// <summary>Puts <paramref name="text"/> on the clipboard. Does nothing when no window is open.</summary>
     Task CopyTextAsync(string text);
 

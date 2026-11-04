@@ -157,7 +157,8 @@ internal sealed record MenuLayout(
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuDebug),
             [
                 new ActionMenuEntry(DocumentActionIds.OpenSampleDocument),
-                new ActionMenuEntry(ShellActionIds.ThrowTestException)
+                new ActionMenuEntry(ShellActionIds.ThrowTestException),
+                new ActionMenuEntry(ShellActionIds.AllowTinyWindow)
             ]));
         }
 

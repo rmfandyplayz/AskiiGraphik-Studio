@@ -54,6 +54,7 @@ internal static class AppServices
         services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider, WindowMenuActions>();
+        services.AddSingleton<IActionProvider, ToolbarMenuActions>();
         services.AddSingleton<IActionProvider, LayerActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),

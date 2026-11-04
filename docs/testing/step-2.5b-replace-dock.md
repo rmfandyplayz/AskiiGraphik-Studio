@@ -128,15 +128,6 @@ Your saved layout resets once, because the old one was in Dock's format.
 
 - [ ] Pass  - [ ] Fail. Notes:
 
-### T9: Tests to revisit
-
-| Step | Test | Where | Why |
-|---|---|---|---|
-| 2.4 | T6 row 3 | Either | Only if you come across a file saved before 2.4: it should open with the top layer highlighted. Automated tests cover files with no saved layer, so don't go out of your way |
-| 2.1 | Nothing to do | | Its retest list checked Dock behaviour that's now gone. T1, T2, T4, T6 and T7 cover what still applies, and the rest comes back in 2.5c to 2.5g |
-
-- [ ] Pass  - [ ] Fail. Notes:
-
 ## Worth poking at (optional, unscripted)
 
 - **Very wide or very narrow windows,** dragged quickly back and forth.

@@ -9,7 +9,10 @@ namespace AskiiArt.App.Shell.Docking;
 internal sealed record ShellWindowEntry(string Id, string Title, double MinimumHeight, Func<Control> CreateView);
 
 /// <summary>A toolbar the app has.</summary>
-internal sealed record ShellToolbarEntry(string Id, Func<Control> CreateView);
+/// <param name="Id">Its id in the layout.</param>
+/// <param name="CreateView">Makes its buttons.</param>
+/// <param name="CreateMenu">Makes its right-click menu, if it has one.</param>
+internal sealed record ShellToolbarEntry(string Id, Func<Control> CreateView, Func<ContextMenu>? CreateMenu = null);
 
 /// <summary>
 /// The windows and toolbars that exist, registered by id, so the layout can stay plain data. The toolbar

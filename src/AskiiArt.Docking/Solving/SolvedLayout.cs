@@ -31,11 +31,11 @@ public sealed record SolvedWindowGroup(
 
 /// <summary>A toolbar's place.</summary>
 /// <param name="ToolbarId">Which toolbar.</param>
-/// <param name="Anchor">The anchor it's on.</param>
+/// <param name="Anchor">The anchor it's on, or null if it's floating.</param>
 /// <param name="Orientation">Which way its buttons run.</param>
 /// <param name="Bounds">Its rectangle.</param>
 public sealed record SolvedToolbar(
     string ToolbarId,
-    ToolbarAnchor Anchor,
+    ToolbarAnchor? Anchor,
     ToolbarOrientation Orientation,
     LayoutRect Bounds);

@@ -1,0 +1,33 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- What every toolbar looks like, around its buttons: a grip at each end, whose space is always reserved so
+     the buttons don't shift, and buttons that scroll with no scrollbar when they don't fit. Placeholder: the
+     owner designs the real one. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:docking="using:AskiiArt.App.Shell.Docking"
+             x:Class="AskiiArt.App.Shell.Docking.ToolbarFrame">
+  <UserControl.Styles>
+    <Style Selector="docking|ToolbarGrip">
+      <Setter Property="DotBrush" Value="{DynamicResource AppSecondaryTextBrush}" />
+      <Setter Property="DotSize" Value="{DynamicResource AppToolbarGripDotSize}" />
+      <Setter Property="DotGap" Value="{DynamicResource AppToolbarGripDotGap}" />
+      <Setter Property="Length" Value="{DynamicResource AppToolbarGripLength}" />
+    </Style>
+    <Style Selector="docking|ToolbarFrame:pointerover docking|ToolbarGrip">
+      <Setter Property="DotOpacity" Value="{DynamicResource AppToolbarGripHoverOpacity}" />
+    </Style>
+    <Style Selector="docking|ToolbarFrame.dragged docking|ToolbarGrip">
+      <Setter Property="DotOpacity" Value="{DynamicResource AppToolbarGripHoverOpacity}" />
+    </Style>
+  </UserControl.Styles>
+  <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">
+    <DockPanel>
+      <docking:ToolbarGrip x:Name="StartGrip" DockPanel.Dock="Left" Cursor="SizeAll" />
+      <docking:ToolbarGrip x:Name="EndGrip" DockPanel.Dock="Right" Cursor="SizeAll" />
+      <ScrollViewer x:Name="Scroller"
+                    HorizontalScrollBarVisibility="Hidden"
+                    VerticalScrollBarVisibility="Disabled" />
+    </DockPanel>
+  </Border>
+</UserControl>

@@ -29,6 +29,10 @@ internal sealed class FakeAppShell : IAppShell
 
     public void CloseMainWindow() => CloseMainWindowCount++;
 
+    public int AllowTinyMainWindowCount { get; private set; }
+
+    public void AllowTinyMainWindow() => AllowTinyMainWindowCount++;
+
     /// <summary>The text of each copy to the clipboard so far.</summary>
     public List<string> CopiedTexts { get; } = [];
 

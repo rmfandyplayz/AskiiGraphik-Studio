@@ -12,6 +12,8 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="ToolbarGap">Between toolbars sharing an edge.</param>
 /// <param name="MinimumToolbarLength">A toolbar shorter than this is left out until there's room.</param>
 /// <param name="MiddleToolbarPriority">How much more of a shared edge a middle toolbar gets than a corner one.</param>
+/// <param name="ToolbarZoneCornerSize">How big a corner's drop zone is.</param>
+/// <param name="ToolbarZoneEdgeThickness">How thick an edge middle's drop zone is. It runs between the corners'.</param>
 public sealed record DockingMetrics(
     double Margin,
     double WidgetGap,
@@ -20,7 +22,9 @@ public sealed record DockingMetrics(
     double MinimumCanvasRegionWidth,
     double ToolbarGap,
     double MinimumToolbarLength,
-    double MiddleToolbarPriority);
+    double MiddleToolbarPriority,
+    double ToolbarZoneCornerSize,
+    double ToolbarZoneEdgeThickness);
 
 /// <summary>What the solver needs to know about right now.</summary>
 /// <param name="Available">The space between the menu and status strips.</param>

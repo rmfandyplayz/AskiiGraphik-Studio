@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Docking.Layouts;
+
 namespace AskiiArt.Docking.Solving;
 
 /// <summary>A size in logical pixels.</summary>
@@ -20,6 +22,10 @@ public readonly record struct LayoutRect(double X, double Y, double Width, doubl
 
     /// <summary>The bottom edge.</summary>
     public double Bottom => Y + Height;
+
+    /// <summary>Whether <paramref name="point"/> is inside it.</summary>
+    public bool Contains(LayoutPoint point) =>
+        point.X >= X && point.X < Right && point.Y >= Y && point.Y < Bottom;
 }
 
 /// <summary>How much is taken from each edge of a rectangle, in logical pixels.</summary>

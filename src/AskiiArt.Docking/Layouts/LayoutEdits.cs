@@ -60,34 +60,57 @@ public static class LayoutEdits
         return layout;
     }
 
+    /// <summary>Hides a toolbar. It keeps its place for when it's shown again.</summary>
+    public static DockingLayout HideToolbar(DockingLayout layout, string toolbarId) =>
+        WithToolbar(layout, toolbarId, toolbar => toolbar with { IsVisible = false });
+
     /// <summary>
-    /// Shows or hides a toolbar. An anchor holds one toolbar, so showing one whose anchor has since been
-    /// taken moves it to a free anchor (step 2.5c floats it instead).
+    /// Shows a hidden toolbar where it was. An anchor holds one toolbar, so if its anchor has since been taken
+    /// it floats at <paramref name="whereToFloatIfTaken"/> instead.
     /// </summary>
-    public static DockingLayout SetToolbarVisible(DockingLayout layout, string toolbarId, bool isVisible)
-    {
-        return layout with { Toolbars = [.. layout.Toolbars.Select(Updated)] };
-
-        ToolbarPlacement Updated(ToolbarPlacement toolbar)
+    public static DockingLayout ShowToolbar(DockingLayout layout, string toolbarId, LayoutPoint whereToFloatIfTaken) =>
+        WithToolbar(layout, toolbarId, toolbar =>
         {
-            if (toolbar.ToolbarId != toolbarId)
-                return toolbar;
+            var mustFloat = !toolbar.IsFloating && layout.IsAnchorTaken(toolbar.Anchor, toolbarId);
+            return mustFloat
+                ? toolbar with { IsVisible = true, FloatingAt = whereToFloatIfTaken }
+                : toolbar with { IsVisible = true };
+        });
 
-            if (!isVisible)
-                return toolbar with { IsVisible = false };
+    /// <summary>
+    /// Puts a toolbar on an anchor. An edge middle sets its direction, and a corner keeps the one it had. Does
+    /// nothing if another toolbar holds the anchor.
+    /// </summary>
+    public static DockingLayout MoveToolbarToAnchor(DockingLayout layout, string toolbarId, ToolbarAnchor anchor) =>
+        layout.IsAnchorTaken(anchor, toolbarId)
+            ? layout
+            : WithToolbar(layout, toolbarId, toolbar => Placed(toolbar, anchor));
 
-            var taken = layout.Toolbars
-                .Where(other => other.IsVisible && other.ToolbarId != toolbarId)
-                .Select(other => other.Anchor)
-                .ToHashSet();
+    /// <summary>
+    /// Floats a toolbar with its top left at <paramref name="position"/>, keeping its direction. It goes last
+    /// among the toolbars, so it's drawn over any other floating one it lands on.
+    /// </summary>
+    public static DockingLayout FloatToolbar(DockingLayout layout, string toolbarId, LayoutPoint position)
+    {
+        var toolbar = layout.Toolbars.FirstOrDefault(other => other.ToolbarId == toolbarId);
+        if (toolbar is null)
+            return layout;
 
-            if (!taken.Contains(toolbar.Anchor))
-                return toolbar with { IsVisible = true };
-
-            var free = ToolbarAnchors.All.Where(anchor => !taken.Contains(anchor)).ToList();
-            return free.Count > 0 ? Placed(toolbar, free[0]) : toolbar;
-        }
+        return layout with
+        {
+            Toolbars =
+            [
+                .. layout.Toolbars.Where(other => other.ToolbarId != toolbarId),
+                toolbar with { IsVisible = true, FloatingAt = position },
+            ],
+        };
     }
+
+    /// <summary>Changes which way a toolbar runs. Does nothing on an edge middle, whose toolbar follows the edge.</summary>
+    public static DockingLayout SetToolbarOrientation(DockingLayout layout, string toolbarId,
+        ToolbarOrientation orientation) =>
+        WithToolbar(layout, toolbarId, toolbar =>
+            toolbar.CanChooseOrientation ? toolbar with { Orientation = orientation } : toolbar);
 
     /// <summary>A toolbar moved to <paramref name="anchor"/>, following the direction it requires.</summary>
     internal static ToolbarPlacement Placed(ToolbarPlacement toolbar, ToolbarAnchor anchor) => toolbar with
@@ -95,7 +118,14 @@ public static class LayoutEdits
         Anchor = anchor,
         Orientation = ToolbarAnchors.RequiredOrientation(anchor) ?? toolbar.Orientation,
         IsVisible = true,
+        FloatingAt = null,
     };
+
+    private static DockingLayout WithToolbar(DockingLayout layout, string toolbarId,
+        Func<ToolbarPlacement, ToolbarPlacement> change) => layout with
+        {
+            Toolbars = [.. layout.Toolbars.Select(toolbar => toolbar.ToolbarId == toolbarId ? change(toolbar) : toolbar)],
+        };
 
     /// <summary>A stack always keeps at least one window's contents showing.</summary>
     internal static IReadOnlyList<WindowGroup> WithOneGroupOpen(IReadOnlyList<WindowGroup> groups)

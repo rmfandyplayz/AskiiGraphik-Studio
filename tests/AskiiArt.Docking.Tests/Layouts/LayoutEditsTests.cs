@@ -88,14 +88,14 @@ public sealed class LayoutEditsTests
         var layout = new DockingLayout([],
             [new ToolbarPlacement("file", ToolbarAnchor.BottomLeft, ToolbarOrientation.Vertical)], []);
 
-        var hidden = LayoutEdits.SetToolbarVisible(layout, "file", isVisible: false);
+        var hidden = LayoutEdits.HideToolbar(layout, "file");
         Assert.False(hidden.IsToolbarVisible("file"));
 
-        Assert.Equal(Text(layout), Text(LayoutEdits.SetToolbarVisible(hidden, "file", isVisible: true)));
+        Assert.Equal(Text(layout), Text(LayoutEdits.ShowToolbar(hidden, "file", default)));
     }
 
     [Fact]
-    public void ShowingAToolbarWhoseAnchorIsTaken_MovesItToAFreeOne()
+    public void ShowingAToolbarWhoseAnchorIsTaken_FloatsItThere()
     {
         var layout = new DockingLayout([],
         [
@@ -103,27 +103,132 @@ public sealed class LayoutEditsTests
             new ToolbarPlacement("edit", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal),
         ], []);
 
-        var shown = LayoutEdits.SetToolbarVisible(layout, "file", isVisible: true);
+        var shown = LayoutEdits.ShowToolbar(layout, "file", new LayoutPoint(8, 8));
 
         Assert.True(shown.IsToolbarVisible("file"));
-        Assert.Equal(ToolbarAnchor.TopMiddle, shown.Toolbars[0].Anchor);
+        Assert.Equal(new LayoutPoint(8, 8), shown.Toolbars[0].FloatingAt);
+        Assert.Equal(ToolbarAnchor.TopLeft, shown.Toolbars[1].Anchor);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_HiddenAndShown_FloatsWhereItWas()
+    {
+        var layout = new DockingLayout([],
+            [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Vertical, FloatingAt: new LayoutPoint(300, 200))], []);
+
+        var shown = LayoutEdits.ShowToolbar(LayoutEdits.HideToolbar(layout, "file"), "file", new LayoutPoint(1, 1));
+
+        Assert.Equal(Text(layout), Text(shown));
+    }
+
+    [Theory]
+    [InlineData(ToolbarAnchor.TopMiddle, ToolbarOrientation.Horizontal)]
+    [InlineData(ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal)]
+    [InlineData(ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical)]
+    [InlineData(ToolbarAnchor.RightMiddle, ToolbarOrientation.Vertical)]
+    public void MovingAToolbarToAnEdgeMiddle_SetsItsDirection(ToolbarAnchor anchor, ToolbarOrientation expected)
+    {
+        var wrong = expected == ToolbarOrientation.Horizontal ? ToolbarOrientation.Vertical : ToolbarOrientation.Horizontal;
+        var layout = new DockingLayout([], [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, wrong)], []);
+
+        var moved = LayoutEdits.MoveToolbarToAnchor(layout, "file", anchor);
+
+        Assert.Equal((anchor, expected), (moved.Toolbars[0].Anchor, moved.Toolbars[0].Orientation));
+    }
+
+    [Theory]
+    [InlineData(ToolbarOrientation.Horizontal)]
+    [InlineData(ToolbarOrientation.Vertical)]
+    public void MovingAToolbarToACorner_KeepsItsDirection(ToolbarOrientation orientation)
+    {
+        var layout = new DockingLayout([], [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, orientation)], []);
+
+        var moved = LayoutEdits.MoveToolbarToAnchor(layout, "file", ToolbarAnchor.BottomRight);
+
+        Assert.Equal((ToolbarAnchor.BottomRight, orientation), (moved.Toolbars[0].Anchor, moved.Toolbars[0].Orientation));
+    }
+
+    [Fact]
+    public void MovingAToolbarToATakenAnchor_DoesNothing()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal),
+            new ToolbarPlacement("edit", ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
+        ], []);
+
+        Assert.Same(layout, LayoutEdits.MoveToolbarToAnchor(layout, "file", ToolbarAnchor.TopRight));
+    }
+
+    [Fact]
+    public void FloatingAToolbar_KeepsItsDirection_AndPutsItLast_SoItsDrawnOnTop()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("file", ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical),
+            new ToolbarPlacement("edit", ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
+        ], []);
+
+        var floated = LayoutEdits.FloatToolbar(layout, "file", new LayoutPoint(300, 200));
+
+        Assert.Equal(["edit", "file"], floated.Toolbars.Select(toolbar => toolbar.ToolbarId));
+        Assert.Equal(ToolbarOrientation.Vertical, floated.Toolbars[1].Orientation);
+        Assert.Equal(new LayoutPoint(300, 200), floated.Toolbars[1].FloatingAt);
+    }
+
+    [Fact]
+    public void AToolbarLeavingFloating_ForgetsWhereItFloated()
+    {
+        var layout = new DockingLayout([],
+            [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal, FloatingAt: new LayoutPoint(300, 200))], []);
+
+        Assert.False(LayoutEdits.MoveToolbarToAnchor(layout, "file", ToolbarAnchor.TopRight).Toolbars[0].IsFloating);
+    }
+
+    [Theory]
+    [InlineData(ToolbarAnchor.TopLeft, false, true)]
+    [InlineData(ToolbarAnchor.BottomRight, false, true)]
+    [InlineData(ToolbarAnchor.TopMiddle, false, false)]
+    [InlineData(ToolbarAnchor.LeftMiddle, false, false)]
+    [InlineData(ToolbarAnchor.TopMiddle, true, true)]
+    public void AToolbarsDirection_CanBeChosen_OnACornerOrFloating(ToolbarAnchor anchor, bool isFloating, bool canChoose)
+    {
+        var toolbar = LayoutEdits.Placed(new ToolbarPlacement("file", anchor, ToolbarOrientation.Horizontal), anchor);
+        var placed = isFloating ? toolbar with { FloatingAt = new LayoutPoint(1, 1) } : toolbar;
+        var layout = new DockingLayout([], [placed], []);
+
+        var horizontal = LayoutEdits.SetToolbarOrientation(layout, "file", ToolbarOrientation.Horizontal).Toolbars[0];
+        var vertical = LayoutEdits.SetToolbarOrientation(layout, "file", ToolbarOrientation.Vertical).Toolbars[0];
+
+        Assert.Equal(canChoose, placed.CanChooseOrientation);
+        Assert.Equal(canChoose, horizontal.Orientation != vertical.Orientation);
     }
 
     [Fact]
     public void AnySequenceOfEdits_LosesNothing_AndKeepsTheRules()
     {
-        var steps = Gen.Select(Gen.Int[0, 2], Gen.OneOfConst(WindowIds), Gen.OneOfConst("file", "tools", "edit", "view"), Gen.Bool);
+        var steps = Gen.Select(
+            Gen.Int[0, 6],
+            Gen.OneOfConst(WindowIds),
+            Gen.OneOfConst("file", "tools", "edit", "view"),
+            Gen.Enum<ToolbarAnchor>(),
+            Gen.Enum<ToolbarOrientation>(),
+            Gen.Double[-500, 3000]);
 
         Gen.Select(Valid, steps.List[0, 30]).Sample((start, edits) =>
         {
             var layout = start;
-            foreach (var (kind, windowId, toolbarId, isVisible) in edits)
+            foreach (var (kind, windowId, toolbarId, anchor, orientation, position) in edits)
             {
                 layout = kind switch
                 {
                     0 => LayoutEdits.CloseWindow(layout, windowId),
                     1 => LayoutEdits.OpenWindow(layout, windowId, DefaultWidth),
-                    _ => LayoutEdits.SetToolbarVisible(layout, toolbarId, isVisible),
+                    2 => LayoutEdits.HideToolbar(layout, toolbarId),
+                    3 => LayoutEdits.ShowToolbar(layout, toolbarId, new LayoutPoint(position, position)),
+                    4 => LayoutEdits.MoveToolbarToAnchor(layout, toolbarId, anchor),
+                    5 => LayoutEdits.FloatToolbar(layout, toolbarId, new LayoutPoint(position, position)),
+                    _ => LayoutEdits.SetToolbarOrientation(layout, toolbarId, orientation),
                 };
 
                 AssertEveryWindowIsInOnePlace(layout);

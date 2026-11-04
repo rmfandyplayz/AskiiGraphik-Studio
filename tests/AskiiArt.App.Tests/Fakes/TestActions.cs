@@ -25,6 +25,7 @@ internal static class TestActions
         new ToolActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument, canvas.TextExporter, shell),
         new WindowMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),
+        new ToolbarMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),
         new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];

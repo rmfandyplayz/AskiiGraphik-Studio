@@ -20,7 +20,9 @@ internal static class TestLayouts
         MinimumCanvasRegionWidth: 320,
         ToolbarGap: 8,
         MinimumToolbarLength: 80,
-        MiddleToolbarPriority: 1.25);
+        MiddleToolbarPriority: 1.25,
+        ToolbarZoneCornerSize: 56,
+        ToolbarZoneEdgeThickness: 36);
 
     public static readonly DockingCatalog Catalog = new(
         WindowIds,
@@ -61,12 +63,20 @@ internal static class TestLayouts
         _columns.List[0, 3],
         (edge, kind, columns) => new SideLayout(edge, kind, columns));
 
+    private static readonly Gen<LayoutPoint?> _floating = Gen.Select(
+        Gen.Bool,
+        Gen.Double[-500, 3000],
+        Gen.Double[-500, 3000],
+        (isFloating, x, y) => isFloating ? new LayoutPoint(x, y) : (LayoutPoint?)null);
+
     private static readonly Gen<ToolbarPlacement> _toolbars = Gen.Select(
         Gen.OneOfConst("file", "tools", "edit", "view", "gone"),
         Gen.Enum<ToolbarAnchor>(),
         Gen.Enum<ToolbarOrientation>(),
         Gen.Bool,
-        (id, anchor, orientation, isVisible) => new ToolbarPlacement(id, anchor, orientation, isVisible));
+        _floating,
+        (id, anchor, orientation, isVisible, floatingAt) =>
+            new ToolbarPlacement(id, anchor, orientation, isVisible, floatingAt));
 
     private static readonly Gen<ClosedWindow> _closed = Gen.Select(
         _ids,

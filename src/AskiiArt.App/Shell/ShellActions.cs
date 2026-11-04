@@ -12,7 +12,7 @@ namespace AskiiArt.App.Shell;
 
 /// <summary>
 /// The shell's own actions: Quit, Close Window (macOS only), Open Log Folder, About, and (Debug
-/// builds only) Throw Test Exception.
+/// builds only) Throw Test Exception and Allow Tiny Window.
 /// </summary>
 internal sealed class ShellActions(IAppShell shell, AppDataLocations locations, bool includeDebugActions,
     bool isMacOS) : IActionProvider
@@ -51,6 +51,11 @@ internal sealed class ShellActions(IAppShell shell, AppDataLocations locations, 
                 ShellActionIds.ThrowTestException,
                 nameof(Strings.ActionThrowTestException),
                 new RelayCommand(PostTestException));
+
+            yield return new AppAction(
+                ShellActionIds.AllowTinyWindow,
+                nameof(Strings.ActionAllowTinyWindow),
+                new RelayCommand(shell.AllowTinyMainWindow));
         }
     }
 

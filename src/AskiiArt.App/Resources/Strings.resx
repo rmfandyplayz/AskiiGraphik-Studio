@@ -90,6 +90,10 @@
   <data name="ActionShowGrid" xml:space="preserve">
     <value>Show _Grid</value>
   </data>
+  <data name="ActionAllowTinyWindow" xml:space="preserve">
+    <value>Allow Tiny Window</value>
+    <comment>Debug menu: lifts the window's minimum size until it closes, to test how the layout copes with little room.</comment>
+  </data>
   <data name="ActionThrowTestException" xml:space="preserve">
     <value>Throw Test Exception</value>
     <comment>Debug builds only.</comment>
@@ -485,6 +489,18 @@
   <data name="ActionToggleViewToolbar" xml:space="preserve">
     <value>_View Toolbar</value>
     <comment>Window menu: shows or hides the toolbar with zoom and the grid.</comment>
+  </data>
+  <data name="ActionToolbarHorizontal" xml:space="preserve">
+    <value>Horizontal</value>
+    <comment>A toolbar's right-click menu: its buttons run left to right.</comment>
+  </data>
+  <data name="ActionToolbarVertical" xml:space="preserve">
+    <value>Vertical</value>
+    <comment>A toolbar's right-click menu: its buttons run top to bottom.</comment>
+  </data>
+  <data name="ActionToolbarHide" xml:space="preserve">
+    <value>Hide</value>
+    <comment>A toolbar's right-click menu: hides the toolbar. The Window menu shows it again.</comment>
   </data>
   <data name="ActionResetLayout" xml:space="preserve">
     <value>_Reset Layout</value>

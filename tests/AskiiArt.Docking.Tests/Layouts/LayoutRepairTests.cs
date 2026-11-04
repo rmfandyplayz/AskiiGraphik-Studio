@@ -163,7 +163,7 @@ public sealed class LayoutRepairTests
         };
 
         var anchors = LayoutRepair.Repair(layout, Catalog).Toolbars
-            .Where(toolbar => toolbar.IsVisible)
+            .Where(toolbar => toolbar.IsVisible && !toolbar.IsFloating)
             .Select(toolbar => toolbar.Anchor)
             .ToList();
 
@@ -195,6 +195,41 @@ public sealed class LayoutRepairTests
     }
 
     [Fact]
+    public void AFloatingToolbar_KeepsItsPlaceAndDirection_AndHoldsNoAnchor()
+    {
+        var layout = _empty with
+        {
+            Toolbars =
+            [
+                new ToolbarPlacement("file", ToolbarAnchor.TopMiddle, ToolbarOrientation.Vertical, FloatingAt: new LayoutPoint(-50, 9000)),
+                new ToolbarPlacement("edit", ToolbarAnchor.TopMiddle, ToolbarOrientation.Horizontal),
+            ],
+        };
+
+        var toolbars = LayoutRepair.Repair(layout, Catalog).Toolbars;
+
+        Assert.Equal(new LayoutPoint(-50, 9000), toolbars.Single(toolbar => toolbar.ToolbarId == "file").FloatingAt);
+        Assert.Equal(ToolbarOrientation.Vertical, toolbars.Single(toolbar => toolbar.ToolbarId == "file").Orientation);
+        Assert.Equal(ToolbarAnchor.TopMiddle, toolbars.Single(toolbar => toolbar.ToolbarId == "edit").Anchor);
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 0)]
+    [InlineData(0, double.PositiveInfinity)]
+    public void AFloatingToolbarWithANonsensePlace_GoesBackToItsAnchor(double x, double y)
+    {
+        var layout = _empty with
+        {
+            Toolbars = [new ToolbarPlacement("file", ToolbarAnchor.BottomLeft, ToolbarOrientation.Horizontal, FloatingAt: new LayoutPoint(x, y))],
+        };
+
+        var file = LayoutRepair.Repair(layout, _small).Toolbars[0];
+
+        Assert.False(file.IsFloating);
+        Assert.Equal(ToolbarAnchor.BottomLeft, file.Anchor);
+    }
+
+    [Fact]
     public void AnyLayout_ComesOutKeepingTheRules()
     {
         Anything.Sample(layout =>
@@ -215,7 +250,10 @@ public sealed class LayoutRepairTests
                 Assert.All(column.Groups, group => Assert.True(group.Share > 0));
             });
 
-            var anchors = repaired.Toolbars.Where(toolbar => toolbar.IsVisible).Select(toolbar => toolbar.Anchor).ToList();
+            var anchors = repaired.Toolbars
+                .Where(toolbar => toolbar.IsVisible && !toolbar.IsFloating)
+                .Select(toolbar => toolbar.Anchor)
+                .ToList();
             Assert.Equal(anchors.Count, anchors.Distinct().Count());
         });
     }

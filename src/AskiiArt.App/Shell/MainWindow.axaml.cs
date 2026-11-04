@@ -13,6 +13,7 @@ namespace AskiiArt.App.Shell;
 internal sealed partial class MainWindow : Window
 {
     private readonly ShellLayoutMetrics _metrics;
+    private bool _mayBeAnySize;
 
     public MainWindow()
     {
@@ -47,12 +48,26 @@ internal sealed partial class MainWindow : Window
         MenuBarStrip.IsVisible = menuBar is not null;
     }
 
+    /// <summary>Lifts the minimum size until the window closes, to test how the layout copes with little room.</summary>
+    public void AllowAnySize()
+    {
+        _mayBeAnySize = true;
+        KeepMinimumSizeOnScreen();
+    }
+
     internal void KeepMinimumSizeOnScreen()
     {
         // macOS can still report a closed window's position, for example when the displays change, and
         // a closed window has no screen to ask about.
         if (PlatformImpl is null)
             return;
+
+        if (_mayBeAnySize)
+        {
+            MinWidth = 0;
+            MinHeight = 0;
+            return;
+        }
 
         var wanted = new Size(_metrics.MainWindowMinWidth, _metrics.MainWindowMinHeight);
         var minimum = wanted;
@@ -76,8 +91,13 @@ internal sealed partial class MainWindow : Window
     }
 
     // Typing should keep going to the canvas after clicking a widget, unless the click was to type
-    // into the widget itself.
-    private void OnPointerReleasedOnWidget(object? sender, PointerReleasedEventArgs e) => GiveTypingBackToCanvas();
+    // into the widget itself. A right-click doesn't move the keyboard, and it may have opened a menu that's
+    // about to use it. The menu hands typing back when it closes.
+    private void OnPointerReleasedOnWidget(object? sender, PointerReleasedEventArgs e)
+    {
+        if (e.InitialPressMouseButton != MouseButton.Right)
+            GiveTypingBackToCanvas();
+    }
 
     private void GiveTypingBackToCanvas()
     {

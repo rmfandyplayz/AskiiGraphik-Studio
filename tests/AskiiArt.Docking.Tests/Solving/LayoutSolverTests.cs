@@ -193,7 +193,7 @@ public sealed class LayoutSolverTests
     {
         var layout = TopEdge(("a", ToolbarAnchor.TopLeft), ("b", ToolbarAnchor.TopMiddle), ("c", ToolbarAnchor.TopRight));
         var sizes = Lengths(("a", 2000), ("b", 2000), ("c", 2000));
-        var cramped = new DockingMetrics(8, 8, 28, 100, 0, 8, MinimumToolbarLength: 150, 1.25);
+        var cramped = Metrics with { MinimumCanvasRegionWidth = 0, MinimumToolbarLength = 150, DefaultMinimumWindowLength = 100 };
 
         var narrow = LayoutSolver.Solve(layout, Measure(new LayoutSize(340, 700), sizes), cramped).Toolbars;
         var wide = LayoutSolver.Solve(layout, Measure(new LayoutSize(1000, 700), sizes), cramped).Toolbars;
@@ -269,6 +269,119 @@ public sealed class LayoutSolverTests
     }
 
     [Fact]
+    public void AFloatingToolbar_GoesWhereItWasPut()
+    {
+        var layout = Floating(new LayoutPoint(300, 200), ToolbarOrientation.Horizontal);
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, One("float", 150, 40)), Metrics);
+
+        var toolbar = Assert.Single(solved.Toolbars);
+        Assert.Null(toolbar.Anchor);
+        Assert.Equal(new LayoutRect(300, 200, 150, 40), toolbar.Bounds);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_RunsTheWayItWasAsked()
+    {
+        var layout = Floating(new LayoutPoint(300, 200), ToolbarOrientation.Vertical);
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, One("float", 40, 150)), Metrics);
+
+        Assert.Equal(ToolbarOrientation.Vertical, solved.Toolbars[0].Orientation);
+        Assert.Equal(new LayoutRect(300, 200, 40, 150), solved.Toolbars[0].Bounds);
+    }
+
+    [Theory]
+    [InlineData(-500, -500, 8, 8)]
+    [InlineData(5000, 5000, 842, 652)]
+    public void AFloatingToolbar_IsMovedJustEnoughToStayInside(double x, double y, double expectedX, double expectedY)
+    {
+        var layout = Floating(new LayoutPoint(x, y), ToolbarOrientation.Horizontal);
+
+        var solved = LayoutSolver.Solve(layout, Measure(new LayoutSize(1000, 700), One("float", 150, 40)), Metrics);
+
+        Assert.Equal(new LayoutRect(expectedX, expectedY, 150, 40), solved.Toolbars[0].Bounds);
+    }
+
+    [Fact]
+    public void AWindowShrinkingAndRegrowing_PutsAFloatingToolbarBack()
+    {
+        var layout = Floating(new LayoutPoint(800, 600), ToolbarOrientation.Horizontal);
+        var sizes = One("float", 150, 40);
+
+        var shrunk = LayoutSolver.Solve(layout, Measure(new LayoutSize(500, 400), sizes), Metrics);
+        var regrown = LayoutSolver.Solve(layout, Measure(new LayoutSize(1200, 800), sizes), Metrics);
+
+        Assert.True(shrunk.Toolbars[0].Bounds.Right <= 500);
+        Assert.Equal(800, regrown.Toolbars[0].Bounds.X);
+        Assert.Equal(600, regrown.Toolbars[0].Bounds.Y);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_StaysInTheCanvasRegion()
+    {
+        var layout = Widgets(SideEdge.Right, new WindowGroup(["a"])) with
+        {
+            Toolbars = [new ToolbarPlacement("float", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal, FloatingAt: new LayoutPoint(5000, 100))],
+        };
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, One("float", 150, 40)), Metrics);
+
+        Assert.Equal(solved.CanvasRegion.Right - Metrics.Margin, solved.Toolbars[0].Bounds.Right, tolerance: Tolerance);
+    }
+
+    [Fact]
+    public void AFloatingToolbarTooLongForTheRegion_IsCutToFit()
+    {
+        var layout = Floating(new LayoutPoint(0, 0), ToolbarOrientation.Horizontal);
+
+        var solved = LayoutSolver.Solve(layout, Measure(new LayoutSize(500, 400), One("float", 2000, 40)), Metrics);
+
+        Assert.Equal(500 - Metrics.Margin * 2, solved.Toolbars[0].Bounds.Width, tolerance: Tolerance);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_HidesWithNoRoomForItsSmallestSize()
+    {
+        var layout = Floating(new LayoutPoint(0, 0), ToolbarOrientation.Horizontal);
+
+        var solved = LayoutSolver.Solve(layout, Measure(new LayoutSize(50, 400), One("float", 2000, 40)), Metrics);
+
+        Assert.Empty(solved.Toolbars);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_TakesNothingFromTheCanvas_AndMovesNothing()
+    {
+        var anchored = new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal);
+        var sizes = new Dictionary<string, LayoutSize> { ["file"] = new(150, 40), ["float"] = new(150, 40) };
+        var alone = new DockingLayout([], [anchored], []);
+        var together = new DockingLayout([],
+            [anchored, new ToolbarPlacement("float", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal, FloatingAt: new LayoutPoint(10, 10))], []);
+
+        var without = LayoutSolver.Solve(alone, Measure(_window, sizes), Metrics);
+        var with = LayoutSolver.Solve(together, Measure(_window, sizes), Metrics);
+
+        Assert.Equal(without.SafeArea, with.SafeArea);
+        Assert.Equal(Named(without.Toolbars, "file"), Named(with.Toolbars, "file"));
+    }
+
+    [Fact]
+    public void WhereAloneOnItsAnchor_IgnoresWhoeverHasTheAnchorNow()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("view", ToolbarAnchor.BottomRight, ToolbarOrientation.Horizontal),
+            new ToolbarPlacement("hidden", ToolbarAnchor.BottomRight, ToolbarOrientation.Horizontal, IsVisible: false),
+        ], []);
+        var sizes = new Dictionary<string, LayoutSize> { ["view"] = new(150, 40), ["hidden"] = new(100, 40) };
+
+        var position = LayoutSolver.WhereAloneOnItsAnchor(layout, "hidden", Measure(new LayoutSize(1000, 700), sizes), Metrics);
+
+        Assert.Equal(new LayoutPoint(1000 - 8 - 100, 700 - 8 - 40), position);
+    }
+
+    [Fact]
     public void SidesTooWideForTheWindow_ShrinkTogether_AndLeaveTheCanvasRegionItsMinimum()
     {
         var layout = new DockingLayout(
@@ -309,7 +422,9 @@ public sealed class LayoutSolverTests
 
             Assert.All(windows.Concat(toolbars), bounds => AssertInside(bounds, size));
             AssertNoneOverlap(windows);
-            AssertNoneOverlap(toolbars);
+
+            // A floating toolbar may overlap anything, and nothing moves for it.
+            AssertNoneOverlap([.. solved.Toolbars.Where(toolbar => toolbar.Anchor is not null).Select(toolbar => toolbar.Bounds)]);
 
             // Toolbars stay in the canvas region, so they never touch a window.
             Assert.All(toolbars, toolbar =>
@@ -326,6 +441,11 @@ public sealed class LayoutSolverTests
             }
         });
     }
+
+    private static DockingLayout Floating(LayoutPoint position, ToolbarOrientation orientation) => new(
+        [],
+        [new ToolbarPlacement("float", ToolbarAnchor.TopLeft, orientation, FloatingAt: position)],
+        []);
 
     private static DockingLayout TopEdge(params (string Id, ToolbarAnchor Anchor)[] toolbars) => new(
         [],

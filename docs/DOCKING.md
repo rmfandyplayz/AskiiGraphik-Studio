@@ -286,7 +286,7 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 | `DockingLayout` | Plain immutable data: each side's kind and columns, each column's tab groups, the floating windows, the toolbar placements, the remembered places | Saving, undoing a drag and testing all become easy |
 | `LayoutSolver` | Layout + app window size + measured sizes → a rectangle for everything, plus the safe area. No state, no UI | Every rule in sections 2, 3, 4, 7 and 8 lives in one testable place |
 | `LayoutEdits` | Layout + a change → a new layout. Drops, conversions, opening rules, repairs | A preview is `Solve(Edit(layout, drop))`, the same function as the drop |
-| `DockingHost` and views | An Avalonia panel with no background that puts views at the solved rectangles, draws zones and forwards the pointer | Empty pixels reach the canvas naturally, which removes today's workaround. Stays thin |
+| `DockingHost` and views | An Avalonia panel with no background that puts views at the solved rectangles and draws zones. A small controller beside it connects the pointer to a drag, which is data too (`ToolbarDrag`) | Empty pixels reach the canvas naturally, which removes today's workaround. Stays thin |
 
 **A widget side is a dock side with stricter rules:** one column, single-tab groups, at most 4. Converting mostly flips a flag, and allowing tabs in widgets later means relaxing one rule. Sides are held by edge, with sizes along and across an axis, rather than by "left and right, vertical".
 

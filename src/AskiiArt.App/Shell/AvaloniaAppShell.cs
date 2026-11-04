@@ -30,6 +30,8 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
 
     public void CloseMainWindow() => MainWindow?.Close();
 
+    public void AllowTinyMainWindow() => (MainWindow as Shell.MainWindow)?.AllowAnySize();
+
     public async Task CopyTextAsync(string text)
     {
         if (MainWindow?.Clipboard is not { } clipboard)

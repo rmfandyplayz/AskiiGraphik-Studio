@@ -18,6 +18,8 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D9F3F3F3" />
+      <SolidColorBrush x:Key="AppDropZoneBrush" Color="#400078D7" />
+      <SolidColorBrush x:Key="AppDropZoneActiveBrush" Color="#900078D7" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -31,6 +33,8 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D92B2B2B" />
+      <SolidColorBrush x:Key="AppDropZoneBrush" Color="#504C9EEB" />
+      <SolidColorBrush x:Key="AppDropZoneActiveBrush" Color="#A04C9EEB" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -65,10 +69,24 @@
   <x:Double x:Key="AppToolbarMinLength">80</x:Double>
   <!-- How much more of a shared edge a middle toolbar gets than a corner one. -->
   <x:Double x:Key="AppToolbarMiddlePriority">1.25</x:Double>
+  <!-- The 6-dot grip at each end: how much length it takes, and how faint it is while the pointer's over the toolbar. -->
+  <x:Double x:Key="AppToolbarGripLength">14</x:Double>
+  <x:Double x:Key="AppToolbarGripDotSize">2</x:Double>
+  <x:Double x:Key="AppToolbarGripDotGap">2</x:Double>
+  <x:Double x:Key="AppToolbarGripHoverOpacity">0.6</x:Double>
+  <!-- How long the fade is on a side of a toolbar with more to scroll to. -->
+  <x:Double x:Key="AppToolbarFadeLength">20</x:Double>
+  <!-- The drop zones while dragging a toolbar: squares at the corners, and strips along the edges between them. -->
+  <x:Double x:Key="AppToolbarZoneCornerSize">56</x:Double>
+  <x:Double x:Key="AppToolbarZoneEdgeThickness">36</x:Double>
 
   <!-- Windows and toolbars (docs/DOCKING.md). -->
   <!-- Around widgets, and around toolbars in the canvas region, so their edges line up. -->
   <x:Double x:Key="AppDockingMargin">8</x:Double>
+  <!-- How far the pointer has to move before a press on a grip counts as a drag. -->
+  <x:Double x:Key="AppDockingDragThreshold">4</x:Double>
+  <!-- How long a toolbar takes to slide to a new place. -->
+  <x:Double x:Key="AppDockingMotionMilliseconds">120</x:Double>
   <x:Double x:Key="AppWidgetGap">8</x:Double>
   <x:Double x:Key="AppWidgetWidth">240</x:Double>
   <x:Double x:Key="AppWindowTitleHeight">28</x:Double>

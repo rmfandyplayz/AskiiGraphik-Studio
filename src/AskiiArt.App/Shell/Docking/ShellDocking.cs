@@ -4,6 +4,7 @@
 using System.Text.Json;
 using AskiiArt.App.Settings;
 using AskiiArt.Docking.Layouts;
+using AskiiArt.Docking.Solving;
 using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Shell.Docking;
@@ -21,8 +22,9 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
     private ShellCatalog? _catalog;
     private ShellLayoutMetrics? _metrics;
     private DockingLayout? _layout;
+    private ToolbarDragController? _toolbarDrags;
 
-    /// <summary>Raised when a window opens or closes, or a toolbar shows or hides.</summary>
+    /// <summary>Raised when the layout changes, which a drag only does when it ends.</summary>
     public event EventHandler? LayoutChanged;
 
     /// <summary>Shows the saved layout in <paramref name="host"/>, or the default one if there's none to use.</summary>
@@ -31,58 +33,120 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         _host = host;
         _catalog = catalog;
         _metrics = metrics;
+        _toolbarDrags = new ToolbarDragController(host, metrics, () => _layout, layout => Show(layout, animate: true));
+        host.ToolbarFrameCreated += OnToolbarFrameCreated;
 
-        Show(LoadSavedLayout() ?? DefaultLayout());
+        Show(LoadSavedLayout() ?? DefaultLayout(), animate: false);
     }
 
     /// <summary>Saves the layout and lets go of the window, which is closing.</summary>
     public void SaveAndDetach()
     {
-        if (_layout is null)
+        if (LayoutToChange() is not { } layout)
             return;
 
-        Save(_layout);
+        Save(layout);
 
+        _host!.ToolbarFrameCreated -= OnToolbarFrameCreated;
         _host = null;
         _catalog = null;
         _metrics = null;
+        _toolbarDrags = null;
         _layout = null;
     }
+
+    /// <summary>The layout as it stands, if there's a window. A drag only changes it when it ends.</summary>
+    public DockingLayout? Layout => _layout;
 
     public bool IsWindowOpen(string windowId) => _layout?.IsWindowOpen(windowId) == true;
 
     public bool IsToolbarVisible(string toolbarId) => _layout?.IsToolbarVisible(toolbarId) == true;
 
+    /// <summary>Which way a toolbar runs. With no window there's nothing to ask, and it says horizontal.</summary>
+    public ToolbarOrientation ToolbarOrientationOf(string toolbarId) =>
+        ToolbarNamed(toolbarId)?.Orientation ?? ToolbarOrientation.Horizontal;
+
+    /// <summary>Whether the user can choose a toolbar's direction: on a corner or floating, not on an edge middle.</summary>
+    public bool CanChooseToolbarOrientation(string toolbarId) => ToolbarNamed(toolbarId)?.CanChooseOrientation == true;
+
     /// <summary>Closes the window if it's open, and opens it otherwise.</summary>
     public void ToggleWindow(string windowId)
     {
-        if (_layout is not { } layout || _metrics is not { } metrics)
+        if (LayoutToChange() is not { } layout || _metrics is not { } metrics)
             return;
 
-        Show(layout.IsWindowOpen(windowId)
-            ? LayoutEdits.CloseWindow(layout, windowId)
-            : LayoutEdits.OpenWindow(layout, windowId, metrics.WidgetWidth));
+        Show(
+            layout.IsWindowOpen(windowId)
+                ? LayoutEdits.CloseWindow(layout, windowId)
+                : LayoutEdits.OpenWindow(layout, windowId, metrics.WidgetWidth),
+            animate: true);
     }
 
     /// <summary>Hides the toolbar if it's showing, and shows it otherwise.</summary>
     public void ToggleToolbar(string toolbarId)
     {
-        if (_layout is { } layout)
-            Show(LayoutEdits.SetToolbarVisible(layout, toolbarId, !layout.IsToolbarVisible(toolbarId)));
+        if (LayoutToChange() is not { } layout)
+            return;
+
+        Show(
+            layout.IsToolbarVisible(toolbarId)
+                ? LayoutEdits.HideToolbar(layout, toolbarId)
+                : LayoutEdits.ShowToolbar(layout, toolbarId, WhereToFloatIfItsAnchorIsTaken(layout, toolbarId)),
+            animate: true);
+    }
+
+    /// <summary>Hides a toolbar.</summary>
+    public void HideToolbar(string toolbarId)
+    {
+        if (LayoutToChange() is { } layout)
+            Show(LayoutEdits.HideToolbar(layout, toolbarId), animate: true);
+    }
+
+    /// <summary>Changes which way a toolbar runs, if the user can choose that where it is.</summary>
+    public void SetToolbarOrientation(string toolbarId, ToolbarOrientation orientation)
+    {
+        if (LayoutToChange() is { } layout)
+            Show(LayoutEdits.SetToolbarOrientation(layout, toolbarId, orientation), animate: true);
     }
 
     /// <summary>Goes back to the default layout.</summary>
     public void ResetLayout()
     {
-        if (_layout is not null)
-            Show(DefaultLayout());
+        if (LayoutToChange() is not null)
+            Show(DefaultLayout(), animate: true);
     }
 
-    private void Show(DockingLayout layout)
+    // The layout for a change to start from. A change can arrive during a drag, from a shortcut for example, and
+    // it wins: the drag is cancelled first, so it can't overwrite the change when it ends.
+    private DockingLayout? LayoutToChange()
+    {
+        _toolbarDrags?.Cancel();
+        return _layout;
+    }
+
+    private void Show(DockingLayout layout, bool animate)
     {
         _layout = layout;
-        _host!.Show(layout, _catalog!, _metrics!.Docking);
+        _host!.Show(layout, _catalog!, _metrics!, animate);
         LayoutChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnToolbarFrameCreated(object? sender, ToolbarFrameCreatedEventArgs e) =>
+        _toolbarDrags?.Watch(e.ToolbarId, e.Frame);
+
+    private ToolbarPlacement? ToolbarNamed(string toolbarId) =>
+        _layout?.Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == toolbarId);
+
+    private LayoutPoint WhereToFloatIfItsAnchorIsTaken(DockingLayout layout, string toolbarId)
+    {
+        if (ToolbarNamed(toolbarId) is not { } toolbar || !_catalog!.Toolbars.ContainsKey(toolbarId) ||
+            !layout.IsAnchorTaken(toolbar.Anchor, toolbarId))
+        {
+            return default;
+        }
+
+        var measurements = _host!.MeasurementsIncluding(toolbar);
+        return LayoutSolver.WhereAloneOnItsAnchor(layout, toolbarId, measurements, _metrics!.Docking);
     }
 
     private DockingCatalog Catalog()

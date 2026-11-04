@@ -73,7 +73,8 @@ internal sealed class MainWindowBuilder(
         ],
         [
             .. toolbars.Layouts.Select(toolbar => new ShellToolbarEntry(toolbar.Key,
-                () => new ToolbarPanelView { Bar = bars.Build(toolbar.Value), WheelStep = metrics.ToolbarWheelStep })),
+                () => bars.Build(toolbar.Value),
+                () => ToolbarMenu.Create(toolbar.Key, actions, docking))),
         ]);
 
         docking.Attach(window.Panels, catalog, metrics);

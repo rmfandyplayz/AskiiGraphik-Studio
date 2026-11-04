@@ -59,6 +59,20 @@ public sealed class LayoutJsonTests
         Assert.NotNull(layout);
         Assert.Equal(1, layout.Sides[0].Columns[0].Groups[0].Share);
         Assert.True(layout.Toolbars[0].IsVisible);
+        Assert.False(layout.Toolbars[0].IsFloating);
+    }
+
+    [Fact]
+    public void AFloatingToolbar_SavesWhereItIs_AndNothingWorkedOutFromIt()
+    {
+        var layout = new DockingLayout([],
+            [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Vertical, FloatingAt: new LayoutPoint(12.5, 40))], []);
+
+        var text = LayoutJson.Write(layout);
+
+        Assert.Equal(new LayoutPoint(12.5, 40), LayoutJson.TryRead(text)!.Toolbars[0].FloatingAt);
+        Assert.DoesNotContain("isFloating", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("canChoose", text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

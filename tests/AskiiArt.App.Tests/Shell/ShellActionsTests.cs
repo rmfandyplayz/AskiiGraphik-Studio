@@ -52,6 +52,16 @@ public sealed class ShellActionsTests
     }
 
     [Fact]
+    public void AllowTinyWindow_ExistsOnlyWhenDebugActionsAreIncluded_AndAsksTheShell()
+    {
+        Assert.False(Registry(includeDebugActions: false).Contains(ShellActionIds.AllowTinyWindow));
+
+        Registry(includeDebugActions: true).Get(ShellActionIds.AllowTinyWindow).Command.Execute(null);
+
+        Assert.Equal(1, _shell.AllowTinyMainWindowCount);
+    }
+
+    [Fact]
     public void ThrowTestException_ExistsOnlyWhenDebugActionsAreIncluded()
     {
         Assert.True(Registry(includeDebugActions: true).Contains(ShellActionIds.ThrowTestException));

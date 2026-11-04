@@ -19,7 +19,7 @@ internal sealed class ToolbarBuilder(ActionRegistry actions)
     /// <summary>The toolbar's control name, so tests can find it among the other widgets.</summary>
     public const string ControlName = "Toolbar";
 
-    /// <summary>A single row, for the toolbar.</summary>
+    /// <summary>A single row, for the toolbar. Its frame turns it if the toolbar is vertical.</summary>
     public Control Build(ToolbarLayout layout)
     {
         var bar = new StackPanel { Name = ControlName, Orientation = Orientation.Horizontal };
@@ -50,8 +50,10 @@ internal sealed class ToolbarBuilder(ActionRegistry actions)
                     bar.Children.Add(BuildButton(actions.Get(item.ActionId)));
                     break;
                 case SeparatorMenuEntry:
+                    // Square, because the toolbar can turn, and only its length along the bar makes a gap.
                     var gap = new Control();
                     gap.Bind(Layoutable.WidthProperty, gap.GetResourceObservable("AppToolbarGroupGap"));
+                    gap.Bind(Layoutable.HeightProperty, gap.GetResourceObservable("AppToolbarGroupGap"));
                     bar.Children.Add(gap);
                     break;
             }

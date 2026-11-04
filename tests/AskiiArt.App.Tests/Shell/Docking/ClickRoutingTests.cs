@@ -285,6 +285,54 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void AllowingAnySize_LiftsTheMinimumSize_EvenAfterTheWindowMoves()
+    {
+        _window.AllowAnySize();
+        _window.KeepMinimumSizeOnScreen();
+
+        Assert.Equal(0, _window.MinWidth);
+        Assert.Equal(0, _window.MinHeight);
+    }
+
+    [AvaloniaFact]
+    public void EveryToolbar_HasAGripAtEachEnd()
+    {
+        Assert.All(Toolbars, toolbar => Assert.Equal(2, toolbar.GetVisualDescendants().OfType<ToolbarGrip>().Count()));
+    }
+
+    [AvaloniaFact]
+    public void DraggingAToolbar_LeavesTypingWithTheCanvas()
+    {
+        var grip = RectIn(ToolbarView.Grips[0]).Center;
+        var somewhere = new Point(500, 400);
+
+        _window.MouseDown(grip, MouseButton.Left);
+        _window.MouseMove(somewhere);
+        _window.MouseUp(somewhere, MouseButton.Left);
+        Pump();
+
+        Assert.True(_docking.Layout!.Toolbars.Single(toolbar => toolbar.ToolbarId == ShellDockingIds.FileToolbar).IsFloating);
+        Assert.True(Canvas.IsFocused);
+    }
+
+    [AvaloniaFact]
+    public void ClosingAToolbarsMenu_GivesTypingBackToTheCanvas()
+    {
+        var view = ToolbarView;
+        var grip = RectIn(view.Grips[0]).Center;
+
+        _window.MouseDown(grip, MouseButton.Right);
+        _window.MouseUp(grip, MouseButton.Right);
+        Pump();
+        Assert.True(view.ContextMenu!.IsOpen);
+
+        view.ContextMenu.Close();
+        Pump();
+
+        Assert.True(Canvas.IsFocused);
+    }
+
+    [AvaloniaFact]
     public void AWindow_ShowsItsTitle()
     {
         Assert.Contains(Strings.PanelLayers, Frames.Select(frame => frame.Title));
@@ -510,14 +558,14 @@ public sealed class ClickRoutingTests : IDisposable
         return RectIn(name).Center;
     }
 
-    private List<ToolbarPanelView> Toolbars => [.. _window.GetVisualDescendants().OfType<ToolbarPanelView>()];
+    private List<ToolbarFrame> Toolbars => [.. _window.GetVisualDescendants().OfType<ToolbarFrame>()];
 
     private List<WindowFrame> Frames => [.. _window.GetVisualDescendants().OfType<WindowFrame>()];
 
     // Any one toolbar, for tests about what a toolbar does.
-    private ToolbarPanelView ToolbarView => ToolbarWith(Strings.ActionNew);
+    private ToolbarFrame ToolbarView => ToolbarWith(Strings.ActionNew);
 
-    private ToolbarPanelView ToolbarWith(string label) => Toolbars.Single(toolbar =>
+    private ToolbarFrame ToolbarWith(string label) => Toolbars.Single(toolbar =>
         toolbar.GetVisualDescendants().OfType<Button>()
             .Any(button => Equals(button.Content, UiText.WithoutAccessKey(label))));
 

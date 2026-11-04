@@ -31,6 +31,23 @@ public static class LayoutSolver
         return new SolvedLayout(groups, toolbars, region, SafeArea(region, available, toolbars, metrics.Margin));
     }
 
+    /// <summary>
+    /// Where a toolbar's top left would be if it had its anchor to itself, for floating it there when the anchor
+    /// has been taken. <paramref name="measurements"/> must include its size.
+    /// </summary>
+    public static LayoutPoint WhereAloneOnItsAnchor(DockingLayout layout, string toolbarId,
+        LayoutMeasurements measurements, DockingMetrics metrics)
+    {
+        var alone = layout.Toolbars
+            .Where(toolbar => toolbar.ToolbarId == toolbarId)
+            .Select(toolbar => toolbar with { IsVisible = true, FloatingAt = null });
+        var solved = Solve(layout with { Toolbars = [.. alone] }, measurements, metrics);
+
+        return solved.Toolbars.Count > 0
+            ? new LayoutPoint(solved.Toolbars[0].Bounds.X, solved.Toolbars[0].Bounds.Y)
+            : new LayoutPoint(solved.CanvasRegion.X + metrics.Margin, solved.CanvasRegion.Y + metrics.Margin);
+    }
+
     // Sides shrink together when they'd leave the canvas region too narrow. Wanted widths stay in the layout.
     private static double SideWidthScale(DockingLayout layout, double availableWidth, DockingMetrics metrics)
     {
