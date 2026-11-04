@@ -122,15 +122,39 @@ Docking is adopted here, before most panels exist, so later panels don't need to
 
   *Owner checks:* a loaded font survives a restart, a document using it opens without a warning, and a moved or damaged file does no harm.
   *Note:* Built (ADR 0034). Fonts are remembered by file path in settings. The owner confirmed it on 2026-11-04.
-- [ ] **2.5 Docking pass.** The owner works through how docking and windowing feel, and Claude Code fixes or changes them to match. Added at the owner's request after 2.1's testing. Decisions waiting for it are listed in `docs/TEMPORARY-UI.md`. It also takes in 2.1's last retest.
 
-  *Owner checks:* decided in the pass.
+### 2.5 Docking pass
+
+Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delivered a brief, and the pass became a replacement of the Dock library with our own system, split into these steps with the owner's OK (`docs/DOCKING.md`, ADR 0035). It also takes in 2.1's last retest.
+
+- [~] **2.5a Spec.** `docs/DOCKING.md`, ADR 0035, and this split. No code.
+
+  *Owner checks:* reads the spec and approves it or changes it. Nothing to test by hand.
+  *Note:* Written. Waiting for the owner's approval before 2.5b starts.
+- [ ] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
+
+  *Owner checks:* art shows around the widgets, clicks on empty space reach the canvas, windows and toolbars get clicks first, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
+- [ ] **2.5c Toolbars.** The 8 anchors and floating, several toolbars, dragging with zones and a live preview, right-click Horizontal and Vertical, sharing space, the corner rule, scrolling, fades and grips.
+
+  *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
+- [ ] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
+
+  *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
+- [ ] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
+
+  *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.
+- [ ] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
+
+  *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.
+- [ ] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
+
+  *Owner checks:* the opening rules, and a last pass over how everything feels.
 
 ## M2b: Colour
 
 Added after 2.3's testing, when the owner decided colour is in (ADR 0032). It comes before M3 so every tool from there on writes colour from the start. Later milestones keep their numbers.
 
-A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23). The owner's direction so far: a new document picks monochrome, RGB color or ANSI color, the way it picks its character set.
+A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23). The owner's direction so far: a new document picks monochrome, RGB color or ANSI color, the way it picks its character set. ANSI color means the standard 16 colours, and Discord's 8 text and 8 background colours belong to its plugin (M8b). How background colour works gets decided in this milestone.
 
 ## M3: Ramps and brushes
 
@@ -154,7 +178,7 @@ PNG export (font, scale, padding, colors, and a transparent-background option), 
 
 ## M8: Customization
 
-Rearrangeable toolbars and tool palette, a shortcut-rebinding UI, a settings window, light/dark theme switching, and layout presets.
+A toolbar customizer: a window for searching tools and dragging them anywhere, adding to toolbars or making new ones. It replaces the earlier "layout builder" idea, since the docking pass already lets everything be placed anywhere. Also a tool palette, a shortcut-rebinding UI, a settings window, light/dark theme switching, layout presets, and frosted glass with a progressive blur for widgets, after a trial to see what they cost (`docs/DOCKING.md` §10).
 
 ## M8b: Plugins
 

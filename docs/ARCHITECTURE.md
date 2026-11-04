@@ -37,7 +37,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | MVVM | CommunityToolkit.Mvvm | Source-generated and minimal |
 | DI | Microsoft.Extensions.DependencyInjection | Holds the registries for tools, importers, exporters and actions |
 | Graphics | SkiaSharp | **Use the exact version Avalonia depends on.** Never pin a different one. |
-| Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line: Dock.Avalonia, Dock.Avalonia.Themes.Fluent, Dock.Model.Mvvm, Dock.Serializer.SystemTextJson | A see-through layer over the canvas (§14.4, ADR 0025) |
+| Docking | Dock (wieslawsoltes/Dock), Avalonia 12 package line: Dock.Avalonia, Dock.Avalonia.Themes.Fluent, Dock.Model.Mvvm, Dock.Serializer.SystemTextJson | A see-through layer over the canvas (§14.4, ADR 0025). Step 2.5b replaces it with our own system (ADR 0035) |
 | Tests | xUnit v3, Verify (snapshot tests), CsCheck (property-based tests), Avalonia.Headless | Run on Microsoft.Testing.Platform. xUnit v3 stays on 3.x and Verify on 32.x until Avalonia.Headless.XUnit supports xUnit 4 (ADR 0002) |
 | Logging | Microsoft.Extensions.Logging, writing to a rolling file through Serilog (Serilog.Extensions.Logging, Serilog.Sinks.File) | The owner attaches the log to bug reports (ADR 0006) |
 | CI | GitHub Actions, matrix of Windows, macOS and Ubuntu | Build and run all tests on every push and pull request, and check formatting (ADR 0005) |
@@ -269,6 +269,8 @@ Menus are Avalonia native menus built from a menu layout of action ids: the syst
 
 ### 14.4 Panels and docking
 
+*Step 2.5b replaces Dock with our own system (ADR 0035, `docs/DOCKING.md`). Until then this section describes the code.*
+
 Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The shell uses **Dock**, so panels can be docked, tabbed, floated and rearranged, and the layout is saved in settings.
 
 The canvas is the main character (ADR 0025). It paints everything between the menu bar and the status bar, which are plain strips (ADR 0029), and Dock lies on top as a see-through layer: panels are widgets over the canvas, art shows around them and slides under them, and they always get input first. The toolbar is a panel like any other, so it can go anywhere a panel can. Docked widgets still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. Floating panels stay inside the Dock layer. The window has a minimum size, lowered to fit small screens.
@@ -379,7 +381,7 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| The color model. Decided by the owner on 2026-11-02: a new document picks monochrome, RGB color or ANSI color, like the character set. Still open: what ANSI color means (Discord's ANSI has 8 text and 8 background colors; terminals reach 16 or 256), whether a document can change its mode later, which attributes there are, and whether a colored space still counts for the space-as-empty option | M2b |
+| The color model. Decided by the owner on 2026-11-02: a new document picks monochrome, RGB color or ANSI color, like the character set. *Decided on 2026-11-04:* ANSI color means the standard 16 colors, and Discord's 8 text and 8 background colors belong to its plugin (M8b). Still open: how background color works, whether a document can change its mode later, which attributes there are, and whether a colored space still counts for the space-as-empty option | M2b |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |
 | Exact behavior of each tool | That tool's milestone |

@@ -32,3 +32,4 @@ ARCHITECTURE §18 reserved colour and plugins as hooks with no plan. After testi
 - **Safety:** a .NET plugin runs with the user's full permissions, because .NET has no sandbox. M8b has to decide whether that's acceptable, or whether plugins use a scripting language instead. Loading .NET plugins also rules out Native AOT and aggressive trimming in M9's packaging.
 
 Updated 2026-11-02: the owner wants a new document to pick monochrome, RGB color or ANSI color, like the character set. The rest of the colour model is still open (ARCHITECTURE §23).
+Updated 2026-11-04: ANSI color means the standard 16 colours. Discord's 8 text and 8 background colours belong to its plugin.
