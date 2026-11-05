@@ -94,6 +94,30 @@
     <value>Allow Tiny Window</value>
     <comment>Debug menu: lifts the window's minimum size until it closes, to test how the layout copes with little room.</comment>
   </data>
+  <data name="ActionSubToolbarOnFile" xml:space="preserve">
+    <value>Sub-Toolbar on File</value>
+    <comment>Debug menu: puts a sample sub-toolbar on the File toolbar, to test them until tool groups arrive.</comment>
+  </data>
+  <data name="ActionSubToolbarOnTools" xml:space="preserve">
+    <value>Sub-Toolbar on Tools</value>
+    <comment>Debug menu: puts a sample sub-toolbar on the Tools toolbar.</comment>
+  </data>
+  <data name="ActionSubToolbarOnEdit" xml:space="preserve">
+    <value>Sub-Toolbar on Edit</value>
+    <comment>Debug menu: puts a sample sub-toolbar on the Edit toolbar.</comment>
+  </data>
+  <data name="ActionSubToolbarOnView" xml:space="preserve">
+    <value>Sub-Toolbar on View</value>
+    <comment>Debug menu: puts a sample sub-toolbar on the View toolbar.</comment>
+  </data>
+  <data name="ActionSubToolbarLong" xml:space="preserve">
+    <value>Long Sub-Toolbar</value>
+    <comment>Debug menu: makes the sample sub-toolbar long enough to reach its length limits and scroll.</comment>
+  </data>
+  <data name="SubToolbarSampleButtonFormat" xml:space="preserve">
+    <value>Sample {0}</value>
+    <comment>A button on the Debug menu's sample sub-toolbar. {0} is its number.</comment>
+  </data>
   <data name="ActionThrowTestException" xml:space="preserve">
     <value>Throw Test Exception</value>
     <comment>Debug builds only.</comment>

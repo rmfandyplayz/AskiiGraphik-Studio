@@ -20,8 +20,7 @@ internal sealed record ShellLayoutMetrics(
     double LandingOutlineThickness,
     double LandingOutlineDash,
     double LandingOutlineDashGap,
-    double LandingPulseLength,
-    TimeSpan LandingPulsePeriod)
+    double LandingAntsSpeed)
 {
     public static ShellLayoutMetrics
         FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
@@ -34,7 +33,8 @@ internal sealed record ShellLayoutMetrics(
             ToolbarGap: Token(resources, "AppToolbarGap", theme),
             MinimumToolbarLength: Token(resources, "AppToolbarMinLength", theme),
             MiddleToolbarPriority: Token(resources, "AppToolbarMiddlePriority", theme),
-            ToolbarZoneMinimumShare: Token(resources, "AppToolbarZoneMinimumShare", theme)),
+            ToolbarZoneMinimumShare: Token(resources, "AppToolbarZoneMinimumShare", theme),
+            SubToolbarLengthFactor: Token(resources, "AppSubToolbarLengthFactor", theme)),
         Token(resources, "AppWidgetWidth", theme),
         Token(resources, "AppWindowMinHeight", theme),
         Token(resources, "AppMainWindowMinWidth", theme),
@@ -46,8 +46,7 @@ internal sealed record ShellLayoutMetrics(
         Token(resources, "AppLandingOutlineThickness", theme),
         Token(resources, "AppLandingOutlineDash", theme),
         Token(resources, "AppLandingOutlineDashGap", theme),
-        Token(resources, "AppLandingPulseLength", theme),
-        TimeSpan.FromMilliseconds(Token(resources, "AppLandingPulseMilliseconds", theme)));
+        Token(resources, "AppLandingAntsSpeed", theme));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

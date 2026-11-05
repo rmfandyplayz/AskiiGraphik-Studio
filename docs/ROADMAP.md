@@ -135,13 +135,14 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* art shows around the widgets, clicks on empty space reach the canvas, windows and toolbars get clicks first, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
   *Note:* Built (ADR 0035). Sharing an edge and the corner rule are already in the solver, because it's one piece of code, and came forward from 2.5c. The owner confirmed it on 2026-11-04.
-- [~] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
+- [x] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
 
   *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
-  *Note:* Built (ADR 0035), and waiting for the owner's testing. Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size. After the first round: the toolbar's shape after a cancel is fixed, zones now lie among toolbars like toolbars and match their thickness, and the landing preview is a real copy in a pulsing dashed outline. The first round's other tests passed on 2026-11-04.
-- [ ] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
+  *Note:* Built (ADR 0035). Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size. After the first round: the toolbar's shape after a cancel is fixed, and zones now lie among toolbars like toolbars and match their thickness. The owner confirmed its tests on 2026-11-04, with changes to how a drag looks, which are tested in 2.5d's doc: a dashed strip with no copy when anchoring, a see-through dragged toolbar, running dashes and bigger corner squares.
+- [~] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
 
   *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
+  *Note:* Built (ADR 0035), and waiting for the owner's testing. A floating toolbar's sub-toolbar remembers the side it was on, as the owner asked, and it stays with its toolbar through a drag and its previews.
 - [ ] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
 
   *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.

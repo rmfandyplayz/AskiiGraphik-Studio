@@ -158,7 +158,13 @@ internal sealed record MenuLayout(
             [
                 new ActionMenuEntry(DocumentActionIds.OpenSampleDocument),
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
-                new ActionMenuEntry(ShellActionIds.AllowTinyWindow)
+                new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
+                new SeparatorMenuEntry(),
+                new ActionMenuEntry(SubToolbarSampleActionIds.OnFile),
+                new ActionMenuEntry(SubToolbarSampleActionIds.OnTools),
+                new ActionMenuEntry(SubToolbarSampleActionIds.OnEdit),
+                new ActionMenuEntry(SubToolbarSampleActionIds.OnView),
+                new ActionMenuEntry(SubToolbarSampleActionIds.Long),
             ]));
         }
 

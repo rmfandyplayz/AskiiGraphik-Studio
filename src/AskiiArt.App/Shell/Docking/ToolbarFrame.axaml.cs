@@ -2,6 +2,8 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Docking.Layouts;
+using AskiiArt.Docking.Solving;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -43,11 +45,29 @@ internal sealed partial class ToolbarFrame : UserControl
     /// <summary>What starts a drag.</summary>
     public IReadOnlyList<Control> Grips => [StartGrip, EndGrip];
 
+    /// <summary>Whether it has grips. A sub-toolbar can't be dragged, so it has none, and doesn't keep room for them.</summary>
+    public bool ShowsGrips
+    {
+        get => StartGrip.IsVisible;
+        init
+        {
+            StartGrip.IsVisible = value;
+            EndGrip.IsVisible = value;
+        }
+    }
+
     /// <summary>Whether it's following the pointer, which keeps its grips showing.</summary>
     public bool IsDragged
     {
         get => Classes.Contains("dragged");
         set => Classes.Set("dragged", value);
+    }
+
+    /// <summary>Whether it's being held over a drop zone, which makes it much more see-through.</summary>
+    public bool IsAnchoring
+    {
+        get => Classes.Contains("anchoring");
+        set => Classes.Set("anchoring", value);
     }
 
     /// <summary>Which way the buttons run and scroll.</summary>
@@ -65,6 +85,20 @@ internal sealed partial class ToolbarFrame : UserControl
     }
 
     private bool IsHorizontal => _orientation == ToolbarOrientation.Horizontal;
+
+    /// <summary>
+    /// The size it wants each way round, which leaves it turned. That's for a copy: turning the one showing would lose
+    /// its scroll position.
+    /// </summary>
+    public ToolbarShapes MeasureBothWays() =>
+        new(WantedSize(ToolbarOrientation.Horizontal), WantedSize(ToolbarOrientation.Vertical));
+
+    private LayoutSize WantedSize(ToolbarOrientation orientation)
+    {
+        Orientation = orientation;
+        Measure(Size.Infinity);
+        return new LayoutSize(DesiredSize.Width, DesiredSize.Height);
+    }
 
     private void Turn()
     {

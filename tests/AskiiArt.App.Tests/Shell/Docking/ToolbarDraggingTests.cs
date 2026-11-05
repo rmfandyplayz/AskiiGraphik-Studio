@@ -218,38 +218,95 @@ public sealed class ToolbarDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void WhereTheToolbarWouldLand_ShowsDuringTheDrag_AndIsWhereItLands()
-    {
-        ShowWindow();
-
-        StartDrag(File, _leftEdge);
-        var previewed = Landing!.Bounds;
-
-        _window.MouseUp(_leftEdge, MouseButton.Left);
-        Pump();
-
-        Assert.Equal(previewed, BoundsOf(File));
-    }
-
-    [AvaloniaFact]
-    public void ThePreview_IsACopyOfTheToolbar_TurnedTheWayItWouldLand()
+    public void OverAZone_TheOutlineGoesAroundTheZone_WithNoCopyOfTheToolbar()
     {
         ShowWindow();
 
         StartDrag(File, _leftEdge);
 
+        var strip = Zones.Single(zone => zone.Bounds.Contains(_leftEdge));
         var landing = Landing!;
         Assert.True(landing.IsVisible);
         Assert.False(landing.IsHitTestVisible);
-        Assert.Equal(File, landing.Toolbar.Bar!.Name);
-        Assert.Equal(ToolbarOrientation.Vertical, landing.Toolbar.Orientation);
-        Assert.Equal(landing.Bounds.Size, landing.Toolbar.Bounds.Size);
+        Assert.False(landing.ShowsCopy);
+        Assert.Equal(strip.Bounds, landing.Bounds);
         Assert.Equal(landing.Bounds.Size, landing.Outline.Bounds.Size);
-        Assert.Equal(new Size(100, 58), landing.Bounds.Size);
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
         Pump();
         Assert.Null(Landing);
+    }
+
+    [AvaloniaFact]
+    public void OverACornerSquare_TheOutlineGoesAroundTheSquare()
+    {
+        ShowWindow();
+        var corner = new Point(20, _host.Bounds.Height - 20);
+
+        StartDrag(File, corner);
+
+        Assert.Equal(Zones.Single(zone => zone.Bounds.Contains(corner)).Bounds, Landing!.Bounds);
+        Assert.False(Landing.ShowsCopy);
+        _window.MouseUp(corner, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void OverAZone_TheDraggedToolbarGoesSeeThrough_AndComesBackAwayFromIt()
+    {
+        ShowWindow();
+
+        StartDrag(File, _middleOfNowhere);
+        Assert.False(Frame(File).IsAnchoring);
+
+        _window.MouseMove(_leftEdge);
+        Pump();
+        Assert.True(Frame(File).IsAnchoring);
+
+        _window.MouseMove(_middleOfNowhere);
+        Pump();
+        Assert.False(Frame(File).IsAnchoring);
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void TheDraggedToolbar_IsSolidAgainAfterTheDrop()
+    {
+        ShowWindow();
+
+        DragAndDrop(File, _leftEdge);
+
+        Assert.False(Frame(File).IsAnchoring);
+    }
+
+    [AvaloniaFact]
+    public void TheDraggedToolbar_IsSolidAgainAfterCancelling()
+    {
+        ShowWindow();
+
+        StartDrag(File, _leftEdge);
+        _window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Pump();
+
+        Assert.False(Frame(File).IsAnchoring);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void TheToolbarsAround_StayPutWhenThePointerGoesOverAZone()
+    {
+        ShowWindow();
+
+        StartDrag(Tools, _middleOfNowhere);
+        var before = BoundsOf(File);
+
+        _window.MouseMove(new Point(_host.Bounds.Width / 3, 20));
+        Pump();
+
+        Assert.NotNull(Landing);
+        Assert.True(Landing!.IsVisible);
+        Assert.Equal(before, BoundsOf(File));
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
 
     [AvaloniaFact]
@@ -273,8 +330,12 @@ public sealed class ToolbarDraggingTests : IDisposable
         StartDrag(File, overWidgets);
 
         Assert.True(Landing!.IsVisible);
+        Assert.True(Landing.ShowsCopy);
+        Assert.False(Frame(File).IsAnchoring);
+        Assert.Equal(File, Landing.Toolbar.Bar!.Name);
         Assert.True(Landing.Bounds.Right <= widgets.Bounds.Left);
         Assert.Equal(new Size(128, 30), Landing.Bounds.Size);
+        Assert.Equal(Landing.Bounds.Size, Landing.Toolbar.Bounds.Size);
         var previewed = Landing.Bounds;
 
         _window.MouseUp(overWidgets, MouseButton.Left);
@@ -289,8 +350,11 @@ public sealed class ToolbarDraggingTests : IDisposable
 
         StartDrag(File, _leftEdge);
         Pump();
+        var ranSoFar = Landing!.Outline.DistanceRun;
+        Thread.Sleep(5);
+        Pump();
 
-        Assert.True(Landing!.Outline.Pulse > 0);
+        Assert.True(Landing!.Outline.DistanceRun > ranSoFar);
         _window.MouseUp(_leftEdge, MouseButton.Left);
     }
 

@@ -73,7 +73,7 @@ public static class LayoutEdits
         {
             var mustFloat = !toolbar.IsFloating && layout.IsAnchorTaken(toolbar.Anchor, toolbarId);
             return mustFloat
-                ? toolbar with { IsVisible = true, FloatingAt = whereToFloatIfTaken }
+                ? Floated(toolbar, whereToFloatIfTaken)
                 : toolbar with { IsVisible = true };
         });
 
@@ -101,7 +101,7 @@ public static class LayoutEdits
             Toolbars =
             [
                 .. layout.Toolbars.Where(other => other.ToolbarId != toolbarId),
-                toolbar with { IsVisible = true, FloatingAt = position },
+                Floated(toolbar, position),
             ],
         };
     }
@@ -119,6 +119,16 @@ public static class LayoutEdits
         Orientation = ToolbarAnchors.RequiredOrientation(anchor) ?? toolbar.Orientation,
         IsVisible = true,
         FloatingAt = null,
+    };
+
+    // Leaving an anchor, it remembers which side faced the canvas, so its sub-toolbar stays on that side.
+    private static ToolbarPlacement Floated(ToolbarPlacement toolbar, LayoutPoint position) => toolbar with
+    {
+        IsVisible = true,
+        FloatingAt = position,
+        SubToolbarSide = toolbar.IsFloating
+            ? toolbar.SubToolbarSide
+            : ToolbarAnchors.CanvasSide(toolbar.Anchor, toolbar.Orientation),
     };
 
     private static DockingLayout WithToolbar(DockingLayout layout, string toolbarId,

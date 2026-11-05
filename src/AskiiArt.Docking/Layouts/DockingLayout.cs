@@ -76,12 +76,16 @@ public sealed record WindowGroup(IReadOnlyList<string> WindowIds, double Share =
 /// <param name="Orientation">Which way its buttons run.</param>
 /// <param name="IsVisible">Whether it's showing.</param>
 /// <param name="FloatingAt">Where its top left goes if it's floating, or null if it's on its anchor.</param>
+/// <param name="SubToolbarSide">
+/// Where its sub-toolbar goes while it's floating: the side that faced the canvas when it was last on an anchor.
+/// </param>
 public sealed record ToolbarPlacement(
     string ToolbarId,
     ToolbarAnchor Anchor,
     ToolbarOrientation Orientation,
     bool IsVisible = true,
-    LayoutPoint? FloatingAt = null)
+    LayoutPoint? FloatingAt = null,
+    SubToolbarSide SubToolbarSide = SubToolbarSide.BelowOrRight)
 {
     /// <summary>Whether it's floating rather than on its anchor.</summary>
     [JsonIgnore]

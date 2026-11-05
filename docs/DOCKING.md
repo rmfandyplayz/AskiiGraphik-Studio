@@ -163,11 +163,12 @@ Below the smallest size, toolbars hide until there's room again, corners first.
 
 ### 4.4 Sub-toolbars
 
-- Only **one at a time**, since only one tool is active. The model has one slot.
-- It sits on the canvas side of its parent. It's aligned to the corner for a corner toolbar, and centred on the parent otherwise. A floating toolbar's flips to the other side if there's no room.
+- Only **one at a time**, since only one tool is active. The tool decides it, so it isn't part of the layout and isn't saved.
+- It runs the same way as its parent, and sits on the canvas side of it. It's aligned to the corner for a corner toolbar, and centred on the parent otherwise.
+- **A floating toolbar's** stays on the side that faced the canvas when the toolbar last left an anchor. Pulled from the top edge, it stays below. It flips to the other side while there's no room, and goes back once there is. Turning the toolbar keeps the side: above goes with left, and below with right.
 - At most its parent's length if the parent is fighting for space, otherwise at most 50% longer. It scrolls if that's not enough.
-- It pushes other toolbars out of the way, with a short animation.
-- It can't be dragged. It never moves the canvas (section 8).
+- It pushes the toolbars of the neighbouring edges out of the way, with a short animation. A floating toolbar's pushes nothing, as a floating toolbar pushes nothing. With no room to push anything into, it's left out until there is.
+- It can't be dragged, but it goes with its parent. During a drag it follows the toolbar, turned and see-through to match, on the side it would land on. It never moves the canvas (section 8).
 - 2.5d tests it with a sample in the Debug menu. Tool groups arrive in M3.
 
 ## 5. Dragging
@@ -185,9 +186,13 @@ Starting a drag shows a zone for each free anchor, and for its own. Occupied anc
 
 Dropping on a middle anchor sets its direction. A corner keeps the direction it had.
 
-**Zones lie among the toolbars like toolbars.** A corner's is a square. A middle's is a strip that runs between whatever is at each end of its edge, with the usual gap, so a zone never overlaps an anchored toolbar. Each is as thick as the dragged toolbar would be there. A strip always gets at least 30% of its edge: the toolbars beside it shrink and scroll for as long as the drag lasts, and get their length back after it.
+**Zones lie among the toolbars like toolbars.** A middle's is a strip that runs between whatever is at each end of its edge, with the usual gap, so a zone never overlaps an anchored toolbar. It's as thick as the dragged toolbar would be there. A strip always gets at least 30% of its edge: the toolbars beside it shrink and scroll for as long as the drag lasts, and get their length back after it. A corner's is a square with room for a strip each way, so its side is the two strips' thicknesses added together. With toolbars the same both ways, that's double. It's never thinner than the strips beside it, unless the region is so small that two squares would meet, where it stops at half the region's shorter side.
 
-**The preview is the toolbar itself.** Where a drop would land shows as a see-through copy of the toolbar, inside a dashed outline that slowly moves out and back. It shows over a zone, and when a floating toolbar would be pushed back inside the canvas region. A floating toolbar that would land right where it's held needs none. Any zone the preview overlaps fades away until the preview moves off it.
+**Over a zone, the zone is the preview.** Its blue fades, leaving a dashed outline around the strip or square, and the dragged toolbar goes much more see-through. There's no copy of the toolbar, and nothing else moves until the drop.
+
+**Pushed back, the preview is the toolbar itself.** A floating toolbar that would have to move to stay inside the canvas region shows where it would land as a see-through copy of itself, inside a dashed outline. Any zone that overlaps fades away until it moves off. A floating toolbar that would land right where it's held needs none.
+
+**The outline's dashes run around it** like ants, for as long as it shows.
 
 ### 5.2 Window drags
 

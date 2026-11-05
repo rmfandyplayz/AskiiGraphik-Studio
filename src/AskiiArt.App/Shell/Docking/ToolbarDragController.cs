@@ -59,7 +59,7 @@ internal sealed class ToolbarDragController(
         _drag = new ToolbarDrag(layout, toolbarId, grab, host.CurrentMeasurements(), shapes, metrics.Docking);
         _tracker = tracker;
 
-        host.ShowDropZones(_drag.Zones);
+        host.ShowDropZones(_drag);
         ListenForCancelling();
         MoveTo(e.Position);
     }

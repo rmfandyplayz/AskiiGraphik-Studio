@@ -2,8 +2,6 @@
 // Written with Claude Code (Anthropic).
 
 using System.Diagnostics;
-using AskiiArt.Docking.Dragging;
-using AskiiArt.Docking.Layouts;
 using AskiiArt.Docking.Solving;
 using Avalonia;
 using Avalonia.Controls;
@@ -12,8 +10,9 @@ using Avalonia.Media;
 namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>
-/// What a dragged toolbar would look like where it would land: a real copy of it, a little see-through, inside a
-/// dashed outline. It never catches the pointer. Placeholder: the owner designs the real one.
+/// A dashed outline showing where a dragged toolbar would go. Over a drop zone that's all it is, around the zone. For a
+/// toolbar pushed back inside the canvas region, a real copy of the toolbar shows in it, a little see-through. It never
+/// catches the pointer. Placeholder: the owner designs the real one.
 /// </summary>
 internal sealed class ToolbarLandingPreview : Panel
 {
@@ -36,22 +35,18 @@ internal sealed class ToolbarLandingPreview : Panel
     /// <summary>The outline around it.</summary>
     public ToolbarLandingOutline Outline { get; }
 
-    /// <summary>
-    /// The size the toolbar wants each way round. The real toolbar could be asked instead, but turning it would lose
-    /// its scroll position.
-    /// </summary>
-    public ToolbarShapes MeasureBothWays() =>
-        new(WantedSize(ToolbarOrientation.Horizontal), WantedSize(ToolbarOrientation.Vertical));
-
-    private LayoutSize WantedSize(ToolbarOrientation orientation)
+    /// <summary>Whether the copy shows in the outline, or the outline is all there is.</summary>
+    public bool ShowsCopy
     {
-        Toolbar.Orientation = orientation;
-        Toolbar.Measure(Size.Infinity);
-        return new LayoutSize(Toolbar.DesiredSize.Width, Toolbar.DesiredSize.Height);
+        get => Toolbar.IsVisible;
+        set => Toolbar.IsVisible = value;
     }
+
+    /// <summary>The size the toolbar wants each way round.</summary>
+    public ToolbarShapes MeasureBothWays() => Toolbar.MeasureBothWays();
 }
 
-/// <summary>A dashed rectangle that slowly moves out from its bounds and back, for as long as it's showing.</summary>
+/// <summary>A dashed rectangle whose dashes run around it like ants, for as long as it's showing.</summary>
 internal sealed class ToolbarLandingOutline : Control
 {
     public static readonly StyledProperty<IBrush?> OutlineBrushProperty =
@@ -75,18 +70,21 @@ internal sealed class ToolbarLandingOutline : Control
         set => SetValue(OutlineBrushProperty, value);
     }
 
-    /// <summary>How far out from its bounds it is right now.</summary>
-    public double Pulse { get; private set; }
-
-    /// <summary>How far out it is at a moment: at its bounds to start with, furthest out halfway through a period.</summary>
-    public static double PulseAt(TimeSpan elapsed, TimeSpan period, double length) =>
-        period > TimeSpan.Zero ? length * (1 - Math.Cos(2 * Math.PI * (elapsed / period))) / 2 : 0;
+    /// <summary>How far the dashes have run so far, in logical pixels.</summary>
+    public double DistanceRun { get; private set; }
 
     public override void Render(DrawingContext context)
     {
-        var dashes = new DashStyle([_metrics.LandingOutlineDash, _metrics.LandingOutlineDashGap], 0);
-        var pen = new Pen(OutlineBrush, _metrics.LandingOutlineThickness, dashes);
-        context.DrawRectangle(null, pen, new Rect(Bounds.Size).Inflate(Pulse));
+        // Just inside its bounds, because a pen draws half its thickness on each side of the line.
+        var thickness = _metrics.LandingOutlineThickness;
+        var line = new Rect(Bounds.Size).Deflate(thickness / 2);
+
+        var ants = MarchingAnts.Around(2 * (line.Width + line.Height),
+            _metrics.LandingOutlineDash * thickness, _metrics.LandingOutlineDashGap * thickness);
+
+        // A pen counts its dashes in multiples of its thickness.
+        var dashes = new DashStyle([ants.Dash / thickness, ants.Gap / thickness], ants.OffsetAfter(DistanceRun) / thickness);
+        context.DrawRectangle(null, new Pen(OutlineBrush, thickness, dashes), line);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -111,7 +109,7 @@ internal sealed class ToolbarLandingOutline : Control
 
         if (IsEffectivelyVisible)
         {
-            Pulse = PulseAt(_clock.Elapsed, _metrics.LandingPulsePeriod, _metrics.LandingPulseLength);
+            DistanceRun = _clock.Elapsed.TotalSeconds * _metrics.LandingAntsSpeed;
             InvalidateVisual();
         }
 

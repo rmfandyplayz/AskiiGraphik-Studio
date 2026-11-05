@@ -5,6 +5,7 @@ using System.Text.Json;
 using AskiiArt.App.Settings;
 using AskiiArt.Docking.Layouts;
 using AskiiArt.Docking.Solving;
+using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Shell.Docking;
@@ -26,6 +27,9 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
 
     /// <summary>Raised when the layout changes, which a drag only does when it ends.</summary>
     public event EventHandler? LayoutChanged;
+
+    /// <summary>Raised when a sub-toolbar shows or goes.</summary>
+    public event EventHandler? SubToolbarChanged;
 
     /// <summary>Shows the saved layout in <paramref name="host"/>, or the default one if there's none to use.</summary>
     public void Attach(DockingHost host, ShellCatalog catalog, ShellLayoutMetrics metrics)
@@ -53,10 +57,14 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         _metrics = null;
         _toolbarDrags = null;
         _layout = null;
+        SetSubToolbarParent(null);
     }
 
     /// <summary>The layout as it stands, if there's a window. A drag only changes it when it ends.</summary>
     public DockingLayout? Layout => _layout;
+
+    /// <summary>The toolbar that has the sub-toolbar, if there is one.</summary>
+    public string? SubToolbarParent { get; private set; }
 
     public bool IsWindowOpen(string windowId) => _layout?.IsWindowOpen(windowId) == true;
 
@@ -109,6 +117,31 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
             Show(LayoutEdits.SetToolbarOrientation(layout, toolbarId, orientation), animate: true);
     }
 
+    /// <summary>
+    /// Shows a sub-toolbar, in place of any other, since only one tool is active. It isn't part of the layout, and isn't
+    /// saved, because the tool decides it. If the toolbar isn't showing, it shows when the toolbar does.
+    /// </summary>
+    /// <param name="parentToolbarId">The toolbar it belongs to.</param>
+    /// <param name="createView">Makes its buttons.</param>
+    public void ShowSubToolbar(string parentToolbarId, Func<Control> createView)
+    {
+        if (LayoutToChange() is null)
+            return;
+
+        _host!.ShowSubToolbar(parentToolbarId, createView);
+        SetSubToolbarParent(parentToolbarId);
+    }
+
+    /// <summary>Takes away the sub-toolbar, if there is one.</summary>
+    public void HideSubToolbar()
+    {
+        if (LayoutToChange() is null)
+            return;
+
+        _host!.HideSubToolbar();
+        SetSubToolbarParent(null);
+    }
+
     /// <summary>Goes back to the default layout.</summary>
     public void ResetLayout()
     {
@@ -129,6 +162,12 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         _layout = layout;
         _host!.Show(layout, _catalog!, _metrics!, animate);
         LayoutChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void SetSubToolbarParent(string? parentToolbarId)
+    {
+        SubToolbarParent = parentToolbarId;
+        SubToolbarChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnToolbarFrameCreated(object? sender, ToolbarFrameCreatedEventArgs e) =>

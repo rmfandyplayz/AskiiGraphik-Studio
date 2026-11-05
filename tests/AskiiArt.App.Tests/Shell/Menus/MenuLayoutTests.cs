@@ -103,7 +103,17 @@ public sealed class MenuLayoutTests
         var withoutDebug = MenuLayout.CreateDefault(isMacOS, includeDebugMenu: false);
 
         Assert.Equal(nameof(Strings.MenuDebug), withDebug.WindowMenus[^1].LabelKey);
-        Assert.Equal([DocumentActionIds.OpenSampleDocument, ShellActionIds.ThrowTestException, ShellActionIds.AllowTinyWindow],
+        Assert.Equal(
+            [
+                DocumentActionIds.OpenSampleDocument,
+                ShellActionIds.ThrowTestException,
+                ShellActionIds.AllowTinyWindow,
+                SubToolbarSampleActionIds.OnFile,
+                SubToolbarSampleActionIds.OnTools,
+                SubToolbarSampleActionIds.OnEdit,
+                SubToolbarSampleActionIds.OnView,
+                SubToolbarSampleActionIds.Long,
+            ],
             ActionIdsIn(withDebug.WindowMenus[^1].Entries));
         Assert.DoesNotContain(withoutDebug.WindowMenus, menu => menu.LabelKey == nameof(Strings.MenuDebug));
     }

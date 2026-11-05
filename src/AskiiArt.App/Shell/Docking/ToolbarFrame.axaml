@@ -20,6 +20,9 @@
     <Style Selector="docking|ToolbarFrame.dragged docking|ToolbarGrip">
       <Setter Property="DotOpacity" Value="{DynamicResource AppToolbarGripHoverOpacity}" />
     </Style>
+    <Style Selector="docking|ToolbarFrame.anchoring">
+      <Setter Property="Opacity" Value="{DynamicResource AppToolbarAnchoringOpacity}" />
+    </Style>
   </UserControl.Styles>
   <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">
     <DockPanel>

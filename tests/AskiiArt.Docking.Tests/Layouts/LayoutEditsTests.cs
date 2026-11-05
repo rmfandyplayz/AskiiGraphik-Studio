@@ -9,6 +9,60 @@ namespace AskiiArt.Docking.Tests.Layouts;
 
 public sealed class LayoutEditsTests
 {
+    [Theory]
+    [InlineData(ToolbarAnchor.TopMiddle, ToolbarOrientation.Horizontal, SubToolbarSide.BelowOrRight)]
+    [InlineData(ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal, SubToolbarSide.AboveOrLeft)]
+    [InlineData(ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical, SubToolbarSide.BelowOrRight)]
+    [InlineData(ToolbarAnchor.RightMiddle, ToolbarOrientation.Vertical, SubToolbarSide.AboveOrLeft)]
+    [InlineData(ToolbarAnchor.TopRight, ToolbarOrientation.Vertical, SubToolbarSide.AboveOrLeft)]
+    [InlineData(ToolbarAnchor.BottomLeft, ToolbarOrientation.Horizontal, SubToolbarSide.AboveOrLeft)]
+    public void FloatingAToolbar_RemembersWhichSideFacedTheCanvas(ToolbarAnchor anchor, ToolbarOrientation orientation,
+        SubToolbarSide expected)
+    {
+        var layout = new DockingLayout([], [new ToolbarPlacement("a", anchor, orientation)], []);
+
+        var floated = LayoutEdits.FloatToolbar(layout, "a", new LayoutPoint(10, 10));
+
+        Assert.Equal(expected, floated.Toolbars[0].SubToolbarSide);
+    }
+
+    [Fact]
+    public void MovingAFloatingToolbar_KeepsTheSideItRemembers()
+    {
+        var layout = new DockingLayout([], [new ToolbarPlacement("a", ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal)], []);
+        var floated = LayoutEdits.FloatToolbar(layout, "a", new LayoutPoint(10, 10));
+
+        var moved = LayoutEdits.FloatToolbar(floated, "a", new LayoutPoint(50, 50));
+
+        Assert.Equal(SubToolbarSide.AboveOrLeft, moved.Toolbars[0].SubToolbarSide);
+    }
+
+    [Fact]
+    public void TurningAFloatingToolbar_KeepsTheSideItRemembers()
+    {
+        var layout = new DockingLayout([], [new ToolbarPlacement("a", ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal)], []);
+        var floated = LayoutEdits.FloatToolbar(layout, "a", new LayoutPoint(10, 10));
+
+        var turned = LayoutEdits.SetToolbarOrientation(floated, "a", ToolbarOrientation.Vertical);
+
+        Assert.Equal(SubToolbarSide.AboveOrLeft, turned.Toolbars[0].SubToolbarSide);
+    }
+
+    [Fact]
+    public void AToolbarFloatedBecauseItsAnchorWasTaken_RemembersTheSideToo()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("a", ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal, IsVisible: false),
+            new ToolbarPlacement("b", ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal),
+        ], []);
+
+        var shown = LayoutEdits.ShowToolbar(layout, "a", new LayoutPoint(10, 10));
+
+        Assert.True(shown.Toolbars[0].IsFloating);
+        Assert.Equal(SubToolbarSide.AboveOrLeft, shown.Toolbars[0].SubToolbarSide);
+    }
+
     private const double DefaultWidth = 240;
 
     private static readonly DockingLayout _twoWidgets =

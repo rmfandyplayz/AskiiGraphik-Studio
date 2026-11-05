@@ -28,31 +28,6 @@ public sealed class ToolbarFrameTests : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
-    [Theory]
-    [InlineData(0, 300, 100, 20, 0, 0.2)]
-    [InlineData(100, 300, 100, 20, 0.2, 0.2)]
-    [InlineData(200, 300, 100, 20, 0.2, 0)]
-    [InlineData(0, 100, 100, 20, 0, 0)]
-    [InlineData(0, 50, 100, 20, 0, 0)]
-    [InlineData(0, 300, 30, 20, 0, 0.5)]
-    [InlineData(0.2, 300, 100, 20, 0, 0.2)]
-    [InlineData(199.8, 300, 100, 20, 0.2, 0)]
-    [InlineData(0, 300, 0, 20, 0, 0)]
-    public void AFade_ShowsOnEachSideWithMoreToScrollTo(double offset, double extent, double viewport, double fadeLength,
-        double expectedStart, double expectedEnd)
-    {
-        var fades = ToolbarFades.For(offset, extent, viewport, fadeLength);
-
-        Assert.Equal(expectedStart, fades.Start, precision: 6);
-        Assert.Equal(expectedEnd, fades.End, precision: 6);
-    }
-
-    [Fact]
-    public void NoFades_MeansNoMask()
-    {
-        Assert.Null(ToolbarFades.ToMask(default, isHorizontal: true));
-    }
-
     [AvaloniaFact]
     public void AGrip_HoldsItsPlaceAtEachEnd()
     {

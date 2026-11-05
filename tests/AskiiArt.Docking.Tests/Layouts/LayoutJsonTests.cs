@@ -10,6 +10,38 @@ namespace AskiiArt.Docking.Tests.Layouts;
 public sealed class LayoutJsonTests
 {
     [Fact]
+    public void TheSideASubToolbarGoesOn_IsSaved()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("a", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal,
+                FloatingAt: new LayoutPoint(1, 2), SubToolbarSide: SubToolbarSide.AboveOrLeft),
+        ], []);
+
+        var read = LayoutJson.TryRead(LayoutJson.Write(layout))!;
+
+        Assert.Equal(SubToolbarSide.AboveOrLeft, read.Toolbars[0].SubToolbarSide);
+    }
+
+    [Fact]
+    public void ALayoutSavedBeforeSubToolbars_StillReads()
+    {
+        const string saved = """
+            {
+              "sides": [],
+              "toolbars": [
+                { "toolbarId": "a", "anchor": "TopLeft", "orientation": "Horizontal" }
+              ],
+              "closedWindows": []
+            }
+            """;
+
+        var read = LayoutJson.TryRead(saved)!;
+
+        Assert.Equal(SubToolbarSide.BelowOrRight, read.Toolbars[0].SubToolbarSide);
+    }
+
+    [Fact]
     public void AnyLayout_SurvivesSavingAndLoading()
     {
         Valid.Sample(layout =>

@@ -21,7 +21,8 @@ internal static class TestLayouts
         ToolbarGap: 8,
         MinimumToolbarLength: 80,
         MiddleToolbarPriority: 1.25,
-        ToolbarZoneMinimumShare: 0.3);
+        ToolbarZoneMinimumShare: 0.3,
+        SubToolbarLengthFactor: 1.5);
 
     public static readonly DockingCatalog Catalog = new(
         WindowIds,

@@ -5,6 +5,17 @@ using AskiiArt.Docking.Layouts;
 
 namespace AskiiArt.Docking.Solving;
 
+/// <summary>Where the solver put the toolbars.</summary>
+/// <param name="Toolbars">Every toolbar that's showing.</param>
+/// <param name="ReservedSpots">Where each reserved spot went.</param>
+/// <param name="SubToolbar">Where the sub-toolbar went, if one was asked for and it fits.</param>
+/// <param name="ToolbarsWithoutSubToolbar">Where the toolbars would be with no sub-toolbar, for the safe area.</param>
+internal sealed record ToolbarSolution(
+    IReadOnlyList<SolvedToolbar> Toolbars,
+    IReadOnlyDictionary<ToolbarAnchor, LayoutRect> ReservedSpots,
+    SolvedSubToolbar? SubToolbar,
+    IReadOnlyList<SolvedToolbar> ToolbarsWithoutSubToolbar);
+
 /// <summary>
 /// Puts each toolbar on its anchor, inside the canvas region less a margin. The margin equals the widgets',
 /// so a toolbar never passes a window's top or bottom edge. Toolbars along one edge share its length, and a
@@ -13,7 +24,7 @@ namespace AskiiArt.Docking.Solving;
 /// where it was put, moved just enough to stay inside, and nothing moves for it. A reserved spot goes through
 /// all this like a toolbar, except that it gets its length before any toolbar does.
 /// </summary>
-internal static class ToolbarSolver
+internal static partial class ToolbarSolver
 {
     private enum Edge
     {
@@ -31,9 +42,17 @@ internal static class ToolbarSolver
 
     private sealed record Placed(Item Item, ToolbarOrientation Orientation, LayoutRect Bounds);
 
-    public static (List<SolvedToolbar> Toolbars, Dictionary<ToolbarAnchor, LayoutRect> ReservedSpots) Solve(
-        IReadOnlyList<ToolbarPlacement> toolbars, IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region,
-        DockingMetrics metrics, IReadOnlyList<ReservedToolbarSpot> reserved)
+    // One edge's toolbars, and the stretch of the edge they had to stay within, measured from its start.
+    private sealed record Lane(Edge Edge, double From, double To, List<Placed> Toolbars);
+
+    private sealed record Lanes(Lane Top, Lane Bottom, Lane Left, Lane Right)
+    {
+        public IEnumerable<Lane> All => [Top, Bottom, Left, Right];
+    }
+
+    public static ToolbarSolution Solve(IReadOnlyList<ToolbarPlacement> toolbars,
+        IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region, DockingMetrics metrics,
+        IReadOnlyList<ReservedToolbarSpot> reserved, SubToolbarRequest? subToolbar)
     {
         var inner = InnerRegion(region, metrics);
         var showing = toolbars.Where(toolbar => toolbar.IsVisible && sizes.ContainsKey(toolbar.ToolbarId)).ToList();
@@ -49,43 +68,24 @@ internal static class ToolbarSolver
             Item: ToItem(spot, inner)));
 
         var byEdge = anchored.Concat(spots).ToLookup(entry => entry.Edge, entry => entry.Item);
-
-        // Horizontal edges first: where a vertical toolbar and a horizontal one could both reach a corner with
-        // no toolbar anchored on it, the horizontal one gets it.
-        var gap = metrics.ToolbarGap;
-        var top = SolveLane(byEdge[Edge.Top], Edge.Top, inner, metrics,
-            lead: BandFor(byEdge[Edge.Left], ToolbarAnchor.TopLeft, gap),
-            trail: BandFor(byEdge[Edge.Right], ToolbarAnchor.TopRight, gap));
-        var bottom = SolveLane(byEdge[Edge.Bottom], Edge.Bottom, inner, metrics,
-            lead: BandFor(byEdge[Edge.Left], ToolbarAnchor.BottomLeft, gap),
-            trail: BandFor(byEdge[Edge.Right], ToolbarAnchor.BottomRight, gap));
-
-        var leftColumn = ColumnThickness(byEdge[Edge.Left]);
-        var rightColumn = ColumnThickness(byEdge[Edge.Right]);
-        var left = SolveLane(byEdge[Edge.Left], Edge.Left, inner, metrics,
-            lead: BandAcross(top, inner.X, inner.X + leftColumn, gap),
-            trail: BandAcross(bottom, inner.X, inner.X + leftColumn, gap));
-        var right = SolveLane(byEdge[Edge.Right], Edge.Right, inner, metrics,
-            lead: BandAcross(top, inner.Right - rightColumn, inner.Right, gap),
-            trail: BandAcross(bottom, inner.Right - rightColumn, inner.Right, gap));
+        var lanes = SolveLanes(byEdge, inner, metrics);
 
         var floating = showing
             .Where(toolbar => toolbar.IsFloating)
             .Select(toolbar => PlaceFloating(toolbar, sizes[toolbar.ToolbarId], inner, metrics))
-            .OfType<SolvedToolbar>();
+            .OfType<SolvedToolbar>()
+            .ToList();
 
-        var solved = new List<SolvedToolbar>();
+        var withoutSubToolbar = ToSolved(lanes, floating);
+        var (solvedSubToolbar, finalLanes) = subToolbar is null
+            ? (null, lanes)
+            : AddSubToolbar(subToolbar, lanes, byEdge, showing, floating, sizes, inner, metrics);
+
         var reservedSpots = new Dictionary<ToolbarAnchor, LayoutRect>();
-        foreach (var placed in top.Concat(bottom).Concat(left).Concat(right))
-        {
-            if (placed.Item.ToolbarId is { } toolbarId)
-                solved.Add(new SolvedToolbar(toolbarId, placed.Item.Anchor, placed.Orientation, placed.Bounds));
-            else
-                reservedSpots[placed.Item.Anchor] = placed.Bounds;
-        }
+        foreach (var placed in finalLanes.All.SelectMany(lane => lane.Toolbars).Where(placed => placed.Item.IsReserved))
+            reservedSpots[placed.Item.Anchor] = placed.Bounds;
 
-        solved.AddRange(floating);
-        return (solved, reservedSpots);
+        return new ToolbarSolution(ToSolved(finalLanes, floating), reservedSpots, solvedSubToolbar, withoutSubToolbar);
     }
 
     /// <summary>Where toolbars can go: the canvas region less a margin.</summary>
@@ -94,6 +94,18 @@ internal static class ToolbarSolver
         region.Y + metrics.Margin,
         Math.Max(0, region.Width - metrics.Margin * 2),
         Math.Max(0, region.Height - metrics.Margin * 2));
+
+    private static List<SolvedToolbar> ToSolved(Lanes lanes, List<SolvedToolbar> floating)
+    {
+        var solved = lanes.All.SelectMany(lane => lane.Toolbars)
+            .Where(placed => !placed.Item.IsReserved)
+            .Select(placed =>
+                new SolvedToolbar(placed.Item.ToolbarId!, placed.Item.Anchor, placed.Orientation, placed.Bounds))
+            .ToList();
+
+        solved.AddRange(floating);
+        return solved;
+    }
 
     private static SolvedToolbar? PlaceFloating(ToolbarPlacement toolbar, LayoutSize size, LayoutRect inner,
         DockingMetrics metrics)
@@ -144,13 +156,50 @@ internal static class ToolbarSolver
         return new Item(null, spot.Anchor, spot.Length, Math.Min(spot.Thickness, room));
     }
 
+    // Horizontal edges first: where a vertical toolbar and a horizontal one could both reach a corner with no toolbar
+    // anchored on it, the horizontal one gets it. A sub-toolbar's parent keeps its lane, and the sub-toolbar takes
+    // room from the lanes running away from it.
+    private static Lanes SolveLanes(ILookup<Edge, Item> byEdge, LayoutRect inner, DockingMetrics metrics,
+        SubToolbarPush? push = null)
+    {
+        var gap = metrics.ToolbarGap;
+
+        Lane SolveOrKeep(Edge edge, double lead, double trail)
+        {
+            if (push?.ParentLane.Edge == edge)
+                return push.ParentLane;
+
+            var (pushedLead, pushedTrail) = TakenBy(push, edge, BandOf(byEdge[edge], edge, inner), inner, gap);
+            return SolveLane(byEdge[edge], edge, inner, metrics, Math.Max(lead, pushedLead),
+                Math.Max(trail, pushedTrail));
+        }
+
+        var top = SolveOrKeep(Edge.Top,
+            lead: BandFor(byEdge[Edge.Left], ToolbarAnchor.TopLeft, gap),
+            trail: BandFor(byEdge[Edge.Right], ToolbarAnchor.TopRight, gap));
+        var bottom = SolveOrKeep(Edge.Bottom,
+            lead: BandFor(byEdge[Edge.Left], ToolbarAnchor.BottomLeft, gap),
+            trail: BandFor(byEdge[Edge.Right], ToolbarAnchor.BottomRight, gap));
+
+        var leftColumn = LaneThickness(byEdge[Edge.Left]);
+        var rightColumn = LaneThickness(byEdge[Edge.Right]);
+        var left = SolveOrKeep(Edge.Left,
+            lead: BandAcross(top.Toolbars, inner.X, inner.X + leftColumn, gap),
+            trail: BandAcross(bottom.Toolbars, inner.X, inner.X + leftColumn, gap));
+        var right = SolveOrKeep(Edge.Right,
+            lead: BandAcross(top.Toolbars, inner.Right - rightColumn, inner.Right, gap),
+            trail: BandAcross(bottom.Toolbars, inner.Right - rightColumn, inner.Right, gap));
+
+        return new Lanes(top, bottom, left, right);
+    }
+
     // What a corner toolbar lying along the neighbouring edge takes from the start or end of this one.
     private static double BandFor(IEnumerable<Item> neighbours, ToolbarAnchor corner, double gap) =>
         neighbours.Where(item => item.Anchor == corner)
             .Select(item => item.Thickness + gap)
             .FirstOrDefault();
 
-    private static double ColumnThickness(IEnumerable<Item> items) =>
+    private static double LaneThickness(IEnumerable<Item> items) =>
         items.Select(item => item.Thickness).DefaultIfEmpty(0).Max();
 
     // What toolbars already placed along a horizontal edge take from a vertical edge's column.
@@ -160,7 +209,7 @@ internal static class ToolbarSolver
             .DefaultIfEmpty(0)
             .Max();
 
-    private static List<Placed> SolveLane(IEnumerable<Item> lane, Edge edge, LayoutRect inner,
+    private static Lane SolveLane(IEnumerable<Item> lane, Edge edge, LayoutRect inner,
         DockingMetrics metrics, double lead, double trail)
     {
         var laneLength = IsHorizontalLane(edge) ? inner.Width : inner.Height;
@@ -209,7 +258,7 @@ internal static class ToolbarSolver
             solved.Add(Place(items[index], edge, inner, Math.Clamp(centred, startEnd, latest), length));
         }
 
-        return solved;
+        return new Lane(edge, from, to, solved);
     }
 
     private static void LeaveOutWhatCantFit(List<Item> items, double available, DockingMetrics metrics)
@@ -308,16 +357,21 @@ internal static class ToolbarSolver
 
     private static Placed Place(Item item, Edge edge, LayoutRect inner, double start, double length)
     {
-        var bounds = edge switch
+        var orientation = IsHorizontalLane(edge) ? ToolbarOrientation.Horizontal : ToolbarOrientation.Vertical;
+        return new Placed(item, orientation, AtDepth(edge, inner, start, length, depth: 0, item.Thickness));
+    }
+
+    // A rectangle lying along an edge: how far along it, how long, how far in from the edge, and how thick.
+    private static LayoutRect AtDepth(Edge edge, LayoutRect inner, double start, double length, double depth,
+        double thickness)
+    {
+        return edge switch
         {
-            Edge.Top => new LayoutRect(inner.X + start, inner.Y, length, item.Thickness),
-            Edge.Bottom => new LayoutRect(inner.X + start, inner.Bottom - item.Thickness, length, item.Thickness),
-            Edge.Left => new LayoutRect(inner.X, inner.Y + start, item.Thickness, length),
-            Edge.Right => new LayoutRect(inner.Right - item.Thickness, inner.Y + start, item.Thickness, length),
+            Edge.Top => new LayoutRect(inner.X + start, inner.Y + depth, length, thickness),
+            Edge.Bottom => new LayoutRect(inner.X + start, inner.Bottom - depth - thickness, length, thickness),
+            Edge.Left => new LayoutRect(inner.X + depth, inner.Y + start, thickness, length),
+            Edge.Right => new LayoutRect(inner.Right - depth - thickness, inner.Y + start, thickness, length),
             _ => throw new ArgumentOutOfRangeException(nameof(edge), edge, null),
         };
-
-        var orientation = IsHorizontalLane(edge) ? ToolbarOrientation.Horizontal : ToolbarOrientation.Vertical;
-        return new Placed(item, orientation, bounds);
     }
 }

@@ -65,6 +65,16 @@ public enum ToolbarOrientation
     Vertical,
 }
 
+/// <summary>Which side of a toolbar its sub-toolbar sits on. A vertical toolbar's sides are its left and right.</summary>
+public enum SubToolbarSide
+{
+    /// <summary>Above a horizontal toolbar, or left of a vertical one.</summary>
+    AboveOrLeft,
+
+    /// <summary>Below a horizontal toolbar, or right of a vertical one.</summary>
+    BelowOrRight,
+}
+
 /// <summary>Facts about the anchors.</summary>
 public static class ToolbarAnchors
 {
@@ -81,4 +91,14 @@ public static class ToolbarAnchors
         ToolbarAnchor.LeftMiddle or ToolbarAnchor.RightMiddle => ToolbarOrientation.Vertical,
         _ => null,
     };
+
+    /// <summary>The side of a toolbar on this anchor that faces the canvas, which is where its sub-toolbar goes.</summary>
+    public static SubToolbarSide CanvasSide(ToolbarAnchor anchor, ToolbarOrientation orientation)
+    {
+        var isAtTheStart = orientation == ToolbarOrientation.Horizontal
+            ? anchor is ToolbarAnchor.TopLeft or ToolbarAnchor.TopMiddle or ToolbarAnchor.TopRight
+            : anchor is ToolbarAnchor.TopLeft or ToolbarAnchor.LeftMiddle or ToolbarAnchor.BottomLeft;
+
+        return isAtTheStart ? SubToolbarSide.BelowOrRight : SubToolbarSide.AboveOrLeft;
+    }
 }

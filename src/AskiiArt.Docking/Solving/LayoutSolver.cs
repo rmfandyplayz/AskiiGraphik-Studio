@@ -31,10 +31,13 @@ public static class LayoutSolver
         var leftBand = taken.GetValueOrDefault(SideEdge.Left);
         var rightBand = taken.GetValueOrDefault(SideEdge.Right);
         var region = new LayoutRect(leftBand, 0, Math.Max(0, available.Width - leftBand - rightBand), available.Height);
-        var (toolbars, spots) = ToolbarSolver.Solve(layout.Toolbars, measurements.ToolbarSizes, region, metrics,
-            reserved ?? []);
+        var solution = ToolbarSolver.Solve(layout.Toolbars, measurements.ToolbarSizes, region, metrics, reserved ?? [],
+            measurements.SubToolbar);
 
-        return new SolvedLayout(groups, toolbars, region, SafeArea(region, available, toolbars, metrics.Margin), spots);
+        // Without the sub-toolbar, whatever it pushed, so that picking a tool never moves the view.
+        var safeArea = SafeArea(region, available, solution.ToolbarsWithoutSubToolbar, metrics.Margin);
+
+        return new SolvedLayout(groups, solution.Toolbars, region, safeArea, solution.ReservedSpots, solution.SubToolbar);
     }
 
     /// <summary>
