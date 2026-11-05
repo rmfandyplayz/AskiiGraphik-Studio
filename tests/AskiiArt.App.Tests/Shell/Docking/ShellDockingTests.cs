@@ -67,16 +67,16 @@ public sealed class ShellDockingTests : IDisposable
         var host = ShowWindow();
         var changes = 0;
         _docking.LayoutChanged += (_, _) => changes++;
-        var viewsBefore = host.Children.Count;
+        var viewsBefore = host.Children.OfType<WindowFrame>().Count();
 
         _docking.ToggleWindow(ShellDockingIds.HistoryPanel);
         Assert.False(_docking.IsWindowOpen(ShellDockingIds.HistoryPanel));
-        Assert.Equal(viewsBefore - 1, host.Children.Count);
+        Assert.Equal(viewsBefore - 1, host.Children.OfType<WindowFrame>().Count());
         Assert.Equal(1, changes);
 
         _docking.ToggleWindow(ShellDockingIds.HistoryPanel);
         Assert.True(_docking.IsWindowOpen(ShellDockingIds.HistoryPanel));
-        Assert.Equal(viewsBefore, host.Children.Count);
+        Assert.Equal(viewsBefore, host.Children.OfType<WindowFrame>().Count());
         Assert.Equal(2, changes);
     }
 

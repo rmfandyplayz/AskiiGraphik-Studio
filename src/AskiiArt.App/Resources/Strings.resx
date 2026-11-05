@@ -94,6 +94,18 @@
     <value>Allow Tiny Window</value>
     <comment>Debug menu: lifts the window's minimum size until it closes, to test how the layout copes with little room.</comment>
   </data>
+  <data name="ActionSampleWindow1" xml:space="preserve">
+    <value>Sample Window 1</value>
+    <comment>Debug menu: opens or closes an empty window, to test stacks until there are more real windows.</comment>
+  </data>
+  <data name="ActionSampleWindow2" xml:space="preserve">
+    <value>Sample Window 2</value>
+    <comment>Debug menu: opens or closes a second empty window.</comment>
+  </data>
+  <data name="ActionSampleWindow3" xml:space="preserve">
+    <value>Sample Window 3</value>
+    <comment>Debug menu: opens or closes a third empty window.</comment>
+  </data>
   <data name="ActionSubToolbarOnFile" xml:space="preserve">
     <value>Sub-Toolbar on File</value>
     <comment>Debug menu: puts a sample sub-toolbar on the File toolbar, to test them until tool groups arrive.</comment>
@@ -513,6 +525,30 @@
   <data name="ActionToggleViewToolbar" xml:space="preserve">
     <value>_View Toolbar</value>
     <comment>Window menu: shows or hides the toolbar with zoom and the grid.</comment>
+  </data>
+  <data name="ActionWindowFloat" xml:space="preserve">
+    <value>Float</value>
+    <comment>A widget's menu: takes the window off its side, to float on its own.</comment>
+  </data>
+  <data name="ActionWindowTurnIntoDock" xml:space="preserve">
+    <value>Turn into Dock</value>
+    <comment>A widget's menu: turns the whole side into a dock.</comment>
+  </data>
+  <data name="ActionWindowTurnIntoWidget" xml:space="preserve">
+    <value>Turn into Widget</value>
+    <comment>A floating window's menu: puts it on a side, as a widget.</comment>
+  </data>
+  <data name="ActionWindowClose" xml:space="preserve">
+    <value>Close</value>
+    <comment>A window's menu: closes it. The Window menu opens it again.</comment>
+  </data>
+  <data name="WindowMenuButtonTip" xml:space="preserve">
+    <value>Window Options</value>
+    <comment>Tooltip of the button in a window's title row that opens its menu.</comment>
+  </data>
+  <data name="WindowCloseButtonTip" xml:space="preserve">
+    <value>Close</value>
+    <comment>Tooltip of the button in a window's title row that closes it.</comment>
   </data>
   <data name="ActionToolbarHorizontal" xml:space="preserve">
     <value>Horizontal</value>

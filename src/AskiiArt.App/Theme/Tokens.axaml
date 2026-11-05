@@ -20,6 +20,10 @@
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D9F3F3F3" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#400078D7" />
       <SolidColorBrush x:Key="AppLandingOutlineBrush" Color="#FF0078D7" />
+      <SolidColorBrush x:Key="AppWindowButtonHoverBrush" Color="#26000000" />
+      <SolidColorBrush x:Key="AppWindowIconBrush" Color="#FF202020" />
+      <SolidColorBrush x:Key="AppWindowPlaceholderBrush" Color="#260078D7" />
+      <SolidColorBrush x:Key="AppWindowPlaceholderLineBrush" Color="#800078D7" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -35,6 +39,10 @@
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D92B2B2B" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#504C9EEB" />
       <SolidColorBrush x:Key="AppLandingOutlineBrush" Color="#FF4C9EEB" />
+      <SolidColorBrush x:Key="AppWindowButtonHoverBrush" Color="#33FFFFFF" />
+      <SolidColorBrush x:Key="AppWindowIconBrush" Color="#FFE8E8E8" />
+      <SolidColorBrush x:Key="AppWindowPlaceholderBrush" Color="#264C9EEB" />
+      <SolidColorBrush x:Key="AppWindowPlaceholderLineBrush" Color="#804C9EEB" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -105,6 +113,28 @@
   <Thickness x:Key="AppWindowTitlePadding">8,0</Thickness>
   <!-- A window squeezed below this shows only its title. -->
   <x:Double x:Key="AppWindowMinHeight">140</x:Double>
+  <!-- The narrowest a side's windows or a floating window can be made. -->
+  <x:Double x:Key="AppWindowMinWidth">160</x:Double>
+  <!-- How tall a title-only widget is when it lands floating. -->
+  <x:Double x:Key="AppFloatingWindowHeight">280</x:Double>
+  <!-- How far inwards and down a window moves when its menu floats it, so that it visibly comes off the side. -->
+  <x:Double x:Key="AppWindowFloatOffset">24</x:Double>
+  <!-- The thickness of the zone along a floating window's edges that resizes it, and the size of its corners' zones. -->
+  <x:Double x:Key="AppWindowResizeGripSize">5</x:Double>
+  <x:Double x:Key="AppWindowResizeCornerSize">10</x:Double>
+  <!-- The menu and close buttons in a window's title row. -->
+  <x:Double x:Key="AppWindowButtonSize">20</x:Double>
+  <x:Double x:Key="AppWindowButtonFaintOpacity">0.5</x:Double>
+  <x:Double x:Key="AppWindowIconThickness">1.2</x:Double>
+  <StreamGeometry x:Key="AppWindowMenuIcon">M0,1.5 H10 M0,5 H10 M0,8.5 H10</StreamGeometry>
+  <StreamGeometry x:Key="AppWindowCloseIcon">M1,1 L9,9 M9,1 L1,9</StreamGeometry>
+  <!-- The zone at an empty side's edge while dragging a window, and how far that side opens over it. -->
+  <x:Double x:Key="AppWindowEdgeStripWidth">24</x:Double>
+  <x:Double x:Key="AppWindowEdgePlaceholderWidth">48</x:Double>
+  <!-- The hatched placeholder showing where a dragged window would land. -->
+  <x:Double x:Key="AppWindowPlaceholderHatchGap">10</x:Double>
+  <x:Double x:Key="AppWindowPlaceholderLineThickness">1</x:Double>
+  <x:Double x:Key="AppWindowPlaceholderPlusSize">16</x:Double>
   <!-- Sides shrink before the space between them gets narrower than this. -->
   <x:Double x:Key="AppCanvasRegionMinWidth">320</x:Double>
 

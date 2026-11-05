@@ -22,7 +22,12 @@ internal static class TestLayouts
         MinimumToolbarLength: 80,
         MiddleToolbarPriority: 1.25,
         ToolbarZoneMinimumShare: 0.3,
-        SubToolbarLengthFactor: 1.5);
+        SubToolbarLengthFactor: 1.5,
+        MinimumWindowWidth: 160,
+        DefaultWindowWidth: 240,
+        DefaultFloatingWindowHeight: 280,
+        WindowEdgeStripWidth: 24,
+        WindowEdgePlaceholderWidth: 48);
 
     public static readonly DockingCatalog Catalog = new(
         WindowIds,
@@ -86,12 +91,24 @@ internal static class TestLayouts
         Gen.Double[-10, 600],
         (id, edge, position, share, width) => new ClosedWindow(id, edge, position, share, width));
 
+    private static readonly Gen<FloatingWindow> _floatingWindows = Gen.Select(
+        _ids,
+        Gen.Double[-500, 3000],
+        Gen.Double[-500, 3000],
+        Gen.Double[-10, 800],
+        Gen.Double[-10, 800],
+        Gen.Bool,
+        (id, x, y, width, height, isTitleOnly) =>
+            new FloatingWindow(id, new LayoutPoint(x, y), width, height, isTitleOnly));
+
     /// <summary>Any layout, with duplicates, unknown ids and silly numbers.</summary>
     public static readonly Gen<DockingLayout> Anything = Gen.Select(
         _sides.List[0, 3],
         _toolbars.List[0, 6],
         _closed.List[0, 4],
-        (sides, toolbars, closed) => new DockingLayout(sides, toolbars, closed));
+        _floatingWindows.List[0, 3],
+        (sides, toolbars, closed, floating) =>
+            new DockingLayout(sides, toolbars, closed) { FloatingWindows = floating });
 
     /// <summary>Any layout that keeps the rules.</summary>
     public static readonly Gen<DockingLayout> Valid = Anything.Select(layout => LayoutRepair.Repair(layout, Catalog));

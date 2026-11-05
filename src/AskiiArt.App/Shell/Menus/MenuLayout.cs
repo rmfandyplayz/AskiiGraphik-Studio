@@ -165,6 +165,10 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(SubToolbarSampleActionIds.OnEdit),
                 new ActionMenuEntry(SubToolbarSampleActionIds.OnView),
                 new ActionMenuEntry(SubToolbarSampleActionIds.Long),
+                new SeparatorMenuEntry(),
+                new ActionMenuEntry(WindowSampleActionIds.First),
+                new ActionMenuEntry(WindowSampleActionIds.Second),
+                new ActionMenuEntry(WindowSampleActionIds.Third),
             ]));
         }
 

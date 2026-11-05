@@ -143,9 +143,10 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
   *Note:* Built (ADR 0035). A floating toolbar's sub-toolbar remembers the side it was on, as the owner asked, and it stays with its toolbar through a drag and its previews. The owner confirmed its tests on 2026-11-05, with a last change to drags, tested in `docs/testing/step-2.5d-hidden-toolbars.md`: other toolbars go out of sight, zones are always full length, and overlapped zones dim.
-- [ ] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
+- [~] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
 
   *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.
+  *Note:* Built (ADR 0035), and waiting for the owner's testing. Debug → Sample Window 1 to 3 were added, because stacks can't be tried with only 2 windows. Choosing a side for a new widget came forward from 2.5g, because Turn into Widget needs it.
 - [ ] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
 
   *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.

@@ -1,12 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Windows.Input;
 using Avalonia.Controls;
 
 namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>A window the app has. The view doesn't know where it's hosted (ARCHITECTURE §14.4).</summary>
-internal sealed record ShellWindowEntry(string Id, string Title, double MinimumHeight, Func<Control> CreateView);
+/// <param name="Id">Its id in the layout.</param>
+/// <param name="Title">The name at its top.</param>
+/// <param name="MinimumHeight">The smallest height that shows its contents.</param>
+/// <param name="CreateView">Makes its contents.</param>
+/// <param name="CreateMenu">Makes the menu of its title and its menu button, if it has one.</param>
+/// <param name="CloseCommand">What its close button does, given its id.</param>
+internal sealed record ShellWindowEntry(
+    string Id,
+    string Title,
+    double MinimumHeight,
+    Func<Control> CreateView,
+    Func<ContextMenu>? CreateMenu = null,
+    ICommand? CloseCommand = null);
 
 /// <summary>A toolbar the app has.</summary>
 /// <param name="Id">Its id in the layout.</param>

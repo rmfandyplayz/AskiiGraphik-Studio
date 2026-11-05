@@ -59,17 +59,22 @@ internal sealed class MainWindowBuilder(
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!, window.ActualThemeVariant);
         var bars = new ToolbarBuilder(actions);
 
+        ShellWindowEntry Window(string id, string title, Func<Control> createView) =>
+            new(id, title, metrics.WindowMinHeight, createView, () => WindowMenu.Create(id, actions, docking),
+                actions.Get(WindowFrameActionIds.Close).Command);
+
         // Each view is built when its window or toolbar shows, and again if it's reopened.
         var catalog = new ShellCatalog(
         [
-            new ShellWindowEntry(ShellDockingIds.LayersPanel, Strings.PanelLayers, metrics.WindowMinHeight,
+            Window(ShellDockingIds.LayersPanel, Strings.PanelLayers,
                 () => new LayersPanelView
                 {
                     DataContext = layers,
                     Buttons = bars.BuildWrapping(ToolbarLayout.CreateLayersPanel()),
                 }),
-            new ShellWindowEntry(ShellDockingIds.HistoryPanel, Strings.PanelHistory, metrics.WindowMinHeight,
+            Window(ShellDockingIds.HistoryPanel, Strings.PanelHistory,
                 () => new HistoryPanelView { DataContext = history }),
+            .. SampleWindows(Window),
         ],
         [
             .. toolbars.Layouts.Select(toolbar => new ShellToolbarEntry(toolbar.Key,
@@ -79,6 +84,17 @@ internal sealed class MainWindowBuilder(
 
         docking.Attach(window.Panels, catalog, metrics);
         window.Closed += (_, _) => docking.SaveAndDetach();
+    }
+
+    // They exist exactly when the actions that open them do, which is in debug builds.
+    private IEnumerable<ShellWindowEntry> SampleWindows(Func<string, string, Func<Control>, ShellWindowEntry> window)
+    {
+        if (actions.All.All(action => action.Id != WindowSampleActionIds.First))
+            yield break;
+
+        yield return window(ShellDockingIds.SampleWindow1, Strings.ActionSampleWindow1, () => new Border());
+        yield return window(ShellDockingIds.SampleWindow2, Strings.ActionSampleWindow2, () => new Border());
+        yield return window(ShellDockingIds.SampleWindow3, Strings.ActionSampleWindow3, () => new Border());
     }
 
     // After the window has opened, so the message has a window to belong to.

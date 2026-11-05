@@ -16,6 +16,11 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="MiddleToolbarPriority">How much more of a shared edge a middle toolbar gets than a corner one.</param>
 /// <param name="ToolbarZoneMinimumShare">How much of its edge a strip always gets during a drag, from 0 to 1.</param>
 /// <param name="SubToolbarLengthFactor">How many times its parent's length a sub-toolbar can get.</param>
+/// <param name="MinimumWindowWidth">The narrowest a side's windows or a floating window can be made.</param>
+/// <param name="DefaultWindowWidth">How wide a side is when a window first arrives on it.</param>
+/// <param name="DefaultFloatingWindowHeight">How tall a title-only window is when it lands floating.</param>
+/// <param name="WindowEdgeStripWidth">How wide the zone at an empty side's edge is, during a window drag.</param>
+/// <param name="WindowEdgePlaceholderWidth">How wide the placeholder on an empty side is, during a window drag.</param>
 public sealed record DockingMetrics(
     double Margin,
     double WidgetGap,
@@ -26,7 +31,12 @@ public sealed record DockingMetrics(
     double MinimumToolbarLength,
     double MiddleToolbarPriority,
     double ToolbarZoneMinimumShare,
-    double SubToolbarLengthFactor);
+    double SubToolbarLengthFactor,
+    double MinimumWindowWidth,
+    double DefaultWindowWidth,
+    double DefaultFloatingWindowHeight,
+    double WindowEdgeStripWidth,
+    double WindowEdgePlaceholderWidth);
 
 /// <summary>The size a toolbar wants, each way round.</summary>
 /// <param name="Horizontal">Its size when it runs across.</param>

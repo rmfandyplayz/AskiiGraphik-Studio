@@ -31,7 +31,7 @@ public sealed class StringsTests
         var shellActions = new ShellActions(new FakeAppShell(), new AppDataLocations("root"), includeDebugActions: true,
             isMacOS: true);
         var docking = new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance);
-        var registry = new ActionRegistry([shellActions, new WindowMenuActions(docking), new ToolbarMenuActions(docking)]);
+        var registry = new ActionRegistry([shellActions, new WindowMenuActions(docking), new ToolbarMenuActions(docking), new WindowFrameActions(docking)]);
 
         foreach (var action in registry.All)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(action.LabelKey)), action.Id);

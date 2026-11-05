@@ -21,7 +21,11 @@ internal sealed record ShellLayoutMetrics(
     double LandingOutlineDash,
     double LandingOutlineDashGap,
     double LandingAntsSpeed,
-    double DropZoneDimmedOpacity)
+    double DropZoneDimmedOpacity,
+    double WindowFloatOffset,
+    double WindowPlaceholderHatchGap,
+    double WindowPlaceholderLineThickness,
+    double WindowPlaceholderPlusSize)
 {
     public static ShellLayoutMetrics
         FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
@@ -35,7 +39,12 @@ internal sealed record ShellLayoutMetrics(
             MinimumToolbarLength: Token(resources, "AppToolbarMinLength", theme),
             MiddleToolbarPriority: Token(resources, "AppToolbarMiddlePriority", theme),
             ToolbarZoneMinimumShare: Token(resources, "AppToolbarZoneMinimumShare", theme),
-            SubToolbarLengthFactor: Token(resources, "AppSubToolbarLengthFactor", theme)),
+            SubToolbarLengthFactor: Token(resources, "AppSubToolbarLengthFactor", theme),
+            MinimumWindowWidth: Token(resources, "AppWindowMinWidth", theme),
+            DefaultWindowWidth: Token(resources, "AppWidgetWidth", theme),
+            DefaultFloatingWindowHeight: Token(resources, "AppFloatingWindowHeight", theme),
+            WindowEdgeStripWidth: Token(resources, "AppWindowEdgeStripWidth", theme),
+            WindowEdgePlaceholderWidth: Token(resources, "AppWindowEdgePlaceholderWidth", theme)),
         Token(resources, "AppWidgetWidth", theme),
         Token(resources, "AppWindowMinHeight", theme),
         Token(resources, "AppMainWindowMinWidth", theme),
@@ -48,7 +57,11 @@ internal sealed record ShellLayoutMetrics(
         Token(resources, "AppLandingOutlineDash", theme),
         Token(resources, "AppLandingOutlineDashGap", theme),
         Token(resources, "AppLandingAntsSpeed", theme),
-        Token(resources, "AppDropZoneDimmedOpacity", theme));
+        Token(resources, "AppDropZoneDimmedOpacity", theme),
+        Token(resources, "AppWindowFloatOffset", theme),
+        Token(resources, "AppWindowPlaceholderHatchGap", theme),
+        Token(resources, "AppWindowPlaceholderLineThickness", theme),
+        Token(resources, "AppWindowPlaceholderPlusSize", theme));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

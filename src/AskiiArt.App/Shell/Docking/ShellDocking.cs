@@ -3,9 +3,12 @@
 
 using System.Text.Json;
 using AskiiArt.App.Settings;
+using AskiiArt.Docking.Dragging;
 using AskiiArt.Docking.Layouts;
 using AskiiArt.Docking.Solving;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Microsoft.Extensions.Logging;
 
 namespace AskiiArt.App.Shell.Docking;
@@ -24,6 +27,8 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
     private ShellLayoutMetrics? _metrics;
     private DockingLayout? _layout;
     private ToolbarDragController? _toolbarDrags;
+    private WindowDragController? _windowDrags;
+    private WindowResizeController? _windowResizes;
 
     /// <summary>Raised when the layout changes, which a drag only does when it ends.</summary>
     public event EventHandler? LayoutChanged;
@@ -38,7 +43,11 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         _catalog = catalog;
         _metrics = metrics;
         _toolbarDrags = new ToolbarDragController(host, metrics, () => _layout, layout => Show(layout, animate: true));
+        _windowDrags = new WindowDragController(host, metrics, () => _layout, layout => Show(layout, animate: true));
+        _windowResizes = new WindowResizeController(host, () => _layout, layout => Show(layout, animate: false));
         host.ToolbarFrameCreated += OnToolbarFrameCreated;
+        host.WindowFrameCreated += OnWindowFrameCreated;
+        host.StackResizeHandleCreated += OnStackResizeHandleCreated;
 
         Show(LoadSavedLayout() ?? DefaultLayout(), animate: false);
     }
@@ -52,10 +61,14 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         Save(layout);
 
         _host!.ToolbarFrameCreated -= OnToolbarFrameCreated;
+        _host.WindowFrameCreated -= OnWindowFrameCreated;
+        _host.StackResizeHandleCreated -= OnStackResizeHandleCreated;
         _host = null;
         _catalog = null;
         _metrics = null;
         _toolbarDrags = null;
+        _windowDrags = null;
+        _windowResizes = null;
         _layout = null;
         SetSubToolbarParent(null);
     }
@@ -76,6 +89,45 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
 
     /// <summary>Whether the user can choose a toolbar's direction: on a corner or floating, not on an edge middle.</summary>
     public bool CanChooseToolbarOrientation(string toolbarId) => ToolbarNamed(toolbarId)?.CanChooseOrientation == true;
+
+    /// <summary>Whether the window is floating.</summary>
+    public bool IsWindowFloating(string windowId) => _layout?.FloatingWindowNamed(windowId) is not null;
+
+    /// <summary>Whether any side has room for a floating window to become a widget.</summary>
+    public bool CanTurnWindowIntoWidget() => _layout is { } layout && LayoutEdits.CanTurnIntoWidget(layout);
+
+    /// <summary>Closes a window.</summary>
+    public void CloseWindow(string windowId)
+    {
+        if (LayoutToChange() is { } layout)
+            Show(LayoutEdits.CloseWindow(layout, windowId), animate: true);
+    }
+
+    /// <summary>Takes a window off its side, a little way in from where it was, so that it visibly comes off.</summary>
+    public void FloatWindow(string windowId)
+    {
+        if (LayoutToChange() is not { } layout || _host!.Solved?.PlaceOfWindow(windowId) is not { } place)
+            return;
+
+        var metrics = _metrics!;
+        var isOnTheLeft = layout.Side(SideEdge.Left)?.Columns.SelectMany(column => column.Groups)
+            .Any(group => group.WindowIds.Contains(windowId, StringComparer.Ordinal)) == true;
+        var at = new LayoutPoint(
+            place.Bounds.X + (isOnTheLeft ? metrics.WindowFloatOffset : -metrics.WindowFloatOffset),
+            place.Bounds.Y + metrics.WindowFloatOffset);
+        var height = place.IsTitleOnly
+            ? Math.Max(metrics.Docking.DefaultFloatingWindowHeight, _catalog!.MinimumWindowHeights[windowId])
+            : place.Bounds.Height;
+
+        Show(LayoutEdits.FloatWindow(layout, windowId, at, place.Bounds.Width, height), animate: true);
+    }
+
+    /// <summary>Puts a floating window on a side, as a widget, if one has room.</summary>
+    public void TurnWindowIntoWidget(string windowId)
+    {
+        if (LayoutToChange() is { } layout && _metrics is { } metrics)
+            Show(LayoutEdits.TurnIntoWidget(layout, windowId, metrics.WidgetWidth), animate: true);
+    }
 
     /// <summary>Closes the window if it's open, and opens it otherwise.</summary>
     public void ToggleWindow(string windowId)
@@ -154,6 +206,8 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
     private DockingLayout? LayoutToChange()
     {
         _toolbarDrags?.Cancel();
+        _windowDrags?.Cancel();
+        _windowResizes?.Cancel();
         return _layout;
     }
 
@@ -172,6 +226,46 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
 
     private void OnToolbarFrameCreated(object? sender, ToolbarFrameCreatedEventArgs e) =>
         _toolbarDrags?.Watch(e.ToolbarId, e.Frame);
+
+    private void OnWindowFrameCreated(object? sender, WindowFrameCreatedEventArgs e)
+    {
+        var windowId = e.WindowId;
+        _windowDrags?.Watch(windowId, e.Frame);
+
+        foreach (var (grip, edges) in e.Frame.ResizeGrips)
+        {
+            _windowResizes?.Watch(grip, (layout, measurements) => layout.FloatingWindowNamed(windowId) is null
+                ? null
+                : new FloatingWindowResize(layout, windowId, edges, measurements, _metrics!.Docking));
+        }
+
+        // Tunnelling, because whatever was pressed may handle the press itself.
+        e.Frame.AddHandler(InputElement.PointerPressedEvent, (_, _) => BringToFront(windowId), RoutingStrategies.Tunnel);
+    }
+
+    private void OnStackResizeHandleCreated(object? sender, StackResizeHandleCreatedEventArgs e)
+    {
+        var id = e.Id;
+        _windowResizes?.Watch(e.Handle, (layout, measurements) =>
+        {
+            if (layout.Side(id.Edge) is null)
+                return null;
+
+            return id.Gap is { } gap
+                ? new StackGapResize(layout, id.Edge, gap, measurements, _metrics!.Docking)
+                : new SideWidthResize(layout, id.Edge, measurements, _metrics!.Docking);
+        });
+    }
+
+    private void BringToFront(string windowId)
+    {
+        if (_layout is not { } layout)
+            return;
+
+        var raised = LayoutEdits.BringFloatingWindowToFront(layout, windowId);
+        if (!ReferenceEquals(raised, layout))
+            Show(raised, animate: false);
+    }
 
     private ToolbarPlacement? ToolbarNamed(string toolbarId) =>
         _layout?.Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == toolbarId);

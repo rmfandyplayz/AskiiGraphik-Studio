@@ -11,12 +11,25 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="CanvasRegion">What the sides leave free. Toolbars live here.</param>
 /// <param name="SafeArea">How much of each edge is taken from the canvas, for centring and scroll limits.</param>
 /// <param name="SubToolbar">Where the sub-toolbar goes. Null if there's none, or no room for it.</param>
+/// <param name="FloatingWindows">Every floating window, from back to front.</param>
 public sealed record SolvedLayout(
     IReadOnlyList<SolvedWindowGroup> WindowGroups,
     IReadOnlyList<SolvedToolbar> Toolbars,
     LayoutRect CanvasRegion,
     LayoutInsets SafeArea,
-    SolvedSubToolbar? SubToolbar);
+    SolvedSubToolbar? SubToolbar,
+    IReadOnlyList<SolvedFloatingWindow> FloatingWindows)
+{
+    /// <summary>Where a window is and whether it's title-only, if it's open.</summary>
+    public (LayoutRect Bounds, bool IsTitleOnly)? PlaceOfWindow(string windowId)
+    {
+        if (FloatingWindows.FirstOrDefault(window => window.WindowId == windowId) is { } floating)
+            return (floating.Bounds, floating.IsTitleOnly);
+
+        var group = WindowGroups.FirstOrDefault(other => other.WindowIds.Contains(windowId, StringComparer.Ordinal));
+        return group is null ? null : (group.Bounds, group.IsTitleOnly);
+    }
+}
 
 /// <summary>A window group's place.</summary>
 /// <param name="WindowIds">The windows in it, in tab order.</param>
@@ -30,6 +43,12 @@ public sealed record SolvedWindowGroup(
     SideKind Kind,
     LayoutRect Bounds,
     bool IsTitleOnly);
+
+/// <summary>A floating window's place, kept inside the app window.</summary>
+/// <param name="WindowId">Which window.</param>
+/// <param name="Bounds">Its rectangle.</param>
+/// <param name="IsTitleOnly">Whether it shows only its title.</param>
+public sealed record SolvedFloatingWindow(string WindowId, LayoutRect Bounds, bool IsTitleOnly);
 
 /// <summary>A sub-toolbar's place.</summary>
 /// <param name="ParentToolbarId">The toolbar it belongs to.</param>

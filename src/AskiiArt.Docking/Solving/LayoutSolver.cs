@@ -35,7 +35,9 @@ public static class LayoutSolver
         // Without the sub-toolbar, whatever it pushed, so that picking a tool never moves the view.
         var safeArea = SafeArea(region, available, solution.ToolbarsWithoutSubToolbar, metrics.Margin);
 
-        return new SolvedLayout(groups, solution.Toolbars, region, safeArea, solution.SubToolbar);
+        var floating = layout.FloatingWindows.Select(window => PlaceFloating(window, available, metrics)).ToList();
+
+        return new SolvedLayout(groups, solution.Toolbars, region, safeArea, solution.SubToolbar, floating);
     }
 
     /// <summary>
@@ -53,6 +55,22 @@ public static class LayoutSolver
         return solved.Toolbars.Count > 0
             ? new LayoutPoint(solved.Toolbars[0].Bounds.X, solved.Toolbars[0].Bounds.Y)
             : new LayoutPoint(solved.CanvasRegion.X + metrics.Margin, solved.CanvasRegion.Y + metrics.Margin);
+    }
+
+    // Moved just enough to stay inside, without changing what's stored, so regrowing the window puts it back.
+    private static SolvedFloatingWindow PlaceFloating(FloatingWindow window, LayoutSize available, DockingMetrics metrics)
+    {
+        var width = Math.Min(window.Width, available.Width);
+        var height = Math.Min(window.IsTitleOnly ? metrics.TitleLength : window.Height, available.Height);
+
+        // Max last, so rounding can't put it outside when it exactly fills the room.
+        var bounds = new LayoutRect(
+            Math.Max(0, Math.Min(window.Position.X, available.Width - width)),
+            Math.Max(0, Math.Min(window.Position.Y, available.Height - height)),
+            width,
+            height);
+
+        return new SolvedFloatingWindow(window.WindowId, bounds, window.IsTitleOnly);
     }
 
     // Sides shrink together when they'd leave the canvas region too narrow. Wanted widths stay in the layout.

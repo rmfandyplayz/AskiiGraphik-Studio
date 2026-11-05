@@ -25,14 +25,16 @@ internal sealed class ToolbarFrameCreatedEventArgs(string toolbarId, ToolbarFram
 /// without a window or toolbar isn't hit by the pointer, and clicks reach the canvas beneath (ADR 0035).
 /// All the rules are in the solver: this only measures views and places them.
 /// </summary>
-internal sealed class DockingHost : Panel
+internal sealed partial class DockingHost : Panel
 {
-    // From back to front (docs/DOCKING.md §2). The gaps leave room for floating windows, and floating toolbars add
-    // their place in the layout's list to theirs. A floating toolbar's sub-toolbar shares its layer.
+    // From back to front (docs/DOCKING.md §2). Floating toolbars and windows add their place in the layout's list to
+    // their layer. A floating toolbar's sub-toolbar shares its layer.
     private const int WindowLayer = 0;
+    private const int StackResizeHandleLayer = 1;
     private const int ToolbarLayer = 100;
     private const int SubToolbarLayer = 150;
     private const int FloatingToolbarLayer = 200;
+    private const int FloatingWindowLayer = 500;
     private const int DropZoneLayer = 1000;
     private const int LandingLayer = 1050;
     private const int DraggedLayer = 1100;
@@ -94,7 +96,11 @@ internal sealed class DockingHost : Panel
     /// How much of each edge windows and toolbars take from the canvas. It holds still during a drag, so the art
     /// doesn't slide around under the preview (docs/DOCKING.md §8).
     /// </summary>
-    public LayoutInsets SafeArea => _drag?.SafeAreaAtStart ?? _solved?.SafeArea ?? default;
+    public LayoutInsets SafeArea =>
+        _drag?.SafeAreaAtStart ?? _windowDrag?.SafeAreaAtStart ?? _safeAreaDuringResize ?? _solved?.SafeArea ?? default;
+
+    /// <summary>Where everything is right now, if the host has been laid out.</summary>
+    public SolvedLayout? Solved => _solved;
 
     /// <summary>Shows a layout. A window or toolbar that was already showing keeps its view.</summary>
     /// <param name="layout">What to show.</param>
@@ -108,16 +114,7 @@ internal sealed class DockingHost : Panel
         _metrics = metrics;
         _animateNextArrange |= animate;
 
-        var windowIds = layout.OpenWindowIds().Where(catalog.Windows.ContainsKey).ToHashSet(StringComparer.Ordinal);
-        RemoveAllExcept(_windows, windowIds);
-
-        foreach (var windowId in windowIds.Where(id => !_windows.ContainsKey(id)))
-        {
-            var entry = catalog.Windows[windowId];
-            var frame = new WindowFrame { Title = entry.Title, Body = entry.CreateView(), ZIndex = WindowLayer };
-            _windows.Add(windowId, frame);
-            Children.Add(frame);
-        }
+        ShowWindows(layout, catalog);
 
         var showing = layout.Toolbars
             .Where(toolbar => toolbar.IsVisible && catalog.Toolbars.ContainsKey(toolbar.ToolbarId))
@@ -315,14 +312,7 @@ internal sealed class DockingHost : Panel
             _subToolbar?.Request);
         _solved = LayoutSolver.Solve(layout, measurements, metrics.Docking);
 
-        foreach (var group in _solved.WindowGroups)
-        {
-            if (!_windows.TryGetValue(group.WindowIds[0], out var frame))
-                continue;
-
-            frame.IsTitleOnly = group.IsTitleOnly;
-            frame.Measure(new Size(group.Bounds.Width, group.Bounds.Height));
-        }
+        MeasureWindows(_solved, availableSize);
 
         // A dragged toolbar keeps the size it wants, whatever it would get if it landed.
         foreach (var toolbar in _solved.Toolbars.Where(toolbar => toolbar.ToolbarId != _drag?.ToolbarId))
@@ -347,18 +337,7 @@ internal sealed class DockingHost : Panel
         if (_solved is not { } solved || _metrics is not { } metrics)
             return finalSize;
 
-        foreach (var group in solved.WindowGroups)
-        {
-            // Only the first of a group's tabs shows until docks arrive in step 2.5f.
-            for (var tab = 0; tab < group.WindowIds.Count; tab++)
-            {
-                if (!_windows.TryGetValue(group.WindowIds[tab], out var frame))
-                    continue;
-
-                frame.IsVisible = tab == 0;
-                frame.Arrange(ToRect(group.Bounds));
-            }
-        }
+        ArrangeWindows(solved, metrics, finalSize);
 
         var bounds = solved.Toolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
             StringComparer.Ordinal);
@@ -579,7 +558,8 @@ internal sealed class DockingHost : Panel
         return toolbar.IsFloating ? FloatingToolbarLayer + index : ToolbarLayer;
     }
 
-    private void RemoveAllExcept<TView>(Dictionary<string, TView> views, HashSet<string> keep)
+    private void RemoveAllExcept<TKey, TView>(Dictionary<TKey, TView> views, HashSet<TKey> keep)
+        where TKey : notnull
         where TView : Control
     {
         foreach (var id in views.Keys.Where(id => !keep.Contains(id)).ToList())

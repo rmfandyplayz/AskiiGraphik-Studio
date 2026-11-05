@@ -26,6 +26,17 @@ public sealed record DockingLayout(
     /// <summary>The most widgets a side can hold.</summary>
     public const int MaximumWidgetsOnASide = 4;
 
+    private readonly IReadOnlyList<FloatingWindow> _floatingWindows = [];
+
+    /// <summary>Windows on their own above everything, from back to front.</summary>
+    public IReadOnlyList<FloatingWindow> FloatingWindows
+    {
+        get => _floatingWindows;
+
+        // Reading a layout saved before there were floating windows passes null, whatever the initializer says.
+        init => _floatingWindows = value ?? [];
+    }
+
     /// <summary>The side on <paramref name="edge"/>, or null when it's empty.</summary>
     public SideLayout? Side(SideEdge edge) => Sides.FirstOrDefault(side => side.Edge == edge);
 
@@ -33,10 +44,15 @@ public sealed record DockingLayout(
     public IEnumerable<string> OpenWindowIds() =>
         Sides.SelectMany(side => side.Columns)
             .SelectMany(column => column.Groups)
-            .SelectMany(group => group.WindowIds);
+            .SelectMany(group => group.WindowIds)
+            .Concat(FloatingWindows.Select(window => window.WindowId));
 
     /// <summary>Whether the window is open anywhere.</summary>
     public bool IsWindowOpen(string windowId) => OpenWindowIds().Contains(windowId, StringComparer.Ordinal);
+
+    /// <summary>The window if it's floating, or null if it isn't.</summary>
+    public FloatingWindow? FloatingWindowNamed(string windowId) =>
+        FloatingWindows.FirstOrDefault(window => window.WindowId == windowId);
 
     /// <summary>Whether the toolbar is showing.</summary>
     public bool IsToolbarVisible(string toolbarId) =>
@@ -70,6 +86,19 @@ public sealed record SideColumn(double Width, IReadOnlyList<WindowGroup> Groups)
 /// <param name="IsTitleOnly">Whether the user squeezed it down to its title.</param>
 public sealed record WindowGroup(IReadOnlyList<string> WindowIds, double Share = 1, bool IsTitleOnly = false);
 
+/// <summary>A window on its own, which can be anywhere inside the app window.</summary>
+/// <param name="WindowId">Which window.</param>
+/// <param name="Position">Where its top left goes. The solver moves it just enough to stay inside.</param>
+/// <param name="Width">How wide the user wants it.</param>
+/// <param name="Height">How tall the user wants it, for whenever it isn't title-only.</param>
+/// <param name="IsTitleOnly">Whether the user squeezed it down to its title.</param>
+public sealed record FloatingWindow(
+    string WindowId,
+    LayoutPoint Position,
+    double Width,
+    double Height,
+    bool IsTitleOnly = false);
+
 /// <summary>Where a toolbar goes. A hidden toolbar keeps its place for when it's shown again.</summary>
 /// <param name="ToolbarId">Which toolbar.</param>
 /// <param name="Anchor">Which of the 8 places it's on. A floating toolbar doesn't hold this anchor.</param>
@@ -102,4 +131,11 @@ public sealed record ToolbarPlacement(
 /// <param name="Position">Its place in the side's stack.</param>
 /// <param name="Share">The group's share of the stack.</param>
 /// <param name="SideWidth">The column's width, in case the side has since emptied.</param>
-public sealed record ClosedWindow(string WindowId, SideEdge Edge, int Position, double Share, double SideWidth);
+/// <param name="WasFloating">Where it was if it was floating, in which case the rest doesn't apply.</param>
+public sealed record ClosedWindow(
+    string WindowId,
+    SideEdge Edge,
+    int Position,
+    double Share,
+    double SideWidth,
+    FloatingWindow? WasFloating = null);

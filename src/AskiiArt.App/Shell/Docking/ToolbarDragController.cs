@@ -4,9 +4,6 @@
 using AskiiArt.Docking.Dragging;
 using AskiiArt.Docking.Layouts;
 using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
 
 namespace AskiiArt.App.Shell.Docking;
 
@@ -27,7 +24,7 @@ internal sealed class ToolbarDragController(
     private ToolbarDrag? _drag;
     private PointerDragTracker? _tracker;
     private LayoutPoint _position;
-    private TopLevel? _listeningTo;
+    private DragCancelListener? _cancelListener;
 
     /// <summary>Lets the toolbar's grips start drags.</summary>
     public void Watch(string toolbarId, ToolbarFrame frame)
@@ -60,7 +57,8 @@ internal sealed class ToolbarDragController(
         _tracker = tracker;
 
         host.ShowDropZones(_drag);
-        ListenForCancelling();
+        _cancelListener ??= new DragCancelListener(host, Cancel);
+        _cancelListener.Start();
         MoveTo(e.Position);
     }
 
@@ -93,41 +91,11 @@ internal sealed class ToolbarDragController(
 
     private void End()
     {
-        StopListeningForCancelling();
+        _cancelListener?.Stop();
         host.EndToolbarDrag();
         _drag = null;
         _tracker = null;
     }
-
-    private void ListenForCancelling()
-    {
-        _listeningTo = TopLevel.GetTopLevel(host);
-        _listeningTo?.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
-
-        if (_listeningTo is WindowBase window)
-            window.Deactivated += OnWindowDeactivated;
-    }
-
-    private void StopListeningForCancelling()
-    {
-        _listeningTo?.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
-
-        if (_listeningTo is WindowBase window)
-            window.Deactivated -= OnWindowDeactivated;
-
-        _listeningTo = null;
-    }
-
-    private void OnKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Escape)
-            return;
-
-        e.Handled = true;
-        Cancel();
-    }
-
-    private void OnWindowDeactivated(object? sender, EventArgs e) => Cancel();
 
     private static double Fraction(double part, double whole) =>
         whole > 0 ? Math.Clamp(part / whole, 0, 1) : 0;

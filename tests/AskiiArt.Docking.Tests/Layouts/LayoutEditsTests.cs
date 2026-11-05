@@ -100,12 +100,13 @@ public sealed class LayoutEditsTests
     }
 
     [Fact]
-    public void AWindowWithNoRememberedPlace_JoinsTheBottomOfTheRightSide()
+    public void AWindowWithNoRememberedPlace_JoinsTheBottomOfTheSideWithFewerWindows()
     {
-        var layout = LayoutEdits.OpenWindow(_twoWidgets, "c", DefaultWidth);
+        var layout = LayoutEdits.OpenWindow(Widgets(SideEdge.Left, new WindowGroup(["a"])), "c", DefaultWidth);
+        layout = LayoutEdits.OpenWindow(layout, "d", DefaultWidth);
 
-        var groups = layout.Side(SideEdge.Right)!.Columns[0].Groups;
-        Assert.Equal(["a", "b", "c"], groups.Select(group => group.WindowIds[0]));
+        Assert.Equal(["c", "d"], layout.Side(SideEdge.Right)!.Columns[0].Groups.Select(group => group.WindowIds[0]));
+        Assert.Equal(["a"], layout.Side(SideEdge.Left)!.Columns[0].Groups.Select(group => group.WindowIds[0]));
     }
 
     [Fact]

@@ -59,7 +59,7 @@ Windows dock left and right only for now, and their contents read top to bottom.
 - The stack always fills its side's height, less margins. There's a gap between widgets.
 - The widgets on a side share one width. Drag the inner edge to change it.
 - Drag the gap between two widgets to change their heights. Once one is title-only, the next one gives way.
-- A widget squeezed below its minimum height snaps to **title-only**, and can't go smaller. Dragging it back snaps it to its minimum height. In between sizes don't exist.
+- A widget squeezed below its minimum height snaps to **title-only**, and can't go smaller. Dragging it back snaps it to its minimum height. In between sizes don't exist. Either way, the snap comes when the drag has gone halfway between the two sizes.
 - At least one widget in a stack always keeps its contents.
 - A widget arriving in a stack takes a fair share of the height, from the largest widget first. Title-only widgets stay title-only.
 - Translucent for now. Frosted glass waits (section 10).
@@ -213,7 +213,9 @@ The first match, top to bottom, wins:
 | A dock window's left or right band | It becomes a new column beside that column |
 | Anywhere else, or a side already holding 4 widgets | It floats there |
 
-A title-only window that lands somewhere gets a normal size. Dragging the last window off a side empties it, and toolbars move back.
+A title-only window that lands somewhere gets a normal size, unless it's a floating window that's only being moved. Dragging the last window off a side empties it, and toolbars move back.
+
+The zones come from the layout without the dragged window, which is what shows whenever it isn't over one. An empty side shows its edge strip in blue for the whole drag. While the window is over a zone it goes see-through, as a toolbar does, and a pointer past the app window's edge counts as at that edge. The hatched placeholder is exactly where the window would land, except on an empty side, which only opens a little until the drop.
 
 ```
  Empty side           Widgets              Dock

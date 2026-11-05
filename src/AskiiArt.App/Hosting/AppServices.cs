@@ -55,6 +55,10 @@ internal static class AppServices
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider, WindowMenuActions>();
         services.AddSingleton<IActionProvider, ToolbarMenuActions>();
+        services.AddSingleton<IActionProvider, WindowFrameActions>();
+        services.AddSingleton<IActionProvider>(provider => new WindowSampleActions(
+            provider.GetRequiredService<ShellDocking>(),
+            includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider>(provider => new SubToolbarSampleActions(
             provider.GetRequiredService<ShellDocking>(),
             includeDebugActions: BuildInfo.IsDebugBuild));

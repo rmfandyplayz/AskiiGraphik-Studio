@@ -35,8 +35,9 @@ public static class LayoutRepair
                 sides.Add(repaired);
         }
 
+        var floating = RepairFloatingWindows(layout, known, placed, catalog.DefaultSideWidth);
         var closed = RepairClosedWindows(layout, known, placed, catalog.DefaultSideWidth);
-        var result = new DockingLayout(sides, RepairToolbars(layout, catalog), closed);
+        var result = new DockingLayout(sides, RepairToolbars(layout, catalog), closed) { FloatingWindows = floating };
         return OpenMissingWindows(result, catalog);
     }
 
@@ -98,6 +99,22 @@ public static class LayoutRepair
     private static bool TryPlace(string windowId, HashSet<string> known, HashSet<string> placed) =>
         windowId is not null && known.Contains(windowId) && placed.Add(windowId);
 
+    private static List<FloatingWindow> RepairFloatingWindows(DockingLayout layout, HashSet<string> known,
+        HashSet<string> placed, double defaultSize) =>
+    [
+        .. layout.FloatingWindows
+            .Where(window => window is not null && TryPlace(window.WindowId, known, placed))
+            .Select(window => Repaired(window, defaultSize)),
+    ];
+
+    // Being far outside the window is fine, because the solver moves it just enough to stay inside.
+    private static FloatingWindow Repaired(FloatingWindow window, double defaultSize) => window with
+    {
+        Position = double.IsFinite(window.Position.X) && double.IsFinite(window.Position.Y) ? window.Position : default,
+        Width = ValidSize(window.Width, defaultSize),
+        Height = ValidSize(window.Height, defaultSize),
+    };
+
     private static List<ClosedWindow> RepairClosedWindows(DockingLayout layout, HashSet<string> known,
         HashSet<string> placed, double defaultWidth)
     {
@@ -118,6 +135,9 @@ public static class LayoutRepair
                 Position = Math.Max(0, window.Position),
                 Share = ValidSize(window.Share, 1),
                 SideWidth = ValidSize(window.SideWidth, defaultWidth),
+                WasFloating = window.WasFloating is { } floating
+                    ? Repaired(floating with { WindowId = window.WindowId }, defaultWidth)
+                    : null,
             });
         }
 

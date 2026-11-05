@@ -1,18 +1,91 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- What every window looks like, around whatever view it holds: a title at the top, and the contents
-     unless it's title-only. Placeholder: the owner designs the real one. -->
+<!-- What every window looks like, around whatever view it holds: a title row at the top, and the contents
+     unless it's title-only. The title row's buttons only show when the pointer is over the window. A floating
+     window also has grips along its edges and corners. Placeholder: the owner designs the real one. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:docking="using:AskiiArt.App.Shell.Docking"
+             xmlns:res="using:AskiiArt.App.Resources"
              x:Class="AskiiArt.App.Shell.Docking.WindowFrame">
-  <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">
-    <DockPanel>
-      <Border DockPanel.Dock="Top"
-              Height="{DynamicResource AppWindowTitleHeight}"
-              Padding="{DynamicResource AppWindowTitlePadding}">
-        <TextBlock x:Name="TitleText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-      </Border>
-      <ContentControl x:Name="BodyHost" />
-    </DockPanel>
-  </Border>
+  <UserControl.Styles>
+    <Style Selector="docking|WindowFrame.anchoring">
+      <Setter Property="Opacity" Value="{DynamicResource AppToolbarAnchoringOpacity}" />
+    </Style>
+    <Style Selector="Button.windowButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Width" Value="{DynamicResource AppWindowButtonSize}" />
+      <Setter Property="Height" Value="{DynamicResource AppWindowButtonSize}" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="docking|WindowFrame:pointerover Button.windowButton">
+      <Setter Property="Opacity" Value="{DynamicResource AppWindowButtonFaintOpacity}" />
+    </Style>
+    <Style Selector="docking|WindowFrame Button.windowButton:pointerover">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="docking|WindowFrame Button.windowButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AppWindowButtonHoverBrush}" />
+    </Style>
+    <Style Selector="Path.windowIcon">
+      <Setter Property="Stroke" Value="{DynamicResource AppWindowIconBrush}" />
+      <Setter Property="StrokeThickness" Value="{DynamicResource AppWindowIconThickness}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.edgeGrip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Width" Value="{DynamicResource AppWindowResizeGripSize}" />
+    </Style>
+    <Style Selector="Border.edgeGrip.acrossTheWindow">
+      <Setter Property="Width" Value="NaN" />
+      <Setter Property="Height" Value="{DynamicResource AppWindowResizeGripSize}" />
+    </Style>
+    <Style Selector="Border.cornerGrip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Width" Value="{DynamicResource AppWindowResizeCornerSize}" />
+      <Setter Property="Height" Value="{DynamicResource AppWindowResizeCornerSize}" />
+    </Style>
+  </UserControl.Styles>
+  <Panel>
+    <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">
+      <DockPanel>
+        <Border x:Name="TitleRow"
+                DockPanel.Dock="Top"
+                Height="{DynamicResource AppWindowTitleHeight}"
+                Padding="{DynamicResource AppWindowTitlePadding}"
+                Background="Transparent">
+          <DockPanel>
+            <Button x:Name="CloseButton"
+                    DockPanel.Dock="Right"
+                    Classes="windowButton"
+                    ToolTip.Tip="{x:Static res:Strings.WindowCloseButtonTip}">
+              <Path Classes="windowIcon" Data="{DynamicResource AppWindowCloseIcon}" />
+            </Button>
+            <Button x:Name="MenuButton"
+                    DockPanel.Dock="Right"
+                    Classes="windowButton"
+                    ToolTip.Tip="{x:Static res:Strings.WindowMenuButtonTip}">
+              <Path Classes="windowIcon" Data="{DynamicResource AppWindowMenuIcon}" />
+            </Button>
+            <TextBlock x:Name="TitleText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </DockPanel>
+        </Border>
+        <ContentControl x:Name="BodyHost" />
+      </DockPanel>
+    </Border>
+    <Panel x:Name="GripLayer" IsVisible="False">
+      <Border x:Name="LeftGrip" Classes="edgeGrip" Cursor="SizeWestEast" HorizontalAlignment="Left" />
+      <Border x:Name="RightGrip" Classes="edgeGrip" Cursor="SizeWestEast" HorizontalAlignment="Right" />
+      <Border x:Name="TopGrip" Classes="edgeGrip acrossTheWindow" Cursor="SizeNorthSouth" VerticalAlignment="Top" />
+      <Border x:Name="BottomGrip" Classes="edgeGrip acrossTheWindow" Cursor="SizeNorthSouth" VerticalAlignment="Bottom" />
+      <Border x:Name="TopLeftGrip" Classes="cornerGrip" Cursor="TopLeftCorner" HorizontalAlignment="Left" VerticalAlignment="Top" />
+      <Border x:Name="TopRightGrip" Classes="cornerGrip" Cursor="TopRightCorner" HorizontalAlignment="Right" VerticalAlignment="Top" />
+      <Border x:Name="BottomLeftGrip" Classes="cornerGrip" Cursor="BottomLeftCorner" HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+      <Border x:Name="BottomRightGrip" Classes="cornerGrip" Cursor="BottomRightCorner" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+    </Panel>
+  </Panel>
 </UserControl>

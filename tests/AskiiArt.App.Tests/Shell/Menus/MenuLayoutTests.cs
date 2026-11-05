@@ -113,6 +113,9 @@ public sealed class MenuLayoutTests
                 SubToolbarSampleActionIds.OnEdit,
                 SubToolbarSampleActionIds.OnView,
                 SubToolbarSampleActionIds.Long,
+                WindowSampleActionIds.First,
+                WindowSampleActionIds.Second,
+                WindowSampleActionIds.Third,
             ],
             ActionIdsIn(withDebug.WindowMenus[^1].Entries));
         Assert.DoesNotContain(withoutDebug.WindowMenus, menu => menu.LabelKey == nameof(Strings.MenuDebug));
