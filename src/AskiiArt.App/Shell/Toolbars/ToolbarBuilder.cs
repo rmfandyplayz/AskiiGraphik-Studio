@@ -74,7 +74,17 @@ internal sealed class ToolbarBuilder(ActionRegistry actions)
             Focusable = false,
             IsChecked = state.IsChecked
         };
-        state.Changed += (_, _) => toggle.IsChecked = state.IsChecked;
+
+        // Only while it's showing, because a toolbar's view can be made many times: each time it's shown again, and
+        // for each preview during a drag.
+        void Follow(object? sender, EventArgs e) => toggle.IsChecked = state.IsChecked;
+        toggle.AttachedToVisualTree += (_, _) =>
+        {
+            state.Changed += Follow;
+            Follow(null, EventArgs.Empty);
+        };
+        toggle.DetachedFromVisualTree += (_, _) => state.Changed -= Follow;
+
         return toggle;
     }
 }

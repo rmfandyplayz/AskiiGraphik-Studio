@@ -32,12 +32,11 @@ internal sealed class DockingHost : Panel
     private const int ToolbarLayer = 100;
     private const int FloatingToolbarLayer = 200;
     private const int DropZoneLayer = 1000;
+    private const int LandingLayer = 1050;
     private const int DraggedLayer = 1100;
 
-    // Closer than this, the landing place is just the toolbar's own shadow, so there's no point showing it.
-    private const double SameSpotTolerance = 0.5;
-
-    private sealed class ToolbarDragDisplay(string toolbarId, LayoutPoint grab, LayoutInsets safeArea)
+    private sealed class ToolbarDragDisplay(string toolbarId, LayoutPoint grab, LayoutInsets safeArea,
+        ToolbarLandingPreview landing)
     {
         public string ToolbarId { get; } = toolbarId;
 
@@ -47,9 +46,11 @@ internal sealed class DockingHost : Panel
 
         public Dictionary<ToolbarAnchor, (DropZoneView View, LayoutRect Bounds)> Zones { get; } = [];
 
-        public DropZoneView Landing { get; } = new() { IsActive = true, ZIndex = DropZoneLayer };
+        public ToolbarLandingPreview Landing { get; } = landing;
 
         public Point Pointer { get; set; }
+
+        public ToolbarDragPreview? Preview { get; set; }
     }
 
     private readonly Dictionary<string, WindowFrame> _windows = new(StringComparer.Ordinal);
@@ -62,6 +63,7 @@ internal sealed class DockingHost : Panel
     private ShellCatalog? _catalog;
     private ShellLayoutMetrics? _metrics;
     private SolvedLayout? _solved;
+    private IReadOnlyList<SolvedToolbar> _shownToolbars = [];
     private LayoutSize _available;
     private bool _animateNextArrange;
     private bool _isFrameRequested;
@@ -143,40 +145,56 @@ internal sealed class DockingHost : Panel
         return measurements with { ToolbarSizes = sizes };
     }
 
-    /// <summary>Shows the drop zones, and lets the toolbar follow the pointer.</summary>
+    /// <summary>Lets the toolbar follow the pointer, and readies the preview of where it would land.</summary>
     /// <param name="toolbarId">The toolbar being dragged.</param>
     /// <param name="grab">Where on the toolbar the pointer holds it, from 0 to 1 along each axis.</param>
-    /// <param name="zones">The drop zones.</param>
-    public void BeginToolbarDrag(string toolbarId, LayoutPoint grab, IReadOnlyList<ToolbarDropZone> zones)
+    /// <returns>The size it wants each way round, since it could turn during the drag.</returns>
+    public ToolbarShapes BeginToolbarDrag(string toolbarId, LayoutPoint grab)
     {
-        var drag = new ToolbarDragDisplay(toolbarId, grab, SafeArea);
+        var landing = new ToolbarLandingPreview(NewToolbarFrame(_catalog!.Toolbars[toolbarId]), _metrics!)
+        {
+            ZIndex = LandingLayer,
+        };
+
+        Children.Add(landing);
+        _drag = new ToolbarDragDisplay(toolbarId, grab, SafeArea, landing);
+        _toolbars[toolbarId].ZIndex = DraggedLayer;
+        _toolbars[toolbarId].IsDragged = true;
+
+        return landing.MeasureBothWays();
+    }
+
+    /// <summary>Shows the drop zones.</summary>
+    public void ShowDropZones(IReadOnlyList<ToolbarDropZone> zones)
+    {
+        if (_drag is not { } drag)
+            return;
+
         foreach (var zone in zones)
         {
-            var view = new DropZoneView { ZIndex = DropZoneLayer };
+            var view = new DropZoneView(_metrics!.MotionDuration) { ZIndex = DropZoneLayer };
             drag.Zones[zone.Anchor] = (view, zone.Bounds);
             Children.Add(view);
         }
-
-        Children.Add(drag.Landing);
-        _toolbars[toolbarId].ZIndex = DraggedLayer;
-        _toolbars[toolbarId].IsDragged = true;
-        _drag = drag;
     }
 
     /// <summary>Moves the dragged toolbar, and shows what a drop would do.</summary>
     /// <param name="pointer">Where the pointer is.</param>
-    /// <param name="zone">The anchor whose zone it's over, if any.</param>
-    /// <param name="preview">The layout a drop would give.</param>
-    public void MoveToolbarDrag(Point pointer, ToolbarAnchor? zone, DockingLayout preview)
+    /// <param name="preview">What a drop would do.</param>
+    public void MoveToolbarDrag(Point pointer, ToolbarDragPreview preview)
     {
         if (_drag is not { } drag)
             return;
 
         drag.Pointer = pointer;
+        drag.Preview = preview;
         foreach (var (anchor, entry) in drag.Zones)
-            entry.View.IsActive = anchor == zone;
+            entry.View.IsCovered = preview.CoveredZones.Contains(anchor);
 
-        Show(preview, _catalog!, _metrics!, animate: true);
+        drag.Landing.IsVisible = preview.Landing is not null;
+        drag.Landing.Toolbar.Orientation = OrientationIn(preview.Layout, drag.ToolbarId);
+
+        Show(preview.Layout, _catalog!, _metrics!, animate: true);
     }
 
     /// <summary>Takes away the drop zones. The next <see cref="Show"/> says where everything goes.</summary>
@@ -211,6 +229,11 @@ internal sealed class DockingHost : Panel
         var measurements = new LayoutMeasurements(available, catalog.MinimumWindowHeights, _toolbarSizes);
         _solved = LayoutSolver.Solve(layout, measurements, metrics.Docking);
 
+        // During a drag, toolbars keep clear of the drop zones, though they wouldn't have to once it ends.
+        _shownToolbars = _drag?.Preview is { } preview
+            ? LayoutSolver.Solve(layout, measurements, metrics.Docking, preview.ReservedSpots).Toolbars
+            : _solved.Toolbars;
+
         foreach (var group in _solved.WindowGroups)
         {
             if (!_windows.TryGetValue(group.WindowIds[0], out var frame))
@@ -221,12 +244,13 @@ internal sealed class DockingHost : Panel
         }
 
         // A dragged toolbar keeps the size it wants, whatever it would get if it landed.
-        foreach (var toolbar in _solved.Toolbars.Where(toolbar => toolbar.ToolbarId != _drag?.ToolbarId))
+        foreach (var toolbar in _shownToolbars.Where(toolbar => toolbar.ToolbarId != _drag?.ToolbarId))
             _toolbars[toolbar.ToolbarId].Measure(new Size(toolbar.Bounds.Width, toolbar.Bounds.Height));
 
         if (_drag is { } drag)
         {
-            drag.Landing.Measure(availableSize);
+            var landing = drag.Preview?.Landing ?? default;
+            drag.Landing.Measure(new Size(landing.Width, landing.Height));
             foreach (var (view, _) in drag.Zones.Values)
                 view.Measure(availableSize);
         }
@@ -252,13 +276,13 @@ internal sealed class DockingHost : Panel
             }
         }
 
-        var bounds = solved.Toolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
+        var bounds = _shownToolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
             StringComparer.Ordinal);
         foreach (var (toolbarId, view) in _toolbars)
         {
             if (toolbarId == _drag?.ToolbarId)
             {
-                view.Arrange(ToRect(PlaceDragged(_drag, finalSize, bounds.GetValueOrDefault(toolbarId))));
+                view.Arrange(ToRect(PlaceDragged(_drag, finalSize)));
             }
             else if (bounds.TryGetValue(toolbarId, out var target))
             {
@@ -281,7 +305,7 @@ internal sealed class DockingHost : Panel
         return finalSize;
     }
 
-    private LayoutRect PlaceDragged(ToolbarDragDisplay drag, Size finalSize, LayoutRect landing)
+    private LayoutRect PlaceDragged(ToolbarDragDisplay drag, Size finalSize)
     {
         var size = _toolbarSizes.GetValueOrDefault(drag.ToolbarId);
         var x = drag.Pointer.X - drag.Grab.X * size.Width;
@@ -294,10 +318,7 @@ internal sealed class DockingHost : Panel
 
         _motions.Place(drag.ToolbarId, rect);
 
-        var isUnderneath = Math.Abs(landing.X - rect.X) < SameSpotTolerance &&
-                           Math.Abs(landing.Y - rect.Y) < SameSpotTolerance;
-        drag.Landing.Arrange(isUnderneath ? default : ToRect(landing));
-
+        drag.Landing.Arrange(ToRect(drag.Preview?.Landing ?? default));
         foreach (var (view, zoneBounds) in drag.Zones.Values)
             view.Arrange(ToRect(zoneBounds));
 
@@ -323,12 +344,7 @@ internal sealed class DockingHost : Panel
             return existing;
 
         var entry = _catalog!.Toolbars[toolbarId];
-        var frame = new ToolbarFrame
-        {
-            Bar = entry.CreateView(),
-            WheelStep = _metrics!.ToolbarWheelStep,
-            FadeLength = _metrics.ToolbarFadeLength,
-        };
+        var frame = NewToolbarFrame(entry);
 
         if (entry.CreateMenu?.Invoke() is { } menu)
         {
@@ -344,6 +360,17 @@ internal sealed class DockingHost : Panel
 
         return frame;
     }
+
+    private ToolbarFrame NewToolbarFrame(ShellToolbarEntry entry) => new()
+    {
+        Bar = entry.CreateView(),
+        WheelStep = _metrics!.ToolbarWheelStep,
+        FadeLength = _metrics.ToolbarFadeLength,
+    };
+
+    private static ToolbarOrientation OrientationIn(DockingLayout layout, string toolbarId) =>
+        layout.Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == toolbarId)?.Orientation
+        ?? ToolbarOrientation.Horizontal;
 
     private int LayerOf(ToolbarPlacement toolbar, int index)
     {

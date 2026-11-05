@@ -55,10 +55,11 @@ internal sealed class ToolbarDragController(
             Fraction(e.PressedAt.X - bounds.X, bounds.Width),
             Fraction(e.PressedAt.Y - bounds.Y, bounds.Height));
 
-        _drag = new ToolbarDrag(layout, toolbarId, grab, host.CurrentMeasurements(), metrics.Docking);
+        var shapes = host.BeginToolbarDrag(toolbarId, grab);
+        _drag = new ToolbarDrag(layout, toolbarId, grab, host.CurrentMeasurements(), shapes, metrics.Docking);
         _tracker = tracker;
 
-        host.BeginToolbarDrag(toolbarId, grab, _drag.Zones);
+        host.ShowDropZones(_drag.Zones);
         ListenForCancelling();
         MoveTo(e.Position);
     }
@@ -69,7 +70,7 @@ internal sealed class ToolbarDragController(
             return;
 
         _position = new LayoutPoint(position.X, position.Y);
-        host.MoveToolbarDrag(position, drag.ZoneAt(_position)?.Anchor, drag.LayoutAt(_position));
+        host.MoveToolbarDrag(position, drag.PreviewAt(_position));
     }
 
     private void Drop()

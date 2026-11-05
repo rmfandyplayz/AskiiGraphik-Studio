@@ -13,7 +13,12 @@ namespace AskiiArt.Docking.Solving;
 public static class LayoutSolver
 {
     /// <summary>Where everything in <paramref name="layout"/> goes right now.</summary>
-    public static SolvedLayout Solve(DockingLayout layout, LayoutMeasurements measurements, DockingMetrics metrics)
+    /// <param name="layout">What to place.</param>
+    /// <param name="measurements">The sizes things want.</param>
+    /// <param name="metrics">The theme's sizes.</param>
+    /// <param name="reserved">Room for toolbars to keep clear of, if any.</param>
+    public static SolvedLayout Solve(DockingLayout layout, LayoutMeasurements measurements, DockingMetrics metrics,
+        IReadOnlyList<ReservedToolbarSpot>? reserved = null)
     {
         var available = measurements.Available;
         var widthScale = SideWidthScale(layout, available.Width, metrics);
@@ -26,9 +31,10 @@ public static class LayoutSolver
         var leftBand = taken.GetValueOrDefault(SideEdge.Left);
         var rightBand = taken.GetValueOrDefault(SideEdge.Right);
         var region = new LayoutRect(leftBand, 0, Math.Max(0, available.Width - leftBand - rightBand), available.Height);
-        var toolbars = ToolbarSolver.Solve(layout.Toolbars, measurements.ToolbarSizes, region, metrics);
+        var (toolbars, spots) = ToolbarSolver.Solve(layout.Toolbars, measurements.ToolbarSizes, region, metrics,
+            reserved ?? []);
 
-        return new SolvedLayout(groups, toolbars, region, SafeArea(region, available, toolbars, metrics.Margin));
+        return new SolvedLayout(groups, toolbars, region, SafeArea(region, available, toolbars, metrics.Margin), spots);
     }
 
     /// <summary>

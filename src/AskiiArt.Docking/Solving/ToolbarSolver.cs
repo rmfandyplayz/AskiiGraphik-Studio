@@ -10,7 +10,8 @@ namespace AskiiArt.Docking.Solving;
 /// so a toolbar never passes a window's top or bottom edge. Toolbars along one edge share its length, and a
 /// toolbar on a neighbouring edge starts after a corner toolbar (docs/DOCKING.md §4.3). A toolbar with no room
 /// for even its minimum length is left out, corners first, until there's room again. A floating toolbar goes
-/// where it was put, moved just enough to stay inside, and nothing moves for it.
+/// where it was put, moved just enough to stay inside, and nothing moves for it. A reserved spot goes through
+/// all this like a toolbar, except that it gets its length before any toolbar does.
 /// </summary>
 internal static class ToolbarSolver
 {
@@ -22,17 +23,32 @@ internal static class ToolbarSolver
         Right,
     }
 
-    private sealed record Item(ToolbarPlacement Placement, double Length, double Thickness);
+    // With no toolbar, it's a reserved spot.
+    private sealed record Item(string? ToolbarId, ToolbarAnchor Anchor, double Length, double Thickness)
+    {
+        public bool IsReserved => ToolbarId is null;
+    }
 
-    public static List<SolvedToolbar> Solve(IReadOnlyList<ToolbarPlacement> toolbars,
-        IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region, DockingMetrics metrics)
+    private sealed record Placed(Item Item, ToolbarOrientation Orientation, LayoutRect Bounds);
+
+    public static (List<SolvedToolbar> Toolbars, Dictionary<ToolbarAnchor, LayoutRect> ReservedSpots) Solve(
+        IReadOnlyList<ToolbarPlacement> toolbars, IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region,
+        DockingMetrics metrics, IReadOnlyList<ReservedToolbarSpot> reserved)
     {
         var inner = InnerRegion(region, metrics);
         var showing = toolbars.Where(toolbar => toolbar.IsVisible && sizes.ContainsKey(toolbar.ToolbarId)).ToList();
 
-        var byEdge = showing
+        var anchored = showing
             .Where(toolbar => !toolbar.IsFloating)
-            .ToLookup(EdgeOf, toolbar => ToItem(toolbar, sizes[toolbar.ToolbarId], inner));
+            .Select(toolbar => (Edge: EdgeOf(toolbar.Anchor, toolbar.Orientation),
+                Item: ToItem(toolbar, sizes[toolbar.ToolbarId], inner)));
+
+        // A corner's spot is square, so it could lie along either edge. It lies along the horizontal one, and the
+        // vertical one starts after it, as it would after a horizontal corner toolbar.
+        var spots = reserved.Select(spot => (Edge: EdgeOf(spot.Anchor, ToolbarOrientation.Horizontal),
+            Item: ToItem(spot, inner)));
+
+        var byEdge = anchored.Concat(spots).ToLookup(entry => entry.Edge, entry => entry.Item);
 
         // Horizontal edges first: where a vertical toolbar and a horizontal one could both reach a corner with
         // no toolbar anchored on it, the horizontal one gets it.
@@ -58,7 +74,18 @@ internal static class ToolbarSolver
             .Select(toolbar => PlaceFloating(toolbar, sizes[toolbar.ToolbarId], inner, metrics))
             .OfType<SolvedToolbar>();
 
-        return [.. top, .. bottom, .. left, .. right, .. floating];
+        var solved = new List<SolvedToolbar>();
+        var reservedSpots = new Dictionary<ToolbarAnchor, LayoutRect>();
+        foreach (var placed in top.Concat(bottom).Concat(left).Concat(right))
+        {
+            if (placed.Item.ToolbarId is { } toolbarId)
+                solved.Add(new SolvedToolbar(toolbarId, placed.Item.Anchor, placed.Orientation, placed.Bounds));
+            else
+                reservedSpots[placed.Item.Anchor] = placed.Bounds;
+        }
+
+        solved.AddRange(floating);
+        return (solved, reservedSpots);
     }
 
     /// <summary>Where toolbars can go: the canvas region less a margin.</summary>
@@ -91,29 +118,35 @@ internal static class ToolbarSolver
         return new SolvedToolbar(toolbar.ToolbarId, null, toolbar.Orientation, bounds);
     }
 
-    private static Edge EdgeOf(ToolbarPlacement toolbar) => toolbar.Anchor switch
+    private static Edge EdgeOf(ToolbarAnchor anchor, ToolbarOrientation orientation) => anchor switch
     {
         ToolbarAnchor.TopMiddle => Edge.Top,
         ToolbarAnchor.BottomMiddle => Edge.Bottom,
         ToolbarAnchor.LeftMiddle => Edge.Left,
         ToolbarAnchor.RightMiddle => Edge.Right,
-        ToolbarAnchor.TopLeft => toolbar.Orientation == ToolbarOrientation.Horizontal ? Edge.Top : Edge.Left,
-        ToolbarAnchor.TopRight => toolbar.Orientation == ToolbarOrientation.Horizontal ? Edge.Top : Edge.Right,
-        ToolbarAnchor.BottomLeft => toolbar.Orientation == ToolbarOrientation.Horizontal ? Edge.Bottom : Edge.Left,
-        ToolbarAnchor.BottomRight => toolbar.Orientation == ToolbarOrientation.Horizontal ? Edge.Bottom : Edge.Right,
-        _ => throw new ArgumentOutOfRangeException(nameof(toolbar), toolbar.Anchor, null),
+        ToolbarAnchor.TopLeft => orientation == ToolbarOrientation.Horizontal ? Edge.Top : Edge.Left,
+        ToolbarAnchor.TopRight => orientation == ToolbarOrientation.Horizontal ? Edge.Top : Edge.Right,
+        ToolbarAnchor.BottomLeft => orientation == ToolbarOrientation.Horizontal ? Edge.Bottom : Edge.Left,
+        ToolbarAnchor.BottomRight => orientation == ToolbarOrientation.Horizontal ? Edge.Bottom : Edge.Right,
+        _ => throw new ArgumentOutOfRangeException(nameof(anchor), anchor, null),
     };
 
     private static bool IsHorizontalLane(Edge edge) => edge is Edge.Top or Edge.Bottom;
 
     private static Item ToItem(ToolbarPlacement toolbar, LayoutSize size, LayoutRect inner) =>
-        IsHorizontalLane(EdgeOf(toolbar))
-            ? new Item(toolbar, size.Width, Math.Min(size.Height, inner.Height))
-            : new Item(toolbar, size.Height, Math.Min(size.Width, inner.Width));
+        IsHorizontalLane(EdgeOf(toolbar.Anchor, toolbar.Orientation))
+            ? new Item(toolbar.ToolbarId, toolbar.Anchor, size.Width, Math.Min(size.Height, inner.Height))
+            : new Item(toolbar.ToolbarId, toolbar.Anchor, size.Height, Math.Min(size.Width, inner.Width));
+
+    private static Item ToItem(ReservedToolbarSpot spot, LayoutRect inner)
+    {
+        var room = IsHorizontalLane(EdgeOf(spot.Anchor, ToolbarOrientation.Horizontal)) ? inner.Height : inner.Width;
+        return new Item(null, spot.Anchor, spot.Length, Math.Min(spot.Thickness, room));
+    }
 
     // What a corner toolbar lying along the neighbouring edge takes from the start or end of this one.
     private static double BandFor(IEnumerable<Item> neighbours, ToolbarAnchor corner, double gap) =>
-        neighbours.Where(item => item.Placement.Anchor == corner)
+        neighbours.Where(item => item.Anchor == corner)
             .Select(item => item.Thickness + gap)
             .FirstOrDefault();
 
@@ -121,13 +154,13 @@ internal static class ToolbarSolver
         items.Select(item => item.Thickness).DefaultIfEmpty(0).Max();
 
     // What toolbars already placed along a horizontal edge take from a vertical edge's column.
-    private static double BandAcross(IEnumerable<SolvedToolbar> toolbars, double from, double to, double gap) =>
+    private static double BandAcross(IEnumerable<Placed> toolbars, double from, double to, double gap) =>
         toolbars.Where(toolbar => toolbar.Bounds.X < to && toolbar.Bounds.Right > from)
             .Select(toolbar => toolbar.Bounds.Height + gap)
             .DefaultIfEmpty(0)
             .Max();
 
-    private static List<SolvedToolbar> SolveLane(IEnumerable<Item> lane, Edge edge, LayoutRect inner,
+    private static List<Placed> SolveLane(IEnumerable<Item> lane, Edge edge, LayoutRect inner,
         DockingMetrics metrics, double lead, double trail)
     {
         var laneLength = IsHorizontalLane(edge) ? inner.Width : inner.Height;
@@ -140,7 +173,7 @@ internal static class ToolbarSolver
         var room = Math.Max(0, to - from - metrics.ToolbarGap * Math.Max(0, items.Count - 1));
         var lengths = ShareOut(items, room, metrics);
 
-        var solved = new List<SolvedToolbar>();
+        var solved = new List<Placed>();
         var startEnd = from;
         var endStart = to;
 
@@ -163,6 +196,12 @@ internal static class ToolbarSolver
             if (IsStartCorner(items[index], edge) || IsEndCorner(items[index], edge))
                 continue;
 
+            if (items[index].IsReserved)
+            {
+                solved.Add(Place(items[index], edge, inner, startEnd, Math.Max(0, endStart - startEnd)));
+                continue;
+            }
+
             // Centred on the whole edge, until a corner toolbar reaches it.
             var length = lengths[index];
             var centred = (laneLength - length) / 2;
@@ -181,20 +220,22 @@ internal static class ToolbarSolver
             if (items.Sum(item => SmallestLength(item, metrics)) <= room)
                 return;
 
-            // Corners go first, and the end corner before the start one.
-            var corners = items.Where(IsCorner).ToList();
-            items.Remove(corners.Count > 0 ? corners.MaxBy(EndFirst)! : items[0]);
+            // Reserved spots go after every toolbar. Corners go first, and the end corner before the start one.
+            var toolbars = items.Where(item => !item.IsReserved).ToList();
+            var candidates = toolbars.Count > 0 ? toolbars : items;
+            var corners = candidates.Where(IsCorner).ToList();
+            items.Remove(corners.Count > 0 ? corners.MaxBy(EndFirst)! : candidates[0]);
         }
     }
 
-    private static bool IsCorner(Item item) => ToolbarAnchors.RequiredOrientation(item.Placement.Anchor) is null;
+    private static bool IsCorner(Item item) => ToolbarAnchors.RequiredOrientation(item.Anchor) is null;
 
     private static int EndFirst(Item item) =>
-        item.Placement.Anchor is ToolbarAnchor.TopRight or ToolbarAnchor.BottomRight or ToolbarAnchor.BottomLeft
+        item.Anchor is ToolbarAnchor.TopRight or ToolbarAnchor.BottomRight or ToolbarAnchor.BottomLeft
             ? 1
             : 0;
 
-    private static bool IsStartCorner(Item item, Edge edge) => item.Placement.Anchor switch
+    private static bool IsStartCorner(Item item, Edge edge) => item.Anchor switch
     {
         ToolbarAnchor.TopLeft => true,
         ToolbarAnchor.TopRight => edge == Edge.Right,
@@ -202,7 +243,7 @@ internal static class ToolbarSolver
         _ => false,
     };
 
-    private static bool IsEndCorner(Item item, Edge edge) => item.Placement.Anchor switch
+    private static bool IsEndCorner(Item item, Edge edge) => item.Anchor switch
     {
         ToolbarAnchor.BottomRight => true,
         ToolbarAnchor.TopRight => edge == Edge.Top,
@@ -211,14 +252,27 @@ internal static class ToolbarSolver
     };
 
     private static double SmallestLength(Item item, DockingMetrics metrics) =>
-        Math.Min(item.Length, metrics.MinimumToolbarLength);
+        item.IsReserved ? item.Length : Math.Min(item.Length, metrics.MinimumToolbarLength);
 
-    // A toolbar that fits its fair share keeps its natural size, and the rest share what remains. The middle
-    // one's fair share is a little bigger.
+    // Reserved spots take their length first. Then a toolbar that fits its fair share keeps its natural size, and
+    // the rest share what remains. The middle one's fair share is a little bigger.
     private static double[] ShareOut(List<Item> items, double room, DockingMetrics metrics)
     {
         var lengths = new double[items.Count];
-        var free = Enumerable.Range(0, items.Count).ToList();
+        var free = new List<int>();
+
+        for (var index = 0; index < items.Count; index++)
+        {
+            if (items[index].IsReserved)
+            {
+                lengths[index] = items[index].Length;
+                room -= items[index].Length;
+            }
+            else
+            {
+                free.Add(index);
+            }
+        }
 
         while (free.Count > 0)
         {
@@ -252,7 +306,7 @@ internal static class ToolbarSolver
     private static double Weight(Item item, DockingMetrics metrics) =>
         IsCorner(item) ? 1 : metrics.MiddleToolbarPriority;
 
-    private static SolvedToolbar Place(Item item, Edge edge, LayoutRect inner, double start, double length)
+    private static Placed Place(Item item, Edge edge, LayoutRect inner, double start, double length)
     {
         var bounds = edge switch
         {
@@ -264,6 +318,6 @@ internal static class ToolbarSolver
         };
 
         var orientation = IsHorizontalLane(edge) ? ToolbarOrientation.Horizontal : ToolbarOrientation.Vertical;
-        return new SolvedToolbar(item.Placement.ToolbarId, item.Placement.Anchor, orientation, bounds);
+        return new Placed(item, orientation, bounds);
     }
 }

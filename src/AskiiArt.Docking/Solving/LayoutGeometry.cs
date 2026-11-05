@@ -26,6 +26,10 @@ public readonly record struct LayoutRect(double X, double Y, double Width, doubl
     /// <summary>Whether <paramref name="point"/> is inside it.</summary>
     public bool Contains(LayoutPoint point) =>
         point.X >= X && point.X < Right && point.Y >= Y && point.Y < Bottom;
+
+    /// <summary>Whether it shares any area with <paramref name="other"/>. Only touching doesn't count.</summary>
+    public bool Intersects(LayoutRect other) =>
+        X < other.Right && other.X < Right && Y < other.Bottom && other.Y < Bottom;
 }
 
 /// <summary>How much is taken from each edge of a rectangle, in logical pixels.</summary>

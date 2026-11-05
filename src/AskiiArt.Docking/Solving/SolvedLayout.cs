@@ -10,11 +10,13 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="Toolbars">Every toolbar that's showing.</param>
 /// <param name="CanvasRegion">What the sides leave free. Toolbars live here.</param>
 /// <param name="SafeArea">How much of each edge is taken from the canvas, for centring and scroll limits.</param>
+/// <param name="ReservedSpots">Where each reserved spot went. One with no room isn't here.</param>
 public sealed record SolvedLayout(
     IReadOnlyList<SolvedWindowGroup> WindowGroups,
     IReadOnlyList<SolvedToolbar> Toolbars,
     LayoutRect CanvasRegion,
-    LayoutInsets SafeArea);
+    LayoutInsets SafeArea,
+    IReadOnlyDictionary<ToolbarAnchor, LayoutRect> ReservedSpots);
 
 /// <summary>A window group's place.</summary>
 /// <param name="WindowIds">The windows in it, in tab order.</param>

@@ -25,6 +25,18 @@ public sealed class ToolbarDragTests
         ],
         []);
 
+    // A toolbar wider when it runs up and down than it is tall when it runs across, as text buttons make them.
+    private static readonly ToolbarShapes _differentEachWay = new(new LayoutSize(150, 40), new LayoutSize(90, 200));
+
+    private static readonly DockingLayout _crowded = new(
+        [],
+        [
+            new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal),
+            new ToolbarPlacement("edit", ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
+            new ToolbarPlacement("tools", ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal),
+        ],
+        []);
+
     [Fact]
     public void TheZones_AreEveryFreeAnchor_AndTheToolbarsOwn()
     {
@@ -62,18 +74,148 @@ public sealed class ToolbarDragTests
     [Fact]
     public void CornerZones_AreInTheCorners_AndEdgeZones_RunBetweenThem()
     {
-        var zones = Drag(_layout, "file").Zones.ToDictionary(zone => zone.Anchor, zone => zone.Bounds);
-        var (margin, corner) = (Metrics.Margin, Metrics.ToolbarZoneCornerSize);
+        var zones = ZonesOf(Drag(_layout, "file"));
+        var (margin, gap, thickness) = (Metrics.Margin, Metrics.ToolbarGap, ToolbarSizes["file"].Height);
 
-        Assert.Equal(new LayoutRect(margin, margin, corner, corner), zones[ToolbarAnchor.TopLeft]);
+        Assert.Equal(new LayoutRect(margin, margin, thickness, thickness), zones[ToolbarAnchor.TopLeft]);
         Assert.Equal(_window.Width - margin, zones[ToolbarAnchor.BottomRight].Right, Tolerance);
         Assert.Equal(_window.Height - margin, zones[ToolbarAnchor.BottomRight].Bottom, Tolerance);
 
         var left = zones[ToolbarAnchor.LeftMiddle];
         Assert.Equal(margin, left.X);
-        Assert.Equal(Metrics.ToolbarZoneEdgeThickness, left.Width);
-        Assert.True(left.Y > zones[ToolbarAnchor.TopLeft].Bottom);
-        Assert.True(left.Bottom < zones[ToolbarAnchor.BottomLeft].Y);
+        Assert.Equal(zones[ToolbarAnchor.TopLeft].Bottom + gap, left.Y, Tolerance);
+        Assert.Equal(zones[ToolbarAnchor.BottomLeft].Y - gap, left.Bottom, Tolerance);
+    }
+
+    [Fact]
+    public void AZone_IsAsThickAsTheToolbarWouldBeThere()
+    {
+        var zones = ZonesOf(Drag(_layout, "file", _differentEachWay));
+
+        Assert.Equal(40, zones[ToolbarAnchor.TopMiddle].Height);
+        Assert.Equal(90, zones[ToolbarAnchor.RightMiddle].Width);
+        Assert.Equal(90, zones[ToolbarAnchor.LeftMiddle].Width);
+    }
+
+    [Fact]
+    public void ACornerZone_IsSquare_AndFollowsTheWayTheToolbarRuns()
+    {
+        var vertical = LayoutEdits.SetToolbarOrientation(_layout, "file", ToolbarOrientation.Vertical);
+
+        var whenHorizontal = ZonesOf(Drag(_layout, "file", _differentEachWay))[ToolbarAnchor.BottomLeft];
+        var whenVertical = ZonesOf(Drag(vertical, "file", _differentEachWay))[ToolbarAnchor.BottomLeft];
+
+        Assert.Equal((40.0, 40.0), (whenHorizontal.Width, whenHorizontal.Height));
+        Assert.Equal((90.0, 90.0), (whenVertical.Width, whenVertical.Height));
+    }
+
+    [Fact]
+    public void AStrip_StopsAGapShortOfTheToolbarsBesideIt()
+    {
+        var drag = Drag(_crowded, "tools");
+
+        var top = ZonesOf(drag)[ToolbarAnchor.TopMiddle];
+
+        var file = Shown(drag, _middleOfNowhere, "file");
+        var edit = Shown(drag, _middleOfNowhere, "edit");
+        Assert.Equal(file.Right + Metrics.ToolbarGap, top.X, Tolerance);
+        Assert.Equal(edit.X - Metrics.ToolbarGap, top.Right, Tolerance);
+    }
+
+    [Fact]
+    public void ToolbarsTooLongForAStrip_ShrinkForIt_AndGetTheirLengthBackAfterTheDrop()
+    {
+        var sizes = new Dictionary<string, LayoutSize>(ToolbarSizes, StringComparer.Ordinal)
+        {
+            ["file"] = new(900, 40),
+            ["edit"] = new(900, 40),
+        };
+        var measurements = Measure(_window, sizes);
+        var drag = new ToolbarDrag(_crowded, "tools", _heldAtTheLeftEnd, measurements, Shapes("tools"), Metrics);
+
+        var top = ZonesOf(drag)[ToolbarAnchor.TopMiddle];
+        var innerWidth = _window.Width - Metrics.Margin * 2;
+        Assert.True(top.Width >= innerWidth * Metrics.ToolbarZoneMinimumShare - Tolerance);
+
+        var preview = drag.PreviewAt(_middleOfNowhere);
+        var shown = LayoutSolver.Solve(preview.Layout, measurements, Metrics, preview.ReservedSpots).Toolbars;
+        var dropped = LayoutSolver.Solve(preview.Layout, measurements, Metrics).Toolbars;
+
+        var file = shown.Single(toolbar => toolbar.ToolbarId == "file").Bounds;
+        Assert.True(file.Right < top.X);
+        Assert.True(dropped.Single(toolbar => toolbar.ToolbarId == "file").Bounds.Width > file.Width);
+    }
+
+    [Fact]
+    public void AnyDragOfAnyLayout_KeepsItsZonesClearOfEachOther_AndOfTheToolbars()
+    {
+        Gen.Select(Valid, Gen.OneOfConst("file", "tools", "edit", "view"), WindowSizes, Gen.Double[20, 2000]).Sample(
+            (layout, toolbarId, window, length) =>
+            {
+                var measurements = Measure(window, Sizes(layout, _ => length));
+                var shapes = new ToolbarShapes(new LayoutSize(length, 40), new LayoutSize(40, length));
+                var drag = new ToolbarDrag(layout, toolbarId, _heldAtTheLeftEnd, measurements, shapes, Metrics);
+
+                var preview = drag.PreviewAt(new LayoutPoint(-1000, -1000));
+                var anchored = LayoutSolver.Solve(preview.Layout, measurements, Metrics, preview.ReservedSpots).Toolbars
+                    .Where(toolbar => toolbar.Anchor is not null);
+
+                foreach (var zone in drag.Zones)
+                {
+                    Assert.DoesNotContain(anchored, toolbar => toolbar.Bounds.Intersects(zone.Bounds));
+                    Assert.DoesNotContain(drag.Zones, other => other != zone && other.Bounds.Intersects(zone.Bounds));
+                }
+            });
+    }
+
+    [Fact]
+    public void FloatingFreely_NeedsNoPreviewOfTheLanding()
+    {
+        var preview = Drag(_layout, "file").PreviewAt(_middleOfNowhere);
+
+        Assert.Null(preview.Landing);
+        Assert.Empty(preview.CoveredZones);
+    }
+
+    [Fact]
+    public void BeingPushedBackInside_ShowsWhereItWouldLand_AndZonesThereGetOutOfTheWay()
+    {
+        var layout = _layout with
+        {
+            Sides = [new SideLayout(SideEdge.Right, SideKind.Widgets, [new SideColumn(240, [new WindowGroup(["a"])])])],
+        };
+        var drag = Drag(layout, "file");
+
+        var preview = drag.PreviewAt(new LayoutPoint(950, 350));
+
+        var landing = preview.Landing!.Value;
+        Assert.Equal(_window.Width - 240 - 8 - 8, landing.Right, Tolerance);
+        Assert.Contains(ToolbarAnchor.RightMiddle, preview.CoveredZones);
+        Assert.DoesNotContain(ToolbarAnchor.LeftMiddle, preview.CoveredZones);
+    }
+
+    [Fact]
+    public void OnAZone_ThePreviewShowsTheToolbarTurned_WhereItWouldLand()
+    {
+        var drag = Drag(_layout, "file", _differentEachWay);
+
+        var preview = drag.PreviewAt(Center(drag, ToolbarAnchor.LeftMiddle));
+
+        var landing = preview.Landing!.Value;
+        Assert.Equal((Metrics.Margin, 90.0, 200.0), (landing.X, landing.Width, landing.Height));
+        Assert.Equal((_window.Height - 200) / 2, landing.Y, Tolerance);
+    }
+
+    [Fact]
+    public void OnAZone_TheZoneGetsOutOfTheWay_AndNoLongerHoldsItsRoom()
+    {
+        var drag = Drag(_layout, "file");
+
+        var preview = drag.PreviewAt(Center(drag, ToolbarAnchor.LeftMiddle));
+
+        Assert.Contains(ToolbarAnchor.LeftMiddle, preview.CoveredZones);
+        Assert.DoesNotContain(preview.ReservedSpots, spot => spot.Anchor == ToolbarAnchor.LeftMiddle);
+        Assert.Contains(preview.ReservedSpots, spot => spot.Anchor == ToolbarAnchor.RightMiddle);
     }
 
     [Fact]
@@ -193,7 +335,9 @@ public sealed class ToolbarDragTests
         Gen.Select(Valid, Gen.OneOfConst("file", "tools", "edit", "view"), positions).Sample((layout, toolbarId, position) =>
         {
             var measurements = Measure(_window, Sizes(layout, _ => 200));
-            var dragged = new ToolbarDrag(layout, toolbarId, _heldAtTheLeftEnd, measurements, Metrics).LayoutAt(position);
+            var shapes = new ToolbarShapes(new LayoutSize(200, 40), new LayoutSize(40, 200));
+            var dragged = new ToolbarDrag(layout, toolbarId, _heldAtTheLeftEnd, measurements, shapes, Metrics)
+                .LayoutAt(position);
 
             Assert.Equal(TestLayouts.Text(dragged), TestLayouts.Text(LayoutRepair.Repair(dragged, Catalog)));
             Assert.True(dragged.IsToolbarVisible(toolbarId));
@@ -201,7 +345,26 @@ public sealed class ToolbarDragTests
     }
 
     private static ToolbarDrag Drag(DockingLayout layout, string toolbarId) =>
-        new(layout, toolbarId, _heldAtTheLeftEnd, Measure(_window), Metrics);
+        Drag(layout, toolbarId, Shapes(toolbarId));
+
+    private static ToolbarDrag Drag(DockingLayout layout, string toolbarId, ToolbarShapes shapes) =>
+        new(layout, toolbarId, _heldAtTheLeftEnd, Measure(_window), shapes, Metrics);
+
+    private static ToolbarShapes Shapes(string toolbarId)
+    {
+        var size = ToolbarSizes[toolbarId];
+        return new ToolbarShapes(size, new LayoutSize(size.Height, size.Width));
+    }
+
+    private static Dictionary<ToolbarAnchor, LayoutRect> ZonesOf(ToolbarDrag drag) =>
+        drag.Zones.ToDictionary(zone => zone.Anchor, zone => zone.Bounds);
+
+    private static LayoutRect Shown(ToolbarDrag drag, LayoutPoint position, string toolbarId)
+    {
+        var preview = drag.PreviewAt(position);
+        return LayoutSolver.Solve(preview.Layout, Measure(_window), Metrics, preview.ReservedSpots).Toolbars
+            .Single(toolbar => toolbar.ToolbarId == toolbarId).Bounds;
+    }
 
     private static ToolbarPlacement Toolbar(DockingLayout layout, string toolbarId) =>
         layout.Toolbars.Single(toolbar => toolbar.ToolbarId == toolbarId);

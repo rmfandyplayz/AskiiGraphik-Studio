@@ -185,6 +185,10 @@ Starting a drag shows a zone for each free anchor, and for its own. Occupied anc
 
 Dropping on a middle anchor sets its direction. A corner keeps the direction it had.
 
+**Zones lie among the toolbars like toolbars.** A corner's is a square. A middle's is a strip that runs between whatever is at each end of its edge, with the usual gap, so a zone never overlaps an anchored toolbar. Each is as thick as the dragged toolbar would be there. A strip always gets at least 30% of its edge: the toolbars beside it shrink and scroll for as long as the drag lasts, and get their length back after it.
+
+**The preview is the toolbar itself.** Where a drop would land shows as a see-through copy of the toolbar, inside a dashed outline that slowly moves out and back. It shows over a zone, and when a floating toolbar would be pushed back inside the canvas region. A floating toolbar that would land right where it's held needs none. Any zone the preview overlaps fades away until the preview moves off it.
+
 ### 5.2 Window drags
 
 The first match, top to bottom, wins:

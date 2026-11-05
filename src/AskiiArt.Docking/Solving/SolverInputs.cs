@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Docking.Layouts;
+
 namespace AskiiArt.Docking.Solving;
 
 /// <summary>The sizes the layout rules use, from the theme's tokens.</summary>
@@ -12,8 +14,7 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="ToolbarGap">Between toolbars sharing an edge.</param>
 /// <param name="MinimumToolbarLength">A toolbar shorter than this is left out until there's room.</param>
 /// <param name="MiddleToolbarPriority">How much more of a shared edge a middle toolbar gets than a corner one.</param>
-/// <param name="ToolbarZoneCornerSize">How big a corner's drop zone is.</param>
-/// <param name="ToolbarZoneEdgeThickness">How thick an edge middle's drop zone is. It runs between the corners'.</param>
+/// <param name="ToolbarZoneMinimumShare">How much of its edge a middle's drop zone always gets, from 0 to 1.</param>
 public sealed record DockingMetrics(
     double Margin,
     double WidgetGap,
@@ -23,8 +24,16 @@ public sealed record DockingMetrics(
     double ToolbarGap,
     double MinimumToolbarLength,
     double MiddleToolbarPriority,
-    double ToolbarZoneCornerSize,
-    double ToolbarZoneEdgeThickness);
+    double ToolbarZoneMinimumShare);
+
+/// <summary>
+/// Room kept on an anchor as if a toolbar were there, and ahead of any toolbar. A drag holds its drop zones this
+/// way, so that they're never covered. A corner's is square, and a middle's takes whatever its edge has free.
+/// </summary>
+/// <param name="Anchor">The anchor. Nothing should be on it.</param>
+/// <param name="Length">How long it is along its edge, at the least.</param>
+/// <param name="Thickness">How thick it is.</param>
+public sealed record ReservedToolbarSpot(ToolbarAnchor Anchor, double Length, double Thickness);
 
 /// <summary>What the solver needs to know about right now.</summary>
 /// <param name="Available">The space between the menu and status strips.</param>

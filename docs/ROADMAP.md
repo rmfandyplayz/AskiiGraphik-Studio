@@ -138,7 +138,7 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 - [~] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
 
   *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
-  *Note:* Built (ADR 0035), and waiting for the owner's testing. Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size.
+  *Note:* Built (ADR 0035), and waiting for the owner's testing. Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size. After the first round: the toolbar's shape after a cancel is fixed, zones now lie among toolbars like toolbars and match their thickness, and the landing preview is a real copy in a pulsing dashed outline. The first round's other tests passed on 2026-11-04.
 - [ ] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
 
   *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.

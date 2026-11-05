@@ -34,6 +34,7 @@ public sealed class ToolbarDraggingTests : IDisposable
 
     private Window _window = null!;
     private DockingHost _host = null!;
+    private double _toolbarWidth = 100;
 
     public ToolbarDraggingTests()
     {
@@ -102,9 +103,8 @@ public sealed class ToolbarDraggingTests : IDisposable
 
         StartDrag(File, _middleOfNowhere);
 
-        // File, Tools, Edit and View hold 4 anchors. File's own is back, leaving 5, and one more view shows where
-        // the toolbar would land.
-        Assert.Equal(5 + 1, Zones.Count);
+        // File, Tools, Edit and View hold 4 anchors. File's own is back, leaving 5.
+        Assert.Equal(5, Zones.Count);
     }
 
     [AvaloniaFact]
@@ -223,7 +223,7 @@ public sealed class ToolbarDraggingTests : IDisposable
         ShowWindow();
 
         StartDrag(File, _leftEdge);
-        var previewed = Zones[^1].Bounds;
+        var previewed = Landing!.Bounds;
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
         Pump();
@@ -232,18 +232,139 @@ public sealed class ToolbarDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheZoneUnderThePointer_StandsOut()
+    public void ThePreview_IsACopyOfTheToolbar_TurnedTheWayItWouldLand()
+    {
+        ShowWindow();
+
+        StartDrag(File, _leftEdge);
+
+        var landing = Landing!;
+        Assert.True(landing.IsVisible);
+        Assert.False(landing.IsHitTestVisible);
+        Assert.Equal(File, landing.Toolbar.Bar!.Name);
+        Assert.Equal(ToolbarOrientation.Vertical, landing.Toolbar.Orientation);
+        Assert.Equal(landing.Bounds.Size, landing.Toolbar.Bounds.Size);
+        Assert.Equal(landing.Bounds.Size, landing.Outline.Bounds.Size);
+        Assert.Equal(new Size(100, 58), landing.Bounds.Size);
+
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+        Pump();
+        Assert.Null(Landing);
+    }
+
+    [AvaloniaFact]
+    public void ThePreview_IsntShown_WhenTheToolbarWouldLandRightWhereItIsHeld()
     {
         ShowWindow();
 
         StartDrag(File, _middleOfNowhere);
-        Assert.DoesNotContain(Zones, zone => zone.IsActive && zone.Bounds.Width > 0);
+
+        Assert.False(Landing!.IsVisible);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void ThePreview_ShowsWhereAToolbarOverAWidgetWouldBePushedBackTo()
+    {
+        ShowWindow();
+        var widgets = _host.GetVisualDescendants().OfType<WindowFrame>().First();
+        var overWidgets = new Point(widgets.Bounds.Center.X, 350);
+
+        StartDrag(File, overWidgets);
+
+        Assert.True(Landing!.IsVisible);
+        Assert.True(Landing.Bounds.Right <= widgets.Bounds.Left);
+        Assert.Equal(new Size(128, 30), Landing.Bounds.Size);
+        var previewed = Landing.Bounds;
+
+        _window.MouseUp(overWidgets, MouseButton.Left);
+        Pump();
+        Assert.Equal(previewed, BoundsOf(File));
+    }
+
+    [AvaloniaFact]
+    public void ThePreviewsOutline_KeepsMovingForAsLongAsItShows()
+    {
+        ShowWindow();
+
+        StartDrag(File, _leftEdge);
+        Pump();
+
+        Assert.True(Landing!.Outline.Pulse > 0);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AZoneUnderThePreview_FadesAway_AndComesBackWhenThePreviewGoes()
+    {
+        ShowWindow();
+
+        StartDrag(File, _middleOfNowhere);
+        Assert.DoesNotContain(Zones, zone => zone.IsCovered);
 
         _window.MouseMove(_leftEdge);
         Pump();
-        Assert.Contains(Zones, zone => zone.IsActive && zone.Bounds.Contains(_leftEdge));
+        var under = Zones.Single(zone => zone.Bounds.Contains(_leftEdge));
+        Assert.True(under.IsCovered);
+
+        _window.MouseMove(_middleOfNowhere);
+        Pump();
+        Assert.False(under.IsCovered);
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AZoneOverlappedByAPushedBackPreview_FadesAway_ThoughThePointerIsntOnIt()
+    {
+        ShowWindow();
+        var widgets = _host.GetVisualDescendants().OfType<WindowFrame>().First();
+        var overWidgets = new Point(widgets.Bounds.Center.X, _host.Bounds.Height / 2);
+
+        StartDrag(File, overWidgets);
+
+        Assert.Contains(Zones, zone => zone.IsCovered && zone.Bounds.Intersects(Landing!.Bounds));
+        Assert.DoesNotContain(Zones, zone => zone.IsCovered && !zone.Bounds.Intersects(Landing!.Bounds));
+        _window.MouseUp(overWidgets, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AStripBetweenToolbars_LeavesAGapToEach_AndStaysPutDuringTheDrag()
+    {
+        ShowWindow();
+
+        StartDrag(Tools, _middleOfNowhere);
+        var gap = ShellLayoutMetrics.FromResources(Application.Current!).Docking.ToolbarGap;
+        var strip = Zones.Single(zone => zone.Bounds.Left > BoundsOf(File).Right && zone.Bounds.Top < 30).Bounds;
+
+        Assert.Equal(BoundsOf(File).Right + gap, strip.Left);
+        Assert.Equal(BoundsOf(Edit).Left - gap, strip.Right);
+
+        _window.MouseMove(_leftEdge);
+        Pump();
+        Assert.Contains(Zones, zone => zone.Bounds == strip);
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void ToolbarsShrinkForAStripDuringADrag_AndGetTheirLengthBackAfterIt()
+    {
+        _toolbarWidth = 600;
+        ShowWindow();
+        var before = BoundsOf(File).Width;
+
+        StartDrag(Tools, _middleOfNowhere);
+        var strip = Zones.Single(zone => zone.Bounds.Left > 100 && zone.Bounds.Top < 40).Bounds;
+
+        Assert.True(BoundsOf(File).Width < before);
+        Assert.True(BoundsOf(File).Right < strip.Left);
+        Assert.True(BoundsOf(Edit).Left > strip.Right);
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Pump();
+
+        Assert.Equal(before, BoundsOf(File).Width);
     }
 
     [AvaloniaFact]
@@ -306,6 +427,39 @@ public sealed class ToolbarDraggingTests : IDisposable
         Pump();
 
         Assert.Equal(before, LayoutJson.Write(_docking.Layout!));
+    }
+
+    [AvaloniaFact]
+    public void CancellingOverAnEdgeMiddle_GivesTheToolbarItsOwnShapeBack()
+    {
+        ShowWindow();
+        var where = BoundsOf(File);
+
+        StartDrag(File, _leftEdge);
+        Assert.Equal(ToolbarOrientation.Vertical, Frame(File).Orientation);
+
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+        Pump();
+
+        Assert.Equal(ToolbarOrientation.Horizontal, Frame(File).Orientation);
+        Assert.Equal(where, BoundsOf(File));
+    }
+
+    [AvaloniaFact]
+    public void ADragAfterACancelledTurn_HoldsTheToolbarWhereItWouldLand()
+    {
+        ShowWindow();
+        StartDrag(File, _leftEdge);
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+        Pump();
+
+        StartDrag(File, _middleOfNowhere);
+
+        Assert.False(Landing!.IsVisible);
+        Assert.True(BoundsOf(File).Contains(_middleOfNowhere));
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
 
     [AvaloniaFact]
@@ -513,8 +667,9 @@ public sealed class ToolbarDraggingTests : IDisposable
         Pump();
     }
 
-    // The drop zones, and last of all the view showing where the toolbar would land.
     private List<DropZoneView> Zones => [.. _host.Children.OfType<DropZoneView>()];
+
+    private ToolbarLandingPreview? Landing => _host.Children.OfType<ToolbarLandingPreview>().SingleOrDefault();
 
     private ToolbarPlacement Placement(string toolbarId) =>
         _docking.Layout!.Toolbars.Single(toolbar => toolbar.ToolbarId == toolbarId);
@@ -551,9 +706,11 @@ public sealed class ToolbarDraggingTests : IDisposable
 
         var metrics = ShellLayoutMetrics.FromResources(Application.Current!) with { MotionDuration = TimeSpan.Zero };
         ShellWindowEntry Window(string id) => new(id, id, metrics.WindowMinHeight, () => new Border());
+
         ShellToolbarEntry Toolbar(string id) => new(id,
-            () => new Border { Name = id, Width = 100, Height = 30 },
+            () => new Border { Name = id, Width = _toolbarWidth, Height = 30 },
             () => ToolbarMenu.Create(id, _actions, _docking));
+
         var catalog = new ShellCatalog(
             [Window(ShellDockingIds.LayersPanel), Window(ShellDockingIds.HistoryPanel)],
             [Toolbar(File), Toolbar(Tools), Toolbar(Edit), Toolbar(ShellDockingIds.ViewToolbar)]);

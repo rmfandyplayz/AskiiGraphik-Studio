@@ -5,6 +5,8 @@ using AskiiArt.Docking.Layouts;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Shell.Docking;
 
@@ -80,6 +82,14 @@ internal sealed partial class ToolbarFrame : UserControl
         _fades = default;
         Scroller.OpacityMask = null;
         UpdateFades();
+
+        // Turning changes the size of what's inside, but those parts still count as measured until their turn later
+        // in the layout pass. The host asks for this frame's size before that, and would get the one it had the
+        // other way round. A frame that's always asked with the same limits is the one that shows it: a dragged one.
+        foreach (var part in this.GetVisualDescendants().OfType<Layoutable>())
+            part.InvalidateMeasure();
+
+        InvalidateMeasure();
     }
 
     private void TurnBar()

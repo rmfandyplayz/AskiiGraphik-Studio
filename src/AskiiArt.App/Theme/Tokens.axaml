@@ -19,7 +19,7 @@
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D9F3F3F3" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#400078D7" />
-      <SolidColorBrush x:Key="AppDropZoneActiveBrush" Color="#900078D7" />
+      <SolidColorBrush x:Key="AppLandingOutlineBrush" Color="#FF0078D7" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -34,7 +34,7 @@
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D92B2B2B" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#504C9EEB" />
-      <SolidColorBrush x:Key="AppDropZoneActiveBrush" Color="#A04C9EEB" />
+      <SolidColorBrush x:Key="AppLandingOutlineBrush" Color="#FF4C9EEB" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -76,9 +76,16 @@
   <x:Double x:Key="AppToolbarGripHoverOpacity">0.6</x:Double>
   <!-- How long the fade is on a side of a toolbar with more to scroll to. -->
   <x:Double x:Key="AppToolbarFadeLength">20</x:Double>
-  <!-- The drop zones while dragging a toolbar: squares at the corners, and strips along the edges between them. -->
-  <x:Double x:Key="AppToolbarZoneCornerSize">56</x:Double>
-  <x:Double x:Key="AppToolbarZoneEdgeThickness">36</x:Double>
+  <!-- How much of its edge a strip always gets while dragging a toolbar, from 0 to 1. Toolbars shrink for it. -->
+  <x:Double x:Key="AppToolbarZoneMinimumShare">0.3</x:Double>
+  <!-- The preview of where a dragged toolbar would land. Its outline's dashes are in multiples of its thickness. -->
+  <x:Double x:Key="AppLandingToolbarOpacity">0.6</x:Double>
+  <x:Double x:Key="AppLandingOutlineThickness">1.5</x:Double>
+  <x:Double x:Key="AppLandingOutlineDash">4</x:Double>
+  <x:Double x:Key="AppLandingOutlineDashGap">3</x:Double>
+  <!-- How far the outline moves out from the toolbar and back, and how long that takes. -->
+  <x:Double x:Key="AppLandingPulseLength">4</x:Double>
+  <x:Double x:Key="AppLandingPulseMilliseconds">1400</x:Double>
 
   <!-- Windows and toolbars (docs/DOCKING.md). -->
   <!-- Around widgets, and around toolbars in the canvas region, so their edges line up. -->

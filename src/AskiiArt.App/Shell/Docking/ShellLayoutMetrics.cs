@@ -16,7 +16,12 @@ internal sealed record ShellLayoutMetrics(
     double ToolbarWheelStep,
     double ToolbarFadeLength,
     double DragThreshold,
-    TimeSpan MotionDuration)
+    TimeSpan MotionDuration,
+    double LandingOutlineThickness,
+    double LandingOutlineDash,
+    double LandingOutlineDashGap,
+    double LandingPulseLength,
+    TimeSpan LandingPulsePeriod)
 {
     public static ShellLayoutMetrics
         FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
@@ -29,8 +34,7 @@ internal sealed record ShellLayoutMetrics(
             ToolbarGap: Token(resources, "AppToolbarGap", theme),
             MinimumToolbarLength: Token(resources, "AppToolbarMinLength", theme),
             MiddleToolbarPriority: Token(resources, "AppToolbarMiddlePriority", theme),
-            ToolbarZoneCornerSize: Token(resources, "AppToolbarZoneCornerSize", theme),
-            ToolbarZoneEdgeThickness: Token(resources, "AppToolbarZoneEdgeThickness", theme)),
+            ToolbarZoneMinimumShare: Token(resources, "AppToolbarZoneMinimumShare", theme)),
         Token(resources, "AppWidgetWidth", theme),
         Token(resources, "AppWindowMinHeight", theme),
         Token(resources, "AppMainWindowMinWidth", theme),
@@ -38,7 +42,12 @@ internal sealed record ShellLayoutMetrics(
         Token(resources, "AppToolbarWheelStep", theme),
         Token(resources, "AppToolbarFadeLength", theme),
         Token(resources, "AppDockingDragThreshold", theme),
-        TimeSpan.FromMilliseconds(Token(resources, "AppDockingMotionMilliseconds", theme)));
+        TimeSpan.FromMilliseconds(Token(resources, "AppDockingMotionMilliseconds", theme)),
+        Token(resources, "AppLandingOutlineThickness", theme),
+        Token(resources, "AppLandingOutlineDash", theme),
+        Token(resources, "AppLandingOutlineDashGap", theme),
+        Token(resources, "AppLandingPulseLength", theme),
+        TimeSpan.FromMilliseconds(Token(resources, "AppLandingPulseMilliseconds", theme)));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

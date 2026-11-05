@@ -442,6 +442,93 @@ public sealed class LayoutSolverTests
         });
     }
 
+    [Fact]
+    public void AReservedMiddle_TakesWhatIsFreeBetweenTheCorners()
+    {
+        var layout = TwoCorners();
+        var spots = new[] { new ReservedToolbarSpot(ToolbarAnchor.TopMiddle, 100, 40) };
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window), Metrics, spots);
+
+        var file = solved.Toolbars.Single(toolbar => toolbar.ToolbarId == "file").Bounds;
+        var edit = solved.Toolbars.Single(toolbar => toolbar.ToolbarId == "edit").Bounds;
+        var spot = solved.ReservedSpots[ToolbarAnchor.TopMiddle];
+        Assert.Equal(file.Right + Metrics.ToolbarGap, spot.X);
+        Assert.Equal(edit.X - Metrics.ToolbarGap, spot.Right);
+        Assert.Equal((Metrics.Margin, 40.0), (spot.Y, spot.Height));
+    }
+
+    [Fact]
+    public void AReservedSpot_GetsItsLengthBeforeTheToolbarsShareWhatsLeft()
+    {
+        var layout = TwoCorners();
+        var sizes = new Dictionary<string, LayoutSize>(StringComparer.Ordinal)
+        {
+            ["file"] = new(2000, 40),
+            ["edit"] = new(2000, 40),
+        };
+        var spots = new[] { new ReservedToolbarSpot(ToolbarAnchor.TopMiddle, 300, 40) };
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, sizes), Metrics, spots);
+
+        var inner = _window.Width - Metrics.Margin * 2;
+        var share = (inner - 300 - Metrics.ToolbarGap * 2) / 2;
+        Assert.Equal(share, solved.Toolbars.Single(toolbar => toolbar.ToolbarId == "file").Bounds.Width, 3);
+        Assert.Equal(300, solved.ReservedSpots[ToolbarAnchor.TopMiddle].Width, 3);
+    }
+
+    [Fact]
+    public void AReservedCorner_PushesTheNeighbouringEdgeAlong()
+    {
+        var layout = new DockingLayout(
+            [],
+            [new ToolbarPlacement("tools", ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical)],
+            []);
+        var sizes = new Dictionary<string, LayoutSize>(StringComparer.Ordinal) { ["tools"] = new(40, 2000) };
+        var spots = new[] { new ReservedToolbarSpot(ToolbarAnchor.TopLeft, 40, 40) };
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, sizes), Metrics, spots);
+
+        Assert.Equal(Metrics.Margin + 40 + Metrics.ToolbarGap, Assert.Single(solved.Toolbars).Bounds.Y);
+    }
+
+    [Fact]
+    public void AReservedSpot_OutlastsAToolbar_WhenThereIsntRoomForBoth()
+    {
+        var layout = TwoCorners();
+        var narrow = new LayoutSize(400, 700);
+        var spots = new[] { new ReservedToolbarSpot(ToolbarAnchor.TopMiddle, 340, 40) };
+
+        var solved = LayoutSolver.Solve(layout, Measure(narrow), Metrics, spots);
+
+        Assert.Empty(solved.Toolbars);
+        Assert.Contains(ToolbarAnchor.TopMiddle, solved.ReservedSpots.Keys);
+    }
+
+    [Fact]
+    public void AReservedSpot_LongerThanItsEdge_IsLeftOut()
+    {
+        var spots = new[] { new ReservedToolbarSpot(ToolbarAnchor.TopMiddle, 5000, 40) };
+
+        var solved = LayoutSolver.Solve(new DockingLayout([], [], []), Measure(_window), Metrics, spots);
+
+        Assert.Empty(solved.ReservedSpots);
+    }
+
+    [Fact]
+    public void NothingReserved_MeansNoSpots()
+    {
+        Assert.Empty(LayoutSolver.Solve(TwoCorners(), Measure(_window), Metrics).ReservedSpots);
+    }
+
+    private static DockingLayout TwoCorners() => new(
+        [],
+        [
+            new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal),
+            new ToolbarPlacement("edit", ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
+        ],
+        []);
+
     private static DockingLayout Floating(LayoutPoint position, ToolbarOrientation orientation) => new(
         [],
         [new ToolbarPlacement("float", ToolbarAnchor.TopLeft, orientation, FloatingAt: position)],
