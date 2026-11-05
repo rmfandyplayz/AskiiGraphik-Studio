@@ -139,10 +139,10 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
   *Note:* Built (ADR 0035). Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size. After the first round: the toolbar's shape after a cancel is fixed, and zones now lie among toolbars like toolbars and match their thickness. The owner confirmed its tests on 2026-11-04, with changes to how a drag looks, which are tested in 2.5d's doc: a dashed strip with no copy when anchoring, a see-through dragged toolbar, running dashes and bigger corner squares.
-- [~] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
+- [x] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
 
   *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
-  *Note:* Built (ADR 0035), and waiting for the owner's testing. A floating toolbar's sub-toolbar remembers the side it was on, as the owner asked, and it stays with its toolbar through a drag and its previews.
+  *Note:* Built (ADR 0035). A floating toolbar's sub-toolbar remembers the side it was on, as the owner asked, and it stays with its toolbar through a drag and its previews. The owner confirmed its tests on 2026-11-05, with a last change to drags, tested in `docs/testing/step-2.5d-hidden-toolbars.md`: other toolbars go out of sight, zones are always full length, and overlapped zones dim.
 - [ ] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
 
   *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.

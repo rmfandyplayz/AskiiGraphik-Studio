@@ -23,6 +23,7 @@ public sealed class ToolbarDraggingTests : IDisposable
     private const string File = ShellDockingIds.FileToolbar;
     private const string Tools = ShellDockingIds.ToolsToolbar;
     private const string Edit = ShellDockingIds.EditToolbar;
+    private const string View = ShellDockingIds.ViewToolbar;
 
     private static readonly Point _middleOfNowhere = new(450, 350);
     private static readonly Point _leftEdge = new(20, 350);
@@ -35,6 +36,7 @@ public sealed class ToolbarDraggingTests : IDisposable
     private Window _window = null!;
     private DockingHost _host = null!;
     private double _toolbarWidth = 100;
+    private TimeSpan _motionDuration = TimeSpan.Zero;
 
     public ToolbarDraggingTests()
     {
@@ -293,20 +295,106 @@ public sealed class ToolbarDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheToolbarsAround_StayPutWhenThePointerGoesOverAZone()
+    public void StartingADrag_HidesEveryOtherToolbarAtOnce()
+    {
+        _motionDuration = TimeSpan.FromSeconds(10);
+        ShowWindow();
+
+        StartDrag(Tools, _middleOfNowhere);
+
+        Assert.All([File, Edit, View], toolbarId =>
+        {
+            Assert.True(Frame(toolbarId).IsHiddenForDrag);
+            Assert.Equal(0, Frame(toolbarId).Opacity);
+            Assert.False(Frame(toolbarId).IsHitTestVisible);
+        });
+        Assert.False(Frame(Tools).IsHiddenForDrag);
+        Assert.Equal(1, Frame(Tools).Opacity);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AFloatingToolbar_IsHiddenDuringADragToo()
+    {
+        ShowWindow();
+        DragAndDrop(File, _middleOfNowhere);
+
+        StartDrag(Tools, _leftEdge);
+
+        Assert.True(Frame(File).IsHiddenForDrag);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void TheDrop_BringsTheOthersBack_AndTheNextDragHidesThemAgain()
+    {
+        ShowWindow();
+
+        DragAndDrop(Tools, _leftEdge);
+        Assert.False(Frame(File).IsHiddenForDrag);
+        Assert.True(Frame(File).IsHitTestVisible);
+
+        StartDrag(File, _middleOfNowhere);
+        Assert.True(Frame(Tools).IsHiddenForDrag);
+        Assert.False(Frame(File).IsHiddenForDrag);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void Cancelling_BringsTheOthersBack()
     {
         ShowWindow();
 
         StartDrag(Tools, _middleOfNowhere);
-        var before = BoundsOf(File);
-
-        _window.MouseMove(new Point(_host.Bounds.Width / 3, 20));
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
         Pump();
 
-        Assert.NotNull(Landing);
-        Assert.True(Landing!.IsVisible);
-        Assert.Equal(before, BoundsOf(File));
-        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Assert.False(Frame(File).IsHiddenForDrag);
+    }
+
+    [AvaloniaFact]
+    public void AfterADrag_ZonesFadeOutFirst_AndTheOthersFadeBackInTheirPlaces()
+    {
+        _motionDuration = TimeSpan.FromMilliseconds(40);
+        ShowWindow();
+        var where = BoundsOf(File);
+
+        StartDrag(Tools, _leftEdge);
+        _window.MouseUp(_leftEdge, MouseButton.Left);
+
+        // They only go on a later frame, so this can't be too late however slow the machine is.
+        Assert.NotEmpty(Zones);
+        Assert.All(Zones, zone => Assert.False(zone.IsHitTestVisible));
+
+        Thread.Sleep(60);
+        Pump();
+
+        Assert.Empty(Zones);
+        Assert.Null(Landing);
+        Assert.Equal(where, BoundsOf(File));
+    }
+
+    [AvaloniaFact]
+    public void TheOthers_DontSlide_WhenTheyComeBack_ThoughTheHeldToolbarDoes()
+    {
+        _toolbarWidth = 600;
+        _motionDuration = TimeSpan.FromSeconds(10);
+        ShowWindow();
+        var file = BoundsOf(File);
+        var tools = BoundsOf(Tools);
+
+        // A drop on the top strip would squeeze File, so it's out of place until the drag is cancelled.
+        var topStrip = new Point(_host.Bounds.Width / 3, 20);
+        StartDrag(Tools, topStrip);
+        Assert.True(BoundsOf(File).Width < file.Width);
+
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.MouseUp(topStrip, MouseButton.Left);
+        Pump();
+
+        Assert.Equal(file, BoundsOf(File));
+        Assert.NotEqual(tools, BoundsOf(Tools));
     }
 
     [AvaloniaFact]
@@ -359,76 +447,67 @@ public sealed class ToolbarDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AZoneUnderThePreview_FadesAway_AndComesBackWhenThePreviewGoes()
+    public void TheZoneUnderThePointer_GivesWayToTheOutline_AndComesBackWhenThePointerLeaves()
     {
         ShowWindow();
 
         StartDrag(File, _middleOfNowhere);
-        Assert.DoesNotContain(Zones, zone => zone.IsCovered);
+        Assert.DoesNotContain(Zones, zone => zone.IsOutlined);
 
         _window.MouseMove(_leftEdge);
         Pump();
         var under = Zones.Single(zone => zone.Bounds.Contains(_leftEdge));
-        Assert.True(under.IsCovered);
+        Assert.True(under.IsOutlined);
+        Assert.False(under.IsDimmed);
 
         _window.MouseMove(_middleOfNowhere);
         Pump();
-        Assert.False(under.IsCovered);
+        Assert.False(under.IsOutlined);
 
         _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
 
     [AvaloniaFact]
-    public void AZoneOverlappedByAPushedBackPreview_FadesAway_ThoughThePointerIsntOnIt()
+    public void AZoneOverlappedByAPushedBackPreview_Dims_ButStaysVisible()
     {
+        _motionDuration = TimeSpan.Zero;
         ShowWindow();
         var widgets = _host.GetVisualDescendants().OfType<WindowFrame>().First();
         var overWidgets = new Point(widgets.Bounds.Center.X, _host.Bounds.Height / 2);
 
         StartDrag(File, overWidgets);
+        Pump();
 
-        Assert.Contains(Zones, zone => zone.IsCovered && zone.Bounds.Intersects(Landing!.Bounds));
-        Assert.DoesNotContain(Zones, zone => zone.IsCovered && !zone.Bounds.Intersects(Landing!.Bounds));
-        _window.MouseUp(overWidgets, MouseButton.Left);
+        var dimmed = Zones.Where(zone => zone.IsDimmed).ToList();
+        Assert.NotEmpty(dimmed);
+        Assert.All(dimmed, zone => Assert.True(zone.Bounds.Intersects(Landing!.Bounds)));
+        Assert.DoesNotContain(Zones, zone => !zone.IsDimmed && zone.Bounds.Intersects(Landing!.Bounds));
+
+        _window.MouseMove(_middleOfNowhere);
+        Pump();
+        Assert.DoesNotContain(Zones, zone => zone.IsDimmed);
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
 
     [AvaloniaFact]
-    public void AStripBetweenToolbars_LeavesAGapToEach_AndStaysPutDuringTheDrag()
+    public void AStrip_StaysPutDuringTheDrag_AndIsCentredOnItsEdge()
     {
         ShowWindow();
 
         StartDrag(Tools, _middleOfNowhere);
-        var gap = ShellLayoutMetrics.FromResources(Application.Current!).Docking.ToolbarGap;
-        var strip = Zones.Single(zone => zone.Bounds.Left > BoundsOf(File).Right && zone.Bounds.Top < 30).Bounds;
+        var margin = ShellLayoutMetrics.FromResources(Application.Current!).Docking.Margin;
+        var strip = Zones.Single(zone => zone.Bounds.Top == margin && zone.Bounds.Width > zone.Bounds.Height * 3)
+            .Bounds;
+        var widgets = _host.GetVisualDescendants().OfType<WindowFrame>().First().Bounds;
 
-        Assert.Equal(BoundsOf(File).Right + gap, strip.Left);
-        Assert.Equal(BoundsOf(Edit).Left - gap, strip.Right);
+        Assert.Equal(strip.Left - margin, widgets.Left - margin - strip.Right, 3);
 
         _window.MouseMove(_leftEdge);
         Pump();
         Assert.Contains(Zones, zone => zone.Bounds == strip);
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
-    }
-
-    [AvaloniaFact]
-    public void ToolbarsShrinkForAStripDuringADrag_AndGetTheirLengthBackAfterIt()
-    {
-        _toolbarWidth = 600;
-        ShowWindow();
-        var before = BoundsOf(File).Width;
-
-        StartDrag(Tools, _middleOfNowhere);
-        var strip = Zones.Single(zone => zone.Bounds.Left > 100 && zone.Bounds.Top < 40).Bounds;
-
-        Assert.True(BoundsOf(File).Width < before);
-        Assert.True(BoundsOf(File).Right < strip.Left);
-        Assert.True(BoundsOf(Edit).Left > strip.Right);
-
-        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
-        Pump();
-
-        Assert.Equal(before, BoundsOf(File).Width);
     }
 
     [AvaloniaFact]
@@ -768,7 +847,7 @@ public sealed class ToolbarDraggingTests : IDisposable
         _window = new Window { Width = 1000, Height = 700, Content = _host };
         _windows.Add(_window);
 
-        var metrics = ShellLayoutMetrics.FromResources(Application.Current!) with { MotionDuration = TimeSpan.Zero };
+        var metrics = ShellLayoutMetrics.FromResources(Application.Current!) with { MotionDuration = _motionDuration };
         ShellWindowEntry Window(string id) => new(id, id, metrics.WindowMinHeight, () => new Border());
 
         ShellToolbarEntry Toolbar(string id) => new(id,
@@ -777,7 +856,7 @@ public sealed class ToolbarDraggingTests : IDisposable
 
         var catalog = new ShellCatalog(
             [Window(ShellDockingIds.LayersPanel), Window(ShellDockingIds.HistoryPanel)],
-            [Toolbar(File), Toolbar(Tools), Toolbar(Edit), Toolbar(ShellDockingIds.ViewToolbar)]);
+            [Toolbar(File), Toolbar(Tools), Toolbar(Edit), Toolbar(View)]);
 
         _docking.Attach(_host, catalog, metrics);
 

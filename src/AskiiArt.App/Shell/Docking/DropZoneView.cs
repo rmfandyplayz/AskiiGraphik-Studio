@@ -12,27 +12,47 @@ namespace AskiiArt.App.Shell.Docking;
 /// </summary>
 internal sealed class DropZoneView : Border
 {
-    private bool _isCovered;
+    private readonly double _dimmedOpacity;
+    private bool _isOutlined;
+    private bool _isDimmed;
 
     /// <param name="fadeDuration">How long it takes to fade away, or come back.</param>
-    public DropZoneView(TimeSpan fadeDuration)
+    /// <param name="dimmedOpacity">How much of it still shows while it's dimmed.</param>
+    public DropZoneView(TimeSpan fadeDuration, double dimmedOpacity)
     {
+        _dimmedOpacity = dimmedOpacity;
         IsHitTestVisible = false;
         Transitions = [new DoubleTransition { Property = OpacityProperty, Duration = fadeDuration }];
         Bind(BackgroundProperty, this.GetResourceObservable("AppDropZoneBrush"));
     }
 
-    /// <summary>Whether the preview of where a drop would land overlaps it, which makes it fade away.</summary>
-    public bool IsCovered
+    /// <summary>Whether the pointer is over it. Its tint fades away, leaving just the dashed outline around it.</summary>
+    public bool IsOutlined
     {
-        get => _isCovered;
+        get => _isOutlined;
         set
         {
-            if (_isCovered == value)
-                return;
-
-            _isCovered = value;
-            Opacity = value ? 0 : 1;
+            _isOutlined = value;
+            UpdateOpacity();
         }
+    }
+
+    /// <summary>Whether the copy of a toolbar being pushed back overlaps it, which dims it without hiding it.</summary>
+    public bool IsDimmed
+    {
+        get => _isDimmed;
+        set
+        {
+            _isDimmed = value;
+            UpdateOpacity();
+        }
+    }
+
+    private void UpdateOpacity()
+    {
+        if (_isOutlined)
+            Opacity = 0;
+        else
+            Opacity = _isDimmed ? _dimmedOpacity : 1;
     }
 }

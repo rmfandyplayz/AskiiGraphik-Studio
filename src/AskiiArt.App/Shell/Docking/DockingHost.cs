@@ -56,10 +56,6 @@ internal sealed class DockingHost : Panel
         /// <summary>Where the dragged toolbar's sub-toolbar would land, if it has one.</summary>
         public ToolbarLandingPreview? SubToolbarLanding { get; } = subToolbarLanding;
 
-        public DockingLayout? Others { get; set; }
-
-        public IReadOnlyList<ReservedToolbarSpot> ReservedSpots { get; set; } = [];
-
         public Point Pointer { get; set; }
 
         public LayoutRect HeldBounds { get; set; }
@@ -77,15 +73,16 @@ internal sealed class DockingHost : Panel
     private readonly Dictionary<string, ToolbarFrame> _toolbars = new(StringComparer.Ordinal);
     private readonly Dictionary<string, LayoutSize> _toolbarSizes = new(StringComparer.Ordinal);
     private readonly LayoutMotions _motions = new();
+    private readonly List<(Control View, TimeSpan GoneAt)> _fadingOut = [];
     private readonly Stopwatch _clock = Stopwatch.StartNew();
 
     private DockingLayout? _layout;
     private ShellCatalog? _catalog;
     private ShellLayoutMetrics? _metrics;
     private SolvedLayout? _solved;
-    private SolvedLayout? _shown;
     private LayoutSize _available;
     private bool _animateNextArrange;
+    private string? _justDroppedToolbarId;
     private bool _isFrameRequested;
     private ToolbarDragDisplay? _drag;
     private SubToolbarDisplay? _subToolbar;
@@ -165,7 +162,7 @@ internal sealed class DockingHost : Panel
         Children.Remove(measured);
 
         var frame = NewToolbarFrame(createView(), showsGrips: false);
-        FadeWhenAnchoring(frame);
+        FadeOpacity(frame);
         Children.Add(frame);
 
         _subToolbar = new SubToolbarDisplay(parentToolbarId, frame, createView, shapes);
@@ -222,22 +219,20 @@ internal sealed class DockingHost : Panel
         _drag = new ToolbarDragDisplay(toolbarId, grab, SafeArea, landing, subToolbarLanding);
         _toolbars[toolbarId].ZIndex = DraggedLayer;
         _toolbars[toolbarId].IsDragged = true;
+        SetOthersHidden(toolbarId, isHidden: true);
 
         return landing.MeasureBothWays();
     }
 
-    /// <summary>Shows the drag's drop zones, and has the other toolbars keep clear of them.</summary>
+    /// <summary>Shows the drag's drop zones.</summary>
     public void ShowDropZones(ToolbarDrag toolbarDrag)
     {
         if (_drag is not { } drag)
             return;
 
-        drag.Others = toolbarDrag.Others;
-        drag.ReservedSpots = toolbarDrag.ReservedSpots;
-
         foreach (var zone in toolbarDrag.Zones)
         {
-            var view = new DropZoneView(_metrics!.MotionDuration) { ZIndex = DropZoneLayer };
+            var view = new DropZoneView(_metrics!.MotionDuration, _metrics.DropZoneDimmedOpacity) { ZIndex = DropZoneLayer };
             drag.Zones[zone.Anchor] = (view, zone.Bounds);
             Children.Add(view);
         }
@@ -254,7 +249,10 @@ internal sealed class DockingHost : Panel
         drag.Pointer = pointer;
         drag.Preview = preview;
         foreach (var (anchor, entry) in drag.Zones)
-            entry.View.IsCovered = preview.CoveredZones.Contains(anchor);
+        {
+            entry.View.IsOutlined = preview.Zone?.Anchor == anchor;
+            entry.View.IsDimmed = preview.DimmedZones.Contains(anchor);
+        }
 
         drag.Landing.IsVisible = OutlineBounds(preview) is not null;
         drag.Landing.ShowsCopy = preview.PushedBackTo is not null;
@@ -271,25 +269,30 @@ internal sealed class DockingHost : Panel
         Show(preview.Layout, _catalog!, _metrics!, animate: true);
     }
 
-    /// <summary>Takes away the drop zones. The next <see cref="Show"/> says where everything goes.</summary>
+    /// <summary>
+    /// Fades the drop zones away and the other toolbars back. The next <see cref="Show"/> says where everything goes,
+    /// and only the toolbar that was held slides there.
+    /// </summary>
     public void EndToolbarDrag()
     {
         if (_drag is not { } drag)
             return;
 
         foreach (var (view, _) in drag.Zones.Values)
-            Children.Remove(view);
+            FadeOutAndRemove(view);
 
-        Children.Remove(drag.Landing);
+        FadeOutAndRemove(drag.Landing);
         if (drag.SubToolbarLanding is { } subToolbarLanding)
         {
-            Children.Remove(subToolbarLanding);
+            FadeOutAndRemove(subToolbarLanding);
             if (_subToolbar is { } subToolbar)
                 subToolbar.Frame.IsAnchoring = false;
         }
 
         _toolbars[drag.ToolbarId].IsDragged = false;
         _toolbars[drag.ToolbarId].IsAnchoring = false;
+        SetOthersHidden(drag.ToolbarId, isHidden: false);
+        _justDroppedToolbarId = drag.ToolbarId;
         _drag = null;
     }
 
@@ -312,11 +315,6 @@ internal sealed class DockingHost : Panel
             _subToolbar?.Request);
         _solved = LayoutSolver.Solve(layout, measurements, metrics.Docking);
 
-        // During a drag, toolbars keep clear of the drop zones, though they wouldn't have to once it ends.
-        _shown = _drag?.Others is { } others
-            ? LayoutSolver.Solve(others, measurements, metrics.Docking, _drag.ReservedSpots)
-            : _solved;
-
         foreach (var group in _solved.WindowGroups)
         {
             if (!_windows.TryGetValue(group.WindowIds[0], out var frame))
@@ -327,7 +325,7 @@ internal sealed class DockingHost : Panel
         }
 
         // A dragged toolbar keeps the size it wants, whatever it would get if it landed.
-        foreach (var toolbar in _shown.Toolbars.Where(toolbar => toolbar.ToolbarId != _drag?.ToolbarId))
+        foreach (var toolbar in _solved.Toolbars.Where(toolbar => toolbar.ToolbarId != _drag?.ToolbarId))
             _toolbars[toolbar.ToolbarId].Measure(new Size(toolbar.Bounds.Width, toolbar.Bounds.Height));
 
         var subToolbarSize = SizeOf(_subToolbar is { } subToolbar ? WhereItGoes(subToolbar)?.Bounds : null);
@@ -362,7 +360,7 @@ internal sealed class DockingHost : Panel
             }
         }
 
-        var bounds = _shown!.Toolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
+        var bounds = solved.Toolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
             StringComparer.Ordinal);
         foreach (var (toolbarId, view) in _toolbars)
         {
@@ -373,7 +371,7 @@ internal sealed class DockingHost : Panel
             else if (bounds.TryGetValue(toolbarId, out var target))
             {
                 view.Arrange(ToRect(_motions.Advance(toolbarId, target, _clock.Elapsed, metrics.MotionDuration,
-                    _animateNextArrange)));
+                    Slides(toolbarId))));
             }
             else
             {
@@ -388,7 +386,8 @@ internal sealed class DockingHost : Panel
             ArrangeSubToolbar(subToolbar, metrics);
 
         _animateNextArrange = false;
-        if (_motions.IsMoving)
+        _justDroppedToolbarId = null;
+        if (_motions.IsMoving || _fadingOut.Count > 0)
             RequestNextFrame();
 
         return finalSize;
@@ -440,12 +439,52 @@ internal sealed class DockingHost : Panel
         }
 
         subToolbar.Frame.Arrange(ToRect(_motions.Advance(SubToolbarMotion, target.Bounds, _clock.Elapsed,
-            metrics.MotionDuration, _animateNextArrange)));
+            metrics.MotionDuration, Slides(subToolbar.ParentToolbarId))));
     }
+
+    // Toolbars out of sight for a drag just go where they belong, and fade back there when it ends. Only the one that
+    // was held slides to where it landed.
+    private bool Slides(string toolbarId) =>
+        _animateNextArrange && _drag is null && (_justDroppedToolbarId is null || _justDroppedToolbarId == toolbarId);
 
     // A dragged toolbar's goes where the drop would put it. Any other's goes among what's showing.
     private SolvedSubToolbar? WhereItGoes(SubToolbarDisplay subToolbar) =>
-        _drag?.ToolbarId == subToolbar.ParentToolbarId ? _drag.Preview?.SubToolbar : _shown?.SubToolbar;
+        _drag?.ToolbarId == subToolbar.ParentToolbarId ? _drag.Preview?.SubToolbar : _solved?.SubToolbar;
+
+    private void SetOthersHidden(string heldToolbarId, bool isHidden)
+    {
+        foreach (var (toolbarId, frame) in _toolbars)
+        {
+            if (toolbarId != heldToolbarId)
+                frame.IsHiddenForDrag = isHidden;
+        }
+
+        if (_subToolbar is { } subToolbar && subToolbar.ParentToolbarId != heldToolbarId)
+            subToolbar.Frame.IsHiddenForDrag = isHidden;
+    }
+
+    private void FadeOutAndRemove(Control view)
+    {
+        view.Opacity = 0;
+
+        var duration = _metrics!.MotionDuration;
+        if (duration <= TimeSpan.Zero)
+        {
+            Children.Remove(view);
+            return;
+        }
+
+        _fadingOut.Add((view, _clock.Elapsed + duration));
+        RequestNextFrame();
+    }
+
+    private void RemoveWhatHasFadedOut()
+    {
+        foreach (var (view, _) in _fadingOut.Where(entry => entry.GoneAt <= _clock.Elapsed))
+            Children.Remove(view);
+
+        _fadingOut.RemoveAll(entry => !Children.Contains(entry.View));
+    }
 
     private static LayoutRect? OutlineBounds(ToolbarDragPreview? preview) =>
         preview?.Zone?.Bounds ?? preview?.PushedBackTo;
@@ -488,6 +527,7 @@ internal sealed class DockingHost : Panel
         topLevel.RequestAnimationFrame(_ =>
         {
             _isFrameRequested = false;
+            RemoveWhatHasFadedOut();
             InvalidateArrange();
         });
     }
@@ -499,7 +539,7 @@ internal sealed class DockingHost : Panel
 
         var entry = _catalog!.Toolbars[toolbarId];
         var frame = NewToolbarFrame(entry.CreateView());
-        FadeWhenAnchoring(frame);
+        FadeOpacity(frame);
 
         if (entry.CreateMenu?.Invoke() is { } menu)
         {
@@ -524,7 +564,7 @@ internal sealed class DockingHost : Panel
         ShowsGrips = showsGrips,
     };
 
-    private void FadeWhenAnchoring(ToolbarFrame frame) =>
+    private void FadeOpacity(ToolbarFrame frame) =>
         frame.Transitions = [new DoubleTransition { Property = OpacityProperty, Duration = _metrics!.MotionDuration }];
 
     private static ToolbarOrientation OrientationIn(DockingLayout layout, string toolbarId) =>

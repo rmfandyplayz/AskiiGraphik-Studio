@@ -76,8 +76,10 @@
   <x:Double x:Key="AppToolbarGripHoverOpacity">0.6</x:Double>
   <!-- How long the fade is on a side of a toolbar with more to scroll to. -->
   <x:Double x:Key="AppToolbarFadeLength">20</x:Double>
-  <!-- How much of its edge a strip always gets while dragging a toolbar, from 0 to 1. Toolbars shrink for it. -->
+  <!-- How much of its edge a strip always gets while dragging a toolbar, from 0 to 1. Corner squares give way for it. -->
   <x:Double x:Key="AppToolbarZoneMinimumShare">0.3</x:Double>
+  <!-- How much of a drop zone still shows while the copy of a toolbar being pushed back overlaps it. -->
+  <x:Double x:Key="AppDropZoneDimmedOpacity">0.4</x:Double>
   <!-- How see-through a dragged toolbar gets while it's over a drop zone. -->
   <x:Double x:Key="AppToolbarAnchoringOpacity">0.35</x:Double>
   <!-- The most times its parent's length that a sub-toolbar gets, when its parent isn't short of room. -->
@@ -95,7 +97,7 @@
   <x:Double x:Key="AppDockingMargin">8</x:Double>
   <!-- How far the pointer has to move before a press on a grip counts as a drag. -->
   <x:Double x:Key="AppDockingDragThreshold">4</x:Double>
-  <!-- How long a toolbar takes to slide to a new place. -->
+  <!-- How long a toolbar takes to slide to a new place. Drop zones and hidden toolbars take this long to fade after a drag. -->
   <x:Double x:Key="AppDockingMotionMilliseconds">120</x:Double>
   <x:Double x:Key="AppWidgetGap">8</x:Double>
   <x:Double x:Key="AppWidgetWidth">240</x:Double>

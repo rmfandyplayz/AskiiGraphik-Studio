@@ -23,6 +23,10 @@
     <Style Selector="docking|ToolbarFrame.anchoring">
       <Setter Property="Opacity" Value="{DynamicResource AppToolbarAnchoringOpacity}" />
     </Style>
+    <Style Selector="docking|ToolbarFrame.hiddenForDrag">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
   </UserControl.Styles>
   <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">
     <DockPanel>

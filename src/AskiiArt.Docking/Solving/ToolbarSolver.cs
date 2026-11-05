@@ -7,12 +7,10 @@ namespace AskiiArt.Docking.Solving;
 
 /// <summary>Where the solver put the toolbars.</summary>
 /// <param name="Toolbars">Every toolbar that's showing.</param>
-/// <param name="ReservedSpots">Where each reserved spot went.</param>
 /// <param name="SubToolbar">Where the sub-toolbar went, if one was asked for and it fits.</param>
 /// <param name="ToolbarsWithoutSubToolbar">Where the toolbars would be with no sub-toolbar, for the safe area.</param>
 internal sealed record ToolbarSolution(
     IReadOnlyList<SolvedToolbar> Toolbars,
-    IReadOnlyDictionary<ToolbarAnchor, LayoutRect> ReservedSpots,
     SolvedSubToolbar? SubToolbar,
     IReadOnlyList<SolvedToolbar> ToolbarsWithoutSubToolbar);
 
@@ -21,8 +19,7 @@ internal sealed record ToolbarSolution(
 /// so a toolbar never passes a window's top or bottom edge. Toolbars along one edge share its length, and a
 /// toolbar on a neighbouring edge starts after a corner toolbar (docs/DOCKING.md §4.3). A toolbar with no room
 /// for even its minimum length is left out, corners first, until there's room again. A floating toolbar goes
-/// where it was put, moved just enough to stay inside, and nothing moves for it. A reserved spot goes through
-/// all this like a toolbar, except that it gets its length before any toolbar does.
+/// where it was put, moved just enough to stay inside, and nothing moves for it.
 /// </summary>
 internal static partial class ToolbarSolver
 {
@@ -34,11 +31,7 @@ internal static partial class ToolbarSolver
         Right,
     }
 
-    // With no toolbar, it's a reserved spot.
-    private sealed record Item(string? ToolbarId, ToolbarAnchor Anchor, double Length, double Thickness)
-    {
-        public bool IsReserved => ToolbarId is null;
-    }
+    private sealed record Item(string ToolbarId, ToolbarAnchor Anchor, double Length, double Thickness);
 
     private sealed record Placed(Item Item, ToolbarOrientation Orientation, LayoutRect Bounds);
 
@@ -52,22 +45,15 @@ internal static partial class ToolbarSolver
 
     public static ToolbarSolution Solve(IReadOnlyList<ToolbarPlacement> toolbars,
         IReadOnlyDictionary<string, LayoutSize> sizes, LayoutRect region, DockingMetrics metrics,
-        IReadOnlyList<ReservedToolbarSpot> reserved, SubToolbarRequest? subToolbar)
+        SubToolbarRequest? subToolbar)
     {
         var inner = InnerRegion(region, metrics);
         var showing = toolbars.Where(toolbar => toolbar.IsVisible && sizes.ContainsKey(toolbar.ToolbarId)).ToList();
 
-        var anchored = showing
+        var byEdge = showing
             .Where(toolbar => !toolbar.IsFloating)
-            .Select(toolbar => (Edge: EdgeOf(toolbar.Anchor, toolbar.Orientation),
-                Item: ToItem(toolbar, sizes[toolbar.ToolbarId], inner)));
-
-        // A corner's spot is square, so it could lie along either edge. It lies along the horizontal one, and the
-        // vertical one starts after it, as it would after a horizontal corner toolbar.
-        var spots = reserved.Select(spot => (Edge: EdgeOf(spot.Anchor, ToolbarOrientation.Horizontal),
-            Item: ToItem(spot, inner)));
-
-        var byEdge = anchored.Concat(spots).ToLookup(entry => entry.Edge, entry => entry.Item);
+            .ToLookup(toolbar => EdgeOf(toolbar.Anchor, toolbar.Orientation),
+                toolbar => ToItem(toolbar, sizes[toolbar.ToolbarId], inner));
         var lanes = SolveLanes(byEdge, inner, metrics);
 
         var floating = showing
@@ -81,11 +67,7 @@ internal static partial class ToolbarSolver
             ? (null, lanes)
             : AddSubToolbar(subToolbar, lanes, byEdge, showing, floating, sizes, inner, metrics);
 
-        var reservedSpots = new Dictionary<ToolbarAnchor, LayoutRect>();
-        foreach (var placed in finalLanes.All.SelectMany(lane => lane.Toolbars).Where(placed => placed.Item.IsReserved))
-            reservedSpots[placed.Item.Anchor] = placed.Bounds;
-
-        return new ToolbarSolution(ToSolved(finalLanes, floating), reservedSpots, solvedSubToolbar, withoutSubToolbar);
+        return new ToolbarSolution(ToSolved(finalLanes, floating), solvedSubToolbar, withoutSubToolbar);
     }
 
     /// <summary>Where toolbars can go: the canvas region less a margin.</summary>
@@ -98,9 +80,8 @@ internal static partial class ToolbarSolver
     private static List<SolvedToolbar> ToSolved(Lanes lanes, List<SolvedToolbar> floating)
     {
         var solved = lanes.All.SelectMany(lane => lane.Toolbars)
-            .Where(placed => !placed.Item.IsReserved)
             .Select(placed =>
-                new SolvedToolbar(placed.Item.ToolbarId!, placed.Item.Anchor, placed.Orientation, placed.Bounds))
+                new SolvedToolbar(placed.Item.ToolbarId, placed.Item.Anchor, placed.Orientation, placed.Bounds))
             .ToList();
 
         solved.AddRange(floating);
@@ -149,12 +130,6 @@ internal static partial class ToolbarSolver
         IsHorizontalLane(EdgeOf(toolbar.Anchor, toolbar.Orientation))
             ? new Item(toolbar.ToolbarId, toolbar.Anchor, size.Width, Math.Min(size.Height, inner.Height))
             : new Item(toolbar.ToolbarId, toolbar.Anchor, size.Height, Math.Min(size.Width, inner.Width));
-
-    private static Item ToItem(ReservedToolbarSpot spot, LayoutRect inner)
-    {
-        var room = IsHorizontalLane(EdgeOf(spot.Anchor, ToolbarOrientation.Horizontal)) ? inner.Height : inner.Width;
-        return new Item(null, spot.Anchor, spot.Length, Math.Min(spot.Thickness, room));
-    }
 
     // Horizontal edges first: where a vertical toolbar and a horizontal one could both reach a corner with no toolbar
     // anchored on it, the horizontal one gets it. A sub-toolbar's parent keeps its lane, and the sub-toolbar takes
@@ -245,12 +220,6 @@ internal static partial class ToolbarSolver
             if (IsStartCorner(items[index], edge) || IsEndCorner(items[index], edge))
                 continue;
 
-            if (items[index].IsReserved)
-            {
-                solved.Add(Place(items[index], edge, inner, startEnd, Math.Max(0, endStart - startEnd)));
-                continue;
-            }
-
             // Centred on the whole edge, until a corner toolbar reaches it.
             var length = lengths[index];
             var centred = (laneLength - length) / 2;
@@ -269,11 +238,9 @@ internal static partial class ToolbarSolver
             if (items.Sum(item => SmallestLength(item, metrics)) <= room)
                 return;
 
-            // Reserved spots go after every toolbar. Corners go first, and the end corner before the start one.
-            var toolbars = items.Where(item => !item.IsReserved).ToList();
-            var candidates = toolbars.Count > 0 ? toolbars : items;
-            var corners = candidates.Where(IsCorner).ToList();
-            items.Remove(corners.Count > 0 ? corners.MaxBy(EndFirst)! : candidates[0]);
+            // Corners go first, and the end corner before the start one.
+            var corners = items.Where(IsCorner).ToList();
+            items.Remove(corners.Count > 0 ? corners.MaxBy(EndFirst)! : items[0]);
         }
     }
 
@@ -301,27 +268,14 @@ internal static partial class ToolbarSolver
     };
 
     private static double SmallestLength(Item item, DockingMetrics metrics) =>
-        item.IsReserved ? item.Length : Math.Min(item.Length, metrics.MinimumToolbarLength);
+        Math.Min(item.Length, metrics.MinimumToolbarLength);
 
-    // Reserved spots take their length first. Then a toolbar that fits its fair share keeps its natural size, and
-    // the rest share what remains. The middle one's fair share is a little bigger.
+    // A toolbar that fits its fair share keeps its natural size, and the rest share what remains. The middle one's
+    // fair share is a little bigger.
     private static double[] ShareOut(List<Item> items, double room, DockingMetrics metrics)
     {
         var lengths = new double[items.Count];
-        var free = new List<int>();
-
-        for (var index = 0; index < items.Count; index++)
-        {
-            if (items[index].IsReserved)
-            {
-                lengths[index] = items[index].Length;
-                room -= items[index].Length;
-            }
-            else
-            {
-                free.Add(index);
-            }
-        }
+        var free = Enumerable.Range(0, items.Count).ToList();
 
         while (free.Count > 0)
         {

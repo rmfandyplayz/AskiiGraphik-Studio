@@ -312,18 +312,48 @@ public sealed class SubToolbarTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AnotherToolbarsDrag_LeavesItWhereItIs()
+    public void AnotherToolbarsDrag_HidesItWithItsParent_AndItComesBackWhereItWas()
     {
         ShowWindow();
         ShowSubToolbar(File);
         var before = SubBounds;
 
         StartDrag(Tools, _middleOfNowhere);
+        Assert.True(SubFrame.IsHiddenForDrag);
 
-        Assert.Equal(before, SubBounds);
-        Assert.DoesNotContain(_host.Children.OfType<DropZoneView>(), zone =>
-            zone.Bounds.Intersects(SubBounds));
         _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Pump();
+
+        Assert.False(SubFrame.IsHiddenForDrag);
+        Assert.Equal(before, SubBounds);
+    }
+
+    [AvaloniaFact]
+    public void ItsOwnParentsDrag_KeepsItShowing()
+    {
+        ShowWindow();
+        ShowSubToolbar(File);
+
+        StartDrag(File, _middleOfNowhere);
+
+        Assert.False(SubFrame.IsHiddenForDrag);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AVerticalToolbarWithOne_IsntPushedDownByAnotherToolbarsDrag()
+    {
+        ShowWindow();
+        _docking.SetToolbarOrientation(File, ToolbarOrientation.Vertical);
+        ShowSubToolbar(File);
+        var before = BoundsOf(File);
+
+        StartDrag(ShellDockingIds.EditToolbar, _middleOfNowhere);
+        Assert.Equal(before, BoundsOf(File));
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Pump();
+        Assert.Equal(before, BoundsOf(File));
     }
 
     [AvaloniaFact]

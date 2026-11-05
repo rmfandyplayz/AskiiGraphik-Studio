@@ -70,6 +70,29 @@ internal sealed partial class ToolbarFrame : UserControl
         set => Classes.Set("anchoring", value);
     }
 
+    /// <summary>
+    /// Whether it's out of sight during another toolbar's drag. It stays measured, as a hidden control wouldn't, so that
+    /// the layout still knows its size. It goes at once, and fades back.
+    /// </summary>
+    public bool IsHiddenForDrag
+    {
+        get => Classes.Contains("hiddenForDrag");
+        set
+        {
+            if (!value)
+            {
+                Classes.Set("hiddenForDrag", false);
+                return;
+            }
+
+            // A fade only runs while it has transitions, and going has to be instant.
+            var transitions = Transitions;
+            Transitions = null;
+            Classes.Set("hiddenForDrag", true);
+            Transitions = transitions;
+        }
+    }
+
     /// <summary>Which way the buttons run and scroll.</summary>
     public ToolbarOrientation Orientation
     {

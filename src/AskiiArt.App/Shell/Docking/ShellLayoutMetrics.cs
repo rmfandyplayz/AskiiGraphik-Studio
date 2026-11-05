@@ -20,7 +20,8 @@ internal sealed record ShellLayoutMetrics(
     double LandingOutlineThickness,
     double LandingOutlineDash,
     double LandingOutlineDashGap,
-    double LandingAntsSpeed)
+    double LandingAntsSpeed,
+    double DropZoneDimmedOpacity)
 {
     public static ShellLayoutMetrics
         FromResources(IResourceNode resources, Avalonia.Styling.ThemeVariant? theme = null) => new(
@@ -46,7 +47,8 @@ internal sealed record ShellLayoutMetrics(
         Token(resources, "AppLandingOutlineThickness", theme),
         Token(resources, "AppLandingOutlineDash", theme),
         Token(resources, "AppLandingOutlineDashGap", theme),
-        Token(resources, "AppLandingAntsSpeed", theme));
+        Token(resources, "AppLandingAntsSpeed", theme),
+        Token(resources, "AppDropZoneDimmedOpacity", theme));
 
     private static double Token(IResourceNode resources, string key, Avalonia.Styling.ThemeVariant? theme)
     {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using AskiiArt.Docking.Solving;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Media;
 
@@ -23,6 +24,7 @@ internal sealed class ToolbarLandingPreview : Panel
         Toolbar = toolbar;
         Outline = new ToolbarLandingOutline(metrics);
         IsHitTestVisible = false;
+        Transitions = [new DoubleTransition { Property = OpacityProperty, Duration = metrics.MotionDuration }];
 
         toolbar.Bind(OpacityProperty, toolbar.GetResourceObservable("AppLandingToolbarOpacity"));
         Children.Add(toolbar);

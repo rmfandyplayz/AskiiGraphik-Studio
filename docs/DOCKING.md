@@ -168,7 +168,7 @@ Below the smallest size, toolbars hide until there's room again, corners first.
 - **A floating toolbar's** stays on the side that faced the canvas when the toolbar last left an anchor. Pulled from the top edge, it stays below. It flips to the other side while there's no room, and goes back once there is. Turning the toolbar keeps the side: above goes with left, and below with right.
 - At most its parent's length if the parent is fighting for space, otherwise at most 50% longer. It scrolls if that's not enough.
 - It pushes the toolbars of the neighbouring edges out of the way, with a short animation. A floating toolbar's pushes nothing, as a floating toolbar pushes nothing. With no room to push anything into, it's left out until there is.
-- It can't be dragged, but it goes with its parent. During a drag it follows the toolbar, turned and see-through to match, on the side it would land on. It never moves the canvas (section 8).
+- It can't be dragged, but it goes with its parent. During a drag it follows the toolbar, turned and see-through to match, on the side it would land on. During another toolbar's drag it's out of sight, as its parent is. It never moves the canvas (section 8).
 - 2.5d tests it with a sample in the Debug menu. Tool groups arrive in M3.
 
 ## 5. Dragging
@@ -182,17 +182,19 @@ Common to every drag:
 
 ### 5.1 Toolbar drags
 
-Starting a drag shows a zone for each free anchor, and for its own. Occupied anchors show nothing. Dropping anywhere else floats the toolbar there.
+**Starting a drag clears the way.** Every other toolbar goes at once, floating ones and sub-toolbars included, and a zone shows for each free anchor, and for the dragged toolbar's own. Occupied anchors show nothing. Dropping anywhere else floats the toolbar there.
 
 Dropping on a middle anchor sets its direction. A corner keeps the direction it had.
 
-**Zones lie among the toolbars like toolbars.** A middle's is a strip that runs between whatever is at each end of its edge, with the usual gap, so a zone never overlaps an anchored toolbar. It's as thick as the dragged toolbar would be there. A strip always gets at least 30% of its edge: the toolbars beside it shrink and scroll for as long as the drag lasts, and get their length back after it. A corner's is a square with room for a strip each way, so its side is the two strips' thicknesses added together. With toolbars the same both ways, that's double. It's never thinner than the strips beside it, unless the region is so small that two squares would meet, where it stops at half the region's shorter side.
+**Zones are always in the same places.** A corner's is a square with room for a strip each way, so its side is the two strips' thicknesses added together. With toolbars the same both ways, that's double. A middle's is a strip that runs the full length of its edge, between where the corners' squares go, with the usual gap. Its length doesn't depend on what's on the corners. It's as thick as the dragged toolbar would be there. In a very small region the squares give way, so that a strip always gets at least 30% of its edge, and a strip gets no thicker than a square, so nothing overlaps.
 
 **Over a zone, the zone is the preview.** Its blue fades, leaving a dashed outline around the strip or square, and the dragged toolbar goes much more see-through. There's no copy of the toolbar, and nothing else moves until the drop.
 
-**Pushed back, the preview is the toolbar itself.** A floating toolbar that would have to move to stay inside the canvas region shows where it would land as a see-through copy of itself, inside a dashed outline. Any zone that overlaps fades away until it moves off. A floating toolbar that would land right where it's held needs none.
+**Pushed back, the preview is the toolbar itself.** A floating toolbar that would have to move to stay inside the canvas region shows where it would land as a see-through copy of itself, inside a dashed outline. Any zone that overlaps dims until it moves off, though it stays easy to see. A floating toolbar that would land right where it's held needs none.
 
 **The outline's dashes run around it** like ants, for as long as it shows.
+
+**When the drag ends,** by a drop or a cancel, the zones fade away and the other toolbars fade back in, where they belong. Only the dragged toolbar slides. The fades take as long as the slide.
 
 ### 5.2 Window drags
 

@@ -19,18 +19,18 @@ public sealed record ToolbarDropZone(ToolbarAnchor Anchor, LayoutRect Bounds);
 /// region. That shows as a copy of the toolbar in a dashed outline.
 /// </param>
 /// <param name="SubToolbar">Where the dragged toolbar's sub-toolbar would land, if it has one.</param>
-/// <param name="CoveredZones">The zones that get out of the way of what's shown.</param>
+/// <param name="DimmedZones">The zones that dim, because the copy of the toolbar overlaps them.</param>
 public sealed record ToolbarDragPreview(
     DockingLayout Layout,
     ToolbarDropZone? Zone,
     LayoutRect? PushedBackTo,
     SolvedSubToolbar? SubToolbar,
-    IReadOnlySet<ToolbarAnchor> CoveredZones);
+    IReadOnlySet<ToolbarAnchor> DimmedZones);
 
 /// <summary>
 /// One drag of a toolbar, as data: what's a drop zone, and what a drop would do for any pointer position. A preview
-/// and a drop both come from <see cref="LayoutAt"/>, so they can't disagree. The zones are worked out once, when the
-/// drag starts, so they don't move as the layout shifts under the pointer (docs/DOCKING.md §5).
+/// and a drop both come from <see cref="LayoutAt"/>, so they can't disagree. The other toolbars are out of sight for
+/// the whole drag, and each zone has the same place in every drag, whatever else is on its edge (docs/DOCKING.md §5.1).
 /// </summary>
 public sealed class ToolbarDrag
 {
@@ -66,37 +66,24 @@ public sealed class ToolbarDrag
 
         var region = LayoutSolver.Solve(start, MeasurementsFor(orientation), metrics).CanvasRegion;
         var inner = ToolbarSolver.InnerRegion(region, metrics);
-        var spots = ToolbarAnchors.All
-            .Where(anchor => !start.IsAnchorTaken(anchor, toolbarId))
-            .Select(anchor => SpotFor(anchor, inner))
-            .ToList();
-
-        // The dragged toolbar has left, so it holds nothing.
-        Others = start with { Toolbars = [.. start.Toolbars.Where(toolbar => toolbar.ToolbarId != toolbarId)] };
-        var solved = LayoutSolver.Solve(Others, measurements, metrics, spots).ReservedSpots;
-
-        ReservedSpots = [.. spots.Where(spot => IsThereRoomFor(spot, solved))];
-        Zones = [.. ReservedSpots.Select(spot => new ToolbarDropZone(spot.Anchor, solved[spot.Anchor]))];
+        Zones =
+        [
+            .. ToolbarAnchors.All
+                .Where(anchor => !start.IsAnchorTaken(anchor, toolbarId))
+                .Select(anchor => new ToolbarDropZone(anchor, BoundsOfZone(anchor, inner)))
+                .Where(zone => zone.Bounds.Width > 0 && zone.Bounds.Height > 0),
+        ];
     }
 
     /// <summary>The layout as it was before the drag, which cancelling goes back to.</summary>
     public DockingLayout Start { get; }
 
     /// <summary>
-    /// A zone for each free anchor, and for the toolbar's own. Occupied anchors have none. A strip is as thick as the
-    /// toolbar would be there, and a corner's square has room for a strip each way. They lie among the other toolbars
-    /// like toolbars, so they never overlap one.
+    /// A zone for each free anchor, and for the toolbar's own. Occupied anchors have none. A strip runs the full length
+    /// between its edge's corners and is as thick as the toolbar would be there. A corner's square has room for a strip
+    /// each way. None of them ever overlap.
     /// </summary>
     public IReadOnlyList<ToolbarDropZone> Zones { get; }
-
-    /// <summary>The layout without the dragged toolbar, which is what shows around it during the drag.</summary>
-    public DockingLayout Others { get; }
-
-    /// <summary>
-    /// What the other toolbars keep clear of during the drag. They get their length back when it ends, and until then
-    /// they stay put, so that nothing shifts as the pointer moves.
-    /// </summary>
-    public IReadOnlyList<ReservedToolbarSpot> ReservedSpots { get; }
 
     /// <summary>The zone at <paramref name="position"/>, if any.</summary>
     public ToolbarDropZone? ZoneAt(LayoutPoint position) =>
@@ -125,7 +112,7 @@ public sealed class ToolbarDrag
         var subToolbar = solved.SubToolbar?.ParentToolbarId == _toolbarId ? solved.SubToolbar : null;
 
         if (ZoneAt(position) is { } zone)
-            return new ToolbarDragPreview(layout, zone, null, subToolbar, new HashSet<ToolbarAnchor> { zone.Anchor });
+            return new ToolbarDragPreview(layout, zone, null, subToolbar, new HashSet<ToolbarAnchor>());
 
         // Only worth showing if something pushed it away from where the pointer holds it.
         var landing = solved.Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == _toolbarId)?.Bounds;
@@ -147,29 +134,40 @@ public sealed class ToolbarDrag
         },
     };
 
-    // A strip is as thick as the toolbar would be on it. A corner's square has room for a strip of each direction, so
-    // it's never thinner than the strips beside it, unless the region's so small that two of them would meet.
-    private ReservedToolbarSpot SpotFor(ToolbarAnchor anchor, LayoutRect inner)
+    private LayoutRect BoundsOfZone(ToolbarAnchor anchor, LayoutRect inner)
     {
-        var horizontalThickness = _shapes.Horizontal.Height;
-        var verticalThickness = _shapes.Vertical.Width;
+        var side = CornerSide(inner);
+        var inset = side + _metrics.ToolbarGap;
 
-        switch (ToolbarAnchors.RequiredOrientation(anchor))
+        // No thicker than a corner's square, so that strips can't reach each other in a very small region.
+        var acrossThickness = Math.Min(_shapes.Horizontal.Height, side);
+        var uprightThickness = Math.Min(_shapes.Vertical.Width, side);
+        var acrossLength = Math.Max(0, inner.Width - inset * 2);
+        var uprightLength = Math.Max(0, inner.Height - inset * 2);
+
+        return anchor switch
         {
-            case ToolbarOrientation.Horizontal:
-                return new ReservedToolbarSpot(anchor, inner.Width * _metrics.ToolbarZoneMinimumShare, horizontalThickness);
-            case ToolbarOrientation.Vertical:
-                return new ReservedToolbarSpot(anchor, inner.Height * _metrics.ToolbarZoneMinimumShare, verticalThickness);
-            default:
-                var mostThatFits = Math.Max(0, (Math.Min(inner.Width, inner.Height) - _metrics.ToolbarGap) / 2);
-                var side = Math.Min(horizontalThickness + verticalThickness, mostThatFits);
-                return new ReservedToolbarSpot(anchor, side, side);
-        }
+            ToolbarAnchor.TopLeft => new LayoutRect(inner.X, inner.Y, side, side),
+            ToolbarAnchor.TopMiddle => new LayoutRect(inner.X + inset, inner.Y, acrossLength, acrossThickness),
+            ToolbarAnchor.TopRight => new LayoutRect(inner.Right - side, inner.Y, side, side),
+            ToolbarAnchor.RightMiddle => new LayoutRect(inner.Right - uprightThickness, inner.Y + inset, uprightThickness, uprightLength),
+            ToolbarAnchor.BottomRight => new LayoutRect(inner.Right - side, inner.Bottom - side, side, side),
+            ToolbarAnchor.BottomMiddle => new LayoutRect(inner.X + inset, inner.Bottom - acrossThickness, acrossLength, acrossThickness),
+            ToolbarAnchor.BottomLeft => new LayoutRect(inner.X, inner.Bottom - side, side, side),
+            ToolbarAnchor.LeftMiddle => new LayoutRect(inner.X, inner.Y + inset, uprightThickness, uprightLength),
+            _ => throw new ArgumentOutOfRangeException(nameof(anchor), anchor, null),
+        };
     }
 
-    private static bool IsThereRoomFor(ReservedToolbarSpot spot,
-        IReadOnlyDictionary<ToolbarAnchor, LayoutRect> solved) =>
-        solved.TryGetValue(spot.Anchor, out var bounds) && bounds.Width > 0 && bounds.Height > 0;
+    // Room for a strip of each direction, so it's never thinner than the strips beside it. In a very small region it
+    // gives way, because every strip keeps its share of its edge.
+    private double CornerSide(LayoutRect inner)
+    {
+        var shortest = Math.Min(inner.Width, inner.Height);
+        var mostThatFits = (shortest * (1 - _metrics.ToolbarZoneMinimumShare) - _metrics.ToolbarGap * 2) / 2;
+
+        return Math.Max(0, Math.Min(_shapes.Horizontal.Height + _shapes.Vertical.Width, mostThatFits));
+    }
 
     private LayoutPoint HeldTopLeft(LayoutPoint position) =>
         new(position.X - _grab.X * _heldSize.Width, position.Y - _grab.Y * _heldSize.Height);
