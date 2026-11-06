@@ -246,12 +246,32 @@ public sealed class WindowResizesTests
     }
 
     [Fact]
-    public void AFloatingWindow_CantBeResizedOutOfTheAppWindow()
+    public void AFloatingWindow_CantBeResizedPastTheMarginInsideTheAppWindow()
     {
-        Assert.Equal(_window.Width - 100, Resized(WindowEdges.Right, new LayoutPoint(5000, 0)).Width);
-        Assert.Equal(0, Resized(WindowEdges.Left, new LayoutPoint(-5000, 0)).Position.X);
-        Assert.Equal(_window.Height - 100, Resized(WindowEdges.Bottom, new LayoutPoint(0, 5000)).Height);
-        Assert.Equal(0, Resized(WindowEdges.Top, new LayoutPoint(0, -5000)).Position.Y);
+        var margin = Metrics.Margin;
+
+        Assert.Equal(margin, Resized(WindowEdges.Left, new LayoutPoint(-5000, 0)).Position.X);
+        Assert.Equal(_window.Height - margin - 100, Resized(WindowEdges.Bottom, new LayoutPoint(0, 5000)).Height);
+        Assert.Equal(margin, Resized(WindowEdges.Top, new LayoutPoint(0, -5000)).Position.Y);
+    }
+
+    [Fact]
+    public void AFloatingWindow_GetsNoWiderThanASidesWindowsCan()
+    {
+        var widest = _window.Width - Metrics.MinimumCanvasRegionWidth - Metrics.Margin;
+
+        Assert.Equal(widest, Resized(WindowEdges.Right, new LayoutPoint(5000, 0)).Width);
+    }
+
+    [Fact]
+    public void AFloatingWindowWiderThanTheWidest_DoesntJumpNarrower_ButCantGrow()
+    {
+        var wide = LayoutEdits.FloatWindow(new DockingLayout([], [], []), "x", new LayoutPoint(20, 100), 900, 300);
+        var resize = new FloatingWindowResize(wide, "x", WindowEdges.Right, Measure(_window), Metrics);
+
+        Assert.Equal(900, resize.LayoutAfter(new LayoutPoint(0, 0)).FloatingWindowNamed("x")!.Width);
+        Assert.Equal(900, resize.LayoutAfter(new LayoutPoint(50, 0)).FloatingWindowNamed("x")!.Width);
+        Assert.Equal(850, resize.LayoutAfter(new LayoutPoint(-50, 0)).FloatingWindowNamed("x")!.Width);
     }
 
     [Fact]

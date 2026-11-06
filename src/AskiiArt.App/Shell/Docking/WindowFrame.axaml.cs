@@ -3,7 +3,9 @@
 
 using System.Windows.Input;
 using AskiiArt.Docking.Dragging;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Shell.Docking;
 
@@ -65,6 +67,18 @@ internal sealed partial class WindowFrame : UserControl
         get => Classes.Contains("anchoring");
         set => Classes.Set("anchoring", value);
     }
+
+    /// <summary>Whether its buttons stay hidden even with the pointer over it, as they do while windows are dragged.</summary>
+    public bool AreButtonsHidden
+    {
+        get => Classes.Contains("buttonsHidden");
+        set => Classes.Set("buttonsHidden", value);
+    }
+
+    /// <summary>Whether a press is on one of the title row's buttons rather than on the title itself.</summary>
+    public bool IsOnAButton(object? source) =>
+        source is Visual visual && (MenuButton.IsVisualAncestorOf(visual) || CloseButton.IsVisualAncestorOf(visual) ||
+            visual == MenuButton || visual == CloseButton);
 
     /// <summary>What resizes it while it's floating, and which edges each one moves.</summary>
     public IReadOnlyList<(Control Grip, WindowEdges Edges)> ResizeGrips =>

@@ -60,6 +60,8 @@ Windows dock left and right only for now, and their contents read top to bottom.
 - The widgets on a side share one width. Drag the inner edge to change it.
 - Drag the gap between two widgets to change their heights. Once one is title-only, the next one gives way.
 - A widget squeezed below its minimum height snaps to **title-only**, and can't go smaller. Dragging it back snaps it to its minimum height. In between sizes don't exist. Either way, the snap comes when the drag has gone halfway between the two sizes.
+- The gaps and the inner edge show a faint line under the pointer, and a solid one while held.
+- **Double-click a title** to squeeze the widget to title-only, or to open it again to the height it had before, or to its minimum if it never had one. The others give it room, from the largest down to their minimums. If even its minimum doesn't fit, nothing happens.
 - At least one widget in a stack always keeps its contents.
 - A widget arriving in a stack takes a fair share of the height, from the largest widget first. Title-only widgets stay title-only.
 - Translucent for now. Frosted glass waits (section 10).
@@ -83,7 +85,9 @@ Widgets and floating windows have a title at the very top, and no visible button
  Window Title            ≡  ✕      title-only
 ```
 
-Right-clicking the title opens the same menu as the ≡ button. Dragging the title moves the window.
+Right-clicking the title opens the same menu as the ≡ button. Dragging the title moves the window, and double-clicking it squeezes the window to title-only or opens it again (section 3.1). While any window is being dragged or resized, no window shows its buttons.
+
+Each menu offers the kinds the window isn't:
 
 | Window | Menu | Enabled when |
 |---|---|---|
@@ -91,6 +95,7 @@ Right-clicking the title opens the same menu as the ≡ button. Dragging the tit
 | | Turn into Dock | Always. The whole side converts |
 | | Close | Always |
 | Floating | Turn into Widget | A side has room, using the opening rules (section 6) |
+| | Turn into Dock | Where it goes is decided with docks (step 2.5f) |
 | | Close | Always |
 | Dock tab, on right-click | Float | Always |
 | | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise |
@@ -110,7 +115,9 @@ Works like Illustrator:
 
 ### 3.4 Floating windows
 
-- They stay inside the app window, and are single windows with no tabs (the owner's decision).
+- They stay inside the app window, less the margin, and are single windows with no tabs (the owner's decision).
+- They get no wider than a side's windows can, so their edge never meets the app window's, where resizing either would be ambiguous.
+- A window floated from a side it's alone on takes the size it last had floating, or else its width and half its height, since it fills the side's height.
 - They look like widgets, and have the same hover buttons.
 - Drag the title to move, and the edges or corners to resize. Title-only works here too.
 - Dropping a window on a floating window just floats it on top.
@@ -202,7 +209,7 @@ The first match, top to bottom, wins:
 
 | Pointer is over | Dropping does this |
 |---|---|
-| Edge strip of a side with no windows | The window becomes a widget. A thin placeholder shows at the edge, and toolbars move in |
+| Edge strip of a side with no windows | The window becomes a widget, keeping its width. A thin placeholder shows at the edge, and toolbars move in |
 | Edge strip of a side with widgets | The side becomes a dock. The window is a column at the very edge, and the rest are one column beside it |
 | Edge strip of a side with a dock | A new column at the very edge |
 | The window's own place | Nothing changes |
@@ -215,7 +222,9 @@ The first match, top to bottom, wins:
 
 A title-only window that lands somewhere gets a normal size, unless it's a floating window that's only being moved. Dragging the last window off a side empties it, and toolbars move back.
 
-The zones come from the layout without the dragged window, which is what shows whenever it isn't over one. An empty side shows its edge strip in blue for the whole drag. While the window is over a zone it goes see-through, as a toolbar does, and a pointer past the app window's edge counts as at that edge. The hatched placeholder is exactly where the window would land, except on an empty side, which only opens a little until the drop.
+The zones come from the layout without the dragged window, which is what shows whenever it isn't over one. An empty side shows its edge strip in blue for the whole drag. While the window is over a zone it goes see-through, as a toolbar does. The hatched placeholder is exactly where the window would land, except on an empty side, which only opens a little until the drop.
+
+The window follows the pointer anywhere, even past the app window's edge. Out there, only an empty side's strip and the window's own place still count, as if at that edge. Anywhere else a drop floats the window back inside, and a dashed outline with a very light hatch shows where, as a toolbar's does. A window alone on its side is held at the size it would float at (section 3.4), so the pointer stays on its title.
 
 ```
  Empty side           Widgets              Dock

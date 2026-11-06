@@ -108,15 +108,19 @@ public static partial class LayoutEdits
     /// <summary>Whether a window could become a widget: whether any side has room for one.</summary>
     public static bool CanTurnIntoWidget(DockingLayout layout) => SideForNewWidget(layout) is not null;
 
-    /// <summary>Makes a floating window a widget, at the end of a stack on whichever side the opening rules choose.</summary>
+    /// <summary>
+    /// Makes a floating window a widget, at the end of a stack on whichever side the opening rules choose. On an empty side
+    /// it keeps its width.
+    /// </summary>
     public static DockingLayout TurnIntoWidget(DockingLayout layout, string windowId, double defaultSideWidth)
     {
         if (SideForNewWidget(layout) is not { } edge)
             return layout;
 
+        var width = layout.FloatingWindowNamed(windowId)?.Width ?? defaultSideWidth;
         return layout.Side(edge) is { } side
             ? MoveWindowIntoStack(layout, windowId, edge, side.Columns[0].Groups.Count)
-            : MoveWindowToEmptySide(layout, windowId, edge, defaultSideWidth);
+            : MoveWindowToEmptySide(layout, windowId, edge, width);
     }
 
     /// <summary>Puts a floating window in front of the others. Does nothing if it's there already, or isn't floating.</summary>
@@ -131,10 +135,16 @@ public static partial class LayoutEdits
         };
     }
 
-    /// <summary>A layout with the window nowhere, and not counted as closed either, for moving it somewhere else.</summary>
+    /// <summary>
+    /// A layout with the window nowhere, and not counted as closed either, for moving it somewhere else. A floating window's
+    /// size is remembered, for when it floats again.
+    /// </summary>
     internal static DockingLayout WithoutWindow(DockingLayout layout, string windowId)
     {
         var floating = layout.FloatingWindows.Where(window => window.WindowId != windowId).ToList();
+        var sizes = layout.FloatingWindowNamed(windowId) is { } wasFloating
+            ? [.. layout.FloatingSizes.Where(size => size.WindowId != windowId), new FloatingSize(windowId, wasFloating.Width, wasFloating.Height)]
+            : layout.FloatingSizes;
 
         foreach (var side in layout.Sides)
         {
@@ -142,11 +152,18 @@ public static partial class LayoutEdits
             {
                 var position = IndexOfGroupHolding(column, windowId);
                 if (position >= 0)
-                    return layout with { Sides = SidesWithout(layout, side, column, position, windowId), FloatingWindows = floating };
+                {
+                    return layout with
+                    {
+                        Sides = SidesWithout(layout, side, column, position, windowId),
+                        FloatingWindows = floating,
+                        FloatingSizes = sizes,
+                    };
+                }
             }
         }
 
-        return layout with { FloatingWindows = floating };
+        return layout with { FloatingWindows = floating, FloatingSizes = sizes };
     }
 
     /// <summary>A stack always keeps at least one window's contents showing.</summary>

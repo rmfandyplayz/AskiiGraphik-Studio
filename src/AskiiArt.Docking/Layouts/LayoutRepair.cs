@@ -37,7 +37,11 @@ public static class LayoutRepair
 
         var floating = RepairFloatingWindows(layout, known, placed, catalog.DefaultSideWidth);
         var closed = RepairClosedWindows(layout, known, placed, catalog.DefaultSideWidth);
-        var result = new DockingLayout(sides, RepairToolbars(layout, catalog), closed) { FloatingWindows = floating };
+        var result = new DockingLayout(sides, RepairToolbars(layout, catalog), closed)
+        {
+            FloatingWindows = floating,
+            FloatingSizes = RepairFloatingSizes(layout, known),
+        };
         return OpenMissingWindows(result, catalog);
     }
 
@@ -63,6 +67,7 @@ public static class LayoutRepair
                 {
                     WindowIds = [.. group.WindowIds.Where(id => TryPlace(id, known, placed))],
                     Share = ValidSize(group.Share, 1),
+                    OpenLength = ValidOrUnknown(group.OpenLength),
                 })
                 .Where(group => group.WindowIds.Count > 0)
                 .ToList();
@@ -87,7 +92,7 @@ public static class LayoutRepair
             foreach (var windowId in group.WindowIds)
             {
                 if (groups.Count < DockingLayout.MaximumWidgetsOnASide && TryPlace(windowId, known, placed))
-                    groups.Add(new WindowGroup([windowId], ValidSize(group.Share, 1), group.IsTitleOnly));
+                    groups.Add(new WindowGroup([windowId], ValidSize(group.Share, 1), group.IsTitleOnly, ValidOrUnknown(group.OpenLength)));
             }
         }
 
@@ -114,6 +119,17 @@ public static class LayoutRepair
         Width = ValidSize(window.Width, defaultSize),
         Height = ValidSize(window.Height, defaultSize),
     };
+
+    // Only one each, for windows that exist, with sizes that make sense. An unusable size is forgotten.
+    private static List<FloatingSize> RepairFloatingSizes(DockingLayout layout, HashSet<string> known)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        return
+        [
+            .. layout.FloatingSizes.Where(size => size?.WindowId is not null && known.Contains(size.WindowId) &&
+                ValidOrUnknown(size.Width) is not null && ValidOrUnknown(size.Height) is not null && seen.Add(size.WindowId)),
+        ];
+    }
 
     private static List<ClosedWindow> RepairClosedWindows(DockingLayout layout, HashSet<string> known,
         HashSet<string> placed, double defaultWidth)
@@ -222,4 +238,7 @@ public static class LayoutRepair
 
     private static double ValidSize(double size, double fallback) =>
         double.IsFinite(size) && size > 0 ? size : fallback;
+
+    private static double? ValidOrUnknown(double? size) =>
+        size is { } value && double.IsFinite(value) && value > 0 ? value : null;
 }

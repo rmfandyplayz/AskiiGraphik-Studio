@@ -42,6 +42,25 @@ public sealed class LayoutJsonTests
     }
 
     [Fact]
+    public void ALayoutSavedBeforeFloatingSizesAndOpenLengths_StillReads()
+    {
+        const string saved = """
+            {
+              "sides": [
+                { "edge": "Right", "kind": "Widgets", "columns": [ { "width": 240, "groups": [ { "windowIds": ["a"] } ] } ] }
+              ],
+              "toolbars": [],
+              "closedWindows": []
+            }
+            """;
+
+        var read = LayoutJson.TryRead(saved)!;
+
+        Assert.Empty(read.FloatingSizes);
+        Assert.Null(read.Sides[0].Columns[0].Groups[0].OpenLength);
+    }
+
+    [Fact]
     public void AnyLayout_SurvivesSavingAndLoading()
     {
         Valid.Sample(layout =>

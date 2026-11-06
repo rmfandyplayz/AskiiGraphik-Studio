@@ -32,12 +32,10 @@ internal sealed partial class DockingHost
     // What the placeholder goes by among the things that move. No window's or toolbar's id looks like this.
     private const string PlaceholderMotion = "window-placeholder";
 
-    private sealed class WindowDragDisplay(string windowId, LayoutPoint grab, LayoutSize heldSize, LayoutInsets safeArea,
-        WindowPlaceholderView placeholder)
+    private sealed class WindowDragDisplay(string windowId, LayoutSize heldSize, LayoutInsets safeArea,
+        WindowPlaceholderView placeholder, WindowLandingPreview landing)
     {
         public string WindowId { get; } = windowId;
-
-        public LayoutPoint Grab { get; } = grab;
 
         public LayoutSize HeldSize { get; } = heldSize;
 
@@ -45,9 +43,9 @@ internal sealed partial class DockingHost
 
         public WindowPlaceholderView Placeholder { get; } = placeholder;
 
-        public List<(DropZoneView View, WindowDropZone Zone)> Zones { get; } = [];
+        public WindowLandingPreview Landing { get; } = landing;
 
-        public Point Pointer { get; set; }
+        public List<(DropZoneView View, WindowDropZone Zone)> Zones { get; } = [];
 
         public WindowDragPreview? Preview { get; set; }
     }
@@ -62,16 +60,20 @@ internal sealed partial class DockingHost
     /// <summary>Raised when a handle for resizing a side's windows is made.</summary>
     public event EventHandler<StackResizeHandleCreatedEventArgs>? StackResizeHandleCreated;
 
-    /// <summary>Lets the window follow the pointer, and shows the empty sides' strips.</summary>
+    /// <summary>
+    /// Lets the window follow the pointer, and shows the empty sides' strips. No window shows its buttons until the drag
+    /// ends, because windows moving under the pointer would make them flicker.
+    /// </summary>
     /// <param name="windowId">The window being dragged.</param>
-    /// <param name="grab">Where on the window the pointer holds it, from 0 to 1 along each axis.</param>
     /// <param name="windowDrag">What the drag can do.</param>
-    public void BeginWindowDrag(string windowId, LayoutPoint grab, WindowDrag windowDrag)
+    public void BeginWindowDrag(string windowId, WindowDrag windowDrag)
     {
         var placeholder = new WindowPlaceholderView(_metrics!) { ZIndex = DropZoneLayer, IsVisible = false };
+        var landing = new WindowLandingPreview(_metrics!) { ZIndex = LandingLayer, IsVisible = false };
         Children.Add(placeholder);
+        Children.Add(landing);
 
-        var drag = new WindowDragDisplay(windowId, grab, windowDrag.HeldSize, SafeArea, placeholder);
+        var drag = new WindowDragDisplay(windowId, windowDrag.HeldSize, SafeArea, placeholder, landing);
         foreach (var zone in windowDrag.Zones.Where(zone => zone.Kind == WindowDropKind.EmptySide))
         {
             var view = new DropZoneView(_metrics!.MotionDuration, _metrics.DropZoneDimmedOpacity) { ZIndex = DropZoneLayer };
@@ -81,18 +83,18 @@ internal sealed partial class DockingHost
 
         _windowDrag = drag;
         _windows[windowId].ZIndex = DraggedLayer;
+        SetWindowButtonsHidden(true);
     }
 
     /// <summary>Moves the dragged window, and shows what a drop would do.</summary>
-    /// <param name="pointer">Where the pointer is.</param>
-    /// <param name="preview">What a drop would do.</param>
-    public void MoveWindowDrag(Point pointer, WindowDragPreview preview)
+    /// <param name="preview">What a drop would do, and where the window is held.</param>
+    public void MoveWindowDrag(WindowDragPreview preview)
     {
         if (_windowDrag is not { } drag)
             return;
 
-        drag.Pointer = pointer;
         drag.Preview = preview;
+        drag.Landing.IsVisible = preview.Landing is not null;
         drag.Placeholder.IsVisible = preview.Placeholder is not null;
         if (preview.Placeholder is null)
             _motions.Forget(PlaceholderMotion);
@@ -114,21 +116,40 @@ internal sealed partial class DockingHost
             FadeOutAndRemove(view);
 
         FadeOutAndRemove(drag.Placeholder);
+        FadeOutAndRemove(drag.Landing);
         _motions.Forget(PlaceholderMotion);
         _windows[drag.WindowId].IsAnchoring = false;
         _windowDrag = null;
+        SetWindowButtonsHidden(false);
     }
 
-    /// <summary>Holds the canvas still while the user resizes something, until <see cref="EndWindowResize"/>.</summary>
-    public void BeginWindowResize() => _safeAreaDuringResize = SafeArea;
+    /// <summary>
+    /// Holds the canvas still while the user resizes something, until <see cref="EndWindowResize"/>. No window shows its
+    /// buttons meanwhile, as during a drag.
+    /// </summary>
+    public void BeginWindowResize()
+    {
+        _safeAreaDuringResize = SafeArea;
+        SetWindowButtonsHidden(true);
+    }
 
     /// <summary>Shows what a resize would do, with no sliding, so that nothing trails behind the pointer.</summary>
     public void ShowWindowResize(DockingLayout layout) => Show(layout, _catalog!, _metrics!);
 
     /// <summary>Lets the canvas move again.</summary>
-    public void EndWindowResize() => _safeAreaDuringResize = null;
+    public void EndWindowResize()
+    {
+        _safeAreaDuringResize = null;
+        SetWindowButtonsHidden(false);
+    }
 
     private static string WindowMotion(string windowId) => "window:" + windowId;
+
+    private void SetWindowButtonsHidden(bool areHidden)
+    {
+        foreach (var frame in _windows.Values)
+            frame.AreButtonsHidden = areHidden;
+    }
 
     private void ShowWindows(DockingLayout layout, ShellCatalog catalog)
     {
@@ -211,6 +232,7 @@ internal sealed partial class DockingHost
         // A dragged window keeps its size and its contents, whatever it would get if it landed.
         _windows[drag.WindowId].Measure(new Size(drag.HeldSize.Width, drag.HeldSize.Height));
         drag.Placeholder.Measure(SizeOf(drag.Preview?.Placeholder));
+        drag.Landing.Measure(SizeOf(drag.Preview?.Landing));
         foreach (var (view, zone) in drag.Zones)
             view.Measure(SizeOf(zone.Bounds));
     }
@@ -224,7 +246,7 @@ internal sealed partial class DockingHost
         frame.Measure(new Size(bounds.Width, bounds.Height));
     }
 
-    private void ArrangeWindows(SolvedLayout solved, ShellLayoutMetrics metrics, Size finalSize)
+    private void ArrangeWindows(SolvedLayout solved, ShellLayoutMetrics metrics)
     {
         foreach (var group in solved.WindowGroups)
         {
@@ -254,8 +276,8 @@ internal sealed partial class DockingHost
                 view.Arrange(ToRect(handle.Bounds));
         }
 
-        if (_windowDrag is { } drag)
-            ArrangeWindowDrag(drag, metrics, finalSize);
+        if (_windowDrag is { Preview: not null } drag)
+            ArrangeWindowDrag(drag, drag.Preview, metrics);
     }
 
     private void ArrangeWindow(string windowId, WindowFrame frame, LayoutRect bounds, ShellLayoutMetrics metrics)
@@ -267,22 +289,19 @@ internal sealed partial class DockingHost
         frame.Arrange(ToRect(_motions.Advance(motion, bounds, _clock.Elapsed, metrics.MotionDuration, Slides(motion))));
     }
 
-    private void ArrangeWindowDrag(WindowDragDisplay drag, ShellLayoutMetrics metrics, Size finalSize)
+    // The window follows the pointer even past the app window's edge, as a toolbar does, and the landing preview shows
+    // where a drop would float it back to.
+    private void ArrangeWindowDrag(WindowDragDisplay drag, WindowDragPreview preview, ShellLayoutMetrics metrics)
     {
-        var size = drag.HeldSize;
-        var held = new LayoutRect(
-            Math.Max(0, Math.Min(drag.Pointer.X - drag.Grab.X * size.Width, finalSize.Width - size.Width)),
-            Math.Max(0, Math.Min(drag.Pointer.Y - drag.Grab.Y * size.Height, finalSize.Height - size.Height)),
-            size.Width,
-            size.Height);
-
-        _motions.Place(WindowMotion(drag.WindowId), held);
-        _windows[drag.WindowId].Arrange(ToRect(held));
+        _motions.Place(WindowMotion(drag.WindowId), preview.Held);
+        _windows[drag.WindowId].Arrange(ToRect(preview.Held));
 
         foreach (var (view, zone) in drag.Zones)
             view.Arrange(ToRect(zone.Bounds));
 
-        if (drag.Preview?.Placeholder is { } placeholder)
+        drag.Landing.Arrange(ToRect(preview.Landing ?? default));
+
+        if (preview.Placeholder is { } placeholder)
         {
             drag.Placeholder.Arrange(ToRect(_motions.Advance(PlaceholderMotion, placeholder, _clock.Elapsed,
                 metrics.MotionDuration, _animateNextArrange)));

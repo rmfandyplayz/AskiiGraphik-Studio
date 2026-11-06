@@ -30,27 +30,41 @@ public sealed record WindowDropZone(WindowDropKind Kind, SideEdge Edge, int Posi
 /// <param name="Layout">The layout to show around the window.</param>
 /// <param name="Zone">The zone the pointer is over, if any.</param>
 /// <param name="Placeholder">Where the hatched placeholder goes, if the window would land on a side.</param>
-public sealed record WindowDragPreview(DockingLayout Layout, WindowDropZone? Zone, LayoutRect? Placeholder);
+/// <param name="Held">Where the window is while it's held: under the pointer, even past the app window's edge.</param>
+/// <param name="Landing">
+/// Where it would float, if that isn't where it's held, because floating windows stay inside. Null over a zone.
+/// </param>
+public sealed record WindowDragPreview(
+    DockingLayout Layout,
+    WindowDropZone? Zone,
+    LayoutRect? Placeholder,
+    LayoutRect Held,
+    LayoutRect? Landing);
 
 /// <summary>
 /// One drag of a window, as data (docs/DOCKING.md §5.2). The zones are worked out once, from the layout without the
 /// window, which is what's on screen whenever it isn't over one. So they don't move as the windows make room for it.
+/// The window follows the pointer anywhere, like a toolbar, and a floating drop moves it back inside.
 /// </summary>
 public sealed class WindowDrag
 {
+    // Less than this apart, the window lands where it's held, and there's no need to show where.
+    private const double SamePlaceTolerance = 0.5;
+
     private readonly string _windowId;
-    private readonly LayoutPoint _grab;
+    private readonly LayoutPoint _grabOffset;
     private readonly LayoutSize _available;
     private readonly LayoutMeasurements _measurements;
     private readonly DockingMetrics _metrics;
-    private readonly bool _wasTitleOnly;
+    private readonly LayoutSize _floatingSize;
+    private readonly double _ownWidth;
     private readonly (SideEdge Edge, int Position)? _home;
     private readonly IReadOnlyList<LayoutRect> _otherFloatingWindows;
 
     /// <summary>Starts a drag.</summary>
     /// <param name="start">The layout as it was before the drag.</param>
     /// <param name="windowId">The window being dragged, which must be open.</param>
-    /// <param name="grab">Where on the window the pointer holds it, from 0 to 1 along each axis.</param>
+    /// <param name="grab">Where on the window the pointer holds it, from 0 to 1 along each axis of its size now.</param>
     /// <param name="measurements">The current sizes of everything.</param>
     /// <param name="metrics">The theme's sizes.</param>
     public WindowDrag(DockingLayout start, string windowId, LayoutPoint grab, LayoutMeasurements measurements,
@@ -58,7 +72,6 @@ public sealed class WindowDrag
     {
         Start = start;
         _windowId = windowId;
-        _grab = grab;
         _available = measurements.Available;
         _measurements = measurements;
         _metrics = metrics;
@@ -67,9 +80,17 @@ public sealed class WindowDrag
         var place = solved.PlaceOfWindow(windowId)
             ?? throw new ArgumentException("Only an open window can be dragged.", nameof(windowId));
 
-        HeldSize = new LayoutSize(place.Bounds.Width, place.Bounds.Height);
-        _wasTitleOnly = place.IsTitleOnly;
         _home = HomeOf(start, windowId);
+        _floatingSize = WindowFloating.SizeWhenFloated(start, windowId, place.Bounds, place.IsTitleOnly, measurements, metrics);
+        _ownWidth = WindowFloating.WantedWidth(start, windowId) ?? place.Bounds.Width;
+
+        // A window alone on its side takes the size it would float at straight away, so that it can follow the pointer.
+        HeldSize = WindowFloating.IsAloneOnItsSide(start, windowId)
+            ? _floatingSize
+            : new LayoutSize(place.Bounds.Width, place.Bounds.Height);
+
+        // As far along the title as before, and as far down it in pixels, so the pointer stays on the title.
+        _grabOffset = new LayoutPoint(grab.X * HeldSize.Width, Math.Min(grab.Y * place.Bounds.Height, HeldSize.Height));
 
         var others = LayoutSolver.Solve(LayoutEdits.WithoutWindow(start, windowId), measurements, metrics);
         _otherFloatingWindows = [.. others.FloatingWindows.Select(window => window.Bounds)];
@@ -87,19 +108,22 @@ public sealed class WindowDrag
     public IReadOnlyList<WindowDropZone> Zones { get; }
 
     /// <summary>
-    /// The zone at <paramref name="position"/>, if any. A pointer past the app window's edge counts as at that edge, and
-    /// one over another floating window has no zone, because a drop there floats the window on top.
+    /// The zone at <paramref name="position"/>, if any. A pointer over another floating window has no zone, because a drop
+    /// there floats the window on top. Past the app window's edge only a side that's empty without the window has one,
+    /// because its zone is the edge itself. Anywhere else out there, a drop floats the window back inside.
     /// </summary>
     public WindowDropZone? ZoneAt(LayoutPoint position)
     {
-        var inside = new LayoutPoint(
-            Math.Clamp(position.X, 0, Math.Max(0, _available.Width - 1)),
-            Math.Clamp(position.Y, 0, Math.Max(0, _available.Height - 1)));
+        if (_otherFloatingWindows.Any(window => window.Contains(position)))
+            return null;
 
-        return _otherFloatingWindows.Any(window => window.Contains(inside))
-            ? null
-            : Zones.FirstOrDefault(zone => zone.Bounds.Contains(inside));
+        var atTheEdge = new LayoutPoint(Math.Clamp(position.X, 0, Math.Max(0, _available.Width - 1)), position.Y);
+        return Zones.FirstOrDefault(zone => zone.Bounds.Contains(IsAnEdge(zone) ? atTheEdge : position));
     }
+
+    /// <summary>Where the window is while it's held with the pointer at <paramref name="position"/>.</summary>
+    public LayoutRect HeldAt(LayoutPoint position) =>
+        new(position.X - _grabOffset.X, position.Y - _grabOffset.Y, HeldSize.Width, HeldSize.Height);
 
     /// <summary>What dropping with the pointer at <paramref name="position"/> would do.</summary>
     public DockingLayout LayoutAt(LayoutPoint position)
@@ -110,7 +134,7 @@ public sealed class WindowDrag
         switch (zone.Kind)
         {
             case WindowDropKind.EmptySide:
-                return LayoutEdits.MoveWindowToEmptySide(Start, _windowId, zone.Edge, _metrics.DefaultWindowWidth);
+                return LayoutEdits.MoveWindowToEmptySide(Start, _windowId, zone.Edge, _ownWidth);
             case WindowDropKind.Stack when _home != (zone.Edge, zone.Position):
                 return LayoutEdits.MoveWindowIntoStack(Start, _windowId, zone.Edge, zone.Position);
             default:
@@ -121,8 +145,14 @@ public sealed class WindowDrag
     /// <summary>What dropping with the pointer at <paramref name="position"/> would do, and how to show that.</summary>
     public WindowDragPreview PreviewAt(LayoutPoint position)
     {
+        var held = HeldAt(position);
+
         if (ZoneAt(position) is not { } zone)
-            return new WindowDragPreview(Floated(position), null, null);
+        {
+            var floated = Floated(position);
+            var landing = LayoutSolver.Solve(floated, _measurements, _metrics).PlaceOfWindow(_windowId)?.Bounds;
+            return new WindowDragPreview(floated, null, null, held, landing is { } bounds && !IsSamePlace(bounds, held) ? bounds : null);
+        }
 
         // An empty side only opens a little until the drop, as the owner's picture shows it.
         var layout = zone.Kind == WindowDropKind.EmptySide
@@ -130,8 +160,15 @@ public sealed class WindowDrag
             : LayoutAt(position);
 
         var place = LayoutSolver.Solve(layout, _measurements, _metrics).PlaceOfWindow(_windowId);
-        return new WindowDragPreview(layout, zone, place?.Bounds);
+        return new WindowDragPreview(layout, zone, place?.Bounds, held, null);
     }
+
+    private static bool IsAnEdge(WindowDropZone zone) => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.OwnPlace;
+
+    private static bool IsSamePlace(LayoutRect first, LayoutRect second) =>
+        Math.Abs(first.X - second.X) < SamePlaceTolerance && Math.Abs(first.Y - second.Y) < SamePlaceTolerance &&
+        Math.Abs(first.Width - second.Width) < SamePlaceTolerance &&
+        Math.Abs(first.Height - second.Height) < SamePlaceTolerance;
 
     private static (SideEdge Edge, int Position)? HomeOf(DockingLayout layout, string windowId)
     {
@@ -195,22 +232,21 @@ public sealed class WindowDrag
             ? new LayoutRect(0, top, window.Right, bottom - top)
             : new LayoutRect(window.X, top, _available.Width - window.X, bottom - top);
 
+    // Kept inside where it's stored, as well as where it's shown, so that growing the app window doesn't move it to
+    // where it was let go outside.
     private DockingLayout Floated(LayoutPoint position)
     {
-        var x = position.X - _grab.X * HeldSize.Width;
-        var y = position.Y - _grab.Y * HeldSize.Height;
-        var at = new LayoutPoint(
-            Math.Max(0, Math.Min(x, _available.Width - HeldSize.Width)),
-            Math.Max(0, Math.Min(y, _available.Height - HeldSize.Height)));
+        var held = HeldAt(position);
+        var area = LayoutSolver.FloatingWindowArea(_available, _metrics);
 
         // A floating window that's only being moved is left as it was.
         if (Start.FloatingWindowNamed(_windowId) is { } floating)
+        {
+            var at = LayoutSolver.KeptInside(new LayoutPoint(held.X, held.Y), HeldSize, area);
             return LayoutEdits.FloatWindow(Start, _windowId, at, floating.Width, floating.Height, floating.IsTitleOnly);
+        }
 
-        var height = _wasTitleOnly ? NormalHeight() : HeldSize.Height;
-        return LayoutEdits.FloatWindow(Start, _windowId, at, HeldSize.Width, height);
+        var landsAt = LayoutSolver.KeptInside(new LayoutPoint(held.X, held.Y), _floatingSize, area);
+        return LayoutEdits.FloatWindow(Start, _windowId, landsAt, _floatingSize.Width, _floatingSize.Height);
     }
-
-    private double NormalHeight() => Math.Max(_metrics.DefaultFloatingWindowHeight,
-        _measurements.MinimumWindowLengths.GetValueOrDefault(_windowId, _metrics.DefaultMinimumWindowLength));
 }

@@ -49,6 +49,11 @@
       <Setter Property="Width" Value="{DynamicResource AppWindowResizeCornerSize}" />
       <Setter Property="Height" Value="{DynamicResource AppWindowResizeCornerSize}" />
     </Style>
+    <!-- Last, so that it wins over the pointer being over the window or a button. -->
+    <Style Selector="docking|WindowFrame.buttonsHidden Button.windowButton">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
   </UserControl.Styles>
   <Panel>
     <Border Background="{DynamicResource AppWidgetBrush}" ClipToBounds="True">

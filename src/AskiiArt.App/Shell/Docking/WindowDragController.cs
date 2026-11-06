@@ -52,7 +52,7 @@ internal sealed class WindowDragController(
         _drag = new WindowDrag(layout, windowId, grab, host.CurrentMeasurements(), metrics.Docking);
         _tracker = tracker;
 
-        host.BeginWindowDrag(windowId, grab, _drag);
+        host.BeginWindowDrag(windowId, _drag);
         _cancelListener ??= new DragCancelListener(host, Cancel);
         _cancelListener.Start();
         MoveTo(e.Position);
@@ -64,7 +64,7 @@ internal sealed class WindowDragController(
             return;
 
         _position = new LayoutPoint(position.X, position.Y);
-        host.MoveWindowDrag(position, drag.PreviewAt(_position));
+        host.MoveWindowDrag(drag.PreviewAt(_position));
     }
 
     private void Drop()

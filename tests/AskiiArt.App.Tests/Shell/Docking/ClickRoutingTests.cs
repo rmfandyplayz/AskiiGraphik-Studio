@@ -255,7 +255,8 @@ public sealed class ClickRoutingTests : IDisposable
         Assert.Equal(0, usableLeft);
         Assert.True(viewport.Insets.Right >= (canvas.Right - RectIn(Frames.First()).Left) * scaling - 1);
         Assert.True(viewport.Insets.Top >= (RectIn(ToolbarWith(Strings.ActionNew)).Bottom - canvas.Top) * scaling - 1);
-        Assert.True(viewport.Insets.Bottom >= (canvas.Bottom - RectIn(ToolbarWith(Strings.ActionZoomIn)).Top) * scaling - 1);
+        Assert.True(viewport.Insets.Bottom >=
+                    (canvas.Bottom - RectIn(ToolbarWith(Strings.ActionZoomIn)).Top) * scaling - 1);
         Assert.Equal((usableLeft + usableRight) / 2.0, viewport.CanvasBounds.Center.X, tolerance: 1);
     }
 
@@ -311,7 +312,8 @@ public sealed class ClickRoutingTests : IDisposable
         _window.MouseUp(somewhere, MouseButton.Left);
         Pump();
 
-        Assert.True(_docking.Layout!.Toolbars.Single(toolbar => toolbar.ToolbarId == ShellDockingIds.FileToolbar).IsFloating);
+        Assert.True(_docking.Layout!.Toolbars.Single(toolbar => toolbar.ToolbarId == ShellDockingIds.FileToolbar)
+            .IsFloating);
         Assert.True(Canvas.IsFocused);
     }
 
@@ -329,6 +331,26 @@ public sealed class ClickRoutingTests : IDisposable
         view.ContextMenu.Close();
         Pump();
 
+        Assert.True(Canvas.IsFocused);
+    }
+
+    [AvaloniaFact]
+    public void AWindowsMenuButton_OpensAMenuThatEscCloses_ThenTypingGoesBackToTheCanvas()
+    {
+        var frame = Frames.Single(frame => frame.Title == Strings.PanelLayers);
+        var button = RectIn(frame.MenuOpener).Center;
+
+        _window.MouseMove(button);
+        _window.MouseDown(button, MouseButton.Left);
+        _window.MouseUp(button, MouseButton.Left);
+        Pump();
+        Assert.True(frame.TitleMenu!.IsOpen);
+
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Pump();
+
+        Assert.False(frame.TitleMenu.IsOpen);
         Assert.True(Canvas.IsFocused);
     }
 

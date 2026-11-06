@@ -57,20 +57,36 @@ public static class LayoutSolver
             : new LayoutPoint(solved.CanvasRegion.X + metrics.Margin, solved.CanvasRegion.Y + metrics.Margin);
     }
 
+    /// <summary>
+    /// Where floating windows stay: inside the app window, by the margin widgets keep from its edges. That also keeps their
+    /// edges clear of the app window's own, which resize it.
+    /// </summary>
+    public static LayoutRect FloatingWindowArea(LayoutSize available, DockingMetrics metrics)
+    {
+        var margin = Math.Max(0, Math.Min(metrics.Margin, Math.Min(available.Width, available.Height) / 2));
+        return new LayoutRect(margin, margin, available.Width - margin * 2, available.Height - margin * 2);
+    }
+
+    /// <summary>The widest a floating window can be made: as wide as a side's windows can get, with the other side empty.</summary>
+    public static double MaximumFloatingWindowWidth(LayoutSize available, DockingMetrics metrics) =>
+        Math.Max(metrics.MinimumWindowWidth, available.Width - metrics.MinimumCanvasRegionWidth - metrics.Margin);
+
+    /// <summary>Where a rectangle's top left goes to keep it inside <paramref name="area"/>, moved as little as it can be.</summary>
+    public static LayoutPoint KeptInside(LayoutPoint position, LayoutSize size, LayoutRect area) => new(
+        // Max last, so rounding can't put it outside when it exactly fills the room.
+        Math.Max(area.X, Math.Min(position.X, area.Right - size.Width)),
+        Math.Max(area.Y, Math.Min(position.Y, area.Bottom - size.Height)));
+
     // Moved just enough to stay inside, without changing what's stored, so regrowing the window puts it back.
     private static SolvedFloatingWindow PlaceFloating(FloatingWindow window, LayoutSize available, DockingMetrics metrics)
     {
-        var width = Math.Min(window.Width, available.Width);
-        var height = Math.Min(window.IsTitleOnly ? metrics.TitleLength : window.Height, available.Height);
+        var area = FloatingWindowArea(available, metrics);
+        var size = new LayoutSize(
+            Math.Min(window.Width, area.Width),
+            Math.Min(window.IsTitleOnly ? metrics.TitleLength : window.Height, area.Height));
+        var at = KeptInside(window.Position, size, area);
 
-        // Max last, so rounding can't put it outside when it exactly fills the room.
-        var bounds = new LayoutRect(
-            Math.Max(0, Math.Min(window.Position.X, available.Width - width)),
-            Math.Max(0, Math.Min(window.Position.Y, available.Height - height)),
-            width,
-            height);
-
-        return new SolvedFloatingWindow(window.WindowId, bounds, window.IsTitleOnly);
+        return new SolvedFloatingWindow(window.WindowId, new LayoutRect(at.X, at.Y, size.Width, size.Height), window.IsTitleOnly);
     }
 
     // Sides shrink together when they'd leave the canvas region too narrow. Wanted widths stay in the layout.

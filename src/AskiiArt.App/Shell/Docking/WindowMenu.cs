@@ -8,8 +8,9 @@ using Avalonia.Controls;
 namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>
-/// A window's menu, which its title's right-click and its menu button both open: Float, Turn into Dock and Close for a
-/// widget, or Turn into Widget and Close for a floating window (docs/DOCKING.md §3.2).
+/// A window's menu, which its title's right-click and its menu button both open (docs/DOCKING.md §3.2). It offers the
+/// kinds of window this one isn't, then Close: Float and Turn into Dock for a widget, and Turn into Widget and Turn into
+/// Dock for a floating window.
 /// </summary>
 internal static class WindowMenu
 {
@@ -21,14 +22,13 @@ internal static class WindowMenu
 
         var menu = new ContextMenu
         {
-            Items = { floatItem, turnIntoDock, turnIntoWidget, Item(actions.Get(WindowFrameActionIds.Close), windowId) },
+            Items = { floatItem, turnIntoWidget, turnIntoDock, Item(actions.Get(WindowFrameActionIds.Close), windowId) },
         };
 
         menu.Opening += (_, _) =>
         {
             var isFloating = docking.IsWindowFloating(windowId);
             floatItem.IsVisible = !isFloating;
-            turnIntoDock.IsVisible = !isFloating;
             turnIntoWidget.IsVisible = isFloating;
         };
 

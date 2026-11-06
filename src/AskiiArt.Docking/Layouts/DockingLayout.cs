@@ -37,6 +37,23 @@ public sealed record DockingLayout(
         init => _floatingWindows = value ?? [];
     }
 
+    private readonly IReadOnlyList<FloatingSize> _floatingSizes = [];
+
+    /// <summary>The size each window last had while it floated, for floating it again.</summary>
+    public IReadOnlyList<FloatingSize> FloatingSizes
+    {
+        get => _floatingSizes;
+
+        // Reading a layout saved before these were kept passes null, whatever the initializer says.
+        init => _floatingSizes = value ?? [];
+    }
+
+    /// <summary>The size the window has while it floats, or last had, or null if it's never floated.</summary>
+    public FloatingSize? FloatingSizeOf(string windowId) =>
+        FloatingWindowNamed(windowId) is { } floating
+            ? new FloatingSize(windowId, floating.Width, floating.Height)
+            : FloatingSizes.FirstOrDefault(size => size.WindowId == windowId);
+
     /// <summary>The side on <paramref name="edge"/>, or null when it's empty.</summary>
     public SideLayout? Side(SideEdge edge) => Sides.FirstOrDefault(side => side.Edge == edge);
 
@@ -84,7 +101,12 @@ public sealed record SideColumn(double Width, IReadOnlyList<WindowGroup> Groups)
 /// <param name="WindowIds">The windows, in tab order.</param>
 /// <param name="Share">How much of the column's free length it wants, relative to its neighbours.</param>
 /// <param name="IsTitleOnly">Whether the user squeezed it down to its title.</param>
-public sealed record WindowGroup(IReadOnlyList<string> WindowIds, double Share = 1, bool IsTitleOnly = false);
+/// <param name="OpenLength">How long it was before it was squeezed to its title, for opening it again. Null if unknown.</param>
+public sealed record WindowGroup(
+    IReadOnlyList<string> WindowIds,
+    double Share = 1,
+    bool IsTitleOnly = false,
+    double? OpenLength = null);
 
 /// <summary>A window on its own, which can be anywhere inside the app window.</summary>
 /// <param name="WindowId">Which window.</param>
@@ -98,6 +120,12 @@ public sealed record FloatingWindow(
     double Width,
     double Height,
     bool IsTitleOnly = false);
+
+/// <summary>The size a window last had while it floated.</summary>
+/// <param name="WindowId">Which window.</param>
+/// <param name="Width">How wide it was.</param>
+/// <param name="Height">How tall it was, for whenever it isn't title-only.</param>
+public sealed record FloatingSize(string WindowId, double Width, double Height);
 
 /// <summary>Where a toolbar goes. A hidden toolbar keeps its place for when it's shown again.</summary>
 /// <param name="ToolbarId">Which toolbar.</param>

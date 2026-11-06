@@ -9,8 +9,9 @@ using Avalonia.Media;
 namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>
-/// A hatched rectangle with a "+", showing where a dragged window would land, as in the owner's mockup. It never catches
-/// the pointer. Placeholder: the owner designs the real one.
+/// A hatched rectangle with a "+", showing where a dragged window would land, as in the owner's mockup. The light kind is
+/// only a very faint hatch, for inside an outline. It never catches the pointer. Placeholder: the owner designs the real
+/// one.
 /// </summary>
 internal sealed class WindowPlaceholderView : Control
 {
@@ -21,17 +22,23 @@ internal sealed class WindowPlaceholderView : Control
         AvaloniaProperty.Register<WindowPlaceholderView, IBrush?>(nameof(Line));
 
     private readonly ShellLayoutMetrics _metrics;
+    private readonly bool _isLight;
 
     static WindowPlaceholderView() => AffectsRender<WindowPlaceholderView>(FillProperty, LineProperty);
 
     /// <param name="metrics">The theme's sizes.</param>
-    public WindowPlaceholderView(ShellLayoutMetrics metrics)
+    /// <param name="isLight">Whether it's only a very faint hatch, with no fill, border or "+".</param>
+    public WindowPlaceholderView(ShellLayoutMetrics metrics, bool isLight = false)
     {
         _metrics = metrics;
+        _isLight = isLight;
         IsHitTestVisible = false;
         Transitions = [new DoubleTransition { Property = OpacityProperty, Duration = metrics.MotionDuration }];
-        Bind(FillProperty, this.GetResourceObservable("AppWindowPlaceholderBrush"));
-        Bind(LineProperty, this.GetResourceObservable("AppWindowPlaceholderLineBrush"));
+
+        if (!isLight)
+            Bind(FillProperty, this.GetResourceObservable("AppWindowPlaceholderBrush"));
+
+        Bind(LineProperty, this.GetResourceObservable(isLight ? "AppWindowLandingHatchBrush" : "AppWindowPlaceholderLineBrush"));
     }
 
     public IBrush? Fill
@@ -51,7 +58,8 @@ internal sealed class WindowPlaceholderView : Control
         var bounds = new Rect(Bounds.Size);
         var pen = new Pen(Line, _metrics.WindowPlaceholderLineThickness);
 
-        context.DrawRectangle(Fill, pen, bounds);
+        if (!_isLight)
+            context.DrawRectangle(Fill, pen, bounds);
 
         using (context.PushClip(bounds))
         {
@@ -59,6 +67,9 @@ internal sealed class WindowPlaceholderView : Control
             for (var offset = gap; offset < bounds.Width + bounds.Height; offset += gap)
                 context.DrawLine(pen, new Point(offset, 0), new Point(0, offset));
         }
+
+        if (_isLight)
+            return;
 
         var arm = _metrics.WindowPlaceholderPlusSize / 2;
         var center = bounds.Center;

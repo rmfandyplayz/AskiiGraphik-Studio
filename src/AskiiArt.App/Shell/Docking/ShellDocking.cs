@@ -106,20 +106,24 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
     /// <summary>Takes a window off its side, a little way in from where it was, so that it visibly comes off.</summary>
     public void FloatWindow(string windowId)
     {
-        if (LayoutToChange() is not { } layout || _host!.Solved?.PlaceOfWindow(windowId) is not { } place)
+        if (LayoutToChange() is not { } layout)
             return;
 
         var metrics = _metrics!;
-        var isOnTheLeft = layout.Side(SideEdge.Left)?.Columns.SelectMany(column => column.Groups)
-            .Any(group => group.WindowIds.Contains(windowId, StringComparer.Ordinal)) == true;
-        var at = new LayoutPoint(
-            place.Bounds.X + (isOnTheLeft ? metrics.WindowFloatOffset : -metrics.WindowFloatOffset),
-            place.Bounds.Y + metrics.WindowFloatOffset);
-        var height = place.IsTitleOnly
-            ? Math.Max(metrics.Docking.DefaultFloatingWindowHeight, _catalog!.MinimumWindowHeights[windowId])
-            : place.Bounds.Height;
+        var floated = WindowFloating.FromMenu(layout, windowId, _host!.CurrentMeasurements(), metrics.Docking,
+            metrics.WindowFloatOffset);
+        Show(floated, animate: true);
+    }
 
-        Show(LayoutEdits.FloatWindow(layout, windowId, at, place.Bounds.Width, height), animate: true);
+    /// <summary>Squeezes a window to its title, or opens it again, as double-clicking its title does.</summary>
+    public void ToggleTitleOnly(string windowId)
+    {
+        if (LayoutToChange() is not { } layout)
+            return;
+
+        var toggled = TitleOnlyToggle.Toggle(layout, windowId, _host!.CurrentMeasurements(), _metrics!.Docking);
+        if (!ReferenceEquals(toggled, layout))
+            Show(toggled, animate: true);
     }
 
     /// <summary>Puts a floating window on a side, as a widget, if one has room.</summary>
@@ -241,6 +245,17 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
 
         // Tunnelling, because whatever was pressed may handle the press itself.
         e.Frame.AddHandler(InputElement.PointerPressedEvent, (_, _) => BringToFront(windowId), RoutingStrategies.Tunnel);
+
+        // Including handled presses, because the title row takes them for dragging.
+        var frame = e.Frame;
+        frame.TitleHandle.AddHandler(InputElement.PointerPressedEvent, (_, pressed) =>
+        {
+            if (pressed.ClickCount == 2 && pressed.GetCurrentPoint(frame).Properties.IsLeftButtonPressed &&
+                !frame.IsOnAButton(pressed.Source))
+            {
+                ToggleTitleOnly(windowId);
+            }
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
     }
 
     private void OnStackResizeHandleCreated(object? sender, StackResizeHandleCreatedEventArgs e)

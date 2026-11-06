@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Shell;
 
@@ -99,12 +100,19 @@ internal sealed partial class MainWindow : Window
             GiveTypingBackToCanvas();
     }
 
+    // Not while a menu has the keyboard, such as one a button just opened, or Esc and the arrow keys stop working in it.
     private void GiveTypingBackToCanvas()
     {
         Dispatcher.UIThread.Post(() =>
         {
-            if (FocusManager?.GetFocusedElement() is not TextBox)
-                CanvasView.FocusCanvas();
+            var focused = FocusManager?.GetFocusedElement();
+            if (focused is TextBox || IsInAMenu(focused))
+                return;
+
+            CanvasView.FocusCanvas();
         });
     }
+
+    private static bool IsInAMenu(IInputElement? element) =>
+        element is Visual visual && visual.FindAncestorOfType<MenuBase>(includeSelf: true) is { IsOpen: true };
 }

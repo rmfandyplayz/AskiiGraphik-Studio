@@ -92,7 +92,7 @@ public sealed class StackGapResize : IWindowResize
 {
     private readonly SideEdge _edge;
     private readonly int _gap;
-    private readonly IReadOnlyList<StackLengths.Entry> _entries;
+    private readonly List<StackLengths.Entry> _entries;
     private readonly double _titleLength;
 
     /// <summary>Starts a resize.</summary>
@@ -114,7 +114,9 @@ public sealed class StackGapResize : IWindowResize
         [
             .. solved.WindowGroups.Where(group => group.Edge == edge).OrderBy(group => group.Bounds.Y).Select(group =>
                 new StackLengths.Entry(group.Bounds.Height, group.IsTitleOnly,
-                    group.WindowIds.Select(id => measurements.MinimumWindowLengths.GetValueOrDefault(id, metrics.DefaultMinimumWindowLength)).Max())),
+                    group.WindowIds.Select(id =>
+                            measurements.MinimumWindowLengths.GetValueOrDefault(id, metrics.DefaultMinimumWindowLength))
+                        .Max())),
         ];
     }
 
@@ -131,35 +133,45 @@ public sealed class StackGapResize : IWindowResize
             Sides =
             [
                 .. Start.Sides.Select(side => side.Edge == _edge
-                    ? side with { Columns = [side.Columns[0] with { Groups = WithEntries(side.Columns[0].Groups, entries) }] }
+                    ? side with
+                    {
+                        Columns = [side.Columns[0] with { Groups = WithEntries(side.Columns[0].Groups, entries) }]
+                    }
                     : side),
             ],
         };
     }
 
     // In logical pixels, which is fine because shares only mean something relative to each other, and the ones showing
-    // their contents add up to exactly the room they have. A title-only window keeps its old share.
-    private static List<WindowGroup> WithEntries(IReadOnlyList<WindowGroup> groups, IReadOnlyList<StackLengths.Entry> entries) =>
+    // their contents add up to exactly the room they have. A title-only window keeps its old share, and one squeezed to
+    // its title by this drag remembers how long it was, for double-clicking it open again.
+    private List<WindowGroup> WithEntries(IReadOnlyList<WindowGroup> groups,
+        IReadOnlyList<StackLengths.Entry> entries) =>
     [
         .. groups.Select((group, index) => group with
         {
             Share = entries[index].IsTitleOnly ? group.Share : entries[index].Length,
             IsTitleOnly = entries[index].IsTitleOnly,
+            OpenLength = entries[index].IsTitleOnly && !_entries[index].IsTitleOnly
+                ? _entries[index].Length
+                : group.OpenLength,
         }),
     ];
 }
 
 /// <summary>
-/// Dragging an edge or corner of a floating window. It can't get narrower than the smallest width. Below its minimum
-/// height it sticks at that height, then snaps to title-only halfway to it, with no sizes in between.
+/// Dragging an edge or corner of a floating window. Its edges stay where floating windows have to be, and it can't get
+/// narrower than the smallest width or wider than the widest. Below its minimum height it sticks at that height, then
+/// snaps to title-only halfway to it, with no sizes in between.
 /// </summary>
 public sealed class FloatingWindowResize : IWindowResize
 {
     private readonly string _windowId;
     private readonly WindowEdges _edges;
     private readonly LayoutRect _bounds;
-    private readonly LayoutSize _available;
+    private readonly LayoutRect _area;
     private readonly double _minimumWidth;
+    private readonly double _maximumWidth;
     private readonly double _minimumHeight;
     private readonly double _titleLength;
 
@@ -169,19 +181,25 @@ public sealed class FloatingWindowResize : IWindowResize
     /// <param name="edges">Which edges move.</param>
     /// <param name="measurements">The current sizes of everything.</param>
     /// <param name="metrics">The theme's sizes.</param>
-    public FloatingWindowResize(DockingLayout start, string windowId, WindowEdges edges, LayoutMeasurements measurements,
+    public FloatingWindowResize(DockingLayout start, string windowId, WindowEdges edges,
+        LayoutMeasurements measurements,
         DockingMetrics metrics)
     {
         Start = start;
         _windowId = windowId;
         _edges = edges;
-        _available = measurements.Available;
+        _area = LayoutSolver.FloatingWindowArea(measurements.Available, metrics);
         _minimumWidth = metrics.MinimumWindowWidth;
-        _minimumHeight = measurements.MinimumWindowLengths.GetValueOrDefault(windowId, metrics.DefaultMinimumWindowLength);
+        _minimumHeight =
+            measurements.MinimumWindowLengths.GetValueOrDefault(windowId, metrics.DefaultMinimumWindowLength);
         _titleLength = metrics.TitleLength;
 
         var solved = LayoutSolver.Solve(start, measurements, metrics);
         _bounds = solved.FloatingWindows.First(window => window.WindowId == windowId).Bounds;
+
+        // One that's wider already, for example from a wider app window, doesn't jump narrower. It just can't grow.
+        _maximumWidth = Math.Max(_bounds.Width,
+            LayoutSolver.MaximumFloatingWindowWidth(measurements.Available, metrics));
     }
 
     /// <inheritdoc />
@@ -190,7 +208,7 @@ public sealed class FloatingWindowResize : IWindowResize
     /// <inheritdoc />
     public DockingLayout LayoutAfter(LayoutPoint moved)
     {
-        var (left, right) = Moved(_bounds.X, _bounds.Right, moved.X, WindowEdges.Left, WindowEdges.Right, _available.Width, _minimumWidth);
+        var (left, right) = MovedAcross(moved.X);
         var (top, bottom, isTitleOnly) = MovedUpAndDown(moved.Y);
 
         return Start with
@@ -210,13 +228,22 @@ public sealed class FloatingWindowResize : IWindowResize
         };
     }
 
-    private (double Start, double End) Moved(double start, double end, double moved, WindowEdges startEdge,
-        WindowEdges endEdge, double room, double minimum)
+    // The minimum wins over the area, so a window wider than the area can only get narrower.
+    private (double Left, double Right) MovedAcross(double moved)
     {
-        if (_edges.HasFlag(startEdge))
-            return (Math.Max(0, Math.Min(start + moved, end - minimum)), end);
+        var (left, right) = (_bounds.X, _bounds.Right);
 
-        return _edges.HasFlag(endEdge) ? (start, Math.Min(room, Math.Max(end + moved, start + minimum))) : (start, end);
+        if (_edges.HasFlag(WindowEdges.Left))
+        {
+            var furthest = Math.Max(_area.X, right - _maximumWidth);
+            return (Math.Min(Math.Max(left + moved, furthest), right - _minimumWidth), right);
+        }
+
+        if (!_edges.HasFlag(WindowEdges.Right))
+            return (left, right);
+
+        var furthestRight = Math.Min(_area.Right, left + _maximumWidth);
+        return (left, Math.Max(Math.Min(right + moved, furthestRight), left + _minimumWidth));
     }
 
     private (double Top, double Bottom, bool IsTitleOnly) MovedUpAndDown(double moved)
@@ -226,8 +253,8 @@ public sealed class FloatingWindowResize : IWindowResize
             return (_bounds.Y, _bounds.Bottom, Start.FloatingWindowNamed(_windowId)!.IsTitleOnly);
 
         var wanted = movesTop
-            ? _bounds.Bottom - Math.Max(0, _bounds.Y + moved)
-            : Math.Min(_available.Height, _bounds.Bottom + moved) - _bounds.Y;
+            ? _bounds.Bottom - Math.Max(_area.Y, _bounds.Y + moved)
+            : Math.Min(_area.Bottom, _bounds.Bottom + moved) - _bounds.Y;
 
         var (height, isTitleOnly) = StackLengths.Snapped(wanted, _minimumHeight, _titleLength);
         return movesTop
@@ -255,7 +282,8 @@ internal static class StackLengths
     }
 
     /// <summary>The stack after the gap has moved this far: positive is down, negative is up.</summary>
-    public static IReadOnlyList<Entry> AfterMovingGap(IReadOnlyList<Entry> entries, int gap, double moved, double titleLength)
+    public static IReadOnlyList<Entry> AfterMovingGap(IReadOnlyList<Entry> entries, int gap, double moved,
+        double titleLength)
     {
         if (moved == 0 || gap < 0 || gap >= entries.Count - 1)
             return entries;

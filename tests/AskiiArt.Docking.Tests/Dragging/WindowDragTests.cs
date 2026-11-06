@@ -104,6 +104,72 @@ public sealed class WindowDragTests
     }
 
     [Fact]
+    public void APointerPastTheAppWindowsEdge_BesideAStack_FloatsTheWindowBackInside()
+    {
+        var drag = Drag(_twoOnTheRightAndOneFloating, "x");
+        var pastTheBottomRight = new LayoutPoint(_window.Width + 100, _window.Height + 50);
+
+        Assert.Null(drag.ZoneAt(pastTheBottomRight));
+        Assert.Null(drag.ZoneAt(new LayoutPoint(_window.Width + 100, 350)));
+
+        var floating = drag.LayoutAt(pastTheBottomRight).FloatingWindowNamed("x")!;
+        var area = LayoutSolver.FloatingWindowArea(_window, Metrics);
+        Assert.Equal(area.Right - 200, floating.Position.X, Tolerance);
+        Assert.Equal(area.Bottom - 200, floating.Position.Y, Tolerance);
+    }
+
+    [Fact]
+    public void TheHeldWindow_FollowsThePointerPastTheEdge_AndTheLandingShowsWhereItGoesBack()
+    {
+        var drag = Drag(_twoOnTheRightAndOneFloating, "x");
+        var outside = new LayoutPoint(_window.Width + 100, _window.Height + 50);
+
+        var preview = drag.PreviewAt(outside);
+
+        Assert.Equal(drag.HeldAt(outside), preview.Held);
+        Assert.Equal(outside.X - _heldAtTheTopLeft.X * 200, preview.Held.X, Tolerance);
+        Assert.Equal(WhereItIs(preview.Layout, "x"), preview.Landing);
+    }
+
+    [Fact]
+    public void WhereItLandsWhereItsHeld_TheresNoLandingToShow()
+    {
+        var preview = Drag(_twoOnTheRightAndOneFloating, "x").PreviewAt(_middleOfNowhere);
+
+        Assert.Null(preview.Landing);
+        Assert.Equal(WhereItIs(preview.Layout, "x"), preview.Held);
+    }
+
+    [Fact]
+    public void OverAZone_TheresNoLandingToShow()
+    {
+        Assert.Null(Drag(_twoOnTheRightAndOneFloating, "x").PreviewAt(new LayoutPoint(OverTheRightSide, 100)).Landing);
+    }
+
+    [Fact]
+    public void AWindowAloneOnItsSide_IsHeldAtTheSizeItWouldFloatAt_AndLandsAtIt()
+    {
+        var alone = Widgets(SideEdge.Right, new WindowGroup(["a"])) with { FloatingSizes = [new FloatingSize("a", 300, 220)] };
+        var drag = Drag(alone, "a");
+
+        var floating = drag.LayoutAt(_middleOfNowhere).FloatingWindowNamed("a")!;
+
+        Assert.Equal(new LayoutSize(300, 220), drag.HeldSize);
+        Assert.Equal(300, floating.Width);
+        Assert.Equal(220, floating.Height);
+    }
+
+    [Fact]
+    public void AFloatingWindowDroppedOnAnEmptySide_KeepsItsWidth()
+    {
+        var layout = LayoutEdits.FloatWindow(_twoOnTheRight, "x", new LayoutPoint(300, 300), 310, 200);
+
+        var dropped = Drag(layout, "x").LayoutAt(new LayoutPoint(5, 350));
+
+        Assert.Equal(310, dropped.Side(SideEdge.Left)!.Columns[0].Width);
+    }
+
+    [Fact]
     public void ASideWithWindows_HasNoEdgeStripZone_UntilDocksArrive()
     {
         Assert.DoesNotContain(Drag(_twoOnTheRight, "a").Zones, zone => zone.Kind == WindowDropKind.EmptySide && zone.Edge == SideEdge.Right);
@@ -190,11 +256,11 @@ public sealed class WindowDragTests
     }
 
     [Fact]
-    public void ADropFarOutsideTheAppWindow_StaysInside()
+    public void ADropFarOutsideTheAppWindow_StaysInsideTheMargin()
     {
         var floating = Drag(_twoOnTheRight, "a").LayoutAt(new LayoutPoint(_window.Width / 2, -500)).FloatingWindowNamed("a")!;
 
-        Assert.Equal(0, floating.Position.Y);
+        Assert.Equal(Metrics.Margin, floating.Position.Y);
     }
 
     [Fact]

@@ -26,17 +26,29 @@ public sealed class FloatingWindowsAndHandlesTests
     }
 
     [Fact]
-    public void AFloatingWindow_MovesJustEnoughToStayInside_WithoutChangingWhatsStored()
+    public void AFloatingWindow_MovesJustEnoughToStayInsideTheMargin_WithoutChangingWhatsStored()
     {
         var wanted = new FloatingWindow("x", new LayoutPoint(900, 650), 300, 200);
 
-        Assert.Equal(new LayoutRect(700, 500, 300, 200), Place(wanted));
+        var margin = Metrics.Margin;
+        Assert.Equal(new LayoutRect(1000 - margin - 300, 700 - margin - 200, 300, 200), Place(wanted));
     }
 
     [Fact]
-    public void AFloatingWindowBiggerThanTheAppWindow_FillsIt()
+    public void AFloatingWindowBiggerThanTheAppWindow_FillsItUpToTheMargin()
     {
-        Assert.Equal(new LayoutRect(0, 0, 1000, 700), Place(new FloatingWindow("x", new LayoutPoint(-50, -50), 3000, 3000)));
+        var margin = Metrics.Margin;
+        Assert.Equal(new LayoutRect(margin, margin, 1000 - margin * 2, 700 - margin * 2),
+            Place(new FloatingWindow("x", new LayoutPoint(-50, -50), 3000, 3000)));
+    }
+
+    [Fact]
+    public void TheAreaForFloatingWindows_NeverTurnsInsideOut()
+    {
+        var area = LayoutSolver.FloatingWindowArea(new LayoutSize(10, 4), Metrics);
+
+        Assert.True(area.Width >= 0);
+        Assert.True(area.Height >= 0);
     }
 
     [Fact]

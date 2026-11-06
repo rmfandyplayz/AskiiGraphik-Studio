@@ -524,17 +524,139 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AFloatingWindowsMenu_OffersTurnIntoWidgetAndClose()
+    public void AFloatingWindowsMenu_OffersTheOtherKinds_TurnIntoWidgetAndTurnIntoDock_ThenClose()
     {
         ShowWindow();
         DragAndDrop(Layers, _middleOfNowhere);
 
         var items = OpenMenu(Layers);
 
-        Assert.Equal([Label(Strings.ActionWindowTurnIntoWidget), Label(Strings.ActionWindowClose)], items.Select(item => item.Header));
+        Assert.Equal(
+            [Label(Strings.ActionWindowTurnIntoWidget), Label(Strings.ActionWindowTurnIntoDock), Label(Strings.ActionWindowClose)],
+            items.Select(item => item.Header));
         Assert.True(items[0].Command!.CanExecute(items[0].CommandParameter));
         Frame(Layers).TitleMenu!.Close();
         Pump();
+    }
+
+    [AvaloniaFact]
+    public void DuringADrag_NoWindowShowsItsButtons_AndAfterwardsTheyCanAgain()
+    {
+        ShowWindow();
+
+        StartDrag(Layers, _middleOfNowhere);
+        Assert.True(Frame(Layers).AreButtonsHidden);
+        Assert.True(Frame(History).AreButtonsHidden);
+        Assert.Equal(0, Frame(History).MenuOpener.Opacity);
+
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Pump();
+
+        Assert.False(Frame(Layers).AreButtonsHidden);
+        Assert.False(Frame(History).AreButtonsHidden);
+    }
+
+    [AvaloniaFact]
+    public void DuringAResize_NoWindowShowsItsButtons()
+    {
+        ShowWindow();
+        var edge = InnerEdge();
+
+        _window.MouseDown(edge, MouseButton.Left);
+        _window.MouseMove(edge - new Point(20, 0));
+        Pump();
+        Assert.True(Frame(History).AreButtonsHidden);
+
+        _window.MouseUp(edge - new Point(20, 0), MouseButton.Left);
+        Pump();
+        Assert.False(Frame(History).AreButtonsHidden);
+    }
+
+    [AvaloniaFact]
+    public void PastTheAppWindowsEdge_TheWindowFollowsThePointer_AndALandingPreviewShowsWhereItGoesBack()
+    {
+        ShowWindow();
+        DragAndDrop(Layers, _middleOfNowhere);
+        var fromCorner = TitleOf(Layers) - BoundsOf(Layers).TopLeft;
+        var outside = new Point(1100, 750);
+
+        StartDrag(Layers, outside);
+
+        Assert.Equal(outside - fromCorner, BoundsOf(Layers).TopLeft);
+        var landing = _host.Children.OfType<WindowLandingPreview>().Single();
+        Assert.True(landing.IsVisible);
+        Assert.Equal(1000 - _metrics.Docking.Margin, landing.Bounds.Right);
+        Assert.Equal(700 - _metrics.Docking.Margin, landing.Bounds.Bottom);
+
+        var landsAt = landing.Bounds;
+        _window.MouseUp(outside, MouseButton.Left);
+        Pump();
+
+        Assert.True(_docking.IsWindowFloating(Layers));
+        Assert.Equal(landsAt, BoundsOf(Layers));
+    }
+
+    [AvaloniaFact]
+    public void WhereTheWindowLandsWhereItsHeld_TheresNoLandingPreview()
+    {
+        ShowWindow();
+
+        StartDrag(Layers, _middleOfNowhere);
+
+        Assert.False(_host.Children.OfType<WindowLandingPreview>().Single().IsVisible);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+    }
+
+    [AvaloniaFact]
+    public void AWindowAloneOnItsSide_ThatsNeverFloated_FloatsAtHalfItsHeight()
+    {
+        ShowWindow();
+        _docking.CloseWindow(History);
+        Pump();
+        var before = BoundsOf(Layers);
+
+        DragAndDrop(Layers, _middleOfNowhere);
+
+        Assert.Equal(before.Width, BoundsOf(Layers).Width);
+        Assert.Equal(before.Height / 2, BoundsOf(Layers).Height, 3);
+    }
+
+    [AvaloniaFact]
+    public void DoubleClickingATitle_SqueezesTheWindowToIt_AndDoubleClickingAgainOpensIt()
+    {
+        ShowWindow();
+        var before = BoundsOf(History);
+
+        DoubleClick(TitleOf(History));
+        Assert.Equal(_metrics.Docking.TitleLength, BoundsOf(History).Height);
+        Assert.True(Frame(History).IsTitleOnly);
+
+        DoubleClick(TitleOf(History));
+        Assert.Equal(before, BoundsOf(History));
+    }
+
+    [AvaloniaFact]
+    public void TheGapsLine_ShowsFaintlyUnderThePointer_AndSolidlyWhileHeld()
+    {
+        ShowWindow();
+        var gap = _host.Children.OfType<StackResizeHandleView>().Single(handle => handle.IsAcross);
+        var onTheGap = CenterOf(gap);
+        Assert.Null(gap.LineBrush);
+        Assert.NotNull(gap.HoverLine);
+        Assert.NotNull(gap.HeldLine);
+
+        _window.MouseMove(onTheGap);
+        Pump();
+        Assert.Same(gap.HoverLine, gap.LineBrush);
+
+        _window.MouseDown(onTheGap, MouseButton.Left);
+        Pump();
+        Assert.Same(gap.HeldLine, gap.LineBrush);
+
+        _window.MouseUp(onTheGap, MouseButton.Left);
+        _window.MouseMove(_middleOfNowhere);
+        Pump();
+        Assert.Null(gap.LineBrush);
     }
 
     [AvaloniaFact]
@@ -673,6 +795,15 @@ public sealed class WindowDraggingTests : IDisposable
         Pump();
 
         return [.. Frame(windowId).TitleMenu!.Items.OfType<MenuItem>().Where(item => item.IsVisible)];
+    }
+
+    private void DoubleClick(Point at)
+    {
+        _window.MouseDown(at, MouseButton.Left);
+        _window.MouseUp(at, MouseButton.Left);
+        _window.MouseDown(at, MouseButton.Left);
+        _window.MouseUp(at, MouseButton.Left);
+        Pump();
     }
 
     private void StartDrag(string windowId, Point to)

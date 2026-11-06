@@ -51,11 +51,17 @@ internal static class TestLayouts
     private static readonly Gen<string> _ids =
         Gen.OneOfConst([.. WindowIds, "gone"]);
 
+    private static readonly Gen<double?> _openLengths = Gen.Select(
+        Gen.Bool,
+        Gen.Double[-10, 600],
+        (isKnown, length) => isKnown ? length : (double?)null);
+
     private static readonly Gen<WindowGroup> _groups = Gen.Select(
         _ids.List[0, 3],
         Gen.Double[-1, 5],
         Gen.Bool,
-        (ids, share, isTitleOnly) => new WindowGroup(ids, share, isTitleOnly));
+        _openLengths,
+        (ids, share, isTitleOnly, openLength) => new WindowGroup(ids, share, isTitleOnly, openLength));
 
     private static readonly Gen<SideColumn> _columns = Gen.Select(
         Gen.Double[-10, 600],
@@ -101,14 +107,21 @@ internal static class TestLayouts
         (id, x, y, width, height, isTitleOnly) =>
             new FloatingWindow(id, new LayoutPoint(x, y), width, height, isTitleOnly));
 
+    private static readonly Gen<FloatingSize> _floatingSizes = Gen.Select(
+        _ids,
+        Gen.Double[-10, 800],
+        Gen.Double[-10, 800],
+        (id, width, height) => new FloatingSize(id, width, height));
+
     /// <summary>Any layout, with duplicates, unknown ids and silly numbers.</summary>
     public static readonly Gen<DockingLayout> Anything = Gen.Select(
         _sides.List[0, 3],
         _toolbars.List[0, 6],
         _closed.List[0, 4],
         _floatingWindows.List[0, 3],
-        (sides, toolbars, closed, floating) =>
-            new DockingLayout(sides, toolbars, closed) { FloatingWindows = floating });
+        _floatingSizes.List[0, 3],
+        (sides, toolbars, closed, floating, sizes) =>
+            new DockingLayout(sides, toolbars, closed) { FloatingWindows = floating, FloatingSizes = sizes });
 
     /// <summary>Any layout that keeps the rules.</summary>
     public static readonly Gen<DockingLayout> Valid = Anything.Select(layout => LayoutRepair.Repair(layout, Catalog));

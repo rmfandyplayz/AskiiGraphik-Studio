@@ -24,6 +24,9 @@
       <SolidColorBrush x:Key="AppWindowIconBrush" Color="#FF202020" />
       <SolidColorBrush x:Key="AppWindowPlaceholderBrush" Color="#260078D7" />
       <SolidColorBrush x:Key="AppWindowPlaceholderLineBrush" Color="#800078D7" />
+      <SolidColorBrush x:Key="AppWindowLandingHatchBrush" Color="#330078D7" />
+      <SolidColorBrush x:Key="AppResizeLineHoverBrush" Color="#590078D7" />
+      <SolidColorBrush x:Key="AppResizeLineHeldBrush" Color="#FF0078D7" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -43,6 +46,9 @@
       <SolidColorBrush x:Key="AppWindowIconBrush" Color="#FFE8E8E8" />
       <SolidColorBrush x:Key="AppWindowPlaceholderBrush" Color="#264C9EEB" />
       <SolidColorBrush x:Key="AppWindowPlaceholderLineBrush" Color="#804C9EEB" />
+      <SolidColorBrush x:Key="AppWindowLandingHatchBrush" Color="#334C9EEB" />
+      <SolidColorBrush x:Key="AppResizeLineHoverBrush" Color="#594C9EEB" />
+      <SolidColorBrush x:Key="AppResizeLineHeldBrush" Color="#FF4C9EEB" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -135,6 +141,8 @@
   <x:Double x:Key="AppWindowPlaceholderHatchGap">10</x:Double>
   <x:Double x:Key="AppWindowPlaceholderLineThickness">1</x:Double>
   <x:Double x:Key="AppWindowPlaceholderPlusSize">16</x:Double>
+  <!-- The line along a gap between widgets, or a side's inner edge: faint with the pointer over it, solid while held. -->
+  <x:Double x:Key="AppResizeLineThickness">3</x:Double>
   <!-- Sides shrink before the space between them gets narrower than this. -->
   <x:Double x:Key="AppCanvasRegionMinWidth">320</x:Double>
 

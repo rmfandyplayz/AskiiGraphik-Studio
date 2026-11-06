@@ -337,7 +337,7 @@ internal sealed partial class DockingHost : Panel
         if (_solved is not { } solved || _metrics is not { } metrics)
             return finalSize;
 
-        ArrangeWindows(solved, metrics, finalSize);
+        ArrangeWindows(solved, metrics);
 
         var bounds = solved.Toolbars.ToDictionary(toolbar => toolbar.ToolbarId, toolbar => toolbar.Bounds,
             StringComparer.Ordinal);
