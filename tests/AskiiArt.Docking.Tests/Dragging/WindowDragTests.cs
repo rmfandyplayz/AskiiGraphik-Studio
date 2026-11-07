@@ -170,9 +170,12 @@ public sealed class WindowDragTests
     }
 
     [Fact]
-    public void ASideWithWindows_HasNoEdgeStripZone_UntilDocksArrive()
+    public void ASideWithWindows_HasAnEdgeStripThatMakesADock_RatherThanAWidget()
     {
-        Assert.DoesNotContain(Drag(_twoOnTheRight, "a").Zones, zone => zone.Kind == WindowDropKind.EmptySide && zone.Edge == SideEdge.Right);
+        var zones = Drag(_twoOnTheRight, "a").Zones.Where(zone => zone.Edge == SideEdge.Right).ToList();
+
+        Assert.DoesNotContain(zones, zone => zone.Kind == WindowDropKind.EmptySide);
+        Assert.Equal(WindowDropKind.SideEdge, zones[0].Kind);
     }
 
     [Fact]

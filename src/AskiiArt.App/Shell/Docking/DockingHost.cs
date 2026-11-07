@@ -179,7 +179,11 @@ internal sealed partial class DockingHost : Panel
     /// <summary>The sizes things have right now, as they would go to the solver.</summary>
     public LayoutMeasurements CurrentMeasurements() =>
         new(_available, _catalog!.MinimumWindowHeights,
-            new Dictionary<string, LayoutSize>(_toolbarSizes, StringComparer.Ordinal), _subToolbar?.Request);
+            new Dictionary<string, LayoutSize>(_toolbarSizes, StringComparer.Ordinal), _subToolbar?.Request)
+        {
+            TabLengths = MeasuredTabLengths(),
+            TabStripOffsets = MeasuredTabStripOffsets(),
+        };
 
     /// <summary>
     /// Like <see cref="CurrentMeasurements"/>, with a toolbar that isn't showing yet measured too. Its view is

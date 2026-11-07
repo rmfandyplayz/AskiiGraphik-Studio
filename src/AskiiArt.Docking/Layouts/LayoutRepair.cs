@@ -70,6 +70,7 @@ public static class LayoutRepair
                     OpenLength = ValidOrUnknown(group.OpenLength),
                 })
                 .Where(group => group.WindowIds.Count > 0)
+                .Select(group => group with { SelectedWindowId = KnownTab(group, group.SelectedWindowId) })
                 .ToList();
 
             if (groups.Count > 0)
@@ -100,6 +101,10 @@ public static class LayoutRepair
             ? []
             : [new SideColumn(ValidSize(columns[0].Width, defaultWidth), LayoutEdits.WithOneGroupOpen(groups))];
     }
+
+    // Null means the first tab, so a tab that isn't in the group is forgotten rather than kept.
+    private static string? KnownTab(WindowGroup group, string? windowId) =>
+        windowId is not null && group.Holds(windowId) ? windowId : null;
 
     private static bool TryPlace(string windowId, HashSet<string> known, HashSet<string> placed) =>
         windowId is not null && known.Contains(windowId) && placed.Add(windowId);
@@ -153,6 +158,10 @@ public static class LayoutRepair
                 SideWidth = ValidSize(window.SideWidth, defaultWidth),
                 WasFloating = window.WasFloating is { } floating
                     ? Repaired(floating with { WindowId = window.WindowId }, defaultWidth)
+                    : null,
+                Column = Math.Max(0, window.Column),
+                TabmateId = window.TabmateId is { } tabmate && tabmate != window.WindowId && known.Contains(tabmate)
+                    ? tabmate
                     : null,
             });
         }

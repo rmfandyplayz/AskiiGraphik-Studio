@@ -15,30 +15,42 @@ namespace AskiiArt.App.Shell.Docking;
 /// <param name="metrics">The theme's sizes.</param>
 /// <param name="currentLayout">The layout as it stands, if there's a window.</param>
 /// <param name="finish">Takes the layout the drag ended with, which is the old one if it was cancelled.</param>
+/// <param name="selectTab">Shows a dock tab's window, when its tab is clicked rather than dragged.</param>
 internal sealed class WindowDragController(
     DockingHost host,
     ShellLayoutMetrics metrics,
     Func<DockingLayout?> currentLayout,
-    Action<DockingLayout> finish)
+    Action<DockingLayout> finish,
+    Action<string> selectTab)
 {
     private WindowDrag? _drag;
     private PointerDragTracker? _tracker;
     private LayoutPoint _position;
     private DragCancelListener? _cancelListener;
 
-    /// <summary>Lets the window's title row start drags.</summary>
+    /// <summary>
+    /// Lets the window's title row start drags. In a dock, a drag moves the tab pressed, and a click on a tab shows its
+    /// window. Selecting on the click rather than the press keeps the frame that has the pointer showing until the button
+    /// comes up.
+    /// </summary>
     public void Watch(string windowId, WindowFrame frame)
     {
         var tracker = new PointerDragTracker(frame.TitleHandle, host, metrics.DragThreshold);
-        tracker.Started += (_, e) => Begin(windowId, frame, tracker, e);
+        tracker.Started += (_, e) => Begin(frame.WindowToDrag(windowId), frame, tracker, e);
         tracker.Moved += (_, e) => MoveTo(e.Position);
         tracker.Dropped += (_, _) => Drop();
         tracker.Cancelled += (_, _) => GoBack();
+        tracker.Clicked += (_, _) =>
+        {
+            if (frame.IsDocked && frame.Tabs.PressedWindowId is { } pressed)
+                selectTab(pressed);
+        };
     }
 
     /// <summary>Cancels the drag, if there is one.</summary>
     public void Cancel() => _tracker?.Cancel();
 
+    // The frame pressed is the one showing, which may not be the dragged window's own, but they're in the same place.
     private void Begin(string windowId, WindowFrame frame, PointerDragTracker tracker, PointerDragEventArgs e)
     {
         if (currentLayout() is not { } layout)

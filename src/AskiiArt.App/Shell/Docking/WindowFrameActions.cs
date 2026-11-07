@@ -18,11 +18,11 @@ internal sealed class WindowFrameActions(ShellDocking docking) : IActionProvider
         yield return new AppAction(WindowFrameActionIds.Float, nameof(Strings.ActionWindowFloat),
             new RelayCommand<string>(Float));
 
-        // Docks arrive in step 2.5f, and it's greyed out until then.
-        yield return new AppAction(WindowFrameActionIds.TurnIntoDock, nameof(Strings.ActionWindowTurnIntoDock),
-            new RelayCommand<string>(_ => { }, _ => false));
+        var turnIntoDock = new RelayCommand<string>(TurnIntoDock, id => id is not null && docking.CanTurnWindowIntoDock(id));
+        docking.LayoutChanged += (_, _) => turnIntoDock.NotifyCanExecuteChanged();
+        yield return new AppAction(WindowFrameActionIds.TurnIntoDock, nameof(Strings.ActionWindowTurnIntoDock), turnIntoDock);
 
-        var turnIntoWidget = new RelayCommand<string>(TurnIntoWidget, _ => docking.CanTurnWindowIntoWidget());
+        var turnIntoWidget = new RelayCommand<string>(TurnIntoWidget, id => id is not null && docking.CanTurnWindowIntoWidget(id));
         docking.LayoutChanged += (_, _) => turnIntoWidget.NotifyCanExecuteChanged();
         yield return new AppAction(WindowFrameActionIds.TurnIntoWidget, nameof(Strings.ActionWindowTurnIntoWidget), turnIntoWidget);
 
@@ -34,6 +34,12 @@ internal sealed class WindowFrameActions(ShellDocking docking) : IActionProvider
     {
         if (windowId is not null)
             docking.FloatWindow(windowId);
+    }
+
+    private void TurnIntoDock(string? windowId)
+    {
+        if (windowId is not null)
+            docking.TurnWindowIntoDock(windowId);
     }
 
     private void TurnIntoWidget(string? windowId)

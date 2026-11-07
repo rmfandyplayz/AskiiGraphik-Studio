@@ -43,7 +43,8 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         _catalog = catalog;
         _metrics = metrics;
         _toolbarDrags = new ToolbarDragController(host, metrics, () => _layout, layout => Show(layout, animate: true));
-        _windowDrags = new WindowDragController(host, metrics, () => _layout, layout => Show(layout, animate: true));
+        _windowDrags = new WindowDragController(host, metrics, () => _layout, layout => Show(layout, animate: true),
+            SelectTab);
         _windowResizes = new WindowResizeController(host, () => _layout, layout => Show(layout, animate: false));
         host.ToolbarFrameCreated += OnToolbarFrameCreated;
         host.WindowFrameCreated += OnWindowFrameCreated;
@@ -93,8 +94,20 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
     /// <summary>Whether the window is floating.</summary>
     public bool IsWindowFloating(string windowId) => _layout?.FloatingWindowNamed(windowId) is not null;
 
-    /// <summary>Whether any side has room for a floating window to become a widget.</summary>
-    public bool CanTurnWindowIntoWidget() => _layout is { } layout && LayoutEdits.CanTurnIntoWidget(layout);
+    /// <summary>What kind of window it is, or null if it isn't open.</summary>
+    public WindowKind? WindowKindOf(string windowId) => _layout?.KindOf(windowId);
+
+    /// <summary>
+    /// Whether the window can become a widget: a floating one needs a side with room, and a dock tab needs its dock to be
+    /// one that widgets could hold.
+    /// </summary>
+    public bool CanTurnWindowIntoWidget(string windowId) =>
+        _layout is { } layout && LayoutEdits.CanTurnIntoWidget(layout, windowId);
+
+    /// <summary>Whether the window can become a dock: a floating one needs room for a new column.</summary>
+    public bool CanTurnWindowIntoDock(string windowId) =>
+        _layout is { } layout && _host is { } host &&
+        WindowConversions.CanTurnIntoDock(layout, windowId, host.CurrentMeasurements(), _metrics!.Docking);
 
     /// <summary>Closes a window.</summary>
     public void CloseWindow(string windowId)
@@ -126,11 +139,35 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
             Show(toggled, animate: true);
     }
 
-    /// <summary>Puts a floating window on a side, as a widget, if one has room.</summary>
+    /// <summary>Puts a floating window on a side, as a widget, if one has room, or turns a dock tab's dock into widgets.</summary>
     public void TurnWindowIntoWidget(string windowId)
     {
         if (LayoutToChange() is { } layout && _metrics is { } metrics)
             Show(LayoutEdits.TurnIntoWidget(layout, windowId, metrics.WidgetWidth), animate: true);
+    }
+
+    /// <summary>
+    /// Turns a widget's side into a dock, or puts a floating window in a dock as a new column at its outer edge, if there's
+    /// room for one.
+    /// </summary>
+    public void TurnWindowIntoDock(string windowId)
+    {
+        if (LayoutToChange() is not { } layout)
+            return;
+
+        var docked = WindowConversions.TurnIntoDock(layout, windowId, _host!.CurrentMeasurements(), _metrics!.Docking);
+        Show(docked, animate: true);
+    }
+
+    /// <summary>Shows a dock tab's window in its group, in place of the one showing.</summary>
+    public void SelectTab(string windowId)
+    {
+        if (LayoutToChange() is not { } layout)
+            return;
+
+        var selected = LayoutEdits.SelectTab(layout, windowId);
+        if (!ReferenceEquals(selected, layout))
+            Show(selected, animate: false);
     }
 
     /// <summary>Closes the window if it's open, and opens it otherwise.</summary>
@@ -263,12 +300,17 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         var id = e.Id;
         _windowResizes?.Watch(e.Handle, (layout, measurements) =>
         {
-            if (layout.Side(id.Edge) is null)
+            // A handle only outlives its column until the next layout shows, but a resize could start in between.
+            if (layout.Side(id.Edge) is not { } side || id.Column >= side.Columns.Count)
                 return null;
 
-            return id.Gap is { } gap
-                ? new StackGapResize(layout, id.Edge, gap, measurements, _metrics!.Docking)
-                : new SideWidthResize(layout, id.Edge, measurements, _metrics!.Docking);
+            if (id.Gap is not { } gap)
+                return new ColumnWidthResize(layout, id.Edge, id.Column, measurements, _metrics!.Docking);
+
+            if (gap >= side.Columns[id.Column].Groups.Count - 1)
+                return null;
+
+            return new StackGapResize(layout, id.Edge, id.Column, gap, measurements, _metrics!.Docking);
         });
     }
 

@@ -98,7 +98,7 @@ public sealed class FloatingWindowsAndHandlesTests
         var ids = StackResizeHandles.IdsIn(_twoOnTheRight).ToList();
 
         Assert.Equal(
-            [new StackResizeHandleId(SideEdge.Right, null), new StackResizeHandleId(SideEdge.Right, 0)],
+            [new StackResizeHandleId(SideEdge.Right, 0, null), new StackResizeHandleId(SideEdge.Right, 0, 0)],
             ids);
     }
 

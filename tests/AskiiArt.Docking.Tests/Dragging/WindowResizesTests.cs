@@ -23,7 +23,7 @@ public sealed class WindowResizesTests
     [Fact]
     public void DraggingARightSidesInnerEdgeLeft_WidensIt()
     {
-        var resize = new SideWidthResize(_twoOnTheRight, SideEdge.Right, Measure(_window), Metrics);
+        var resize = new ColumnWidthResize(_twoOnTheRight, SideEdge.Right, 0, Measure(_window), Metrics);
 
         var after = resize.LayoutAfter(new LayoutPoint(-50, 10));
 
@@ -34,7 +34,7 @@ public sealed class WindowResizesTests
     public void DraggingALeftSidesInnerEdgeRight_WidensIt()
     {
         var layout = Widgets(SideEdge.Left, new WindowGroup(["a"]));
-        var resize = new SideWidthResize(layout, SideEdge.Left, Measure(_window), Metrics);
+        var resize = new ColumnWidthResize(layout, SideEdge.Left, 0, Measure(_window), Metrics);
 
         Assert.Equal(290, resize.LayoutAfter(new LayoutPoint(50, 0)).Side(SideEdge.Left)!.Columns[0].Width);
     }
@@ -42,7 +42,7 @@ public sealed class WindowResizesTests
     [Fact]
     public void ASide_StopsAtTheNarrowestWidth()
     {
-        var resize = new SideWidthResize(_twoOnTheRight, SideEdge.Right, Measure(_window), Metrics);
+        var resize = new ColumnWidthResize(_twoOnTheRight, SideEdge.Right, 0, Measure(_window), Metrics);
 
         var after = resize.LayoutAfter(new LayoutPoint(5000, 0));
 
@@ -52,7 +52,7 @@ public sealed class WindowResizesTests
     [Fact]
     public void ASide_StopsBeforeTheCanvasRegionGetsTooNarrow()
     {
-        var resize = new SideWidthResize(_twoOnTheRight, SideEdge.Right, Measure(_window), Metrics);
+        var resize = new ColumnWidthResize(_twoOnTheRight, SideEdge.Right, 0, Measure(_window), Metrics);
 
         var after = resize.LayoutAfter(new LayoutPoint(-5000, 0));
 
@@ -67,7 +67,7 @@ public sealed class WindowResizesTests
         {
             Sides = [.. _twoOnTheRight.Sides, new SideLayout(SideEdge.Left, SideKind.Widgets, [new SideColumn(200, [new WindowGroup(["c"])])])],
         };
-        var resize = new SideWidthResize(both, SideEdge.Right, Measure(_window), Metrics);
+        var resize = new ColumnWidthResize(both, SideEdge.Right, 0, Measure(_window), Metrics);
 
         Assert.Equal(200, resize.LayoutAfter(new LayoutPoint(-50, 0)).Side(SideEdge.Left)!.Columns[0].Width);
     }
@@ -75,7 +75,7 @@ public sealed class WindowResizesTests
     [Fact]
     public void DraggingAGapDown_GrowsTheWindowAbove_AndShrinksTheOneBelow()
     {
-        var resize = new StackGapResize(_twoOnTheRight, SideEdge.Right, 0, Measure(_window), Metrics);
+        var resize = new StackGapResize(_twoOnTheRight, SideEdge.Right, 0, 0, Measure(_window), Metrics);
         var before = Lengths(_twoOnTheRight);
 
         var after = Lengths(resize.LayoutAfter(new LayoutPoint(40, 30)));
@@ -87,7 +87,7 @@ public sealed class WindowResizesTests
     [Fact]
     public void DraggingAGapUp_GrowsTheWindowBelow_AndShrinksTheOneAbove()
     {
-        var resize = new StackGapResize(_twoOnTheRight, SideEdge.Right, 0, Measure(_window), Metrics);
+        var resize = new StackGapResize(_twoOnTheRight, SideEdge.Right, 0, 0, Measure(_window), Metrics);
         var before = Lengths(_twoOnTheRight);
 
         var after = Lengths(resize.LayoutAfter(new LayoutPoint(0, -30)));
@@ -204,7 +204,7 @@ public sealed class WindowResizesTests
         var three = Widgets(SideEdge.Right, new WindowGroup(["a"]), new WindowGroup(["b"]), new WindowGroup(["c"]));
         var before = Lengths(three);
 
-        var after = Lengths(new StackGapResize(three, SideEdge.Right, 1, Measure(_window), Metrics).LayoutAfter(new LayoutPoint(0, -40)));
+        var after = Lengths(new StackGapResize(three, SideEdge.Right, 0, 1, Measure(_window), Metrics).LayoutAfter(new LayoutPoint(0, -40)));
 
         Assert.Equal(before[0], after[0], Tolerance);
         Assert.Equal(before[1] - 40, after[1], Tolerance);

@@ -271,7 +271,7 @@ Menus are Avalonia native menus built from a menu layout of action ids: the syst
 
 ### 14.4 Panels and docking
 
-Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The user calls these **windows**, and the code calls them panels, because `Window` is an Avalonia class. The shell has its own docking system (ADR 0035), and `docs/DOCKING.md` is its spec. Steps 2.5c to 2.5g are still building parts of that spec: so far, windows sit on the sides as widgets and toolbars sit on their anchors, and neither can be dragged.
+Each panel (layers, tool options, ramps, character picker, history, …) is a self-contained view and view model that doesn't know where it's hosted. The user calls these **windows**, and the code calls them panels, because `Window` is an Avalonia class. The shell has its own docking system (ADR 0035), and `docs/DOCKING.md` is its spec. Steps 2.5c to 2.5f built toolbars, widgets, floating windows and docks, with dragging and resizing, and 2.5g finishes the spec with the opening rules and polish.
 
 The canvas is the main character. It paints everything between the menu bar and the status bar, which are plain strips, and `DockingHost` lies on top with no background: art shows around windows and toolbars and through them, and they always get input first. They still take up space: centering, zoom and scroll limits work within the **safe area** they leave free. The window has a minimum size, lowered to fit small screens.
 

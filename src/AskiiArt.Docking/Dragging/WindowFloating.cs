@@ -8,14 +8,14 @@ namespace AskiiArt.Docking.Dragging;
 
 /// <summary>
 /// The size a window gets when it comes off a side to float, by a drag or from its menu (docs/DOCKING.md §5.2). A window
-/// alone on its side fills the app window's height, which would make a clumsy floating window, so that one goes back to
+/// alone in its column fills the app window's height, which would make a clumsy floating window, so that one goes back to
 /// the size it last floated at, or half its height if it's never floated.
 /// </summary>
 public static class WindowFloating
 {
-    /// <summary>Whether it's the only window on its side.</summary>
-    public static bool IsAloneOnItsSide(DockingLayout layout, string windowId) =>
-        layout.Sides.Any(side => side.Columns is [{ Groups: [{ WindowIds: [var only] }] }] && only == windowId);
+    /// <summary>Whether its group is the only one in its column, so that it fills the side's height.</summary>
+    public static bool FillsItsColumn(DockingLayout layout, string windowId) =>
+        layout.PlaceOf(windowId) is { } place && layout.Side(place.Edge)!.Columns[place.Column].Groups.Count == 1;
 
     /// <summary>The size it floats at, for a window that's open on a side or already floating.</summary>
     /// <param name="layout">The layout it's in.</param>
@@ -32,7 +32,7 @@ public static class WindowFloating
 
         var minimum = measurements.MinimumWindowLengths.GetValueOrDefault(windowId, metrics.DefaultMinimumWindowLength);
 
-        if (IsAloneOnItsSide(layout, windowId))
+        if (FillsItsColumn(layout, windowId))
         {
             return layout.FloatingSizeOf(windowId) is { } remembered
                 ? new LayoutSize(remembered.Width, remembered.Height)

@@ -27,6 +27,27 @@ public enum SideKind
     Dock,
 }
 
+/// <summary>What an open window is, which decides how it looks and what its menu offers.</summary>
+public enum WindowKind
+{
+    /// <summary>In a widget side's stack.</summary>
+    Widget,
+
+    /// <summary>A tab in a dock.</summary>
+    Dock,
+
+    /// <summary>On its own, above everything.</summary>
+    Floating,
+}
+
+/// <summary>Where a window is on a side.</summary>
+/// <param name="Edge">The side.</param>
+/// <param name="Kind">What that side holds.</param>
+/// <param name="Column">Its column, from the app window's edge. A widget's is 0.</param>
+/// <param name="Position">Its group's place in that column's stack, from the top.</param>
+/// <param name="Tab">Its place among its group's tabs. A widget's is 0.</param>
+public readonly record struct WindowPlace(SideEdge Edge, SideKind Kind, int Column, int Position, int Tab);
+
 /// <summary>One of the 8 places a toolbar can sit in the canvas region.</summary>
 public enum ToolbarAnchor
 {

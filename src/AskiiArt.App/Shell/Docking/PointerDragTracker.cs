@@ -50,6 +50,9 @@ internal sealed class PointerDragTracker
     /// <summary>The button came up during the drag.</summary>
     public event EventHandler? Dropped;
 
+    /// <summary>The button came up without the pointer having moved far enough for a drag.</summary>
+    public event EventHandler? Clicked;
+
     /// <summary>The drag ended some other way: it was cancelled, or the pointer was taken away.</summary>
     public event EventHandler? Cancelled;
 
@@ -105,6 +108,8 @@ internal sealed class PointerDragTracker
 
         if (wasDragging)
             Dropped?.Invoke(this, EventArgs.Empty);
+        else
+            Clicked?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnCaptureLost(object? sender, PointerCaptureLostEventArgs e)

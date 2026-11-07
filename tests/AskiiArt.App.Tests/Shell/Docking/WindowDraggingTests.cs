@@ -135,8 +135,8 @@ public sealed class WindowDraggingTests : IDisposable
 
         StartDrag(Layers, _middleOfNowhere);
 
-        var strip = Assert.Single(_host.Children.OfType<DropZoneView>());
-        Assert.Equal(0, strip.Bounds.Left);
+        // The right, which has windows, has a strip too, for making a dock.
+        var strip = Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left == 0);
         Assert.Equal(_host.Bounds.Height, strip.Bounds.Height);
         _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
@@ -152,7 +152,7 @@ public sealed class WindowDraggingTests : IDisposable
         StartDrag(Layers, _leftEdge);
 
         Assert.Equal(_metrics.Docking.WindowEdgePlaceholderWidth, Placeholder!.Bounds.Width);
-        Assert.True(Assert.Single(_host.Children.OfType<DropZoneView>()).IsOutlined);
+        Assert.True(Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left == 0).IsOutlined);
         _ = toolsBefore;
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
@@ -509,7 +509,7 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AWidgetsMenu_OffersFloatTurnIntoDockAndClose_WithTurnIntoDockGreyedOut()
+    public void AWidgetsMenu_OffersFloatTurnIntoDockAndClose()
     {
         ShowWindow();
 
@@ -518,7 +518,22 @@ public sealed class WindowDraggingTests : IDisposable
         Assert.Equal(
             [Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowTurnIntoDock), Label(Strings.ActionWindowClose)],
             items.Select(item => item.Header));
-        Assert.False(items[1].Command!.CanExecute(items[1].CommandParameter));
+        Assert.True(items[1].Command!.CanExecute(items[1].CommandParameter));
+        Frame(Layers).TitleMenu!.Close();
+        Pump();
+    }
+
+    [AvaloniaFact]
+    public void TheMenuButton_OffersOnlyWhatApplies_AsRightClickingDoes()
+    {
+        ShowWindow();
+
+        Frame(Layers).MenuOpener.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Pump();
+
+        Assert.Equal(
+            [Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowTurnIntoDock), Label(Strings.ActionWindowClose)],
+            Frame(Layers).TitleMenu!.Items.OfType<MenuItem>().Where(item => item.IsVisible).Select(item => item.Header));
         Frame(Layers).TitleMenu!.Close();
         Pump();
     }

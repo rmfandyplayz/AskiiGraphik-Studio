@@ -71,6 +71,23 @@ public static class LayoutSolver
     public static double MaximumFloatingWindowWidth(LayoutSize available, DockingMetrics metrics) =>
         Math.Max(metrics.MinimumWindowWidth, available.Width - metrics.MinimumCanvasRegionWidth - metrics.Margin);
 
+    /// <summary>
+    /// How wide a new column on <paramref name="edge"/> could be, with every column at the width the user wants and the
+    /// canvas region at its minimum. A widget side counts as a dock, since a new column makes it one. A column fits only
+    /// when this is at least <see cref="DockingMetrics.MinimumWindowWidth"/>.
+    /// </summary>
+    public static double RoomForANewColumn(DockingLayout layout, SideEdge edge, double availableWidth, DockingMetrics metrics)
+    {
+        var widths = layout.Sides.Sum(side => side.Columns.Sum(column => column.Width));
+        var margins = layout.Sides.Where(side => side.Edge != edge).Sum(side => OuterMargin(side, metrics));
+        return availableWidth - metrics.MinimumCanvasRegionWidth - widths - margins;
+    }
+
+    /// <summary>Whether a new column on <paramref name="edge"/> fits (<see cref="RoomForANewColumn"/>).</summary>
+    public static bool HasRoomForANewColumn(DockingLayout layout, SideEdge edge, double availableWidth,
+        DockingMetrics metrics) =>
+        RoomForANewColumn(layout, edge, availableWidth, metrics) >= metrics.MinimumWindowWidth;
+
     /// <summary>Where a rectangle's top left goes to keep it inside <paramref name="area"/>, moved as little as it can be.</summary>
     public static LayoutPoint KeptInside(LayoutPoint position, LayoutSize size, LayoutRect area) => new(
         // Max last, so rounding can't put it outside when it exactly fills the room.
@@ -108,8 +125,9 @@ public static class LayoutSolver
         var stackLength = Math.Max(0, measurements.Available.Height - margin * 2);
         var across = margin;
 
-        foreach (var column in side.Columns)
+        for (var columnIndex = 0; columnIndex < side.Columns.Count; columnIndex++)
         {
+            var column = side.Columns[columnIndex];
             var width = column.Width * widthScale;
             var entries = column.Groups
                 .Select(group => new StackSolver.Entry(group.Share, group.IsTitleOnly, MinimumLength(group, measurements, metrics)))
@@ -119,7 +137,9 @@ public static class LayoutSolver
             for (var index = 0; index < slots.Count; index++)
             {
                 var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin + slots[index].Start, slots[index].Length);
-                groups.Add(new SolvedWindowGroup(column.Groups[index].WindowIds, side.Edge, side.Kind, bounds, slots[index].IsTitleOnly));
+                var group = column.Groups[index];
+                groups.Add(new SolvedWindowGroup(group.WindowIds, side.Edge, side.Kind, bounds, slots[index].IsTitleOnly,
+                    columnIndex, index, group.Selected));
             }
 
             across += width;

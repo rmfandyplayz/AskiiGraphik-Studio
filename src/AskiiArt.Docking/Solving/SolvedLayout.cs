@@ -37,12 +37,18 @@ public sealed record SolvedLayout(
 /// <param name="Kind">What that side holds.</param>
 /// <param name="Bounds">Its rectangle.</param>
 /// <param name="IsTitleOnly">Whether it shows only its title right now, by choice or for lack of room.</param>
+/// <param name="Column">Which of its side's columns it's in, from the app window's edge.</param>
+/// <param name="Position">Its place in that column's stack, from the top.</param>
+/// <param name="Selected">The tab that's showing.</param>
 public sealed record SolvedWindowGroup(
     IReadOnlyList<string> WindowIds,
     SideEdge Edge,
     SideKind Kind,
     LayoutRect Bounds,
-    bool IsTitleOnly);
+    bool IsTitleOnly,
+    int Column,
+    int Position,
+    string Selected);
 
 /// <summary>A floating window's place, kept inside the app window.</summary>
 /// <param name="WindowId">Which window.</param>

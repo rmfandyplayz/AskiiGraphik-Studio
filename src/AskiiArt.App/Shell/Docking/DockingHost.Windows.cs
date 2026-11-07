@@ -61,8 +61,8 @@ internal sealed partial class DockingHost
     public event EventHandler<StackResizeHandleCreatedEventArgs>? StackResizeHandleCreated;
 
     /// <summary>
-    /// Lets the window follow the pointer, and shows the empty sides' strips. No window shows its buttons until the drag
-    /// ends, because windows moving under the pointer would make them flicker.
+    /// Lets the window follow the pointer, and shows the strips along the sides' edges. No window shows its buttons until
+    /// the drag ends, because windows moving under the pointer would make them flicker.
     /// </summary>
     /// <param name="windowId">The window being dragged.</param>
     /// <param name="windowDrag">What the drag can do.</param>
@@ -74,7 +74,7 @@ internal sealed partial class DockingHost
         Children.Add(landing);
 
         var drag = new WindowDragDisplay(windowId, windowDrag.HeldSize, SafeArea, placeholder, landing);
-        foreach (var zone in windowDrag.Zones.Where(zone => zone.Kind == WindowDropKind.EmptySide))
+        foreach (var zone in windowDrag.Zones.Where(zone => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.SideEdge))
         {
             var view = new DropZoneView(_metrics!.MotionDuration, _metrics.DropZoneDimmedOpacity) { ZIndex = DropZoneLayer };
             drag.Zones.Add((view, zone));
@@ -166,8 +166,11 @@ internal sealed partial class DockingHost
         foreach (var (windowId, frame) in _windows)
         {
             frame.IsFloating = false;
+            frame.IsDocked = false;
             frame.ZIndex = windowId == _windowDrag?.WindowId ? DraggedLayer : WindowLayer;
         }
+
+        ShowDockTabs(layout, catalog);
 
         for (var index = 0; index < layout.FloatingWindows.Count; index++)
         {
@@ -182,23 +185,94 @@ internal sealed partial class DockingHost
         ShowStackResizeHandles(layout);
     }
 
+    // Every window in a dock group has the group's tabs. A held window looks like a floating one, as a tab torn off would,
+    // whatever it would be if it landed.
+    private void ShowDockTabs(DockingLayout layout, ShellCatalog catalog)
+    {
+        var groups = layout.Sides
+            .Where(side => side.Kind == SideKind.Dock)
+            .SelectMany(side => side.Columns)
+            .SelectMany(column => column.Groups);
+
+        foreach (var group in groups)
+        {
+            List<DockTab> tabs =
+            [
+                .. group.WindowIds.Where(catalog.Windows.ContainsKey).Select(id => new DockTab(id, catalog.Windows[id].Title)),
+            ];
+
+            foreach (var tab in tabs)
+            {
+                if (!_windows.TryGetValue(tab.WindowId, out var frame))
+                    continue;
+
+                frame.IsDocked = tab.WindowId != _windowDrag?.WindowId;
+                frame.Tabs.SetTabs(tabs, group.Selected);
+            }
+        }
+    }
+
+    // From the frames showing, because a hidden frame's tabs haven't been laid out. A tab not laid out yet is left out,
+    // and its group's tabs are then taken to share the strip.
+    private Dictionary<string, double> MeasuredTabLengths()
+    {
+        var lengths = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var frame in _windows.Values.Where(frame => frame is { IsDocked: true, IsVisible: true }))
+        {
+            foreach (var (windowId, length) in frame.Tabs.TabLengths.Where(tab => tab.Value > 0))
+                lengths[windowId] = length;
+        }
+
+        return lengths;
+    }
+
+    private Dictionary<string, double> MeasuredTabStripOffsets()
+    {
+        var offsets = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var frame in _windows.Values.Where(frame => frame is { IsDocked: true, IsVisible: true }))
+        {
+            var offset = frame.TabStripOffset;
+            foreach (var windowId in frame.Tabs.WindowIds)
+                offsets[windowId] = offset;
+        }
+
+        return offsets;
+    }
+
     private void AddWindowFrame(string windowId, ShellWindowEntry entry)
     {
         var frame = new WindowFrame { Title = entry.Title, Body = entry.CreateView(), ZIndex = WindowLayer };
         frame.Transitions = [new DoubleTransition { Property = OpacityProperty, Duration = _metrics!.MotionDuration }];
         frame.SetCloseCommand(entry.CloseCommand, windowId);
+        frame.Tabs.WheelStep = _metrics.ToolbarWheelStep;
+        frame.Tabs.FadeLength = _metrics.ToolbarFadeLength;
+
+        frame.Tabs.TabMenuRequested += (_, e) => OpenTabMenu(e.WindowId, e.Tab);
 
         if (entry.CreateMenu?.Invoke() is { } menu)
         {
             frame.TitleMenu = menu;
 
-            // From here, because a window's own Close item takes the window out of the app window.
-            menu.Closed += (_, _) => RaiseEvent(new RoutedEventArgs(PanelEvents.DoneTypingEvent));
+            // From here, because a window's own Close item takes the window out of the app window. A tab's place is only
+            // for that opening, and right-clicking the title row opens it at the pointer again.
+            menu.Closed += (_, _) =>
+            {
+                menu.PlacementTarget = null;
+                RaiseEvent(new RoutedEventArgs(PanelEvents.DoneTypingEvent));
+            };
         }
 
         _windows.Add(windowId, frame);
         Children.Add(frame);
         WindowFrameCreated?.Invoke(this, new WindowFrameCreatedEventArgs(windowId, frame));
+    }
+
+    // A tab's own window's menu, placed at the tab, because the window's own title row is hidden unless its tab is the
+    // selected one.
+    private void OpenTabMenu(string windowId, Control tab)
+    {
+        if (_windows.TryGetValue(windowId, out var owner))
+            owner.OpenMenu(tab);
     }
 
     private void ShowStackResizeHandles(DockingLayout layout)
@@ -218,7 +292,10 @@ internal sealed partial class DockingHost
     private void MeasureWindows(SolvedLayout solved, Size availableSize)
     {
         foreach (var group in solved.WindowGroups)
-            MeasureWindow(group.WindowIds[0], group.Bounds, group.IsTitleOnly);
+        {
+            foreach (var windowId in group.WindowIds)
+                MeasureWindow(windowId, group.Bounds, group.IsTitleOnly);
+        }
 
         foreach (var window in solved.FloatingWindows)
             MeasureWindow(window.WindowId, window.Bounds, window.IsTitleOnly);
@@ -250,14 +327,14 @@ internal sealed partial class DockingHost
     {
         foreach (var group in solved.WindowGroups)
         {
-            // Only the first of a group's tabs shows until docks arrive in step 2.5f.
-            for (var tab = 0; tab < group.WindowIds.Count; tab++)
+            // Only the selected tab's window shows, and the others wait in the same place.
+            foreach (var windowId in group.WindowIds)
             {
-                if (!_windows.TryGetValue(group.WindowIds[tab], out var frame))
+                if (!_windows.TryGetValue(windowId, out var frame))
                     continue;
 
-                frame.IsVisible = tab == 0;
-                ArrangeWindow(group.WindowIds[tab], frame, group.Bounds, metrics);
+                frame.IsVisible = windowId == group.Selected || windowId == _windowDrag?.WindowId;
+                ArrangeWindow(windowId, frame, group.Bounds, metrics);
             }
         }
 

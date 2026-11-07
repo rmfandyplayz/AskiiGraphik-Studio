@@ -21,6 +21,11 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="DefaultFloatingWindowHeight">How tall a title-only window is when it lands floating.</param>
 /// <param name="WindowEdgeStripWidth">How wide the zone at an empty side's edge is, during a window drag.</param>
 /// <param name="WindowEdgePlaceholderWidth">How wide the placeholder on an empty side is, during a window drag.</param>
+/// <param name="DockHandleThickness">How thick the handles on the borders between dock windows are.</param>
+/// <param name="DockBandLength">
+/// How deep the bands along a dock window's edges are, during a window drag. A drop there stacks the window beside it, or
+/// makes it a column, rather than a tab.
+/// </param>
 public sealed record DockingMetrics(
     double Margin,
     double WidgetGap,
@@ -36,7 +41,9 @@ public sealed record DockingMetrics(
     double DefaultWindowWidth,
     double DefaultFloatingWindowHeight,
     double WindowEdgeStripWidth,
-    double WindowEdgePlaceholderWidth);
+    double WindowEdgePlaceholderWidth,
+    double DockHandleThickness,
+    double DockBandLength);
 
 /// <summary>The size a toolbar wants, each way round.</summary>
 /// <param name="Horizontal">Its size when it runs across.</param>
@@ -65,4 +72,13 @@ public sealed record LayoutMeasurements(
     LayoutSize Available,
     IReadOnlyDictionary<string, double> MinimumWindowLengths,
     IReadOnlyDictionary<string, LayoutSize> ToolbarSizes,
-    SubToolbarRequest? SubToolbar = null);
+    SubToolbarRequest? SubToolbar = null)
+{
+    private static readonly IReadOnlyDictionary<string, double> _none = new Dictionary<string, double>();
+
+    /// <summary>How long each window's tab is in a dock's tab strip, by id. If any is unknown, a strip's tabs share it equally.</summary>
+    public IReadOnlyDictionary<string, double> TabLengths { get; init; } = _none;
+
+    /// <summary>How far each dock group's tab strip is scrolled, by the id of the tab showing. Unknown means not at all.</summary>
+    public IReadOnlyDictionary<string, double> TabStripOffsets { get; init; } = _none;
+}

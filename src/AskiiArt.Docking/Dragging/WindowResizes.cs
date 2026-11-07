@@ -36,10 +36,14 @@ public interface IWindowResize
     DockingLayout LayoutAfter(LayoutPoint moved);
 }
 
-/// <summary>Dragging a side's inner edge: all its windows share the one width.</summary>
-public sealed class SideWidthResize : IWindowResize
+/// <summary>
+/// Dragging a column's inner edge: a widget side's, whose windows all share the one width, or a border in a dock, which
+/// belongs to the column on the app window's side of it. Only that column changes width, and the canvas region gives way.
+/// </summary>
+public sealed class ColumnWidthResize : IWindowResize
 {
     private readonly SideEdge _edge;
+    private readonly int _column;
     private readonly double _startWidth;
     private readonly double _minimum;
     private readonly double _maximum;
@@ -47,21 +51,26 @@ public sealed class SideWidthResize : IWindowResize
     /// <summary>Starts a resize.</summary>
     /// <param name="start">The layout as it was before the drag, with windows on that side.</param>
     /// <param name="edge">The side.</param>
+    /// <param name="column">The column, from the app window's edge.</param>
     /// <param name="measurements">The current sizes of everything.</param>
     /// <param name="metrics">The theme's sizes.</param>
-    public SideWidthResize(DockingLayout start, SideEdge edge, LayoutMeasurements measurements, DockingMetrics metrics)
+    public ColumnWidthResize(DockingLayout start, SideEdge edge, int column, LayoutMeasurements measurements,
+        DockingMetrics metrics)
     {
         Start = start;
         _edge = edge;
+        _column = column;
 
         var side = start.Side(edge) ?? throw new ArgumentException("That side has no windows.", nameof(edge));
-        _startWidth = side.Columns[0].Width;
+        if (column < 0 || column >= side.Columns.Count)
+            throw new ArgumentOutOfRangeException(nameof(column), column, "That side has no such column.");
+
+        _startWidth = side.Columns[column].Width;
         _minimum = metrics.MinimumWindowWidth;
 
-        var otherEdge = edge == SideEdge.Left ? SideEdge.Right : SideEdge.Left;
-        var otherWidth = start.Side(otherEdge)?.Columns.Sum(column => column.Width) ?? 0;
+        var otherColumns = start.Sides.Sum(other => other.Columns.Sum(each => each.Width)) - _startWidth;
         var margins = start.Sides.Count(other => other.Kind == SideKind.Widgets) * metrics.Margin;
-        var room = measurements.Available.Width - metrics.MinimumCanvasRegionWidth - otherWidth - margins;
+        var room = measurements.Available.Width - metrics.MinimumCanvasRegionWidth - otherColumns - margins;
 
         _maximum = Math.Max(_minimum, room);
     }
@@ -80,17 +89,18 @@ public sealed class SideWidthResize : IWindowResize
             Sides =
             [
                 .. Start.Sides.Select(side => side.Edge == _edge
-                    ? side with { Columns = [side.Columns[0] with { Width = width }, .. side.Columns.Skip(1)] }
+                    ? side with { Columns = [.. side.Columns.Select((column, index) => index == _column ? column with { Width = width } : column)] }
                     : side),
             ],
         };
     }
 }
 
-/// <summary>Dragging the gap between two widgets.</summary>
+/// <summary>Dragging the gap between two widgets, or the border between two dock windows in a column.</summary>
 public sealed class StackGapResize : IWindowResize
 {
     private readonly SideEdge _edge;
+    private readonly int _column;
     private readonly int _gap;
     private readonly List<StackLengths.Entry> _entries;
     private readonly double _titleLength;
@@ -98,21 +108,23 @@ public sealed class StackGapResize : IWindowResize
     /// <summary>Starts a resize.</summary>
     /// <param name="start">The layout as it was before the drag.</param>
     /// <param name="edge">The side.</param>
+    /// <param name="column">The column, from the app window's edge. A widget side's is 0.</param>
     /// <param name="gap">Which gap: 0 is the one below the first window.</param>
     /// <param name="measurements">The current sizes of everything.</param>
     /// <param name="metrics">The theme's sizes.</param>
-    public StackGapResize(DockingLayout start, SideEdge edge, int gap, LayoutMeasurements measurements,
+    public StackGapResize(DockingLayout start, SideEdge edge, int column, int gap, LayoutMeasurements measurements,
         DockingMetrics metrics)
     {
         Start = start;
         _edge = edge;
+        _column = column;
         _gap = gap;
         _titleLength = metrics.TitleLength;
 
         var solved = LayoutSolver.Solve(start, measurements, metrics);
         _entries =
         [
-            .. solved.WindowGroups.Where(group => group.Edge == edge).OrderBy(group => group.Bounds.Y).Select(group =>
+            .. solved.WindowGroups.Where(group => group.Edge == edge && group.Column == column).OrderBy(group => group.Bounds.Y).Select(group =>
                 new StackLengths.Entry(group.Bounds.Height, group.IsTitleOnly,
                     group.WindowIds.Select(id =>
                             measurements.MinimumWindowLengths.GetValueOrDefault(id, metrics.DefaultMinimumWindowLength))
@@ -135,7 +147,11 @@ public sealed class StackGapResize : IWindowResize
                 .. Start.Sides.Select(side => side.Edge == _edge
                     ? side with
                     {
-                        Columns = [side.Columns[0] with { Groups = WithEntries(side.Columns[0].Groups, entries) }]
+                        Columns =
+                        [
+                            .. side.Columns.Select((column, index) =>
+                                index == _column ? column with { Groups = WithEntries(column.Groups, entries) } : column),
+                        ],
                     }
                     : side),
             ],

@@ -147,9 +147,10 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.
   *Note:* Built (ADR 0035). Debug → Sample Window 1 to 3 were added, because stacks can't be tried with only 2 windows. Choosing a side for a new widget came forward from 2.5g, because Turn into Widget needs it. The owner confirmed its tests on 2026-11-06, with changes tested in `docs/testing/step-2.5e-window-follow-ups.md`: windows follow the pointer past the app window's edge, a lone window floats at its remembered size or half height, double-clicking a title squeezes or opens it, lines on the gaps, and menus that offer the other kinds. Those passed on all platforms the same day.
-- [ ] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
+- [~] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
 
   *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.
+  *Note:* Built (ADR 0035, amended). Tests in `docs/testing/step-2.5f-docks.md`, with a test for toolbars going past the app window's edge. Fixed on the way: the ≡ button opened a window's menu without hiding the items that don't apply.
 - [ ] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
 
   *Owner checks:* the opening rules, a last pass over how everything feels, and a new set of tests for what 2.1's old retest list was meant to cover, since that list checked Dock.

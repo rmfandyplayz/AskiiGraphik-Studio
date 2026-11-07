@@ -27,6 +27,9 @@
       <SolidColorBrush x:Key="AppWindowLandingHatchBrush" Color="#330078D7" />
       <SolidColorBrush x:Key="AppResizeLineHoverBrush" Color="#590078D7" />
       <SolidColorBrush x:Key="AppResizeLineHeldBrush" Color="#FF0078D7" />
+      <SolidColorBrush x:Key="AppDockBrush" Color="#FFF3F3F3" />
+      <SolidColorBrush x:Key="AppDockBorderBrush" Color="#FFC8C8C8" />
+      <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FFDCDCDC" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -49,6 +52,9 @@
       <SolidColorBrush x:Key="AppWindowLandingHatchBrush" Color="#334C9EEB" />
       <SolidColorBrush x:Key="AppResizeLineHoverBrush" Color="#594C9EEB" />
       <SolidColorBrush x:Key="AppResizeLineHeldBrush" Color="#FF4C9EEB" />
+      <SolidColorBrush x:Key="AppDockBrush" Color="#FF2B2B2B" />
+      <SolidColorBrush x:Key="AppDockBorderBrush" Color="#FF3C3C3C" />
+      <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FF3C3C3C" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -137,6 +143,13 @@
   <!-- The zone at an empty side's edge while dragging a window, and how far that side opens over it. -->
   <x:Double x:Key="AppWindowEdgeStripWidth">24</x:Double>
   <x:Double x:Key="AppWindowEdgePlaceholderWidth">48</x:Double>
+  <!-- How thick the handles on the borders between dock windows are, and how deep the bands along a dock window's
+       edges are during a window drag. -->
+  <x:Double x:Key="AppDockHandleThickness">6</x:Double>
+  <x:Double x:Key="AppDockBandLength">48</x:Double>
+  <!-- A dock window's outline, and the padding around each tab's title. -->
+  <Thickness x:Key="AppDockBorderThickness">1</Thickness>
+  <Thickness x:Key="AppDockTabPadding">8,0</Thickness>
   <!-- The hatched placeholder showing where a dragged window would land. -->
   <x:Double x:Key="AppWindowPlaceholderHatchGap">10</x:Double>
   <x:Double x:Key="AppWindowPlaceholderLineThickness">1</x:Double>

@@ -5,6 +5,7 @@ using System.Windows.Input;
 using AskiiArt.Docking.Dragging;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Shell.Docking;
@@ -14,7 +15,7 @@ internal sealed partial class WindowFrame : UserControl
     public WindowFrame()
     {
         InitializeComponent();
-        MenuButton.Click += (_, _) => TitleRow.ContextMenu?.Open(TitleRow);
+        MenuButton.Click += (_, _) => OpenMenu();
     }
 
     /// <summary>The name at the top.</summary>
@@ -54,6 +55,30 @@ internal sealed partial class WindowFrame : UserControl
     /// <summary>The button that closes the window.</summary>
     public Button Closer => CloseButton;
 
+    /// <summary>Whether it's a tab in a dock, which shows a tab strip in place of its title and buttons.</summary>
+    public bool IsDocked
+    {
+        get => Classes.Contains("docked");
+        set => Classes.Set("docked", value);
+    }
+
+    /// <summary>The tab strip a dock window shows in place of its title.</summary>
+    public DockTabStrip Tabs => TabStrip;
+
+    /// <summary>
+    /// How far the tab strip is scrolled, counting from the frame's left edge rather than the strip's, for working out where
+    /// its tabs are.
+    /// </summary>
+    public double TabStripOffset =>
+        TabStrip.ScrollOffset - (TabStrip.TranslatePoint(default, this) is { } start ? start.X : 0);
+
+    /// <summary>
+    /// The window a drag from the title row moves: in a dock, the tab pressed, or the one showing if the press was on the
+    /// strip's empty part. Otherwise, this one.
+    /// </summary>
+    public string WindowToDrag(string ownWindowId) =>
+        IsDocked && TabStrip.PressedWindowId is { } pressed ? pressed : ownWindowId;
+
     /// <summary>Whether it's on its own, which gives it grips along its edges and corners.</summary>
     public bool IsFloating
     {
@@ -92,6 +117,20 @@ internal sealed partial class WindowFrame : UserControl
         (BottomLeftGrip, WindowEdges.Bottom | WindowEdges.Left),
         (BottomRightGrip, WindowEdges.Bottom | WindowEdges.Right),
     ];
+
+    /// <summary>
+    /// Opens the menu as right-clicking the title does, so that it gets the same chance to show only what applies:
+    /// opening a menu directly skips that.
+    /// </summary>
+    /// <param name="at">Where to open it, if not at the title, such as at a dock window's tab while it's hidden.</param>
+    public void OpenMenu(Control? at = null)
+    {
+        if (TitleMenu is not { } menu)
+            return;
+
+        menu.PlacementTarget = at;
+        TitleRow.RaiseEvent(new ContextRequestedEventArgs());
+    }
 
     /// <summary>Says what the close button does.</summary>
     public void SetCloseCommand(ICommand? command, string windowId)

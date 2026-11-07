@@ -235,7 +235,7 @@ public sealed class WindowEditsTests
             FloatingWindows = [new FloatingWindow("f", default, 240, 300)],
         };
 
-        Assert.False(LayoutEdits.CanTurnIntoWidget(full));
+        Assert.False(LayoutEdits.CanTurnIntoWidget(full, "f"));
         Assert.Same(full, LayoutEdits.TurnIntoWidget(full, "f", 240));
     }
 

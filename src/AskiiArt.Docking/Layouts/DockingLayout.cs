@@ -67,6 +67,45 @@ public sealed record DockingLayout(
     /// <summary>Whether the window is open anywhere.</summary>
     public bool IsWindowOpen(string windowId) => OpenWindowIds().Contains(windowId, StringComparer.Ordinal);
 
+    /// <summary>What kind of window it is, or null if it's closed.</summary>
+    public WindowKind? KindOf(string windowId)
+    {
+        if (FloatingWindowNamed(windowId) is not null)
+            return WindowKind.Floating;
+
+        return PlaceOf(windowId)?.Kind switch
+        {
+            SideKind.Widgets => WindowKind.Widget,
+            SideKind.Dock => WindowKind.Dock,
+            _ => null,
+        };
+    }
+
+    /// <summary>Where the window is on a side, or null if it's floating or closed.</summary>
+    public WindowPlace? PlaceOf(string windowId)
+    {
+        foreach (var side in Sides)
+        {
+            for (var column = 0; column < side.Columns.Count; column++)
+            {
+                var groups = side.Columns[column].Groups;
+                for (var position = 0; position < groups.Count; position++)
+                {
+                    var tab = IndexOf(groups[position].WindowIds, windowId);
+                    if (tab >= 0)
+                        return new WindowPlace(side.Edge, side.Kind, column, position, tab);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The group holding the window, or null if it isn't on a side.</summary>
+    public WindowGroup? GroupHolding(string windowId) => PlaceOf(windowId) is { } place
+        ? Side(place.Edge)!.Columns[place.Column].Groups[place.Position]
+        : null;
+
     /// <summary>The window if it's floating, or null if it isn't.</summary>
     public FloatingWindow? FloatingWindowNamed(string windowId) =>
         FloatingWindows.FirstOrDefault(window => window.WindowId == windowId);
@@ -81,6 +120,17 @@ public sealed record DockingLayout(
     /// </summary>
     public bool IsAnchorTaken(ToolbarAnchor anchor, string toolbarId) => Toolbars.Any(toolbar =>
         toolbar.IsVisible && !toolbar.IsFloating && toolbar.Anchor == anchor && toolbar.ToolbarId != toolbarId);
+
+    private static int IndexOf(IReadOnlyList<string> windowIds, string windowId)
+    {
+        for (var index = 0; index < windowIds.Count; index++)
+        {
+            if (windowIds[index] == windowId)
+                return index;
+        }
+
+        return -1;
+    }
 }
 
 /// <summary>
@@ -102,11 +152,30 @@ public sealed record SideColumn(double Width, IReadOnlyList<WindowGroup> Groups)
 /// <param name="Share">How much of the column's free length it wants, relative to its neighbours.</param>
 /// <param name="IsTitleOnly">Whether the user squeezed it down to its title.</param>
 /// <param name="OpenLength">How long it was before it was squeezed to its title, for opening it again. Null if unknown.</param>
+/// <param name="SelectedWindowId">The tab that's showing. Null, or a window that isn't in the group, means the first.</param>
 public sealed record WindowGroup(
     IReadOnlyList<string> WindowIds,
     double Share = 1,
     bool IsTitleOnly = false,
-    double? OpenLength = null);
+    double? OpenLength = null,
+    string? SelectedWindowId = null)
+{
+    /// <summary>The tab that's showing. Empty only for a group with no windows, which a repaired layout never has.</summary>
+    [JsonIgnore]
+    public string Selected
+    {
+        get
+        {
+            if (SelectedWindowId is { } selected && Holds(selected))
+                return selected;
+
+            return WindowIds.Count > 0 ? WindowIds[0] : string.Empty;
+        }
+    }
+
+    /// <summary>Whether the window is one of its tabs.</summary>
+    public bool Holds(string windowId) => WindowIds.Contains(windowId, StringComparer.Ordinal);
+}
 
 /// <summary>A window on its own, which can be anywhere inside the app window.</summary>
 /// <param name="WindowId">Which window.</param>
@@ -156,14 +225,18 @@ public sealed record ToolbarPlacement(
 /// <summary>A closed window, and enough about where it was to put it back.</summary>
 /// <param name="WindowId">Which window.</param>
 /// <param name="Edge">The side it was on.</param>
-/// <param name="Position">Its place in the side's stack.</param>
+/// <param name="Position">Its place in its column's stack.</param>
 /// <param name="Share">The group's share of the stack.</param>
 /// <param name="SideWidth">The column's width, in case the side has since emptied.</param>
 /// <param name="WasFloating">Where it was if it was floating, in which case the rest doesn't apply.</param>
+/// <param name="Column">Which of a dock's columns it was in, from the app window's edge. A widget's is 0.</param>
+/// <param name="TabmateId">A window that was a tab beside it in a dock, for joining it again. Null if it had none.</param>
 public sealed record ClosedWindow(
     string WindowId,
     SideEdge Edge,
     int Position,
     double Share,
     double SideWidth,
-    FloatingWindow? WasFloating = null);
+    FloatingWindow? WasFloating = null,
+    int Column = 0,
+    string? TabmateId = null);

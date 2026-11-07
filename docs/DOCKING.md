@@ -85,7 +85,7 @@ Widgets and floating windows have a title at the very top, and no visible button
  Window Title            ≡  ✕      title-only
 ```
 
-Right-clicking the title opens the same menu as the ≡ button. Dragging the title moves the window, and double-clicking it squeezes the window to title-only or opens it again (section 3.1). While any window is being dragged or resized, no window shows its buttons.
+Right-clicking the title opens the same menu as the ≡ button. A dock window has no buttons: right-clicking a tab opens that tab's window's menu. Dragging the title moves the window, and double-clicking it squeezes the window to title-only or opens it again (section 3.1). While any window is being dragged or resized, no window shows its buttons.
 
 Each menu offers the kinds the window isn't:
 
@@ -95,10 +95,10 @@ Each menu offers the kinds the window isn't:
 | | Turn into Dock | Always. The whole side converts |
 | | Close | Always |
 | Floating | Turn into Widget | A side has room, using the opening rules (section 6) |
-| | Turn into Dock | Where it goes is decided with docks (step 2.5f) |
+| | Turn into Dock | A dock, or a side that could become one, has room for a new column. It joins the dock as a new column at its outer edge. With no dock, the side the opening rules would choose for a widget (section 6) converts, and it's the column at the edge |
 | | Close | Always |
 | Dock tab, on right-click | Float | Always |
-| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise |
+| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise, for now: once everything is in place it'll be hidden instead |
 | | Close | Always |
 
 The Window menu also opens and closes every window.
@@ -109,8 +109,9 @@ Works like Illustrator:
 
 - **Shape:** columns, each a top-to-bottom stack, each of those a group of tabs. No splits inside splits.
 - **Look:** opaque, with no margins or gaps. Every dock window has a tab strip, even with one tab, and no hover buttons.
-- **Resizing:** drag a border. Title-only applies here too, the same way as widgets.
-- **Tabs:** drag a tab to reorder it or take it elsewhere. Too many tabs scroll, with fades like a toolbar's.
+- **Columns:** as many as fit. A new column is only offered while it could be at least the narrowest a window can be, with the canvas region keeping its minimum width.
+- **Resizing:** drag a border. A border beside a column, the inner edge included, resizes only the column outside it, so the dock grows or shrinks and the canvas region gives way. A border between windows in a column works like a widget gap. Title-only applies here too, the same way as widgets.
+- **Tabs:** click a tab to show its window. Drag a tab to reorder it or take it elsewhere. Too many tabs scroll, with fades like a toolbar's. Double-clicking a tab squeezes its window, tabs and all, to its tab strip, or opens it again, unless it's alone in its column.
 - **Converting:** a stack keeps its order and heights when a side converts either way.
 
 ### 3.4 Floating windows
@@ -210,19 +211,19 @@ The first match, top to bottom, wins:
 | Pointer is over | Dropping does this |
 |---|---|
 | Edge strip of a side with no windows | The window becomes a widget, keeping its width. A thin placeholder shows at the edge, and toolbars move in |
-| Edge strip of a side with widgets | The side becomes a dock. The window is a column at the very edge, and the rest are one column beside it |
-| Edge strip of a side with a dock | A new column at the very edge |
+| Edge strip of a side with widgets, when a column fits | The side becomes a dock. The window is a column at the very edge, and the rest are one column beside it |
+| Edge strip of a side with a dock, when a column fits | A new column at the very edge |
 | The window's own place | Nothing changes |
 | The zone just inside a dock's inner edge, when this is the side's only window | It becomes a widget |
 | Upper or lower half of a widget, on a side with room | It joins the stack above or below that widget. The others move apart for a hatched "+" placeholder |
 | A dock window's tab strip or middle | It becomes a tab |
 | A dock window's top or bottom band | It stacks above or below |
-| A dock window's left or right band | It becomes a new column beside that column |
+| A dock window's left or right band, when a column fits | It becomes a new column beside that column |
 | Anywhere else, or a side already holding 4 widgets | It floats there |
 
 A title-only window that lands somewhere gets a normal size, unless it's a floating window that's only being moved. Dragging the last window off a side empties it, and toolbars move back.
 
-The zones come from the layout without the dragged window, which is what shows whenever it isn't over one. An empty side shows its edge strip in blue for the whole drag. While the window is over a zone it goes see-through, as a toolbar does. The hatched placeholder is exactly where the window would land, except on an empty side, which only opens a little until the drop.
+The zones come from the layout without the dragged window, which is what shows whenever it isn't over one. Every side's edge strip shows in blue for the whole drag, a side with windows only while a column fits there. While the window is over a zone it goes see-through, as a toolbar does. The hatched placeholder is exactly where the window would land, except on an empty side, which only opens a little until the drop.
 
 The window follows the pointer anywhere, even past the app window's edge. Out there, only an empty side's strip and the window's own place still count, as if at that edge. Anywhere else a drop floats the window back inside, and a dashed outline with a very light hatch shows where, as a toolbar's does. A window alone on its side is held at the size it would float at (section 3.4), so the pointer stays on its title.
 

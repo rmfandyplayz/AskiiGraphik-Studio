@@ -33,6 +33,28 @@ public sealed class TitleOnlyToggleTests
     }
 
     [Fact]
+    public void ADockWindowsTabs_SqueezeTogether_AndTheOtherWindowsInTheColumnTakeTheRoom()
+    {
+        var dock = Dock(SideEdge.Right, Column(Tabs("a", "b"), Tabs("c")), Column(Tabs("d")));
+
+        var squeezed = Toggle(dock, "b");
+
+        Assert.True(squeezed.GroupHolding("a")!.IsTitleOnly);
+        Assert.False(squeezed.GroupHolding("d")!.IsTitleOnly);
+        var solved = LayoutSolver.Solve(squeezed, Measure(_window), Metrics);
+        Assert.Equal(Metrics.TitleLength, solved.PlaceOfWindow("a")!.Value.Bounds.Height, Tolerance);
+        Assert.Equal(700 - Metrics.TitleLength, solved.PlaceOfWindow("c")!.Value.Bounds.Height, Tolerance);
+    }
+
+    [Fact]
+    public void ADockWindowAloneInItsColumn_CantBeSqueezed()
+    {
+        var dock = Dock(SideEdge.Right, Column(Tabs("a", "b")), Column(Tabs("c"), Tabs("d")));
+
+        Assert.Same(dock, Toggle(dock, "a"));
+    }
+
+    [Fact]
     public void AWidget_SqueezesToItsTitle_RememberingHowLongItWas_AndTheOthersTakeTheRoom()
     {
         var stack = Widgets(SideEdge.Right, new WindowGroup(["a"]), new WindowGroup(["b"]));
@@ -116,7 +138,7 @@ public sealed class TitleOnlyToggleTests
         var stack = Widgets(SideEdge.Right, new WindowGroup(["a"]), new WindowGroup(["b"]));
         var before = Lengths(stack);
 
-        var resize = new StackGapResize(stack, SideEdge.Right, 0, Measure(_window), Metrics);
+        var resize = new StackGapResize(stack, SideEdge.Right, 0, 0, Measure(_window), Metrics);
         var squeezed = resize.LayoutAfter(new LayoutPoint(0, 5000));
 
         var group = squeezed.Side(SideEdge.Right)!.Columns[0].Groups[1];

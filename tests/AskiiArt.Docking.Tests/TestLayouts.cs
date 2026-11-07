@@ -27,7 +27,9 @@ internal static class TestLayouts
         DefaultWindowWidth: 240,
         DefaultFloatingWindowHeight: 280,
         WindowEdgeStripWidth: 24,
-        WindowEdgePlaceholderWidth: 48);
+        WindowEdgePlaceholderWidth: 48,
+        DockHandleThickness: 6,
+        DockBandLength: 48);
 
     public static readonly DockingCatalog Catalog = new(
         WindowIds,
@@ -56,12 +58,18 @@ internal static class TestLayouts
         Gen.Double[-10, 600],
         (isKnown, length) => isKnown ? length : (double?)null);
 
+    private static readonly Gen<string?> _maybeIds = Gen.Select(
+        Gen.Bool,
+        _ids,
+        (isKnown, id) => isKnown ? id : null);
+
     private static readonly Gen<WindowGroup> _groups = Gen.Select(
         _ids.List[0, 3],
         Gen.Double[-1, 5],
         Gen.Bool,
         _openLengths,
-        (ids, share, isTitleOnly, openLength) => new WindowGroup(ids, share, isTitleOnly, openLength));
+        _maybeIds,
+        (ids, share, isTitleOnly, openLength, selected) => new WindowGroup(ids, share, isTitleOnly, openLength, selected));
 
     private static readonly Gen<SideColumn> _columns = Gen.Select(
         Gen.Double[-10, 600],
@@ -95,7 +103,10 @@ internal static class TestLayouts
         Gen.Int[-1, 6],
         Gen.Double[-1, 5],
         Gen.Double[-10, 600],
-        (id, edge, position, share, width) => new ClosedWindow(id, edge, position, share, width));
+        Gen.Int[-1, 3],
+        _maybeIds,
+        (id, edge, position, share, width, column, tabmate) =>
+            new ClosedWindow(id, edge, position, share, width, Column: column, TabmateId: tabmate));
 
     private static readonly Gen<FloatingWindow> _floatingWindows = Gen.Select(
         _ids,
@@ -152,6 +163,18 @@ internal static class TestLayouts
     }
 
     public static string Text(DockingLayout layout) => LayoutJson.Write(layout);
+
+    /// <summary>A layout with just this dock on one side.</summary>
+    public static DockingLayout Dock(SideEdge edge, params SideColumn[] columns) => new(
+        [new SideLayout(edge, SideKind.Dock, columns)],
+        [],
+        []);
+
+    /// <summary>A dock column of 240 holding these groups.</summary>
+    public static SideColumn Column(params WindowGroup[] groups) => new(240, groups);
+
+    /// <summary>A group of these tabs.</summary>
+    public static WindowGroup Tabs(params string[] windowIds) => new(windowIds);
 
     /// <summary>A layout with just these widgets on one side.</summary>
     public static DockingLayout Widgets(SideEdge edge, params WindowGroup[] groups) => new(
