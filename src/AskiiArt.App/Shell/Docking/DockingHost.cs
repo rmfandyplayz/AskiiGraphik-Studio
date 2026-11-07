@@ -345,7 +345,7 @@ internal sealed partial class DockingHost : Panel
         {
             if (toolbarId == _drag?.ToolbarId)
             {
-                view.Arrange(ToRect(PlaceDragged(_drag, finalSize)));
+                view.Arrange(ToRect(PlaceDragged(_drag)));
             }
             else if (bounds.TryGetValue(toolbarId, out var target))
             {
@@ -372,14 +372,14 @@ internal sealed partial class DockingHost : Panel
         return finalSize;
     }
 
-    private LayoutRect PlaceDragged(ToolbarDragDisplay drag, Size finalSize)
+    // It follows the pointer anywhere, even past the app window's edge, as a window does. Where it would land instead
+    // shows as the landing preview.
+    private LayoutRect PlaceDragged(ToolbarDragDisplay drag)
     {
         var size = _toolbarSizes.GetValueOrDefault(drag.ToolbarId);
-        var x = drag.Pointer.X - drag.Grab.X * size.Width;
-        var y = drag.Pointer.Y - drag.Grab.Y * size.Height;
         var rect = new LayoutRect(
-            Math.Max(0, Math.Min(x, finalSize.Width - size.Width)),
-            Math.Max(0, Math.Min(y, finalSize.Height - size.Height)),
+            drag.Pointer.X - drag.Grab.X * size.Width,
+            drag.Pointer.Y - drag.Grab.Y * size.Height,
             size.Width,
             size.Height);
 

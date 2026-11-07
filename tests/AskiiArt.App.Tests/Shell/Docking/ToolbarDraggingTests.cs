@@ -432,6 +432,27 @@ public sealed class ToolbarDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void PastTheAppWindowsEdge_TheToolbarFollowsThePointer_AndThePreviewShowsWhereItGoesBack()
+    {
+        ShowWindow();
+        var heldFromCorner = GripOf(File) - BoundsOf(File).TopLeft;
+        var outside = new Point(1100, 750);
+
+        StartDrag(File, outside);
+
+        Assert.Equal(outside - heldFromCorner, BoundsOf(File).TopLeft);
+        Assert.True(Landing!.IsVisible);
+        Assert.True(Landing.ShowsCopy);
+        var previewed = Landing.Bounds;
+        Assert.True(previewed.Right <= _host.Bounds.Width);
+        Assert.True(previewed.Bottom <= _host.Bounds.Height);
+
+        _window.MouseUp(outside, MouseButton.Left);
+        Pump();
+        Assert.Equal(previewed, BoundsOf(File));
+    }
+
+    [AvaloniaFact]
     public void ThePreviewsOutline_KeepsMovingForAsLongAsItShows()
     {
         ShowWindow();

@@ -146,7 +146,7 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 - [x] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
 
   *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.
-  *Note:* Built (ADR 0035). Debug → Sample Window 1 to 3 were added, because stacks can't be tried with only 2 windows. Choosing a side for a new widget came forward from 2.5g, because Turn into Widget needs it. The owner confirmed its tests on 2026-11-06, with changes tested in `docs/testing/step-2.5e-window-follow-ups.md`: windows follow the pointer past the app window's edge, a lone window floats at its remembered size or half height, double-clicking a title squeezes or opens it, lines on the gaps, and menus that offer the other kinds.
+  *Note:* Built (ADR 0035). Debug → Sample Window 1 to 3 were added, because stacks can't be tried with only 2 windows. Choosing a side for a new widget came forward from 2.5g, because Turn into Widget needs it. The owner confirmed its tests on 2026-11-06, with changes tested in `docs/testing/step-2.5e-window-follow-ups.md`: windows follow the pointer past the app window's edge, a lone window floats at its remembered size or half height, double-clicking a title squeezes or opens it, lines on the gaps, and menus that offer the other kinds. Those passed on all platforms the same day.
 - [ ] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
 
   *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.

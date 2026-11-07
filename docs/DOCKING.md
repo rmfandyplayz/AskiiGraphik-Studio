@@ -197,7 +197,7 @@ Dropping on a middle anchor sets its direction. A corner keeps the direction it 
 
 **Over a zone, the zone is the preview.** Its blue fades, leaving a dashed outline around the strip or square, and the dragged toolbar goes much more see-through. There's no copy of the toolbar, and nothing else moves until the drop.
 
-**Pushed back, the preview is the toolbar itself.** A floating toolbar that would have to move to stay inside the canvas region shows where it would land as a see-through copy of itself, inside a dashed outline. Any zone that overlaps dims until it moves off, though it stays easy to see. A floating toolbar that would land right where it's held needs none.
+**Pushed back, the preview is the toolbar itself.** A floating toolbar that would have to move to stay inside the canvas region shows where it would land as a see-through copy of itself, inside a dashed outline. Any zone that overlaps dims until it moves off, though it stays easy to see. A floating toolbar that would land right where it's held needs none. The held toolbar follows the pointer anywhere, even past the app window's edge, as a window does, and a drop out there lands where the preview shows.
 
 **The outline's dashes run around it** like ants, for as long as it shows.
 
