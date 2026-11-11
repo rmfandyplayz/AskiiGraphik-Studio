@@ -154,6 +154,7 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 - [ ] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
 
   *Owner checks:* the opening rules, a last pass over how everything feels, and a new set of tests for what 2.1's old retest list was meant to cover, since that list checked Dock.
+  *Note:* In progress. Done before the owner's notes: opening rules 4 and 5 (a tab in the largest dock window, or floating centred on the canvas region), and columns that stop shrinking at the narrowest a window can be. Its test doc waits until the owner's notes are in, as the owner asked.
 
 ## M2b: Colour
 

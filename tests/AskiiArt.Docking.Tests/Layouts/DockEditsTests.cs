@@ -221,7 +221,8 @@ public sealed class DockEditsTests
         var closed = new ClosedWindow("w2", SideEdge.Right, 0, 1, 240, Column: -3, TabmateId: "gone");
         var layout = new DockingLayout([new SideLayout(SideEdge.Right, SideKind.Dock, [Column(group)])], [], [closed]);
 
-        var repaired = LayoutRepair.Repair(layout, Catalog);
+        // Only these windows, so that no other missing window opens as a tab in the group.
+        var repaired = LayoutRepair.Repair(layout, Catalog with { WindowIds = ["w0", "w1", "w2"] });
 
         Assert.Null(repaired.GroupHolding("w0")!.SelectedWindowId);
         var remembered = repaired.ClosedWindows.Single(window => window.WindowId == "w2");

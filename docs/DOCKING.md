@@ -246,7 +246,7 @@ The window follows the pointer anywhere, even past the app window's edge. Out th
 2. If both can, it goes to the side with no toolbar anchored at its middle. Corner toolbars don't count.
 3. If that doesn't settle it, the side with fewer windows, then the right.
 4. If neither side can take one but a dock exists, it becomes a tab in the dock window with the largest area.
-5. If both sides are full of widgets, it floats. Opening a window never converts a side.
+5. If both sides are full of widgets, it floats, centred on the canvas region, at the size it last floated at, or a side's default width and half the app window's height if it never has. If another floating window is exactly there already, it moves a little down and right, so that it doesn't hide that one. Opening a window never converts a side.
 
 It joins the bottom of a widget stack.
 
@@ -257,7 +257,7 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 - Saved sizes are what the user asked for. The solver fits them to the current window without changing them, so shrinking and regrowing restores everything.
 - Widgets squeezed below their minimum go title-only for as long as they have to, starting from the bottom of the stack.
 - Floating items keep their position, moved just enough to stay inside. Regrowing puts them back.
-- If a window is too small for everything: toolbars scroll, then hide, then sides shrink to their minimum widths. The app's existing minimum window size makes this rare.
+- If a window is too small for everything: toolbars scroll, then hide, then sides shrink to their minimum widths. Columns shrink together, in proportion, until each reaches the narrowest a window can be; after that the canvas region gives way. The app's existing minimum window size makes this rare.
 
 ## 8. The canvas
 

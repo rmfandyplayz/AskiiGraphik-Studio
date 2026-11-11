@@ -400,6 +400,36 @@ public sealed class LayoutSolverTests
     }
 
     [Fact]
+    public void ShrinkingColumns_StopAtTheNarrowestAWindowCanBe_WhileTheOthersShrinkMore()
+    {
+        var layout = Dock(SideEdge.Left,
+            new SideColumn(400, [Tabs("a")]), new SideColumn(160, [Tabs("b")]), new SideColumn(160, [Tabs("c")]));
+
+        var solved = LayoutSolver.Solve(layout, Measure(new LayoutSize(1000, 700)), Metrics);
+
+        Assert.Equal([360, 160, 160], solved.WindowGroups.Select(group => Math.Round(group.Bounds.Width, 3)));
+        Assert.Equal(Metrics.MinimumCanvasRegionWidth, solved.CanvasRegion.Width, tolerance: Tolerance);
+    }
+
+    [Fact]
+    public void ColumnsAtTheirNarrowest_LeaveTheCanvasRegionToGiveWay()
+    {
+        var layout = new DockingLayout(
+            [
+                new SideLayout(SideEdge.Left, SideKind.Dock, [Column(Tabs("a")), Column(Tabs("b")), Column(Tabs("c"))]),
+                new SideLayout(SideEdge.Right, SideKind.Dock, [Column(Tabs("d"))]),
+            ],
+            [],
+            []);
+
+        var solved = LayoutSolver.Solve(layout, Measure(new LayoutSize(700, 700)), Metrics);
+
+        Assert.All(solved.WindowGroups,
+            group => Assert.Equal(Metrics.MinimumWindowWidth, group.Bounds.Width, tolerance: Tolerance));
+        Assert.Equal(700 - 4 * Metrics.MinimumWindowWidth, solved.CanvasRegion.Width, tolerance: Tolerance);
+    }
+
+    [Fact]
     public void Solving_DoesntChangeWhatTheUserAskedFor()
     {
         var layout = Widgets(SideEdge.Right, new WindowGroup(["a"], Share: 2), new WindowGroup(["b"]));

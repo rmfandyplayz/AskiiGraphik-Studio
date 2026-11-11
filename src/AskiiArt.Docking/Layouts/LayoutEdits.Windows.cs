@@ -31,8 +31,9 @@ public static partial class LayoutEdits
     }
 
     /// <summary>
-    /// Opens a window: back where it was if that's still possible, otherwise on a side with room. With no room
-    /// anywhere it stays closed, until the rest of the opening rules arrive in step 2.5g.
+    /// Opens a window: back where it was if that's still possible, otherwise on a side with room for a widget, or else as
+    /// a tab in the largest dock window (docs/DOCKING.md §6, rules 1 to 4). With none of those it stays closed: floating
+    /// it, rule 5, needs the app window's size, so <see cref="AskiiArt.Docking.Dragging.WindowOpening"/> does that.
     /// </summary>
     public static DockingLayout OpenWindow(DockingLayout layout, string windowId, double defaultSideWidth)
     {
@@ -59,10 +60,14 @@ public static partial class LayoutEdits
             return back;
         }
 
-        if (SideForNewWidget(layout) is not { } edge)
+        if (SideForNewWidget(layout) is { } edge)
+            return TryJoinStack(layout, windowId, edge, int.MaxValue, FairShare(layout.Side(edge)), defaultSideWidth) ?? layout;
+
+        if (LargestDockWindow(layout) is not { } largest)
             return layout;
 
-        return TryJoinStack(layout, windowId, edge, int.MaxValue, FairShare(layout.Side(edge)), defaultSideWidth) ?? layout;
+        var opened = layout with { ClosedWindows = [.. layout.ClosedWindows.Where(closed => closed.WindowId != windowId)] };
+        return MoveWindowIntoTabs(opened, windowId, largest.Edge, largest.Column, largest.Position, int.MaxValue);
     }
 
     /// <summary>Floats a window, in front of any other floating one.</summary>
@@ -210,6 +215,42 @@ public static partial class LayoutEdits
         return WindowCount(layout.Side(SideEdge.Left)) < WindowCount(layout.Side(SideEdge.Right))
             ? SideEdge.Left
             : SideEdge.Right;
+    }
+
+    // docs/DOCKING.md §6, rule 4. Every dock runs the full height of the app window, so a group's area goes with its
+    // column's width times its share of the column. A title-only group shows no contents, so it doesn't count. A tie goes
+    // to the right, as in rule 3, then to the column nearer the edge and the window nearer the top.
+    private static WindowPlace? LargestDockWindow(DockingLayout layout)
+    {
+        WindowPlace? largest = null;
+        var largestArea = 0.0;
+
+        var docks = layout.Sides
+            .Where(side => side.Kind == SideKind.Dock)
+            .OrderByDescending(side => side.Edge == SideEdge.Right);
+        foreach (var side in docks)
+        {
+            for (var columnIndex = 0; columnIndex < side.Columns.Count; columnIndex++)
+            {
+                var column = side.Columns[columnIndex];
+                var totalShare = column.Groups.Where(group => !group.IsTitleOnly).Sum(group => group.Share);
+                for (var position = 0; position < column.Groups.Count; position++)
+                {
+                    var group = column.Groups[position];
+                    if (group.IsTitleOnly || totalShare <= 0)
+                        continue;
+
+                    var area = column.Width * group.Share / totalShare;
+                    if (area > largestArea)
+                    {
+                        largestArea = area;
+                        largest = new WindowPlace(side.Edge, side.Kind, columnIndex, position, Tab: 0);
+                    }
+                }
+            }
+        }
+
+        return largest;
     }
 
     private static bool HasRoomForAWidget(SideLayout? side) =>

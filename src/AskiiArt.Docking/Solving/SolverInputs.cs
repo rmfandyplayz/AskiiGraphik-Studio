@@ -10,7 +10,9 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="WidgetGap">Between widgets in a stack.</param>
 /// <param name="TitleLength">How long a title-only window is.</param>
 /// <param name="DefaultMinimumWindowLength">The smallest size for a window that hasn't stated one.</param>
-/// <param name="MinimumCanvasRegionWidth">Sides shrink before the canvas region gets narrower than this.</param>
+/// <param name="MinimumCanvasRegionWidth">
+/// Sides shrink before the canvas region gets narrower than this, but no column below <paramref name="MinimumWindowWidth"/>.
+/// </param>
 /// <param name="ToolbarGap">Between toolbars sharing an edge.</param>
 /// <param name="MinimumToolbarLength">A toolbar shorter than this is left out until there's room.</param>
 /// <param name="MiddleToolbarPriority">How much more of a shared edge a middle toolbar gets than a corner one.</param>

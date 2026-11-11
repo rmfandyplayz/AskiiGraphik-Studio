@@ -179,7 +179,8 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         Show(
             layout.IsWindowOpen(windowId)
                 ? LayoutEdits.CloseWindow(layout, windowId)
-                : LayoutEdits.OpenWindow(layout, windowId, metrics.WidgetWidth),
+                : WindowOpening.Open(layout, windowId, _host!.CurrentMeasurements(), metrics.Docking,
+                    metrics.WindowFloatOffset),
             animate: true);
     }
 

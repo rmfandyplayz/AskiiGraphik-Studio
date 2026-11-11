@@ -19,12 +19,12 @@ public static class LayoutSolver
     public static SolvedLayout Solve(DockingLayout layout, LayoutMeasurements measurements, DockingMetrics metrics)
     {
         var available = measurements.Available;
-        var widthScale = SideWidthScale(layout, available.Width, metrics);
+        var columnWidths = FittedColumnWidths(layout, available.Width, metrics);
         var groups = new List<SolvedWindowGroup>();
         var taken = new Dictionary<SideEdge, double>();
 
         foreach (var side in layout.Sides)
-            taken[side.Edge] = PlaceSide(side, measurements, metrics, widthScale, groups);
+            taken[side.Edge] = PlaceSide(side, measurements, metrics, columnWidths[side.Edge], groups);
 
         var leftBand = taken.GetValueOrDefault(SideEdge.Left);
         var rightBand = taken.GetValueOrDefault(SideEdge.Right);
@@ -106,19 +106,29 @@ public static class LayoutSolver
         return new SolvedFloatingWindow(window.WindowId, new LayoutRect(at.X, at.Y, size.Width, size.Height), window.IsTitleOnly);
     }
 
-    // Sides shrink together when they'd leave the canvas region too narrow. Wanted widths stay in the layout.
-    private static double SideWidthScale(DockingLayout layout, double availableWidth, DockingMetrics metrics)
+    // Columns shrink when they'd leave the canvas region too narrow (ColumnWidths). Wanted widths stay in the layout.
+    private static Dictionary<SideEdge, double[]> FittedColumnWidths(DockingLayout layout, double availableWidth,
+        DockingMetrics metrics)
     {
-        var widths = layout.Sides.Sum(side => side.Columns.Sum(column => column.Width));
         var margins = layout.Sides.Sum(side => OuterMargin(side, metrics));
         var room = Math.Max(0, availableWidth - metrics.MinimumCanvasRegionWidth - margins);
+        var wanted = layout.Sides.SelectMany(side => side.Columns.Select(column => column.Width)).ToList();
+        var fitted = ColumnWidths.Fit(wanted, room, metrics.MinimumWindowWidth);
 
-        return widths > room && widths > 0 ? room / widths : 1;
+        var widths = new Dictionary<SideEdge, double[]>();
+        var next = 0;
+        foreach (var side in layout.Sides)
+        {
+            widths[side.Edge] = fitted[next..(next + side.Columns.Count)];
+            next += side.Columns.Count;
+        }
+
+        return widths;
     }
 
     // Returns how much of the app window's width the side takes.
     private static double PlaceSide(SideLayout side, LayoutMeasurements measurements, DockingMetrics metrics,
-        double widthScale, List<SolvedWindowGroup> groups)
+        double[] columnWidths, List<SolvedWindowGroup> groups)
     {
         var margin = OuterMargin(side, metrics);
         var gap = side.Kind == SideKind.Widgets ? metrics.WidgetGap : 0;
@@ -128,7 +138,7 @@ public static class LayoutSolver
         for (var columnIndex = 0; columnIndex < side.Columns.Count; columnIndex++)
         {
             var column = side.Columns[columnIndex];
-            var width = column.Width * widthScale;
+            var width = columnWidths[columnIndex];
             var entries = column.Groups
                 .Select(group => new StackSolver.Entry(group.Share, group.IsTitleOnly, MinimumLength(group, measurements, metrics)))
                 .ToList();

@@ -277,6 +277,77 @@ public sealed class WindowEditsTests
         });
     }
 
+    [Fact]
+    public void ANewWindow_WithNoSideForAWidget_BecomesATabInTheLargestDockWindow_AndShows()
+    {
+        // The lower window on the right has three quarters of a 400-wide column, which beats the whole of the left's 280.
+        var layout = new DockingLayout(
+            [
+                new SideLayout(SideEdge.Left, SideKind.Dock, [new SideColumn(280, [Tabs("a")])]),
+                new SideLayout(SideEdge.Right, SideKind.Dock,
+                    [new SideColumn(400, [new WindowGroup(["b"]), new WindowGroup(["c"], Share: 3)])]),
+            ],
+            [],
+            []);
+
+        var opened = LayoutEdits.OpenWindow(layout, "n", 240);
+
+        var group = opened.GroupHolding("n")!;
+        Assert.Equal(["c", "n"], group.WindowIds);
+        Assert.Equal("n", group.Selected);
+    }
+
+    [Fact]
+    public void ANewWindow_GoingIntoADock_SkipsATitleOnlyWindow()
+    {
+        var layout = new DockingLayout(
+            [
+                new SideLayout(SideEdge.Left, SideKind.Dock, [new SideColumn(300, [Tabs("a")])]),
+                new SideLayout(SideEdge.Right, SideKind.Dock,
+                    [new SideColumn(400, [new WindowGroup(["b"], Share: 5, IsTitleOnly: true), Tabs("c")])]),
+            ],
+            [],
+            []);
+
+        var opened = LayoutEdits.OpenWindow(layout, "n", 240);
+
+        Assert.Equal(["c", "n"], opened.GroupHolding("n")!.WindowIds);
+    }
+
+    [Fact]
+    public void ANewWindow_GoingIntoADock_PrefersTheRight_WhenTheLargestWindowsTie()
+    {
+        var layout = new DockingLayout(
+            [
+                new SideLayout(SideEdge.Left, SideKind.Dock, [Column(Tabs("a"))]),
+                new SideLayout(SideEdge.Right, SideKind.Dock, [Column(Tabs("b"))]),
+            ],
+            [],
+            []);
+
+        var opened = LayoutEdits.OpenWindow(layout, "n", 240);
+
+        Assert.Equal(["b", "n"], opened.GroupHolding("n")!.WindowIds);
+    }
+
+    [Fact]
+    public void AReopenedWindow_WhoseSideIsNowADock_BecomesATab_AndIsNoLongerClosed()
+    {
+        var closed = new ClosedWindow("n", SideEdge.Right, 0, 1, 240);
+        var layout = new DockingLayout(
+            [
+                new SideLayout(SideEdge.Left, SideKind.Dock, [Column(Tabs("a"))]),
+                new SideLayout(SideEdge.Right, SideKind.Dock, [Column(Tabs("b"))]),
+            ],
+            [],
+            [closed]);
+
+        var opened = LayoutEdits.OpenWindow(layout, "n", 240);
+
+        Assert.True(opened.IsWindowOpen("n"));
+        Assert.Empty(opened.ClosedWindows);
+    }
+
     private static List<string> Stack(DockingLayout layout, SideEdge edge) =>
         [.. layout.Side(edge)!.Columns[0].Groups.Select(group => group.WindowIds[0])];
 }

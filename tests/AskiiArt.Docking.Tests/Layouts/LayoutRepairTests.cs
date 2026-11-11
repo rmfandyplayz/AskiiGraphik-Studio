@@ -89,6 +89,19 @@ public sealed class LayoutRepairTests
     [Fact]
     public void WithNoRoomAnywhere_AWindowCountsAsClosed()
     {
+        // Both sides full of widgets, and no dock to take a tab. Floating would need the app window's size.
+        var left = new SideLayout(SideEdge.Left, SideKind.Widgets, [new SideColumn(200, [.. "abcd".Select(Group)])]);
+        var right = new SideLayout(SideEdge.Right, SideKind.Widgets, [new SideColumn(200, [.. "efgh".Select(Group)])]);
+        var full = new DockingLayout([left, right], [], []);
+
+        var repaired = LayoutRepair.Repair(full, new DockingCatalog([.. "abcdefghi".Select(id => id.ToString())], [], 240));
+
+        Assert.Equal("i", Assert.Single(repaired.ClosedWindows).WindowId);
+    }
+
+    [Fact]
+    public void AMissingWindow_WithNoSideForAWidget_BecomesATabInADock()
+    {
         var bothDocks = new DockingLayout(
             [
                 new SideLayout(SideEdge.Left, SideKind.Dock, [new SideColumn(200, [new WindowGroup(["a"])])]),
@@ -99,8 +112,11 @@ public sealed class LayoutRepairTests
 
         var repaired = LayoutRepair.Repair(bothDocks, new DockingCatalog(["a", "b", "c"], [], 240));
 
-        Assert.Equal("c", Assert.Single(repaired.ClosedWindows).WindowId);
+        Assert.Empty(repaired.ClosedWindows);
+        Assert.Equal(["b", "c"], repaired.GroupHolding("c")!.WindowIds);
     }
+
+    private static WindowGroup Group(char windowId) => new([windowId.ToString()]);
 
     [Theory]
     [InlineData(double.NaN)]
