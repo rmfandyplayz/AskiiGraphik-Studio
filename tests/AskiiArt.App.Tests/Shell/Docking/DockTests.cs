@@ -221,13 +221,13 @@ public sealed class DockTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TurnIntoWidget_IsGreyedOut_ForADockThatWidgetsCouldntHold()
+    public void TurnIntoWidget_IsLeftOut_ForADockThatWidgetsCouldntHold()
     {
         ShowWindow(Dock(Column(Tabs(Layers, History))));
 
         var items = OpenMenu(Layers);
 
-        Assert.False(items[1].Command!.CanExecute(items[1].CommandParameter));
+        Assert.Equal([Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowClose)], items.Select(item => item.Header));
         Frame(Layers).TitleMenu!.Close();
         Pump();
     }
@@ -302,6 +302,43 @@ public sealed class DockTests : IDisposable
 
         Assert.Equal(new WindowPlace(SideEdge.Right, SideKind.Dock, 0, 0, 0), _docking.Layout!.PlaceOf(Layers));
         Assert.Equal(WindowKind.Dock, _docking.WindowKindOf(History));
+    }
+
+    [AvaloniaFact]
+    public void ALoneDockWindow_ShowsOneStripOnItsSide_AtTheEdge_WhichPutsItBack()
+    {
+        ShowWindow(Dock(Column(Tabs(Layers))));
+        var rightEdge = new Point(_host.Bounds.Width - 3, 350);
+
+        StartDrag(TabOf(Layers), rightEdge);
+
+        var strip = Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left > _host.Bounds.Width / 2);
+        Assert.Equal(_host.Bounds.Width, strip.Bounds.Right);
+        Assert.True(strip.IsOutlined);
+        _window.MouseUp(rightEdge, MouseButton.Left);
+        Pump();
+
+        Assert.Equal(WindowKind.Dock, _docking.WindowKindOf(Layers));
+    }
+
+    [AvaloniaFact]
+    public void BetweenTwoStackedDockWindows_TheMarkerKeepsTheSameDistanceFromEverythingAroundIt()
+    {
+        ShowWindow(Dock(Column(Tabs(Layers), Tabs(History))));
+        _docking.ToggleWindow(Sample);
+        Pump();
+        var border = new Point(BoundsOf(Layers).Center.X, BoundsOf(Layers).Bottom - 10);
+
+        StartDrag(TitleRowOf(Sample), border);
+
+        var marker = Marker.Bounds;
+        var padding = _metrics.Docking.DropMarkerPadding;
+        Assert.True(Marker.IsVisible);
+        Assert.Equal(padding, marker.Top - BoundsOf(Layers).Bottom);
+        Assert.Equal(padding, BoundsOf(History).Top - marker.Bottom);
+        Assert.Equal(padding, marker.Left - BoundsOf(Layers).Left);
+        Assert.Equal(padding, BoundsOf(Layers).Right - marker.Right);
+        _window.MouseUp(border, MouseButton.Left);
     }
 
     private static DockingLayout Dock(params SideColumn[] columns) =>

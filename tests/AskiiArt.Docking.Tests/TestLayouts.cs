@@ -27,8 +27,8 @@ internal static class TestLayouts
         DefaultWindowWidth: 240,
         DefaultFloatingWindowHeight: 280,
         WindowEdgeStripWidth: 24,
-        DropMarkerSidePadding: 2,
-        DropMarkerEndPadding: 4,
+        ThinDropMarkerThickness: 20,
+        DropMarkerPadding: 4,
         DockHandleThickness: 6,
         DockBandLength: 48,
         DockBorderZoneThickness: 24);

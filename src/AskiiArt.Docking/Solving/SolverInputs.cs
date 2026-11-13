@@ -22,19 +22,23 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="DefaultWindowWidth">How wide a side is when a window first arrives on it.</param>
 /// <param name="DefaultFloatingWindowHeight">How tall a title-only window is when it lands floating.</param>
 /// <param name="WindowEdgeStripWidth">How wide the zone at an empty side's edge is, during a window drag.</param>
-/// <param name="DropMarkerSidePadding">
-/// How far a dragged window's marker in a dock keeps from the windows on either side of the room they make for it.
+/// <param name="ThinDropMarkerThickness">
+/// How thick a dragged window's marker is on a border in a dock, between columns or stacked windows or along the dock's
+/// edges. Elsewhere it's as deep as <paramref name="DockBandLength"/>.
 /// </param>
-/// <param name="DropMarkerEndPadding">How far that marker's ends keep from the ends of its room.</param>
+/// <param name="DropMarkerPadding">
+/// How far that marker keeps from everything around it in a dock, on every side. The windows make this much more room
+/// for it each way.
+/// </param>
 /// <param name="DockHandleThickness">How thick the handles on the borders between dock windows are.</param>
 /// <param name="DockBandLength">
 /// How deep the bands along the top and bottom of a dock column are, during a window drag. A drop there stacks the window
-/// above or below, rather than making it a tab. The windows make this much room for the marker there, and in a widget
-/// stack or on an empty side, so a marker shows how big its zone is.
+/// above or below, rather than making it a tab. A marker there is this deep, and so is one in a widget stack or on an
+/// empty side, so it shows how big its zone is.
 /// </param>
 /// <param name="DockBorderZoneThickness">
 /// How thick the zones are along the borders between dock windows and columns, and along a dock's edges, during a window
-/// drag. A drop there puts the window on that border. The windows make this much room for the marker there.
+/// drag. A drop there puts the window on that border.
 /// </param>
 public sealed record DockingMetrics(
     double Margin,
@@ -51,8 +55,8 @@ public sealed record DockingMetrics(
     double DefaultWindowWidth,
     double DefaultFloatingWindowHeight,
     double WindowEdgeStripWidth,
-    double DropMarkerSidePadding,
-    double DropMarkerEndPadding,
+    double ThinDropMarkerThickness,
+    double DropMarkerPadding,
     double DockHandleThickness,
     double DockBandLength,
     double DockBorderZoneThickness);

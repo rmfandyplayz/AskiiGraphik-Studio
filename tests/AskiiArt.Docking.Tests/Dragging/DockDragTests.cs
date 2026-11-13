@@ -131,25 +131,24 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void OnABorderInADock_TheMarkerIsThin_ElsewhereAsDeepAsTheBands_AlwaysPaddedFromTheWindows()
+    public void OnABorderInADock_TheMarkerIsThin_ElsewhereAsDeepAsTheBands_AndTheSameDistanceFromEverything()
     {
         var drag = Drag(_dock, "x");
-        var thin = Metrics.DockBorderZoneThickness;
+        var thin = Metrics.ThinDropMarkerThickness;
         var band = Metrics.DockBandLength;
-        var side = Metrics.DropMarkerSidePadding;
-        var end = Metrics.DropMarkerEndPadding;
+        var padding = Metrics.DropMarkerPadding;
 
         LayoutRect? MarkerAt(double x, double y) => drag.PreviewAt(new LayoutPoint(x, y)).Marker;
 
         // Columns: at the app window's edge, between the two, and past the inner one.
-        Assert.Equal(new LayoutRect(1000 - thin + side, end, thin - side * 2, 700 - end * 2), MarkerAt(995, 600));
-        Assert.Equal(new LayoutRect(760 - thin / 2 + side, end, thin - side * 2, 700 - end * 2), MarkerAt(765, 175));
-        Assert.Equal(new LayoutRect(520 - thin + side, end, thin - side * 2, 700 - end * 2), MarkerAt(530, 300));
+        Assert.Equal(new LayoutRect(1000 - padding - thin, padding, thin, 700 - padding * 2), MarkerAt(995, 600));
+        Assert.Equal(new LayoutRect(760 - thin / 2, padding, thin, 700 - padding * 2), MarkerAt(765, 175));
+        Assert.Equal(new LayoutRect(520 - padding - thin, padding, thin, 700 - padding * 2), MarkerAt(530, 300));
 
         // Stacking: at the column's top, between "a" and the tabs, and at its bottom.
-        Assert.Equal(new LayoutRect(760 + end, side, 240 - end * 2, band - side * 2), MarkerAt(880, 50));
-        Assert.Equal(new LayoutRect(760 + end, 350 - thin / 2 + side, 240 - end * 2, thin - side * 2), MarkerAt(880, 340));
-        Assert.Equal(new LayoutRect(760 + end, 700 - band + side, 240 - end * 2, band - side * 2), MarkerAt(880, 690));
+        Assert.Equal(new LayoutRect(760 + padding, padding, 240 - padding * 2, band), MarkerAt(880, 50));
+        Assert.Equal(new LayoutRect(760 + padding, 350 - thin / 2, 240 - padding * 2, thin), MarkerAt(880, 340));
+        Assert.Equal(new LayoutRect(760 + padding, 700 - padding - band, 240 - padding * 2, band), MarkerAt(880, 690));
     }
 
     [Fact]
@@ -157,8 +156,8 @@ public sealed class DockDragTests
     {
         var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(765, 175));
 
-        Assert.Equal(new LayoutRect(760 + 12, 0, 228, 350), solved.PlaceOfWindow("a")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(520, 0, 228, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760 + 14, 0, 226, 350), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(520, 0, 226, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
     }
 
     [Fact]
@@ -171,7 +170,7 @@ public sealed class DockDragTests
         var solved = SolvedWithRoom(Drag(narrow, "x"), new LayoutPoint(845, 300));
 
         Assert.Equal(new LayoutRect(840, 0, 160, 700), solved.PlaceOfWindow("a")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(840 - 24 - 160, 0, 160, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(840 - 28 - 160, 0, 160, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
     }
 
     [Fact]
@@ -179,8 +178,8 @@ public sealed class DockDragTests
     {
         var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(995, 600));
 
-        Assert.Equal(1000 - 24 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
-        Assert.Equal(1000 - 24 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
+        Assert.Equal(1000 - 28 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
+        Assert.Equal(1000 - 28 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
     }
 
     [Fact]
@@ -189,12 +188,12 @@ public sealed class DockDragTests
         var drag = Drag(_dock, "x");
 
         var top = SolvedWithRoom(drag, new LayoutPoint(880, 50));
-        Assert.Equal(new LayoutRect(760, 48, 240, 302), top.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 56, 240, 294), top.PlaceOfWindow("a")!.Value.Bounds);
         Assert.Equal(new LayoutRect(760, 350, 240, 350), top.PlaceOfWindow("b")!.Value.Bounds);
 
         var bottom = SolvedWithRoom(drag, new LayoutPoint(880, 690));
         Assert.Equal(new LayoutRect(760, 0, 240, 350), bottom.PlaceOfWindow("a")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(760, 350, 240, 302), bottom.PlaceOfWindow("b")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 350, 240, 294), bottom.PlaceOfWindow("b")!.Value.Bounds);
     }
 
     [Fact]
@@ -202,8 +201,8 @@ public sealed class DockDragTests
     {
         var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(880, 340));
 
-        Assert.Equal(new LayoutRect(760, 0, 240, 338), solved.PlaceOfWindow("a")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(760, 362, 240, 338), solved.PlaceOfWindow("b")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 0, 240, 336), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 364, 240, 336), solved.PlaceOfWindow("b")!.Value.Bounds);
     }
 
     [Fact]
@@ -301,15 +300,14 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void ALoneDockWindow_BecomesAWidget_JustInsideItsInnerEdge_AndGoesBack_AtItsSidesEdge()
+    public void ALoneDockWindow_HasOnlyItsSidesEdgeStrip_WhichPutsItBack_AndFloatsAnywhereElseThere()
     {
         var alone = Dock(SideEdge.Right, Column(Tabs("a")));
         var drag = Drag(alone, "a");
 
-        var widget = drag.LayoutAt(new LayoutPoint(770, 300));
-
-        Assert.Equal(WindowKind.Widget, widget.KindOf("a"));
+        Assert.Equal([WindowDropKind.OwnPlace], drag.Zones.Where(zone => zone.Edge == SideEdge.Right).Select(zone => zone.Kind));
         Assert.Same(drag.Start, drag.LayoutAt(new LayoutPoint(995, 300)));
+        Assert.NotNull(drag.LayoutAt(new LayoutPoint(770, 300)).FloatingWindowNamed("a"));
         Assert.NotNull(drag.LayoutAt(new LayoutPoint(900, 300)).FloatingWindowNamed("a"));
     }
 

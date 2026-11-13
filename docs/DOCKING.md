@@ -98,7 +98,7 @@ Each menu offers the kinds the window isn't:
 | | Turn into Dock | A dock, or a side that could become one, has room for a new column. It joins the dock as a new column at its outer edge. With no dock, the side the opening rules would choose for a widget (section 6) converts, and it's the column at the edge |
 | | Close | Always |
 | Dock tab, on right-click | Float | Always |
-| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Greyed out otherwise, for now: once everything is in place it'll be hidden instead |
+| | Turn into Widget | The side has one column, no tabs and at most 4 windows. The whole side converts. Hidden otherwise |
 | | Close | Always |
 
 The Window menu also opens and closes every window.
@@ -214,7 +214,6 @@ The first match, top to bottom, wins:
 | Edge strip of a side with widgets, when a column fits | The side becomes a dock. The window is a column at the very edge, and the rest are one column beside it |
 | Edge strip of a side with a dock, when a column fits | A new column at the very edge |
 | Edge strip of the side the window is alone on | Nothing changes |
-| The zone just inside a dock's inner edge, when this is the side's only window | It becomes a widget |
 | Upper or lower half of a widget, on a side with room | It joins the stack above or below that widget |
 | The border between two dock columns, or the dock's inner edge, when a column fits | It becomes a new column there |
 | A dock window's tab strip or middle | It becomes a tab |
@@ -224,11 +223,12 @@ The first match, top to bottom, wins:
 
 A title-only window that lands somewhere gets a normal size, unless it's a floating window that's only being moved. Dragging the last window off a side empties it, and toolbars move back.
 
-The zones come from the layout without the dragged window, and stay put for the whole drag while the windows around them move. Every side's edge strip shows in blue for the whole drag, a side with windows only while a column fits there. That includes the side the window is alone on, which looks empty while it's held, and a lone dock window's zone just inside its inner edge. The zones on the borders between dock columns, and on a dock's inner edge, straddle the border and run the full height. The bands are only at the top of a column and at its bottom. While the window is over a zone it goes see-through, as a toolbar does, and shows roughly where it would go:
+The zones come from the layout without the dragged window, and stay put for the whole drag while the windows around them move. Every side's edge strip shows in blue for the whole drag, a side with windows only while a column fits there. That includes the side the window is alone on, which looks empty while it's held, whether it's a widget or a dock. The zones on the borders between dock columns, and on a dock's inner edge, straddle the border and run the full height. The bands are only at the top of a column and at its bottom. While the window is over a zone it goes see-through, as a toolbar does, and shows roughly where it would go:
 
 - **Over most zones,** the windows move apart for a hatched strip with a "+" where the window would go. It jumps straight from zone to zone, while the windows slide.
-  - **On a border in a dock** (between two columns, at the dock's outer or inner edge, or between two stacked dock windows) the room is as thick as the zone, 24, and the strip keeps 2 from the windows beside it and 4 from the room's ends.
-  - **Everywhere else** (an empty side, above, below or between widgets, a dock column's top or bottom band, or the side a lone window came from) the room is as deep as the bands, 48, so the strip is the size of its zone.
+  - **On a border in a dock** (between two columns, at the dock's outer or inner edge, or between two stacked dock windows) the strip is 20 thick.
+  - **Everywhere else** (an empty side, above, below or between widgets, a dock column's top or bottom band, or the side a lone window came from) the strip is as deep as the bands, 48, so it's the size of its zone.
+  - **In a dock,** and where a column would go, the strip keeps 4 from everything around it on every side, so it's centred and set apart from the windows. The room is 8 wider than the strip to allow for that. Among widgets and on an empty side, the usual margins and gaps already do that.
   - **Who gives the room:** the two windows beside it give half each, then, in a stack, the others, nearest first, never below their minimums. Columns at their narrowest give nothing, and the dock grows instead, as it does for a column at either edge.
 - **Over a dock window's tab strip or middle,** that window keeps showing, with a dashed accent outline around it whose dashes run, and a hatched "+" tab in its strip where the new tab would go, as long as the new tab would be. If the strip has more tabs than fit, it scrolls to show the "+".
 
@@ -329,6 +329,8 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 - **Example tests** turn each figure in the brief into a test.
 - **Headless UI tests** cover click-through, focus, menus and simulated drags.
 - **Manual tests** remain the only check of how it feels. Expect several tuning rounds, which is the real cost of owning this.
+
+Updated 2026-11-13: in §5.2 the marker keeps the same distance from everything in a dock, a lone dock window has only its side's edge strip, and §3.2's Turn into Widget on a dock tab is hidden rather than greyed out, all as the owner asked in 2.5g.
 
 Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g notes: the windows move apart again for the marker, which is thin only on a dock's borders and elsewhere the size of its zone, and a lone window's own place is its side's edge strip.
 

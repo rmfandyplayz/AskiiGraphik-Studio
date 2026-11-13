@@ -13,7 +13,8 @@ namespace AskiiArt.App.Shell.Docking;
 /// A window's menu, which its title's right-click and its menu button both open, as does right-clicking a dock window's
 /// tab (docs/DOCKING.md §3.2). It offers the kinds of window this one isn't, then Close: Float and Turn into Dock for a
 /// widget, Turn into Widget and Turn into Dock for a floating window, and Float and Turn into Widget for a dock window.
-/// An item that can't work where the window is now is greyed out.
+/// An item that can't work where the window is now is greyed out, except a dock window's Turn into Widget, which is left
+/// out.
 /// </summary>
 internal static class WindowMenu
 {
@@ -32,7 +33,12 @@ internal static class WindowMenu
         {
             var kind = docking.WindowKindOf(windowId);
             floatItem.IsVisible = kind != WindowKind.Floating;
-            turnIntoWidget.IsVisible = kind != WindowKind.Widget;
+            turnIntoWidget.IsVisible = kind switch
+            {
+                WindowKind.Widget => false,
+                WindowKind.Dock => docking.CanTurnWindowIntoWidget(windowId),
+                _ => true,
+            };
             turnIntoDock.IsVisible = kind != WindowKind.Dock;
 
             // Whether there's room depends on the app window's size as well as the layout, so it's asked afresh.

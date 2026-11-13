@@ -158,9 +158,9 @@ internal sealed partial class DockingHost
     private static string WindowMotion(string windowId) => "window:" + windowId;
 
     // The zones along edges, which would be hard to find otherwise. A lone window's side looks empty while it's held, so
-    // its zones show as an empty side's does.
+    // its edge strip shows as an empty side's does.
     private static bool IsShown(WindowDropZone zone) => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.SideEdge
-        or WindowDropKind.OwnPlace or WindowDropKind.DockToWidget;
+        or WindowDropKind.OwnPlace;
 
     // In the tab strip of the dock window it would join, which is the frame showing in that group. Only one strip shows
     // it at a time.

@@ -48,11 +48,11 @@ public sealed class DropRoomTests
     {
         var layout = Dock(SideEdge.Left, Column(Tabs("a")), Column(Tabs("b")));
 
-        var solved = Solve(layout, new DropRoom(DropRoomKind.Column, SideEdge.Left, 24, Column: 0));
+        var solved = Solve(layout, new DropRoom(DropRoomKind.Column, SideEdge.Left, 28, Column: 0));
 
-        Assert.Equal(new LayoutRect(24, 0, 240, 720), solved.PlaceOfWindow("a")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(264, 0, 240, 720), solved.PlaceOfWindow("b")!.Value.Bounds);
-        Assert.Equal(new LayoutRect(2, 4, 20, 712), solved.DropMarker);
+        Assert.Equal(new LayoutRect(28, 0, 240, 720), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(268, 0, 240, 720), solved.PlaceOfWindow("b")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(4, 4, 20, 712), solved.DropMarker);
     }
 
     [Fact]

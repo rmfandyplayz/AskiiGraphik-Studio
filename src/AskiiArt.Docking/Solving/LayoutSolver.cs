@@ -176,7 +176,7 @@ public static class LayoutSolver
             if (columnIndex == roomColumn && marker is null)
             {
                 var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin, stackLength);
-                marker = Padded(bounds, metrics, alongTheStack: false);
+                marker = Padded(bounds, metrics);
                 across += width;
                 continue;
             }
@@ -192,7 +192,7 @@ public static class LayoutSolver
                 (slots, var roomSlot) = StackSolver.SolveWithRoom(entries, stackLength, gap, metrics.TitleLength,
                     room.Position, room.Thickness);
                 var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin + roomSlot.Start, roomSlot.Length);
-                marker = side.Kind == SideKind.Dock ? Padded(bounds, metrics, alongTheStack: true) : bounds;
+                marker = side.Kind == SideKind.Dock ? Padded(bounds, metrics) : bounds;
             }
             else
             {
@@ -214,14 +214,12 @@ public static class LayoutSolver
         return new PlacedSide(across, marker);
     }
 
-    // The room less the padding the owner asked for, which keeps the marker a little apart from the windows around it.
-    // A room in a stack runs across the column, and a column's runs down it.
-    private static LayoutRect Padded(LayoutRect room, DockingMetrics metrics, bool alongTheStack)
+    // The room less the padding the owner asked for, the same on every side, which keeps the marker apart from the
+    // windows around it and centred between them.
+    private static LayoutRect Padded(LayoutRect room, DockingMetrics metrics)
     {
-        var acrossPadding = alongTheStack ? metrics.DropMarkerEndPadding : metrics.DropMarkerSidePadding;
-        var downPadding = alongTheStack ? metrics.DropMarkerSidePadding : metrics.DropMarkerEndPadding;
-        var across = Math.Min(acrossPadding, room.Width / 2);
-        var down = Math.Min(downPadding, room.Height / 2);
+        var across = Math.Min(metrics.DropMarkerPadding, room.Width / 2);
+        var down = Math.Min(metrics.DropMarkerPadding, room.Height / 2);
         return new LayoutRect(room.X + across, room.Y + down, room.Width - across * 2, room.Height - down * 2);
     }
 
