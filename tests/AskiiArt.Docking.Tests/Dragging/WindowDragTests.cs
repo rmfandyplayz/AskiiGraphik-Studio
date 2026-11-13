@@ -30,7 +30,7 @@ public sealed class WindowDragTests
         LayoutEdits.FloatWindow(_twoOnTheRight, "x", new LayoutPoint(300, 300), 200, 200);
 
     [Fact]
-    public void Example1_DroppedOnTheLowerPartOfALoneWindow_ItGoesBelow_AndAThinStripShowsBelowIt_WithNothingMoving()
+    public void Example1_DroppedOnTheLowerPartOfALoneWindow_ItGoesBelow_AndItMovesUpForAStripBelowIt()
     {
         var drag = Drag(_oneOnTheRightAndOneFloating, "x");
         var lowerPart = new LayoutPoint(OverTheRightSide, 600);
@@ -39,12 +39,13 @@ public sealed class WindowDragTests
 
         Assert.Equal(["a", "x"], Stack(drag.LayoutAt(lowerPart), SideEdge.Right));
         Assert.Equal(["a"], Stack(preview.Layout, SideEdge.Right));
-        var a = WhereItIs(preview.Layout, "a");
-        Assert.Equal(_window.Height - Metrics.Margin * 2, a.Height, Tolerance);
 
-        // In the middle of the margin below it, kept inside the app window.
-        var thickness = Metrics.WindowDropMarkerThickness;
-        Assert.Equal(new LayoutRect(a.X, _window.Height - thickness, a.Width, thickness), preview.Marker);
+        // As deep as a dock's bands, at the bottom, with the usual gap above it.
+        var band = Metrics.DockBandLength;
+        var bottom = _window.Height - Metrics.Margin;
+        var a = SolvedWithRoom(preview).PlaceOfWindow("a")!.Value.Bounds;
+        Assert.Equal(bottom - band - Metrics.WidgetGap, a.Bottom, Tolerance);
+        Assert.Equal(new LayoutRect(a.X, bottom - band, a.Width, band), preview.Marker);
         Assert.Null(preview.IncomingTab);
     }
 
@@ -80,7 +81,7 @@ public sealed class WindowDragTests
     }
 
     [Fact]
-    public void Example4_OnAnEmptySidesEdge_AThinStripShowsThere_WithNothingMoving_AndADropGivesItTheFullWidth()
+    public void Example4_OnAnEmptySidesEdge_ItOpensALittle_ToolbarsMoveIn_AndADropGivesItTheFullWidth()
     {
         var layout = _twoOnTheRight with { Toolbars = [new ToolbarPlacement("tools", ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical)] };
         var drag = Drag(layout, "a");
@@ -89,9 +90,12 @@ public sealed class WindowDragTests
         var preview = drag.PreviewAt(atTheEdge);
 
         Assert.Equal(WindowDropKind.EmptySide, preview.Zone!.Kind);
-        Assert.Equal(new LayoutRect(Metrics.Margin, Metrics.Margin, Metrics.WindowDropMarkerThickness,
+        Assert.Equal(new LayoutRect(Metrics.Margin, Metrics.Margin, Metrics.DockBandLength,
             _window.Height - Metrics.Margin * 2), preview.Marker);
         Assert.Null(preview.Layout.Side(SideEdge.Left));
+
+        var toolbar = SolvedWithRoom(preview).Toolbars.Single();
+        Assert.True(toolbar.Bounds.X >= preview.Marker!.Value.Right);
 
         var dropped = drag.LayoutAt(atTheEdge);
         Assert.Equal(["a"], Stack(dropped, SideEdge.Left));
@@ -223,20 +227,34 @@ public sealed class WindowDragTests
         var ownPlace = new LayoutPoint(OverTheRightSide, 100);
 
         Assert.Equal(TestLayouts.Text(uneven), TestLayouts.Text(drag.LayoutAt(ownPlace)));
+        // Without "a", "b" fills the side, so the marker is at the top of it, as for any window going above it.
         var a = WhereItIs(uneven, "a");
-        Assert.Equal(new LayoutRect(a.X, 0, a.Width, Metrics.WindowDropMarkerThickness), drag.PreviewAt(ownPlace).Marker);
+        Assert.Equal(new LayoutRect(a.X, Metrics.Margin, a.Width, Metrics.DockBandLength), drag.PreviewAt(ownPlace).Marker);
     }
 
     [Fact]
-    public void AloneOnItsSide_ItsOwnPlaceChangesNothing()
+    public void AloneOnItsSide_ItsSidesEdgeStripPutsItBack_AsOnAnEmptySide()
+    {
+        var alone = Widgets(SideEdge.Right, new WindowGroup(["a"]));
+        var drag = Drag(alone, "a");
+        var atTheEdge = new LayoutPoint(_window.Width - 5, 300);
+
+        var zone = drag.ZoneAt(atTheEdge)!;
+
+        Assert.Equal(WindowDropKind.OwnPlace, zone.Kind);
+        Assert.Equal(new LayoutRect(_window.Width - Metrics.WindowEdgeStripWidth, 0, Metrics.WindowEdgeStripWidth,
+            _window.Height), zone.Bounds);
+        Assert.Equal(TestLayouts.Text(alone), TestLayouts.Text(drag.LayoutAt(atTheEdge)));
+    }
+
+    [Fact]
+    public void AloneOnItsSide_TheRestOfWhereItWasFloatsIt()
     {
         var alone = Widgets(SideEdge.Right, new WindowGroup(["a"]));
         var drag = Drag(alone, "a");
 
-        var zone = drag.ZoneAt(new LayoutPoint(OverTheRightSide, 300));
-
-        Assert.Equal(WindowDropKind.OwnPlace, zone!.Kind);
-        Assert.Equal(TestLayouts.Text(alone), TestLayouts.Text(drag.LayoutAt(new LayoutPoint(OverTheRightSide, 300))));
+        Assert.Null(drag.ZoneAt(new LayoutPoint(OverTheRightSide, 300)));
+        Assert.NotNull(drag.LayoutAt(new LayoutPoint(OverTheRightSide, 300)).FloatingWindowNamed("a"));
     }
 
     [Fact]
@@ -363,6 +381,10 @@ public sealed class WindowDragTests
             }
         });
     }
+
+    // What the app shows while the pointer is there: the layout without the window, making room for the marker.
+    private static SolvedLayout SolvedWithRoom(WindowDragPreview preview) =>
+        LayoutSolver.Solve(preview.Layout, Measure(_window) with { DropRoom = preview.Room }, Metrics);
 
     private static WindowDrag Drag(DockingLayout layout, string windowId) =>
         new(layout, windowId, _heldAtTheTopLeft, Measure(_window), Metrics);

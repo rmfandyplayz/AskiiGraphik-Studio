@@ -19,12 +19,26 @@ public static class LayoutSolver
     public static SolvedLayout Solve(DockingLayout layout, LayoutMeasurements measurements, DockingMetrics metrics)
     {
         var available = measurements.Available;
-        var columnWidths = FittedColumnWidths(layout, available.Width, metrics);
+        var room = measurements.DropRoom;
+        var columnWidths = FittedColumnWidths(layout, room, available.Width, metrics);
         var groups = new List<SolvedWindowGroup>();
         var taken = new Dictionary<SideEdge, double>();
+        LayoutRect? dropMarker = null;
 
         foreach (var side in layout.Sides)
-            taken[side.Edge] = PlaceSide(side, measurements, metrics, columnWidths[side.Edge], groups);
+        {
+            var sideRoom = room?.Edge == side.Edge ? room : null;
+            var placed = PlaceSide(side, measurements, metrics, columnWidths[side.Edge], sideRoom, groups);
+            taken[side.Edge] = placed.Taken;
+            dropMarker ??= placed.DropMarker;
+        }
+
+        if (room is { Kind: DropRoomKind.EmptySide } && taken.GetValueOrDefault(room.Edge) == 0)
+        {
+            taken[room.Edge] = metrics.Margin + room.Thickness;
+            dropMarker = OnEdge(room.Edge, available, metrics.Margin, room.Thickness, metrics.Margin,
+                Math.Max(0, available.Height - metrics.Margin * 2));
+        }
 
         var leftBand = taken.GetValueOrDefault(SideEdge.Left);
         var rightBand = taken.GetValueOrDefault(SideEdge.Right);
@@ -37,7 +51,7 @@ public static class LayoutSolver
 
         var floating = layout.FloatingWindows.Select(window => PlaceFloating(window, available, metrics)).ToList();
 
-        return new SolvedLayout(groups, solution.Toolbars, region, safeArea, solution.SubToolbar, floating);
+        return new SolvedLayout(groups, solution.Toolbars, region, safeArea, solution.SubToolbar, floating, dropMarker);
     }
 
     /// <summary>
@@ -107,42 +121,83 @@ public static class LayoutSolver
     }
 
     // Columns shrink when they'd leave the canvas region too narrow (ColumnWidths). Wanted widths stay in the layout.
-    private static Dictionary<SideEdge, double[]> FittedColumnWidths(DockingLayout layout, double availableWidth,
-        DockingMetrics metrics)
+    // A drop room that's a new column is one of them, at its place, and keeps its width, which is below the floor.
+    private static Dictionary<SideEdge, double[]> FittedColumnWidths(DockingLayout layout, DropRoom? dropRoom,
+        double availableWidth, DockingMetrics metrics)
     {
         var margins = layout.Sides.Sum(side => OuterMargin(side, metrics));
         var room = Math.Max(0, availableWidth - metrics.MinimumCanvasRegionWidth - margins);
-        var wanted = layout.Sides.SelectMany(side => side.Columns.Select(column => column.Width)).ToList();
-        var fitted = ColumnWidths.Fit(wanted, room, metrics.MinimumWindowWidth);
+        var wantedBySide = layout.Sides.Select(side => WantedWidths(side, dropRoom, metrics)).ToList();
+        var fitted = ColumnWidths.Fit([.. wantedBySide.SelectMany(widths => widths)], room, metrics.MinimumWindowWidth);
 
         var widths = new Dictionary<SideEdge, double[]>();
         var next = 0;
-        foreach (var side in layout.Sides)
+        for (var index = 0; index < layout.Sides.Count; index++)
         {
-            widths[side.Edge] = fitted[next..(next + side.Columns.Count)];
-            next += side.Columns.Count;
+            widths[layout.Sides[index].Edge] = fitted[next..(next + wantedBySide[index].Count)];
+            next += wantedBySide[index].Count;
         }
 
         return widths;
     }
 
-    // Returns how much of the app window's width the side takes.
-    private static double PlaceSide(SideLayout side, LayoutMeasurements measurements, DockingMetrics metrics,
-        double[] columnWidths, List<SolvedWindowGroup> groups)
+    // With a new column's room among them. Between two columns, those two give up what they can, down to the narrowest a
+    // window can be, and the dock grows by the rest. At either edge of the dock, it grows by all of it.
+    private static List<double> WantedWidths(SideLayout side, DropRoom? room, DockingMetrics metrics)
+    {
+        var widths = side.Columns.Select(column => column.Width).ToArray();
+        if (room is not { Kind: DropRoomKind.Column } || room.Edge != side.Edge)
+            return [.. widths];
+
+        var at = Math.Clamp(room.Column, 0, widths.Length);
+        if (at > 0 && at < widths.Length)
+        {
+            var floors = widths.Select(width => Math.Min(width, metrics.MinimumWindowWidth)).ToArray();
+            RoomTaking.Take(widths, floors, at, room.Thickness, othersToo: false);
+        }
+
+        return [.. widths[..at], room.Thickness, .. widths[at..]];
+    }
+
+    // Places the side's windows, leaving its drop room empty, if it has one.
+    private static PlacedSide PlaceSide(SideLayout side, LayoutMeasurements measurements, DockingMetrics metrics,
+        double[] columnWidths, DropRoom? room, List<SolvedWindowGroup> groups)
     {
         var margin = OuterMargin(side, metrics);
         var gap = side.Kind == SideKind.Widgets ? metrics.WidgetGap : 0;
         var stackLength = Math.Max(0, measurements.Available.Height - margin * 2);
+        var roomColumn = room is { Kind: DropRoomKind.Column } ? Math.Clamp(room.Column, 0, side.Columns.Count) : -1;
         var across = margin;
+        LayoutRect? marker = null;
 
-        for (var columnIndex = 0; columnIndex < side.Columns.Count; columnIndex++)
+        var columnIndex = 0;
+        foreach (var width in columnWidths)
         {
+            if (columnIndex == roomColumn && marker is null)
+            {
+                var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin, stackLength);
+                marker = Padded(bounds, metrics, alongTheStack: false);
+                across += width;
+                continue;
+            }
+
             var column = side.Columns[columnIndex];
-            var width = columnWidths[columnIndex];
             var entries = column.Groups
                 .Select(group => new StackSolver.Entry(group.Share, group.IsTitleOnly, MinimumLength(group, measurements, metrics)))
                 .ToList();
-            var slots = StackSolver.Solve(entries, stackLength, gap, metrics.TitleLength);
+
+            IReadOnlyList<StackSolver.Slot> slots;
+            if (room is { Kind: DropRoomKind.Stack } && room.Column == columnIndex)
+            {
+                (slots, var roomSlot) = StackSolver.SolveWithRoom(entries, stackLength, gap, metrics.TitleLength,
+                    room.Position, room.Thickness);
+                var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin + roomSlot.Start, roomSlot.Length);
+                marker = side.Kind == SideKind.Dock ? Padded(bounds, metrics, alongTheStack: true) : bounds;
+            }
+            else
+            {
+                slots = StackSolver.Solve(entries, stackLength, gap, metrics.TitleLength);
+            }
 
             for (var index = 0; index < slots.Count; index++)
             {
@@ -153,10 +208,25 @@ public static class LayoutSolver
             }
 
             across += width;
+            columnIndex++;
         }
 
-        return across;
+        return new PlacedSide(across, marker);
     }
+
+    // The room less the padding the owner asked for, which keeps the marker a little apart from the windows around it.
+    // A room in a stack runs across the column, and a column's runs down it.
+    private static LayoutRect Padded(LayoutRect room, DockingMetrics metrics, bool alongTheStack)
+    {
+        var acrossPadding = alongTheStack ? metrics.DropMarkerEndPadding : metrics.DropMarkerSidePadding;
+        var downPadding = alongTheStack ? metrics.DropMarkerSidePadding : metrics.DropMarkerEndPadding;
+        var across = Math.Min(acrossPadding, room.Width / 2);
+        var down = Math.Min(downPadding, room.Height / 2);
+        return new LayoutRect(room.X + across, room.Y + down, room.Width - across * 2, room.Height - down * 2);
+    }
+
+    // How much of the app window's width the side takes, and where its drop marker goes, if it has one.
+    private readonly record struct PlacedSide(double Taken, LayoutRect? DropMarker);
 
     private static double OuterMargin(SideLayout side, DockingMetrics metrics) =>
         side.Kind == SideKind.Widgets ? metrics.Margin : 0;

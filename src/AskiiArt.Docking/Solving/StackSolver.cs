@@ -44,6 +44,48 @@ internal static class StackSolver
         return slots;
     }
 
+    /// <summary>
+    /// Like <see cref="Solve"/>, with room of <paramref name="thickness"/> before the group at <paramref name="position"/>,
+    /// or past the last. It comes from the groups beside it, then the others, never below their minimums (RoomTaking), so
+    /// nothing changes title-only for it. With none to spare, the room is smaller.
+    /// </summary>
+    /// <returns>Where each group goes, and the room.</returns>
+    public static (IReadOnlyList<Slot> Slots, Slot Room) SolveWithRoom(IReadOnlyList<Entry> entries, double length,
+        double gap, double titleLength, int position, double thickness)
+    {
+        var slots = Solve(entries, length, gap, titleLength);
+        var at = Math.Clamp(position, 0, slots.Count);
+
+        // A group shorter than its minimum already, which only a lone one can be, has nothing to spare.
+        var lengths = slots.Select(slot => slot.Length).ToArray();
+        var floors = slots
+            .Select((slot, index) => slot.IsTitleOnly ? slot.Length : Math.Min(slot.Length, entries[index].MinimumLength))
+            .ToArray();
+        var extraGap = slots.Count > 0 ? gap : 0;
+        var found = RoomTaking.Take(lengths, floors, at, thickness + extraGap, othersToo: true);
+        var room = Math.Max(0, found - extraGap);
+
+        var placed = new Slot[slots.Count];
+        var roomSlot = new Slot(0, room, IsTitleOnly: false);
+        var start = 0.0;
+        for (var index = 0; index <= slots.Count; index++)
+        {
+            if (index == at)
+            {
+                roomSlot = new Slot(start, room, IsTitleOnly: false);
+                start += room + gap;
+            }
+
+            if (index == slots.Count)
+                break;
+
+            placed[index] = new Slot(start, lengths[index], slots[index].IsTitleOnly);
+            start += lengths[index] + gap;
+        }
+
+        return (placed, roomSlot);
+    }
+
     private static void SqueezeFromTheEnd(IReadOnlyList<Entry> entries, bool[] isTitleOnly, double usable,
         double titleLength)
     {

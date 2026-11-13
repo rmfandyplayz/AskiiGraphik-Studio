@@ -313,7 +313,10 @@ internal sealed partial class DockingHost : Panel
         }
 
         var measurements = new LayoutMeasurements(available, catalog.MinimumWindowHeights, _toolbarSizes,
-            _subToolbar?.Request);
+            _subToolbar?.Request)
+        {
+            DropRoom = _windowDrag?.Preview?.Room,
+        };
         _solved = LayoutSolver.Solve(layout, measurements, metrics.Docking);
 
         MeasureWindows(_solved, availableSize);

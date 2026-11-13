@@ -85,7 +85,7 @@ internal sealed partial class DockingHost
 
         var drag = new WindowDragDisplay(windowId, windowDrag.HeldSize, SafeArea, marker,
             new WindowPlaceholderView(_metrics!), tabOutline, landing);
-        foreach (var zone in windowDrag.Zones.Where(zone => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.SideEdge))
+        foreach (var zone in windowDrag.Zones.Where(IsShown))
         {
             var view = new DropZoneView(_metrics!.MotionDuration, _metrics.DropZoneDimmedOpacity) { ZIndex = DropZoneLayer };
             drag.Zones.Add((view, zone));
@@ -106,7 +106,7 @@ internal sealed partial class DockingHost
 
         drag.Preview = preview;
         drag.Landing.IsVisible = preview.Landing is not null;
-        drag.Marker.IsVisible = preview.Marker is not null;
+        drag.Marker.IsVisible = preview.Room is not null;
         drag.TabOutline.IsVisible = preview.IncomingTab is not null;
         ShowIncomingTab(drag, preview.IncomingTab);
 
@@ -156,6 +156,11 @@ internal sealed partial class DockingHost
     }
 
     private static string WindowMotion(string windowId) => "window:" + windowId;
+
+    // The zones along edges, which would be hard to find otherwise. A lone window's side looks empty while it's held, so
+    // its zones show as an empty side's does.
+    private static bool IsShown(WindowDropZone zone) => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.SideEdge
+        or WindowDropKind.OwnPlace or WindowDropKind.DockToWidget;
 
     // In the tab strip of the dock window it would join, which is the frame showing in that group. Only one strip shows
     // it at a time.
@@ -333,7 +338,7 @@ internal sealed partial class DockingHost
 
         // A dragged window keeps its size and its contents, whatever it would get if it landed.
         _windows[drag.WindowId].Measure(new Size(drag.HeldSize.Width, drag.HeldSize.Height));
-        drag.Marker.Measure(SizeOf(drag.Preview?.Marker));
+        drag.Marker.Measure(SizeOf(_solved?.DropMarker));
         drag.TabOutline.Measure(SizeOf(drag.Preview?.IncomingTab?.GroupBounds));
         drag.Landing.Measure(SizeOf(drag.Preview?.Landing));
         foreach (var (view, zone) in drag.Zones)
@@ -404,8 +409,9 @@ internal sealed partial class DockingHost
 
         drag.Landing.Arrange(ToRect(preview.Landing ?? default));
 
-        // Straight there, without sliding, since a strip can turn from across to down between one zone and the next.
-        drag.Marker.Arrange(ToRect(preview.Marker ?? default));
+        // Where the solver left room for it, straight there, without sliding, since a strip can turn from across to down
+        // between one zone and the next. The windows around it slide.
+        drag.Marker.Arrange(ToRect(_solved?.DropMarker ?? default));
         drag.TabOutline.Arrange(ToRect(preview.IncomingTab?.GroupBounds ?? default));
     }
 }

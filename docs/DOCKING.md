@@ -184,7 +184,7 @@ Below the smallest size, toolbars hide until there's room again, corners first.
 Common to every drag:
 
 - The dragged item follows the pointer.
-- What a drop would do shows live, worked out by the same code as the drop, so they can't disagree. Nothing moves to show it: an outline or a marker shows where the item would go.
+- What a drop would do shows live, worked out by the same code as the drop, so they can't disagree. An outline or a marker shows where the item would go. For a toolbar nothing else moves until the drop; for a window, the windows around it move apart a little to make room for its marker (section 5.2).
 - Movement is lightly animated. Esc cancels, and so does the app losing focus.
 - Drop zones are worked out once when the drag starts and don't move during it, which stops zones flickering as the layout shifts under the pointer.
 
@@ -213,7 +213,7 @@ The first match, top to bottom, wins:
 | Edge strip of a side with no windows | The window becomes a widget, keeping its width |
 | Edge strip of a side with widgets, when a column fits | The side becomes a dock. The window is a column at the very edge, and the rest are one column beside it |
 | Edge strip of a side with a dock, when a column fits | A new column at the very edge |
-| The window's own place | Nothing changes |
+| Edge strip of the side the window is alone on | Nothing changes |
 | The zone just inside a dock's inner edge, when this is the side's only window | It becomes a widget |
 | Upper or lower half of a widget, on a side with room | It joins the stack above or below that widget |
 | The border between two dock columns, or the dock's inner edge, when a column fits | It becomes a new column there |
@@ -224,9 +224,12 @@ The first match, top to bottom, wins:
 
 A title-only window that lands somewhere gets a normal size, unless it's a floating window that's only being moved. Dragging the last window off a side empties it, and toolbars move back.
 
-The zones come from the layout without the dragged window, which is what shows for the whole drag: nothing else moves until the drop. Every side's edge strip shows in blue for the whole drag, a side with windows only while a column fits there. The zones on the borders between dock columns, and on a dock's inner edge, straddle the border and run the full height. The bands are only at the top of a column and at its bottom. While the window is over a zone it goes see-through, as a toolbar does, and shows roughly where it would go:
+The zones come from the layout without the dragged window, and stay put for the whole drag while the windows around them move. Every side's edge strip shows in blue for the whole drag, a side with windows only while a column fits there. That includes the side the window is alone on, which looks empty while it's held, and a lone dock window's zone just inside its inner edge. The zones on the borders between dock columns, and on a dock's inner edge, straddle the border and run the full height. The bands are only at the top of a column and at its bottom. While the window is over a zone it goes see-through, as a toolbar does, and shows roughly where it would go:
 
-- **Over most zones,** a thin hatched strip with a "+" lies over the border or edge the window would go on: along the app window's edge, in the gap between two widgets, on the line between two dock windows or columns, or along a dock's inner edge. It shows where, not the size the window would get.
+- **Over most zones,** the windows move apart for a hatched strip with a "+" where the window would go. It jumps straight from zone to zone, while the windows slide.
+  - **On a border in a dock** (between two columns, at the dock's outer or inner edge, or between two stacked dock windows) the room is as thick as the zone, 24, and the strip keeps 2 from the windows beside it and 4 from the room's ends.
+  - **Everywhere else** (an empty side, above, below or between widgets, a dock column's top or bottom band, or the side a lone window came from) the room is as deep as the bands, 48, so the strip is the size of its zone.
+  - **Who gives the room:** the two windows beside it give half each, then, in a stack, the others, nearest first, never below their minimums. Columns at their narrowest give nothing, and the dock grows instead, as it does for a column at either edge.
 - **Over a dock window's tab strip or middle,** that window keeps showing, with a dashed accent outline around it whose dashes run, and a hatched "+" tab in its strip where the new tab would go, as long as the new tab would be. If the strip has more tabs than fit, it scrolls to show the "+".
 
 The window follows the pointer anywhere, even past the app window's edge. Out there, only an empty side's strip and the window's own place still count, as if at that edge. Anywhere else a drop floats the window back inside, and a dashed outline with a very light hatch shows where, as a toolbar's does. A window alone on its side is held at the size it would float at (section 3.4), so the pointer stays on its title.
@@ -326,5 +329,7 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 - **Example tests** turn each figure in the brief into a test.
 - **Headless UI tests** cover click-through, focus, menus and simulated drags.
 - **Manual tests** remain the only check of how it feels. Expect several tuning rounds, which is the real cost of owning this.
+
+Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g notes: the windows move apart again for the marker, which is thin only on a dock's borders and elsewhere the size of its zone, and a lone window's own place is its side's edge strip.
 
 Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g mockups. A window drag shows a thin marker, or a "+" tab and an outline, instead of a placeholder the size the window would land at with the others moving apart, and a dock's zones straddle its borders instead of lying inside each window.

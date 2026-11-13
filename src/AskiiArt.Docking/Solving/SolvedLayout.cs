@@ -12,13 +12,18 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="SafeArea">How much of each edge is taken from the canvas, for centring and scroll limits.</param>
 /// <param name="SubToolbar">Where the sub-toolbar goes. Null if there's none, or no room for it.</param>
 /// <param name="FloatingWindows">Every floating window, from back to front.</param>
+/// <param name="DropMarker">
+/// Where a dragged window's marker goes, in the room the measurements asked for: all of it, or in a dock, all but a little
+/// padding. Null if they asked for none.
+/// </param>
 public sealed record SolvedLayout(
     IReadOnlyList<SolvedWindowGroup> WindowGroups,
     IReadOnlyList<SolvedToolbar> Toolbars,
     LayoutRect CanvasRegion,
     LayoutInsets SafeArea,
     SolvedSubToolbar? SubToolbar,
-    IReadOnlyList<SolvedFloatingWindow> FloatingWindows)
+    IReadOnlyList<SolvedFloatingWindow> FloatingWindows,
+    LayoutRect? DropMarker = null)
 {
     /// <summary>Where a window is and whether it's title-only, if it's open.</summary>
     public (LayoutRect Bounds, bool IsTitleOnly)? PlaceOfWindow(string windowId)

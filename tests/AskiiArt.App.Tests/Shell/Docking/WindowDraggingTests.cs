@@ -93,7 +93,7 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void OverAWindowsLowerHalf_AThinStripShowsBelowIt_NothingMoves_AndADropPutsItThere()
+    public void OverAWindowsLowerHalf_ItMovesUpForAStripBelowIt_AndADropPutsItThere()
     {
         ShowWindow();
         DragAndDrop(Layers, _middleOfNowhere);
@@ -104,10 +104,10 @@ public sealed class WindowDraggingTests : IDisposable
 
         var marker = Marker!;
         Assert.True(marker.IsVisible);
-        Assert.Equal(_metrics.Docking.WindowDropMarkerThickness, marker.Bounds.Height);
+        Assert.Equal(_metrics.Docking.DockBandLength, marker.Bounds.Height);
         Assert.Equal(history.Width, marker.Bounds.Width);
-        Assert.True(marker.Bounds.Top > history.Center.Y);
-        Assert.Equal(history, BoundsOf(History));
+        Assert.True(BoundsOf(History).Height < history.Height);
+        Assert.True(BoundsOf(History).Bottom <= marker.Bounds.Top);
         Assert.True(Frame(Layers).IsAnchoring);
 
         _window.MouseUp(lowerHalf, MouseButton.Left);
@@ -145,18 +145,19 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void OverAnEmptySidesStrip_AThinStripShows_ToolbarsStayPut_AndADropMakesAWidget()
+    public void OverAnEmptySidesStrip_ItOpensForAStrip_ToolbarsMoveIn_AndADropMakesAWidget()
     {
         ShowWindow();
-        _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
-        Pump();
-        var toolsBefore = BoundsOf(ShellDockingIds.EditToolbar);
+        var fileBefore = BoundsOf(ShellDockingIds.FileToolbar);
+        var editBefore = BoundsOf(ShellDockingIds.EditToolbar);
 
         StartDrag(Layers, _leftEdge);
 
-        Assert.Equal(_metrics.Docking.WindowDropMarkerThickness, Marker!.Bounds.Width);
+        Assert.Equal(_metrics.Docking.DockBandLength, Marker!.Bounds.Width);
         Assert.True(Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left == 0).IsOutlined);
-        Assert.Equal(toolsBefore, BoundsOf(ShellDockingIds.EditToolbar));
+        Assert.True(BoundsOf(ShellDockingIds.FileToolbar).Left > fileBefore.Left);
+        Assert.True(BoundsOf(ShellDockingIds.FileToolbar).Left >= Marker.Bounds.Right);
+        Assert.Equal(editBefore, BoundsOf(ShellDockingIds.EditToolbar));
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
         Pump();
@@ -164,6 +165,25 @@ public sealed class WindowDraggingTests : IDisposable
         Assert.Equal(_metrics.WidgetWidth, BoundsOf(Layers).Width);
         Assert.Equal(_metrics.Docking.Margin, BoundsOf(Layers).Left);
         Assert.False(_docking.IsWindowFloating(Layers));
+    }
+
+    [AvaloniaFact]
+    public void AloneOnItsSide_ItsSidesEdgeShowsAStrip_ThatPutsItBack()
+    {
+        ShowWindow();
+        _docking.ToggleWindow(History);
+        Pump();
+        var before = BoundsOf(Layers);
+        var rightEdge = new Point(_host.Bounds.Width - 5, 350);
+
+        StartDrag(Layers, rightEdge);
+
+        var strip = Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Right == _host.Bounds.Width);
+        Assert.True(strip.IsOutlined);
+        _window.MouseUp(rightEdge, MouseButton.Left);
+        Pump();
+
+        Assert.Equal(before, BoundsOf(Layers));
     }
 
     [AvaloniaFact]

@@ -22,17 +22,19 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="DefaultWindowWidth">How wide a side is when a window first arrives on it.</param>
 /// <param name="DefaultFloatingWindowHeight">How tall a title-only window is when it lands floating.</param>
 /// <param name="WindowEdgeStripWidth">How wide the zone at an empty side's edge is, during a window drag.</param>
-/// <param name="WindowDropMarkerThickness">
-/// How thick the strip is that shows roughly where a dragged window would go, over the border or edge it would go in.
+/// <param name="DropMarkerSidePadding">
+/// How far a dragged window's marker in a dock keeps from the windows on either side of the room they make for it.
 /// </param>
+/// <param name="DropMarkerEndPadding">How far that marker's ends keep from the ends of its room.</param>
 /// <param name="DockHandleThickness">How thick the handles on the borders between dock windows are.</param>
 /// <param name="DockBandLength">
 /// How deep the bands along the top and bottom of a dock column are, during a window drag. A drop there stacks the window
-/// above or below, rather than making it a tab.
+/// above or below, rather than making it a tab. The windows make this much room for the marker there, and in a widget
+/// stack or on an empty side, so a marker shows how big its zone is.
 /// </param>
 /// <param name="DockBorderZoneThickness">
-/// How thick the zones are along the borders between dock windows and columns, and along a dock's inner edge, during a
-/// window drag. A drop there puts the window on that border.
+/// How thick the zones are along the borders between dock windows and columns, and along a dock's edges, during a window
+/// drag. A drop there puts the window on that border. The windows make this much room for the marker there.
 /// </param>
 public sealed record DockingMetrics(
     double Margin,
@@ -49,7 +51,8 @@ public sealed record DockingMetrics(
     double DefaultWindowWidth,
     double DefaultFloatingWindowHeight,
     double WindowEdgeStripWidth,
-    double WindowDropMarkerThickness,
+    double DropMarkerSidePadding,
+    double DropMarkerEndPadding,
     double DockHandleThickness,
     double DockBandLength,
     double DockBorderZoneThickness);
@@ -77,6 +80,7 @@ public sealed record SubToolbarRequest(string ParentToolbarId, ToolbarShapes Sha
 /// <param name="MinimumWindowLengths">The smallest size each window can show its contents at, by id.</param>
 /// <param name="ToolbarSizes">How big each toolbar wants to be, by id. One with no size isn't shown.</param>
 /// <param name="SubToolbar">The sub-toolbar to show, if any.</param>
+/// <remarks>Only the sizes are measured. The sub-toolbar and the drop room come from what the user is doing.</remarks>
 public sealed record LayoutMeasurements(
     LayoutSize Available,
     IReadOnlyDictionary<string, double> MinimumWindowLengths,
@@ -90,4 +94,7 @@ public sealed record LayoutMeasurements(
 
     /// <summary>How far each dock group's tab strip is scrolled, by the id of the tab showing. Unknown means not at all.</summary>
     public IReadOnlyDictionary<string, double> TabStripOffsets { get; init; } = _none;
+
+    /// <summary>Room to leave empty for a dragged window's marker, if any.</summary>
+    public DropRoom? DropRoom { get; init; }
 }

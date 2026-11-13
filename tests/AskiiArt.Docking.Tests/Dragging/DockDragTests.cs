@@ -131,19 +131,88 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void TheMarker_IsAThinStripOnTheBorderOrEdgeTheWindowWouldGoOn()
+    public void OnABorderInADock_TheMarkerIsThin_ElsewhereAsDeepAsTheBands_AlwaysPaddedFromTheWindows()
     {
         var drag = Drag(_dock, "x");
-        var thickness = Metrics.WindowDropMarkerThickness;
+        var thin = Metrics.DockBorderZoneThickness;
+        var band = Metrics.DockBandLength;
+        var side = Metrics.DropMarkerSidePadding;
+        var end = Metrics.DropMarkerEndPadding;
 
         LayoutRect? MarkerAt(double x, double y) => drag.PreviewAt(new LayoutPoint(x, y)).Marker;
 
-        Assert.Equal(new LayoutRect(_window.Width - thickness, 0, thickness, _window.Height), MarkerAt(995, 600));
-        Assert.Equal(new LayoutRect(760 - thickness / 2, 0, thickness, _window.Height), MarkerAt(765, 175));
-        Assert.Equal(new LayoutRect(520 - thickness / 2, 0, thickness, _window.Height), MarkerAt(530, 300));
-        Assert.Equal(new LayoutRect(760, 0, 240, thickness), MarkerAt(880, 50));
-        Assert.Equal(new LayoutRect(760, 350 - thickness / 2, 240, thickness), MarkerAt(880, 340));
-        Assert.Equal(new LayoutRect(760, _window.Height - thickness, 240, thickness), MarkerAt(880, 690));
+        // Columns: at the app window's edge, between the two, and past the inner one.
+        Assert.Equal(new LayoutRect(1000 - thin + side, end, thin - side * 2, 700 - end * 2), MarkerAt(995, 600));
+        Assert.Equal(new LayoutRect(760 - thin / 2 + side, end, thin - side * 2, 700 - end * 2), MarkerAt(765, 175));
+        Assert.Equal(new LayoutRect(520 - thin + side, end, thin - side * 2, 700 - end * 2), MarkerAt(530, 300));
+
+        // Stacking: at the column's top, between "a" and the tabs, and at its bottom.
+        Assert.Equal(new LayoutRect(760 + end, side, 240 - end * 2, band - side * 2), MarkerAt(880, 50));
+        Assert.Equal(new LayoutRect(760 + end, 350 - thin / 2 + side, 240 - end * 2, thin - side * 2), MarkerAt(880, 340));
+        Assert.Equal(new LayoutRect(760 + end, 700 - band + side, 240 - end * 2, band - side * 2), MarkerAt(880, 690));
+    }
+
+    [Fact]
+    public void BetweenTwoColumns_BothGiveUpHalfTheRoom_AndTheDockKeepsItsWidth()
+    {
+        var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(765, 175));
+
+        Assert.Equal(new LayoutRect(760 + 12, 0, 228, 350), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(520, 0, 228, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
+    }
+
+    [Fact]
+    public void BetweenTwoColumnsAtTheirNarrowest_TheDockGrowsInstead()
+    {
+        var narrow = LayoutEdits.FloatWindow(
+            Dock(SideEdge.Right, new SideColumn(160, [Tabs("a")]), new SideColumn(160, [Tabs("d")])),
+            "x", new LayoutPoint(100, 100), 200, 200);
+
+        var solved = SolvedWithRoom(Drag(narrow, "x"), new LayoutPoint(845, 300));
+
+        Assert.Equal(new LayoutRect(840, 0, 160, 700), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(840 - 24 - 160, 0, 160, 700), solved.PlaceOfWindow("d")!.Value.Bounds);
+    }
+
+    [Fact]
+    public void AtADocksOuterEdge_TheWholeDockMovesIn()
+    {
+        var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(995, 600));
+
+        Assert.Equal(1000 - 24 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
+        Assert.Equal(1000 - 24 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
+    }
+
+    [Fact]
+    public void AtTheTopOfAColumn_ItsFirstWindowIsPushedDown_AndAtTheBottom_ItsLastIsPushedUp()
+    {
+        var drag = Drag(_dock, "x");
+
+        var top = SolvedWithRoom(drag, new LayoutPoint(880, 50));
+        Assert.Equal(new LayoutRect(760, 48, 240, 302), top.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 350, 240, 350), top.PlaceOfWindow("b")!.Value.Bounds);
+
+        var bottom = SolvedWithRoom(drag, new LayoutPoint(880, 690));
+        Assert.Equal(new LayoutRect(760, 0, 240, 350), bottom.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 350, 240, 302), bottom.PlaceOfWindow("b")!.Value.Bounds);
+    }
+
+    [Fact]
+    public void BetweenTwoStackedWindows_BothGiveUpHalfTheRoom()
+    {
+        var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(880, 340));
+
+        Assert.Equal(new LayoutRect(760, 0, 240, 338), solved.PlaceOfWindow("a")!.Value.Bounds);
+        Assert.Equal(new LayoutRect(760, 362, 240, 338), solved.PlaceOfWindow("b")!.Value.Bounds);
+    }
+
+    [Fact]
+    public void OverATab_NoRoomIsMade()
+    {
+        var preview = Drag(_dock, "x").PreviewAt(new LayoutPoint(880, 175));
+
+        Assert.Null(preview.Room);
+        Assert.Null(preview.Marker);
     }
 
     [Fact]
@@ -232,7 +301,7 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void ALoneDockWindow_BecomesAWidget_JustInsideItsInnerEdge()
+    public void ALoneDockWindow_BecomesAWidget_JustInsideItsInnerEdge_AndGoesBack_AtItsSidesEdge()
     {
         var alone = Dock(SideEdge.Right, Column(Tabs("a")));
         var drag = Drag(alone, "a");
@@ -240,7 +309,8 @@ public sealed class DockDragTests
         var widget = drag.LayoutAt(new LayoutPoint(770, 300));
 
         Assert.Equal(WindowKind.Widget, widget.KindOf("a"));
-        Assert.Same(drag.Start, drag.LayoutAt(new LayoutPoint(900, 300)));
+        Assert.Same(drag.Start, drag.LayoutAt(new LayoutPoint(995, 300)));
+        Assert.NotNull(drag.LayoutAt(new LayoutPoint(900, 300)).FloatingWindowNamed("a"));
     }
 
     [Fact]
@@ -259,6 +329,13 @@ public sealed class DockDragTests
                 }
             }
         }
+    }
+
+    // What the app shows while the pointer is there: the layout without the window, making room for the marker.
+    private static SolvedLayout SolvedWithRoom(WindowDrag drag, LayoutPoint at)
+    {
+        var preview = drag.PreviewAt(at);
+        return LayoutSolver.Solve(preview.Layout, Measure(_window) with { DropRoom = preview.Room }, Metrics);
     }
 
     private static WindowDrag Drag(DockingLayout layout, string windowId) =>
