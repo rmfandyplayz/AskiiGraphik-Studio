@@ -93,37 +93,40 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void OverAWindowsLowerHalf_ThePlaceholderShowsWhereItWouldLand_AndADropPutsItThere()
+    public void OverAWindowsLowerHalf_AThinStripShowsBelowIt_NothingMoves_AndADropPutsItThere()
     {
         ShowWindow();
         DragAndDrop(Layers, _middleOfNowhere);
+        var history = BoundsOf(History);
 
-        var lowerHalf = new Point(BoundsOf(History).Center.X, BoundsOf(History).Bottom - 20);
+        var lowerHalf = new Point(history.Center.X, history.Bottom - 20);
         StartDrag(Layers, lowerHalf);
 
-        var placeholder = Placeholder!;
-        Assert.True(placeholder.IsVisible);
-        Assert.True(placeholder.Bounds.Top > BoundsOf(History).Top);
+        var marker = Marker!;
+        Assert.True(marker.IsVisible);
+        Assert.Equal(_metrics.Docking.WindowDropMarkerThickness, marker.Bounds.Height);
+        Assert.Equal(history.Width, marker.Bounds.Width);
+        Assert.True(marker.Bounds.Top > history.Center.Y);
+        Assert.Equal(history, BoundsOf(History));
         Assert.True(Frame(Layers).IsAnchoring);
-        var landing = placeholder.Bounds;
 
         _window.MouseUp(lowerHalf, MouseButton.Left);
         Pump();
 
         Assert.False(_docking.IsWindowFloating(Layers));
-        Assert.Equal(landing, BoundsOf(Layers));
+        Assert.True(BoundsOf(Layers).Top > BoundsOf(History).Top);
         Assert.False(Frame(Layers).IsAnchoring);
-        Assert.Null(Placeholder);
+        Assert.Null(Marker);
     }
 
     [AvaloniaFact]
-    public void AwayFromAZone_ThereIsNoPlaceholder_AndTheWindowIsSolid()
+    public void AwayFromAZone_ThereIsNoMarker_AndTheWindowIsSolid()
     {
         ShowWindow();
 
         StartDrag(Layers, _middleOfNowhere);
 
-        Assert.False(Placeholder!.IsVisible);
+        Assert.False(Marker!.IsVisible);
         Assert.False(Frame(Layers).IsAnchoring);
         _window.MouseUp(_middleOfNowhere, MouseButton.Left);
     }
@@ -142,7 +145,7 @@ public sealed class WindowDraggingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void OverAnEmptySidesStrip_AThinPlaceholderOpens_ToolbarsMoveIn_AndADropMakesAWidget()
+    public void OverAnEmptySidesStrip_AThinStripShows_ToolbarsStayPut_AndADropMakesAWidget()
     {
         ShowWindow();
         _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
@@ -151,9 +154,9 @@ public sealed class WindowDraggingTests : IDisposable
 
         StartDrag(Layers, _leftEdge);
 
-        Assert.Equal(_metrics.Docking.WindowEdgePlaceholderWidth, Placeholder!.Bounds.Width);
+        Assert.Equal(_metrics.Docking.WindowDropMarkerThickness, Marker!.Bounds.Width);
         Assert.True(Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left == 0).IsOutlined);
-        _ = toolsBefore;
+        Assert.Equal(toolsBefore, BoundsOf(ShellDockingIds.EditToolbar));
 
         _window.MouseUp(_leftEdge, MouseButton.Left);
         Pump();
@@ -189,7 +192,7 @@ public sealed class WindowDraggingTests : IDisposable
 
         Assert.Equal(before, LayoutJson.Write(_docking.Layout!));
         Assert.Equal(where, BoundsOf(Layers));
-        Assert.Null(Placeholder);
+        Assert.Null(Marker);
 
         _window.MouseUp(_middleOfNowhere, MouseButton.Left);
         Pump();
@@ -246,7 +249,7 @@ public sealed class WindowDraggingTests : IDisposable
         Pump();
 
         Assert.False(_docking.IsWindowFloating(Layers));
-        Assert.Null(Placeholder);
+        Assert.Null(Marker);
     }
 
     [AvaloniaFact]
@@ -756,7 +759,8 @@ public sealed class WindowDraggingTests : IDisposable
         Assert.False(_docking.IsWindowOpen(ShellDockingIds.SampleWindow1));
     }
 
-    [Fact]
+    // On the UI thread, like the rest, since Dispose runs what's queued there.
+    [AvaloniaFact]
     public void TheSampleWindowActions_ExistOnlyInDebugBuilds()
     {
         var docking = new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance);
@@ -778,7 +782,7 @@ public sealed class WindowDraggingTests : IDisposable
         Assert.Same(body, Frame(Layers).Body);
     }
 
-    private WindowPlaceholderView? Placeholder => _host.Children.OfType<WindowPlaceholderView>().SingleOrDefault();
+    private WindowPlaceholderView? Marker => _host.Children.OfType<WindowPlaceholderView>().SingleOrDefault();
 
     private WindowFrame Frame(string windowId) =>
         _host.Children.OfType<WindowFrame>().Single(frame => frame.Title == windowId);

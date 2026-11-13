@@ -55,9 +55,14 @@ public sealed record WindowDropZone(
     int Tab = 0);
 
 /// <summary>What dropping a window with the pointer at some position would do, and how to show that.</summary>
-/// <param name="Layout">The layout to show around the window.</param>
+/// <param name="Layout">
+/// The layout to show around the window. It's the same over a zone as anywhere else, so that nothing moves until the drop.
+/// </param>
 /// <param name="Zone">The zone the pointer is over, if any.</param>
-/// <param name="Placeholder">Where the hatched placeholder goes, if the window would land on a side.</param>
+/// <param name="Marker">
+/// The thin hatched strip showing roughly where the window would go, over a zone that doesn't make it a tab.
+/// </param>
+/// <param name="IncomingTab">Where it would go as a tab, over a zone that makes it one.</param>
 /// <param name="Held">Where the window is while it's held: under the pointer, even past the app window's edge.</param>
 /// <param name="Landing">
 /// Where it would float, if that isn't where it's held, because floating windows stay inside. Null over a zone.
@@ -65,14 +70,22 @@ public sealed record WindowDropZone(
 public sealed record WindowDragPreview(
     DockingLayout Layout,
     WindowDropZone? Zone,
-    LayoutRect? Placeholder,
+    LayoutRect? Marker,
+    IncomingTab? IncomingTab,
     LayoutRect Held,
     LayoutRect? Landing);
 
+/// <summary>A tab that a drop would make in a dock window, shown in that window's tab strip.</summary>
+/// <param name="ShowingWindowId">The window showing in the group it would join, whose tab strip shows where it goes.</param>
+/// <param name="Index">Where it would go among the group's tabs.</param>
+/// <param name="GroupBounds">The group's rectangle, outlined while the tab is held there.</param>
+public sealed record IncomingTab(string ShowingWindowId, int Index, LayoutRect GroupBounds);
+
 /// <summary>
 /// One drag of a window, as data (docs/DOCKING.md §5.2). The zones are worked out once, from the layout without the
-/// window, which is what's on screen whenever it isn't over one. So they don't move as the windows make room for it.
-/// The window follows the pointer anywhere, like a toolbar, and a floating drop moves it back inside.
+/// window, which is what's on screen for the whole drag: nothing moves until the drop, and a thin marker shows roughly
+/// where the window would go. The window follows the pointer anywhere, like a toolbar, and a floating drop moves it back
+/// inside.
 /// </summary>
 /// <remarks>
 /// A zone's numbers count the windows and columns there would be without the dragged one. The zone that would put it
@@ -93,6 +106,7 @@ public sealed class WindowDrag
     private readonly WindowPlace? _place;
     private readonly Arrival? _home;
     private readonly DockingLayout _without;
+    private readonly SolvedLayout _others;
     private readonly IReadOnlyList<LayoutRect> _otherFloatingWindows;
 
     /// <summary>Starts a drag.</summary>
@@ -128,10 +142,10 @@ public sealed class WindowDrag
         _grabOffset = new LayoutPoint(grab.X * HeldSize.Width, Math.Min(grab.Y * place.Bounds.Height, HeldSize.Height));
 
         _without = LayoutEdits.WithoutWindow(start, windowId);
-        var others = LayoutSolver.Solve(_without, measurements, metrics);
-        _otherFloatingWindows = [.. others.FloatingWindows.Select(window => window.Bounds)];
+        _others = LayoutSolver.Solve(_without, measurements, metrics);
+        _otherFloatingWindows = [.. _others.FloatingWindows.Select(window => window.Bounds)];
 
-        Zones = [.. ZonesFor(SideEdge.Left, others, place.Bounds), .. ZonesFor(SideEdge.Right, others, place.Bounds)];
+        Zones = [.. ZonesFor(SideEdge.Left, place.Bounds), .. ZonesFor(SideEdge.Right, place.Bounds)];
     }
 
     /// <summary>The layout as it was before the drag, which cancelling goes back to.</summary>
@@ -189,21 +203,18 @@ public sealed class WindowDrag
     public WindowDragPreview PreviewAt(LayoutPoint position)
     {
         var held = HeldAt(position);
+        var floated = Floated(position);
 
         if (ZoneAt(position) is not { } zone)
         {
-            var floated = Floated(position);
             var landing = LayoutSolver.Solve(floated, _measurements, _metrics).PlaceOfWindow(_windowId)?.Bounds;
-            return new WindowDragPreview(floated, null, null, held, landing is { } bounds && !IsSamePlace(bounds, held) ? bounds : null);
+            var outside = landing is { } bounds && !IsSamePlace(bounds, held) ? landing : null;
+            return new WindowDragPreview(floated, null, null, null, held, outside);
         }
 
-        // An empty side only opens a little until the drop, as the owner's picture shows it.
-        var layout = zone.Kind == WindowDropKind.EmptySide
-            ? LayoutEdits.MoveWindowToEmptySide(Start, _windowId, zone.Edge, _metrics.WindowEdgePlaceholderWidth)
-            : LayoutAt(position);
-
-        var place = LayoutSolver.Solve(layout, _measurements, _metrics).PlaceOfWindow(_windowId);
-        return new WindowDragPreview(layout, zone, place?.Bounds, held, null);
+        return zone.Kind == WindowDropKind.Tab
+            ? new WindowDragPreview(floated, zone, null, IncomingTabAt(zone), held, null)
+            : new WindowDragPreview(floated, zone, MarkerFor(zone), null, held, null);
     }
 
     private static bool IsAnEdge(WindowDropZone zone) => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.OwnPlace;
@@ -238,9 +249,9 @@ public sealed class WindowDrag
         : new Arrival(zone.Kind, zone.Edge, zone.Column, zone.Position, zone.Tab);
 
     // In the order of docs/DOCKING.md §5.2's table, since the first zone the pointer is over wins.
-    private List<WindowDropZone> ZonesFor(SideEdge edge, SolvedLayout others, LayoutRect place)
+    private List<WindowDropZone> ZonesFor(SideEdge edge, LayoutRect place)
     {
-        var groups = others.WindowGroups.Where(group => group.Edge == edge).OrderBy(group => group.Bounds.Y).ToList();
+        var groups = GroupsOn(edge);
 
         if (groups.Count == 0 && _place?.Edge != edge)
             return [EdgeStripZone(WindowDropKind.EmptySide, edge)];
@@ -265,10 +276,46 @@ public sealed class WindowDrag
             return zones;
         }
 
+        if (columnFits)
+            zones.AddRange(ColumnBorderZones(edge));
+
         foreach (var group in groups)
-            zones.AddRange(DockGroupZones(group, columnFits));
+            zones.AddRange(DockGroupZones(group));
 
         return zones;
+    }
+
+    private List<SolvedWindowGroup> GroupsOn(SideEdge edge) =>
+        [.. _others.WindowGroups.Where(group => group.Edge == edge).OrderBy(group => group.Bounds.Y)];
+
+    // A dock column's groups, from the top.
+    private List<SolvedWindowGroup> GroupsIn(SideEdge edge, int column) =>
+        [.. _others.WindowGroups.Where(group => group.Edge == edge && group.Column == column).OrderBy(group => group.Position)];
+
+    // Each dock column's rectangle, from the app window's edge.
+    private List<LayoutRect> ColumnsOn(SideEdge edge) =>
+    [
+        .. _others.WindowGroups
+            .Where(group => group.Edge == edge)
+            .GroupBy(group => group.Column)
+            .OrderBy(column => column.Key)
+            .Select(column => new LayoutRect(column.First().Bounds.X, 0, column.First().Bounds.Width, _available.Height)),
+    ];
+
+    // The edge of a column on the canvas side.
+    private static double InnerEdge(SideEdge edge, LayoutRect column) => edge == SideEdge.Left ? column.Right : column.X;
+
+    // A zone straddling each border between columns, and the dock's inner edge, the full height. A drop there makes a
+    // column there. The outer edge has the side's edge strip instead.
+    private IEnumerable<WindowDropZone> ColumnBorderZones(SideEdge edge)
+    {
+        var columns = ColumnsOn(edge);
+        for (var column = 1; column <= columns.Count; column++)
+        {
+            var border = InnerEdge(edge, columns[column - 1]);
+            yield return new WindowDropZone(WindowDropKind.DockColumn, edge, 0,
+                VerticalStrip(border, _metrics.DockBorderZoneThickness), column);
+        }
     }
 
     private WindowDropZone OwnPlaceZone(SideEdge edge, LayoutRect place) =>
@@ -289,35 +336,40 @@ public sealed class WindowDrag
         return new WindowDropZone(WindowDropKind.DockToWidget, edge, 0, new LayoutRect(x, 0, strip, _available.Height));
     }
 
-    // Along the tab strip, a slot for each place a tab could go. Below it, bands along the top and bottom stack the
-    // window above or below, and bands along the sides make it a column beside this one, if one fits. The rest makes it
-    // a tab at the end, or back where it was if it came from here.
-    private List<WindowDropZone> DockGroupZones(SolvedWindowGroup group, bool columnFits)
+    // Along the tab strip, a slot for each place a tab could go. Below it, a band along the top of the column's first
+    // window and the bottom of its last stacks the window there, and a thinner one along the bottom of any other puts it
+    // between that one and the next. That one stays above the border, so the next window's tab strip keeps its whole
+    // height, unless this window shows only its tab strip. The rest makes it a tab at the end, or back where it was if
+    // it came from here.
+    private List<WindowDropZone> DockGroupZones(SolvedWindowGroup group)
     {
         var bounds = group.Bounds;
-        var stripHeight = Math.Min(_metrics.TitleLength, bounds.Height);
-        var zones = TabZones(group, new LayoutRect(bounds.X, bounds.Y, bounds.Width, stripHeight));
-
-        var body = new LayoutRect(bounds.X, bounds.Y + stripHeight, bounds.Width, bounds.Height - stripHeight);
+        var zones = TabZones(group, new LayoutRect(bounds.X, bounds.Y, bounds.Width, StripHeight(group)));
+        var body = BodyOf(group);
         if (body.Height <= 0)
             return zones;
 
         var edge = group.Edge;
+        var column = GroupsIn(edge, group.Column);
+        var isFirst = group.Position == 0;
+        var isLast = group.Position == column.Count - 1;
         var band = Math.Min(_metrics.DockBandLength, body.Height / 4);
-        zones.Add(new WindowDropZone(WindowDropKind.DockStack, edge, group.Position,
-            new LayoutRect(body.X, body.Y, body.Width, band), group.Column));
-        zones.Add(new WindowDropZone(WindowDropKind.DockStack, edge, group.Position + 1,
-            new LayoutRect(body.X, body.Bottom - band, body.Width, band), group.Column));
+        var between = Math.Min(_metrics.DockBorderZoneThickness, body.Height / 4);
 
-        if (columnFits)
+        if (isFirst)
         {
-            var width = Math.Min(_metrics.DockBandLength, body.Width / 4);
-            var left = new LayoutRect(body.X, body.Y, width, body.Height);
-            var right = new LayoutRect(body.Right - width, body.Y, width, body.Height);
-            var (outer, inner) = edge == SideEdge.Left ? (left, right) : (right, left);
-            zones.Add(new WindowDropZone(WindowDropKind.DockColumn, edge, 0, outer, group.Column));
-            zones.Add(new WindowDropZone(WindowDropKind.DockColumn, edge, 0, inner, group.Column + 1));
+            zones.Add(new WindowDropZone(WindowDropKind.DockStack, edge, 0,
+                new LayoutRect(body.X, body.Y, body.Width, band), group.Column));
         }
+        else if (BodyOf(column[group.Position - 1]).Height <= 0)
+        {
+            zones.Add(new WindowDropZone(WindowDropKind.DockStack, edge, group.Position,
+                new LayoutRect(body.X, body.Y, body.Width, between), group.Column));
+        }
+
+        var below = isLast ? band : between;
+        zones.Add(new WindowDropZone(WindowDropKind.DockStack, edge, group.Position + 1,
+            new LayoutRect(body.X, body.Bottom - below, body.Width, below), group.Column));
 
         var tab = _home is { Kind: WindowDropKind.Tab } home && home.Edge == edge && home.Column == group.Column &&
             home.Position == group.Position
@@ -326,6 +378,98 @@ public sealed class WindowDrag
         zones.Add(new WindowDropZone(WindowDropKind.Tab, edge, group.Position, body, group.Column, tab));
         return zones;
     }
+
+    private double StripHeight(SolvedWindowGroup group) => Math.Min(_metrics.TitleLength, group.Bounds.Height);
+
+    // Everything below the tab strip.
+    private LayoutRect BodyOf(SolvedWindowGroup group)
+    {
+        var bounds = group.Bounds;
+        var strip = StripHeight(group);
+        return new LayoutRect(bounds.X, bounds.Y + strip, bounds.Width, bounds.Height - strip);
+    }
+
+    private IncomingTab IncomingTabAt(WindowDropZone zone)
+    {
+        var group = GroupsIn(zone.Edge, zone.Column)[zone.Position];
+        return new IncomingTab(group.Selected, zone.Tab, group.Bounds);
+    }
+
+    // docs/DOCKING.md §5.2: a thin strip over the border or edge the window would go in, since nothing moves until the
+    // drop. It shows roughly where, not the size the window would get.
+    private LayoutRect MarkerFor(WindowDropZone zone)
+    {
+        var thickness = _metrics.WindowDropMarkerThickness;
+        return zone.Kind switch
+        {
+            WindowDropKind.SideEdge => AlongTheEdge(zone.Edge, 0, thickness),
+            WindowDropKind.EmptySide or WindowDropKind.DockToWidget => AlongTheEdge(zone.Edge, _metrics.Margin, thickness),
+            WindowDropKind.OwnPlace =>
+                AlongTheEdge(zone.Edge, _place?.Kind == SideKind.Widgets ? _metrics.Margin : 0, thickness),
+            WindowDropKind.Stack => StackMarker(zone, thickness),
+            WindowDropKind.DockStack => DockStackMarker(zone, thickness),
+            WindowDropKind.DockColumn => DockColumnMarker(zone, thickness),
+            _ => throw new ArgumentOutOfRangeException(nameof(zone), zone.Kind, null),
+        };
+    }
+
+    // Down the side, this far in from the app window's edge and its top and bottom.
+    private LayoutRect AlongTheEdge(SideEdge edge, double inset, double thickness)
+    {
+        var x = edge == SideEdge.Left ? inset : _available.Width - inset - thickness;
+        return new LayoutRect(x, inset, thickness, Math.Max(0, _available.Height - inset * 2));
+    }
+
+    // In the middle of the gap the widget would go in, or of the margin above or below the stack.
+    private LayoutRect StackMarker(WindowDropZone zone, double thickness)
+    {
+        var groups = GroupsOn(zone.Edge);
+        var position = zone.Position;
+        var across = groups[Math.Min(position, groups.Count - 1)].Bounds;
+        var middle = position switch
+        {
+            0 => groups[0].Bounds.Y / 2,
+            _ when position == groups.Count => (groups[^1].Bounds.Bottom + _available.Height) / 2,
+            _ => (groups[position - 1].Bounds.Bottom + groups[position].Bounds.Y) / 2,
+        };
+
+        return HorizontalStrip(across, middle - thickness / 2, thickness);
+    }
+
+    // On the border the window would go on, or just inside the column's top or bottom.
+    private LayoutRect DockStackMarker(WindowDropZone zone, double thickness)
+    {
+        var column = GroupsIn(zone.Edge, zone.Column);
+        var position = zone.Position;
+        var across = column[Math.Min(position, column.Count - 1)].Bounds;
+        var top = position switch
+        {
+            0 => column[0].Bounds.Y,
+            _ when position == column.Count => column[^1].Bounds.Bottom - thickness,
+            _ => column[position].Bounds.Y - thickness / 2,
+        };
+
+        return HorizontalStrip(across, top, thickness);
+    }
+
+    // On the border the new column would go on: the app window's edge, between two columns, or the dock's inner edge.
+    private LayoutRect DockColumnMarker(WindowDropZone zone, double thickness)
+    {
+        if (zone.Column == 0)
+            return AlongTheEdge(zone.Edge, 0, thickness);
+
+        var columns = ColumnsOn(zone.Edge);
+        return VerticalStrip(InnerEdge(zone.Edge, columns[zone.Column - 1]), thickness);
+    }
+
+    // As wide as the window, kept inside the app window.
+    private LayoutRect HorizontalStrip(LayoutRect across, double top, double thickness) =>
+        new(across.X, Math.Clamp(top, 0, Math.Max(0, _available.Height - thickness)), across.Width, thickness);
+
+    // The full height, centred on a line down the app window, kept inside it.
+    private LayoutRect VerticalStrip(double middle, double thickness) =>
+        new(Math.Clamp(middle - thickness / 2, 0, Math.Max(0, _available.Width - thickness)), 0, thickness,
+            _available.Height);
 
     // Each slot reaches from the middle of one tab to the middle of the next, so a drop goes between the two tabs nearest
     // the pointer. The last reaches to the end of the strip.

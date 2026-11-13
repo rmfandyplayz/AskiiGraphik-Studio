@@ -22,11 +22,17 @@ namespace AskiiArt.Docking.Solving;
 /// <param name="DefaultWindowWidth">How wide a side is when a window first arrives on it.</param>
 /// <param name="DefaultFloatingWindowHeight">How tall a title-only window is when it lands floating.</param>
 /// <param name="WindowEdgeStripWidth">How wide the zone at an empty side's edge is, during a window drag.</param>
-/// <param name="WindowEdgePlaceholderWidth">How wide the placeholder on an empty side is, during a window drag.</param>
+/// <param name="WindowDropMarkerThickness">
+/// How thick the strip is that shows roughly where a dragged window would go, over the border or edge it would go in.
+/// </param>
 /// <param name="DockHandleThickness">How thick the handles on the borders between dock windows are.</param>
 /// <param name="DockBandLength">
-/// How deep the bands along a dock window's edges are, during a window drag. A drop there stacks the window beside it, or
-/// makes it a column, rather than a tab.
+/// How deep the bands along the top and bottom of a dock column are, during a window drag. A drop there stacks the window
+/// above or below, rather than making it a tab.
+/// </param>
+/// <param name="DockBorderZoneThickness">
+/// How thick the zones are along the borders between dock windows and columns, and along a dock's inner edge, during a
+/// window drag. A drop there puts the window on that border.
 /// </param>
 public sealed record DockingMetrics(
     double Margin,
@@ -43,9 +49,10 @@ public sealed record DockingMetrics(
     double DefaultWindowWidth,
     double DefaultFloatingWindowHeight,
     double WindowEdgeStripWidth,
-    double WindowEdgePlaceholderWidth,
+    double WindowDropMarkerThickness,
     double DockHandleThickness,
-    double DockBandLength);
+    double DockBandLength,
+    double DockBorderZoneThickness);
 
 /// <summary>The size a toolbar wants, each way round.</summary>
 /// <param name="Horizontal">Its size when it runs across.</param>

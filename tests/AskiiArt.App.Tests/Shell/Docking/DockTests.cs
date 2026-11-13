@@ -88,17 +88,18 @@ public sealed class DockTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void ATabDraggedAlongItsOwnStrip_MovesThere_EvenThoughTheWindowThatWasShowingHides()
+    public void ATabDraggedAlongItsOwnStrip_MovesThere_WhileTheWindowThatWasShowingStaysInView()
     {
         ShowWindow(Dock(Column(Tabs(Layers, History))));
         var strip = StripOf(Layers);
         var stripStart = new Point(strip.Left + 3, strip.Center.Y);
 
-        // Over its own strip, the held tab is the selected one, so the frame that has the pointer hides.
         _window.MouseDown(TabOf(History), MouseButton.Left);
         _window.MouseMove(stripStart);
         Pump();
-        Assert.False(Frame(Layers).IsVisible);
+        Assert.True(Frame(Layers).IsVisible);
+        Assert.Equal([Layers], Frame(Layers).Tabs.WindowIds);
+        Assert.NotNull(Frame(Layers).Tabs.IncomingTab);
         _window.MouseMove(stripStart + new Point(1, 0));
         _window.MouseUp(stripStart + new Point(1, 0), MouseButton.Left);
         Pump();
@@ -120,6 +121,35 @@ public sealed class DockTests : IDisposable
         Assert.True(Frame(Sample).IsVisible);
         Assert.True(Frame(Sample).IsDocked);
         Assert.False(Frame(Layers).IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void OverADockWindow_ItStaysInView_OutlinedAndWithAPlusTabWhereTheWindowWouldGo_UntilThePointerLeaves()
+    {
+        ShowWindow(Dock(Column(Tabs(Layers))));
+        _docking.ToggleWindow(Sample);
+        Pump();
+        var layers = BoundsOf(Layers);
+
+        StartDrag(TitleRowOf(Sample), layers.Center);
+
+        Assert.True(Frame(Layers).IsVisible);
+        Assert.Equal(layers, BoundsOf(Layers));
+        var incoming = Frame(Layers).Tabs.IncomingTab!;
+        Assert.Equal(1, Assert.IsAssignableFrom<Panel>(incoming.Parent).Children.IndexOf(incoming));
+        Assert.Equal(layers, TabOutline.Bounds);
+        Assert.True(TabOutline.IsVisible);
+        Assert.False(Marker.IsVisible);
+
+        _window.MouseMove(_middleOfNowhere);
+        Pump();
+
+        Assert.Null(Frame(Layers).Tabs.IncomingTab);
+        Assert.False(TabOutline.IsVisible);
+        _window.MouseUp(_middleOfNowhere, MouseButton.Left);
+        Pump();
+
+        Assert.Empty(_host.Children.OfType<LandingOutline>());
     }
 
     [AvaloniaFact]
@@ -288,6 +318,10 @@ public sealed class DockTests : IDisposable
         _host.Children.OfType<WindowFrame>().Single(frame => frame.Title == TitleOf(windowId));
 
     private Rect BoundsOf(string windowId) => Frame(windowId).Bounds;
+
+    private LandingOutline TabOutline => _host.Children.OfType<LandingOutline>().Single();
+
+    private WindowPlaceholderView Marker => _host.Children.OfType<WindowPlaceholderView>().Single();
 
     private Point TitleRowOf(string windowId) => BoundsOf(windowId).TopLeft + new Point(20, 10);
 

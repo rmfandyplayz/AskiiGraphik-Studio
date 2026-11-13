@@ -9,9 +9,9 @@ using Avalonia.Media;
 namespace AskiiArt.App.Shell.Docking;
 
 /// <summary>
-/// A hatched rectangle with a "+", showing where a dragged window would land, as in the owner's mockup. The light kind is
-/// only a very faint hatch, for inside an outline. It never catches the pointer. Placeholder: the owner designs the real
-/// one.
+/// A hatched rectangle with a "+", as in the owner's mockups: the thin strip or the tab showing roughly where a dragged
+/// window would go. The light kind is only a very faint hatch, for inside an outline. It never catches the pointer.
+/// Placeholder: the owner designs the real one.
 /// </summary>
 internal sealed class WindowPlaceholderView : Control
 {

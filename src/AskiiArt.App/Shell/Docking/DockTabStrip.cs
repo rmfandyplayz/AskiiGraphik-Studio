@@ -43,6 +43,7 @@ internal sealed class DockTabStrip : UserControl
     private readonly List<(DockTab Tab, Border View)> _views = [];
     private ToolbarFadeAmounts _fades;
     private string? _selected;
+    private IncomingTabView? _incoming;
 
     public DockTabStrip()
     {
@@ -118,6 +119,48 @@ internal sealed class DockTabStrip : UserControl
             shown.BringIntoView();
     }
 
+    /// <summary>The tab marking where a dragged window would go, while there is one.</summary>
+    public Control? IncomingTab => _incoming?.View;
+
+    /// <summary>
+    /// Shows where a dragged window would go as a tab: <paramref name="marker"/>, as long as a tab with
+    /// <paramref name="title"/> would be, before the tab now at <paramref name="index"/>. The strip scrolls to show it, and
+    /// scrolls back when it goes.
+    /// </summary>
+    public void ShowIncomingTab(int index, string title, Control marker)
+    {
+        if (_incoming is { } shown && shown.Index == index && shown.Title == title && shown.Marker == marker)
+            return;
+
+        var scrolledFrom = _incoming?.ScrolledFrom ?? _scroller.Offset;
+        HideIncomingTab();
+
+        var sizer = new Border
+        {
+            Padding = TabPadding,
+            Child = new TextBlock { Text = title, VerticalAlignment = VerticalAlignment.Center, Opacity = 0 },
+        };
+        var view = new Panel { Children = { sizer, marker } };
+        _incoming = new IncomingTabView(index, title, marker, view, scrolledFrom);
+        _tabs.Children.Insert(Math.Clamp(index, 0, _views.Count), view);
+
+        // Once it has a place, since a control that hasn't been laid out can't be scrolled to.
+        _tabs.LayoutUpdated += BringIncomingTabIntoView;
+    }
+
+    /// <summary>Takes away the incoming tab, if there is one, and scrolls back to where the strip was before it.</summary>
+    public void HideIncomingTab()
+    {
+        if (_incoming is not { } incoming)
+            return;
+
+        _tabs.LayoutUpdated -= BringIncomingTabIntoView;
+        _tabs.Children.Remove(incoming.View);
+        incoming.View.Children.Remove(incoming.Marker);
+        _scroller.Offset = incoming.ScrolledFrom;
+        _incoming = null;
+    }
+
     /// <summary>The tab showing a window, if there is one.</summary>
     public Control? TabFor(string windowId) => _views.FirstOrDefault(view => view.Tab.WindowId == windowId).View;
 
@@ -161,6 +204,15 @@ internal sealed class DockTabStrip : UserControl
         }
 
         _selected = null;
+
+        if (_incoming is { } incoming)
+            _tabs.Children.Insert(Math.Clamp(incoming.Index, 0, _views.Count), incoming.View);
+    }
+
+    private void BringIncomingTabIntoView(object? sender, EventArgs e)
+    {
+        _tabs.LayoutUpdated -= BringIncomingTabIntoView;
+        _incoming?.View.BringIntoView();
     }
 
     private void UpdateSelection()
@@ -196,4 +248,6 @@ internal sealed class DockTabStrip : UserControl
         _scroller.Offset = offset.WithX(offset.X - e.Delta.Y * WheelStep);
         e.Handled = true;
     }
+
+    private sealed record IncomingTabView(int Index, string Title, Control Marker, Panel View, Vector ScrolledFrom);
 }

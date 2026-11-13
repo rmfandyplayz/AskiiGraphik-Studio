@@ -30,17 +30,22 @@ public sealed class WindowDragTests
         LayoutEdits.FloatWindow(_twoOnTheRight, "x", new LayoutPoint(300, 300), 200, 200);
 
     [Fact]
-    public void Example1_DroppedOnTheLowerPartOfALoneWindow_ItGoesBelow_AndThePlaceholderIsWhereItLands()
+    public void Example1_DroppedOnTheLowerPartOfALoneWindow_ItGoesBelow_AndAThinStripShowsBelowIt_WithNothingMoving()
     {
         var drag = Drag(_oneOnTheRightAndOneFloating, "x");
         var lowerPart = new LayoutPoint(OverTheRightSide, 600);
 
         var preview = drag.PreviewAt(lowerPart);
 
-        Assert.Equal(["a", "x"], Stack(preview.Layout, SideEdge.Right));
-        Assert.Equal(WhereItIs(preview.Layout, "x"), preview.Placeholder);
-        Assert.Equal(TestLayouts.Text(preview.Layout), TestLayouts.Text(drag.LayoutAt(lowerPart)));
-        Assert.True(WhereItIs(preview.Layout, "a").Height < _window.Height - Metrics.Margin * 2);
+        Assert.Equal(["a", "x"], Stack(drag.LayoutAt(lowerPart), SideEdge.Right));
+        Assert.Equal(["a"], Stack(preview.Layout, SideEdge.Right));
+        var a = WhereItIs(preview.Layout, "a");
+        Assert.Equal(_window.Height - Metrics.Margin * 2, a.Height, Tolerance);
+
+        // In the middle of the margin below it, kept inside the app window.
+        var thickness = Metrics.WindowDropMarkerThickness;
+        Assert.Equal(new LayoutRect(a.X, _window.Height - thickness, a.Width, thickness), preview.Marker);
+        Assert.Null(preview.IncomingTab);
     }
 
     [Fact]
@@ -68,14 +73,14 @@ public sealed class WindowDragTests
         var drag = Drag(layout, "x");
         var overTheLowerWindow = new LayoutPoint(OverTheRightSide, 100);
 
-        var preview = drag.PreviewAt(overTheLowerWindow);
+        var dropped = drag.LayoutAt(overTheLowerWindow);
 
-        Assert.Equal(["a", "x", "b"], Stack(preview.Layout, SideEdge.Right));
-        Assert.Equal(Metrics.TitleLength, WhereItIs(preview.Layout, "a").Height, Tolerance);
+        Assert.Equal(["a", "x", "b"], Stack(dropped, SideEdge.Right));
+        Assert.Equal(Metrics.TitleLength, WhereItIs(dropped, "a").Height, Tolerance);
     }
 
     [Fact]
-    public void Example4_OnAnEmptySidesEdge_ItOpensALittle_AndADropGivesItTheFullWidth()
+    public void Example4_OnAnEmptySidesEdge_AThinStripShowsThere_WithNothingMoving_AndADropGivesItTheFullWidth()
     {
         var layout = _twoOnTheRight with { Toolbars = [new ToolbarPlacement("tools", ToolbarAnchor.LeftMiddle, ToolbarOrientation.Vertical)] };
         var drag = Drag(layout, "a");
@@ -84,11 +89,9 @@ public sealed class WindowDragTests
         var preview = drag.PreviewAt(atTheEdge);
 
         Assert.Equal(WindowDropKind.EmptySide, preview.Zone!.Kind);
-        Assert.Equal(Metrics.WindowEdgePlaceholderWidth, preview.Placeholder!.Value.Width, Tolerance);
-        Assert.Equal(Metrics.Margin, preview.Placeholder.Value.X);
-
-        var toolbar = LayoutSolver.Solve(preview.Layout, Measure(_window), Metrics).Toolbars.Single();
-        Assert.True(toolbar.Bounds.X >= preview.Placeholder.Value.Right);
+        Assert.Equal(new LayoutRect(Metrics.Margin, Metrics.Margin, Metrics.WindowDropMarkerThickness,
+            _window.Height - Metrics.Margin * 2), preview.Marker);
+        Assert.Null(preview.Layout.Side(SideEdge.Left));
 
         var dropped = drag.LayoutAt(atTheEdge);
         Assert.Equal(["a"], Stack(dropped, SideEdge.Left));
@@ -217,10 +220,11 @@ public sealed class WindowDragTests
         var uneven = Widgets(SideEdge.Right, new WindowGroup(["a"], 3), new WindowGroup(["b"], 1));
         var drag = Drag(uneven, "a");
 
-        var preview = drag.PreviewAt(new LayoutPoint(OverTheRightSide, 100));
+        var ownPlace = new LayoutPoint(OverTheRightSide, 100);
 
-        Assert.Equal(TestLayouts.Text(uneven), TestLayouts.Text(preview.Layout));
-        Assert.Equal(WhereItIs(uneven, "a"), preview.Placeholder);
+        Assert.Equal(TestLayouts.Text(uneven), TestLayouts.Text(drag.LayoutAt(ownPlace)));
+        var a = WhereItIs(uneven, "a");
+        Assert.Equal(new LayoutRect(a.X, 0, a.Width, Metrics.WindowDropMarkerThickness), drag.PreviewAt(ownPlace).Marker);
     }
 
     [Fact]
@@ -247,7 +251,8 @@ public sealed class WindowDragTests
         Assert.Equal(_middleOfNowhere.Y - _heldAtTheTopLeft.Y * size.Height, floating.Position.Y, Tolerance);
         Assert.Equal(size.Width, floating.Width);
         Assert.Equal(size.Height, floating.Height);
-        Assert.Null(drag.PreviewAt(_middleOfNowhere).Placeholder);
+        Assert.Null(drag.PreviewAt(_middleOfNowhere).Marker);
+        Assert.Null(drag.PreviewAt(_middleOfNowhere).IncomingTab);
     }
 
     [Fact]

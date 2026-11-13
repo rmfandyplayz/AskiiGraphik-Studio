@@ -60,12 +60,90 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void DroppedOnTheOuterBand_ItBecomesAColumnOutsideThatOne()
+    public void DroppedOnEitherSideOfTheBorderBetweenTwoColumns_ItBecomesAColumnBetweenThem()
+    {
+        foreach (var x in new[] { 755.0, 765.0 })
+        {
+            var dropped = Drag(_dock, "x").LayoutAt(new LayoutPoint(x, 175));
+
+            Assert.Equal(new WindowPlace(SideEdge.Right, SideKind.Dock, 1, 0, 0), dropped.PlaceOf("x"));
+            Assert.Equal(3, dropped.Side(SideEdge.Right)!.Columns.Count);
+        }
+    }
+
+    [Fact]
+    public void TheZoneOnTheBorderBetweenTwoColumns_RunsTheFullHeight_OverTheBandsAndTabStrips()
+    {
+        var drag = Drag(_dock, "x");
+
+        foreach (var y in new[] { 5.0, 175, 340, 360, 695 })
+        {
+            var zone = drag.ZoneAt(new LayoutPoint(765, y))!;
+            Assert.Equal(WindowDropKind.DockColumn, zone.Kind);
+            Assert.Equal(1, zone.Column);
+        }
+    }
+
+    [Fact]
+    public void NearAWindowsOuterSide_PastTheEdgeStrip_ItBecomesATab()
     {
         var dropped = Drag(_dock, "x").LayoutAt(new LayoutPoint(960, 175));
 
-        Assert.Equal(new WindowPlace(SideEdge.Right, SideKind.Dock, 0, 0, 0), dropped.PlaceOf("x"));
-        Assert.Equal(3, dropped.Side(SideEdge.Right)!.Columns.Count);
+        Assert.Equal(["a", "x"], dropped.GroupHolding("x")!.WindowIds);
+    }
+
+    [Fact]
+    public void BetweenTwoStackedWindows_TheThinZoneIsJustAboveTheBorder()
+    {
+        var drag = Drag(_dock, "x");
+
+        // "a" ends at 350, where the tab strip of "b" and "c" begins.
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 320))!.Kind);
+        Assert.Equal(WindowDropKind.DockStack, drag.ZoneAt(new LayoutPoint(880, 340))!.Kind);
+        Assert.Equal(1, drag.ZoneAt(new LayoutPoint(880, 340))!.Position);
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 355))!.Kind);
+    }
+
+    [Fact]
+    public void OnlyTheColumnsFirstWindowHasABandAtTheTop_AndOnlyItsLastOneAtTheBottom()
+    {
+        var drag = Drag(_dock, "x");
+        var belowTheLowerStrip = 350 + Metrics.TitleLength + 5;
+
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, belowTheLowerStrip))!.Kind);
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 310))!.Kind);
+        Assert.Equal(WindowDropKind.DockStack, drag.ZoneAt(new LayoutPoint(880, 660))!.Kind);
+        Assert.Equal(2, drag.ZoneAt(new LayoutPoint(880, 660))!.Position);
+    }
+
+    [Fact]
+    public void OverADockWindow_ItsContentsStay_AndATabShowsWhereTheWindowWouldGo()
+    {
+        var drag = Drag(_dock, "x");
+
+        var middle = drag.PreviewAt(new LayoutPoint(880, 175));
+        Assert.Null(middle.Marker);
+        Assert.Equal(new IncomingTab("a", 1, new LayoutRect(760, 0, 240, 350)), middle.IncomingTab);
+        Assert.Equal([["a"], ["b", "c"]], Groups(middle.Layout, 0));
+
+        var strip = drag.PreviewAt(new LayoutPoint(800, 360));
+        Assert.Equal(new IncomingTab("b", 0, new LayoutRect(760, 350, 240, 350)), strip.IncomingTab);
+    }
+
+    [Fact]
+    public void TheMarker_IsAThinStripOnTheBorderOrEdgeTheWindowWouldGoOn()
+    {
+        var drag = Drag(_dock, "x");
+        var thickness = Metrics.WindowDropMarkerThickness;
+
+        LayoutRect? MarkerAt(double x, double y) => drag.PreviewAt(new LayoutPoint(x, y)).Marker;
+
+        Assert.Equal(new LayoutRect(_window.Width - thickness, 0, thickness, _window.Height), MarkerAt(995, 600));
+        Assert.Equal(new LayoutRect(760 - thickness / 2, 0, thickness, _window.Height), MarkerAt(765, 175));
+        Assert.Equal(new LayoutRect(520 - thickness / 2, 0, thickness, _window.Height), MarkerAt(530, 300));
+        Assert.Equal(new LayoutRect(760, 0, 240, thickness), MarkerAt(880, 50));
+        Assert.Equal(new LayoutRect(760, 350 - thickness / 2, 240, thickness), MarkerAt(880, 340));
+        Assert.Equal(new LayoutRect(760, _window.Height - thickness, 240, thickness), MarkerAt(880, 690));
     }
 
     [Fact]

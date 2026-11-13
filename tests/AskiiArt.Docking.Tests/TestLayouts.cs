@@ -27,9 +27,10 @@ internal static class TestLayouts
         DefaultWindowWidth: 240,
         DefaultFloatingWindowHeight: 280,
         WindowEdgeStripWidth: 24,
-        WindowEdgePlaceholderWidth: 48,
+        WindowDropMarkerThickness: 14,
         DockHandleThickness: 6,
-        DockBandLength: 48);
+        DockBandLength: 48,
+        DockBorderZoneThickness: 24);
 
     public static readonly DockingCatalog Catalog = new(
         WindowIds,

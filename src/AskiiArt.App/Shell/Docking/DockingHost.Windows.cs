@@ -29,11 +29,9 @@ internal sealed class StackResizeHandleCreatedEventArgs(StackResizeHandleId id, 
 
 internal sealed partial class DockingHost
 {
-    // What the placeholder goes by among the things that move. No window's or toolbar's id looks like this.
-    private const string PlaceholderMotion = "window-placeholder";
-
     private sealed class WindowDragDisplay(string windowId, LayoutSize heldSize, LayoutInsets safeArea,
-        WindowPlaceholderView placeholder, WindowLandingPreview landing)
+        WindowPlaceholderView marker, WindowPlaceholderView tabMarker, LandingOutline tabOutline,
+        WindowLandingPreview landing)
     {
         public string WindowId { get; } = windowId;
 
@@ -41,13 +39,23 @@ internal sealed partial class DockingHost
 
         public LayoutInsets SafeAreaAtStart { get; } = safeArea;
 
-        public WindowPlaceholderView Placeholder { get; } = placeholder;
+        /// <summary>The thin strip showing roughly where the window would go.</summary>
+        public WindowPlaceholderView Marker { get; } = marker;
+
+        /// <summary>The "+" tab, lent to the tab strip of the dock window it would join as a tab.</summary>
+        public WindowPlaceholderView TabMarker { get; } = tabMarker;
+
+        /// <summary>The dashed outline around the dock window it would join as a tab.</summary>
+        public LandingOutline TabOutline { get; } = tabOutline;
 
         public WindowLandingPreview Landing { get; } = landing;
 
         public List<(DropZoneView View, WindowDropZone Zone)> Zones { get; } = [];
 
         public WindowDragPreview? Preview { get; set; }
+
+        /// <summary>The tab strip showing the "+" tab, while one is.</summary>
+        public DockTabStrip? IncomingTabStrip { get; set; }
     }
 
     private readonly Dictionary<StackResizeHandleId, StackResizeHandleView> _stackResizeHandles = [];
@@ -68,12 +76,15 @@ internal sealed partial class DockingHost
     /// <param name="windowDrag">What the drag can do.</param>
     public void BeginWindowDrag(string windowId, WindowDrag windowDrag)
     {
-        var placeholder = new WindowPlaceholderView(_metrics!) { ZIndex = DropZoneLayer, IsVisible = false };
+        var marker = new WindowPlaceholderView(_metrics!) { ZIndex = DropZoneLayer, IsVisible = false };
+        var tabOutline = new LandingOutline(_metrics!) { ZIndex = DropZoneLayer, IsVisible = false, IsHitTestVisible = false };
         var landing = new WindowLandingPreview(_metrics!) { ZIndex = LandingLayer, IsVisible = false };
-        Children.Add(placeholder);
+        Children.Add(marker);
+        Children.Add(tabOutline);
         Children.Add(landing);
 
-        var drag = new WindowDragDisplay(windowId, windowDrag.HeldSize, SafeArea, placeholder, landing);
+        var drag = new WindowDragDisplay(windowId, windowDrag.HeldSize, SafeArea, marker,
+            new WindowPlaceholderView(_metrics!), tabOutline, landing);
         foreach (var zone in windowDrag.Zones.Where(zone => zone.Kind is WindowDropKind.EmptySide or WindowDropKind.SideEdge))
         {
             var view = new DropZoneView(_metrics!.MotionDuration, _metrics.DropZoneDimmedOpacity) { ZIndex = DropZoneLayer };
@@ -95,9 +106,9 @@ internal sealed partial class DockingHost
 
         drag.Preview = preview;
         drag.Landing.IsVisible = preview.Landing is not null;
-        drag.Placeholder.IsVisible = preview.Placeholder is not null;
-        if (preview.Placeholder is null)
-            _motions.Forget(PlaceholderMotion);
+        drag.Marker.IsVisible = preview.Marker is not null;
+        drag.TabOutline.IsVisible = preview.IncomingTab is not null;
+        ShowIncomingTab(drag, preview.IncomingTab);
 
         foreach (var (view, zone) in drag.Zones)
             view.IsOutlined = preview.Zone == zone;
@@ -115,9 +126,10 @@ internal sealed partial class DockingHost
         foreach (var (view, _) in drag.Zones)
             FadeOutAndRemove(view);
 
-        FadeOutAndRemove(drag.Placeholder);
+        ShowIncomingTab(drag, null);
+        FadeOutAndRemove(drag.Marker);
+        Children.Remove(drag.TabOutline);
         FadeOutAndRemove(drag.Landing);
-        _motions.Forget(PlaceholderMotion);
         _windows[drag.WindowId].IsAnchoring = false;
         _windowDrag = null;
         SetWindowButtonsHidden(false);
@@ -144,6 +156,19 @@ internal sealed partial class DockingHost
     }
 
     private static string WindowMotion(string windowId) => "window:" + windowId;
+
+    // In the tab strip of the dock window it would join, which is the frame showing in that group. Only one strip shows
+    // it at a time.
+    private void ShowIncomingTab(WindowDragDisplay drag, IncomingTab? incoming)
+    {
+        var strip = incoming is not null && _windows.TryGetValue(incoming.ShowingWindowId, out var frame) ? frame.Tabs : null;
+        if (drag.IncomingTabStrip is { } shown && shown != strip)
+            shown.HideIncomingTab();
+
+        drag.IncomingTabStrip = strip;
+        if (incoming is not null && strip is not null && _catalog!.Windows.TryGetValue(drag.WindowId, out var entry))
+            strip.ShowIncomingTab(incoming.Index, entry.Title, drag.TabMarker);
+    }
 
     private void SetWindowButtonsHidden(bool areHidden)
     {
@@ -308,7 +333,8 @@ internal sealed partial class DockingHost
 
         // A dragged window keeps its size and its contents, whatever it would get if it landed.
         _windows[drag.WindowId].Measure(new Size(drag.HeldSize.Width, drag.HeldSize.Height));
-        drag.Placeholder.Measure(SizeOf(drag.Preview?.Placeholder));
+        drag.Marker.Measure(SizeOf(drag.Preview?.Marker));
+        drag.TabOutline.Measure(SizeOf(drag.Preview?.IncomingTab?.GroupBounds));
         drag.Landing.Measure(SizeOf(drag.Preview?.Landing));
         foreach (var (view, zone) in drag.Zones)
             view.Measure(SizeOf(zone.Bounds));
@@ -354,7 +380,7 @@ internal sealed partial class DockingHost
         }
 
         if (_windowDrag is { Preview: not null } drag)
-            ArrangeWindowDrag(drag, drag.Preview, metrics);
+            ArrangeWindowDrag(drag, drag.Preview);
     }
 
     private void ArrangeWindow(string windowId, WindowFrame frame, LayoutRect bounds, ShellLayoutMetrics metrics)
@@ -368,7 +394,7 @@ internal sealed partial class DockingHost
 
     // The window follows the pointer even past the app window's edge, as a toolbar does, and the landing preview shows
     // where a drop would float it back to.
-    private void ArrangeWindowDrag(WindowDragDisplay drag, WindowDragPreview preview, ShellLayoutMetrics metrics)
+    private void ArrangeWindowDrag(WindowDragDisplay drag, WindowDragPreview preview)
     {
         _motions.Place(WindowMotion(drag.WindowId), preview.Held);
         _windows[drag.WindowId].Arrange(ToRect(preview.Held));
@@ -378,10 +404,8 @@ internal sealed partial class DockingHost
 
         drag.Landing.Arrange(ToRect(preview.Landing ?? default));
 
-        if (preview.Placeholder is { } placeholder)
-        {
-            drag.Placeholder.Arrange(ToRect(_motions.Advance(PlaceholderMotion, placeholder, _clock.Elapsed,
-                metrics.MotionDuration, _animateNextArrange)));
-        }
+        // Straight there, without sliding, since a strip can turn from across to down between one zone and the next.
+        drag.Marker.Arrange(ToRect(preview.Marker ?? default));
+        drag.TabOutline.Arrange(ToRect(preview.IncomingTab?.GroupBounds ?? default));
     }
 }
