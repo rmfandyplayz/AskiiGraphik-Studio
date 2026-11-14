@@ -19,4 +19,10 @@ internal static class DocumentActionIds
     /// Debug builds only: replaces the document with the busy 500 × 500 sample, for performance checks.
     /// </summary>
     public const string OpenSampleDocument = "askiiart.debug.openSampleDocument";
+
+    /// <summary>
+    /// Debug builds only: replaces the document with the busy 500 × 500 colour sample, for checking
+    /// how the canvas draws colour.
+    /// </summary>
+    public const string OpenColorSample = "askiiart.debug.openColorSample";
 }

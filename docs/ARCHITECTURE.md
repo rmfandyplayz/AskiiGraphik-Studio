@@ -236,11 +236,11 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 - **One custom control** draws the whole canvas. There are no per-cell controls and no `TextBlock`s.
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
 - **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
-- **Draw order:** composite → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
+- **Draw order:** composite (paper, cell backgrounds, glyphs in their colours) → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
 - **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0035). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
-- **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015).
+- **Drawing approach:** a custom draw operation paints through a direct Skia lease, one batched `DrawAtlas` call per atlas page. It measured 1.2–4× faster than drawing atlas bitmaps through Avalonia's `DrawingContext` (ADR 0015). Each glyph carries its colour in that call, and the visible cells' backgrounds are one image with a pixel per cell, stretched over them without smoothing (ADR 0038).
 
 ## 13. File format (`.asciiart`, tentative)
 

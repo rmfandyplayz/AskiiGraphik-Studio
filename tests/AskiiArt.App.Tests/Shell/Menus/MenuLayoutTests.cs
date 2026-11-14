@@ -106,6 +106,7 @@ public sealed class MenuLayoutTests
         Assert.Equal(
             [
                 DocumentActionIds.OpenSampleDocument,
+                DocumentActionIds.OpenColorSample,
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
                 SubToolbarSampleActionIds.OnFile,

@@ -12,9 +12,11 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// call.
 /// </summary>
 /// <remarks>
-/// SkiaSharp's DrawAtlas takes whole arrays rather than a count, and the arrays come from a pool
-/// (a zoomed-out frame can hold hundreds of thousands of glyphs), so they're usually longer than
-/// <see cref="Count"/>. The unused tail holds empty rectangles, which draw nothing.
+/// SkiaSharp's DrawAtlas takes whole arrays of the same length rather than a count, and the arrays
+/// come from a pool (a zoomed-out frame can hold hundreds of thousands of glyphs), so they're
+/// usually longer than <see cref="Count"/>. The unused tail holds empty rectangles, which draw
+/// nothing. The pool hands out the same lengths for every element type, as long as each request
+/// asks for the length of <see cref="Sprites"/>.
 /// </remarks>
 internal sealed class GlyphBatch : IDisposable
 {
@@ -41,13 +43,17 @@ internal sealed class GlyphBatch : IDisposable
     public SKRotationScaleMatrix[] Transforms { get; private set; } =
         ArrayPool<SKRotationScaleMatrix>.Shared.Rent(InitialCapacity);
 
-    public void Add(SKRectI source, int x, int y)
+    /// <summary>The colour each glyph is drawn in.</summary>
+    public SKColor[] Colors { get; private set; } = ArrayPool<SKColor>.Shared.Rent(InitialCapacity);
+
+    public void Add(SKRectI source, int x, int y, SKColor color)
     {
         if (Count == Sprites.Length)
             Grow();
 
         Sprites[Count] = source;
         Transforms[Count] = SKRotationScaleMatrix.CreateTranslation(x, y);
+        Colors[Count] = color;
         Count++;
     }
 
@@ -58,6 +64,7 @@ internal sealed class GlyphBatch : IDisposable
 
         Array.Clear(Sprites, Count, Sprites.Length - Count);
         Array.Clear(Transforms, Count, Transforms.Length - Count);
+        Array.Clear(Colors, Count, Colors.Length - Count);
         Page = page.AddReference();
     }
 
@@ -70,19 +77,25 @@ internal sealed class GlyphBatch : IDisposable
         Page?.Release();
         ArrayPool<SKRect>.Shared.Return(Sprites);
         ArrayPool<SKRotationScaleMatrix>.Shared.Return(Transforms);
+        ArrayPool<SKColor>.Shared.Return(Colors);
         Sprites = [];
         Transforms = [];
+        Colors = [];
     }
 
     private void Grow()
     {
         var sprites = ArrayPool<SKRect>.Shared.Rent(Sprites.Length * 2);
-        var transforms = ArrayPool<SKRotationScaleMatrix>.Shared.Rent(Transforms.Length * 2);
+        var transforms = ArrayPool<SKRotationScaleMatrix>.Shared.Rent(sprites.Length);
+        var colors = ArrayPool<SKColor>.Shared.Rent(sprites.Length);
         Sprites.AsSpan(0, Count).CopyTo(sprites);
         Transforms.AsSpan(0, Count).CopyTo(transforms);
+        Colors.AsSpan(0, Count).CopyTo(colors);
         ArrayPool<SKRect>.Shared.Return(Sprites);
         ArrayPool<SKRotationScaleMatrix>.Shared.Return(Transforms);
+        ArrayPool<SKColor>.Shared.Return(Colors);
         Sprites = sprites;
         Transforms = transforms;
+        Colors = colors;
     }
 }

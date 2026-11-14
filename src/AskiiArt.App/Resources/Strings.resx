@@ -361,6 +361,10 @@
   <data name="ActionOpenSampleDocument" xml:space="preserve">
     <value>Open _Sample Document</value>
   </data>
+  <data name="ActionOpenColorSample" xml:space="preserve">
+    <value>Open _Color Sample</value>
+    <comment>Debug menu: replaces the document with a busy one in colour, to check how the canvas draws colour.</comment>
+  </data>
   <data name="UntitledDocumentName" xml:space="preserve">
     <value>Untitled</value>
   </data>

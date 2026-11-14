@@ -48,3 +48,4 @@ Updated 2026-10-31: Space + drag depends on the tool, and the wheel works in ges
 Updated 2026-11-01: the control fills the window under the docked widgets, with the scrollbars just inside them. A canvas smaller than the free space is centred in that space (ADR 0025).
 Updated 2026-11-01: the scrollbars are off unless `CanvasView.ShowScrollBars` is set (ADR 0029). The control and its bindings stay as described.
 Updated 2026-11-04: what the control sits under is now `DockingHost` (ADR 0035).
+Updated 2026-11-14: the pages are still alpha-only, but each glyph is now tinted by its own colour in the same `DrawAtlas` call, with the cell backgrounds drawn under the glyphs (ADR 0038).

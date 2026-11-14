@@ -179,7 +179,7 @@ public static class LayoutSolver
                 if (side.Kind == SideKind.Widgets)
                     marker = WithoutTheGap(bounds, side.Edge, metrics.WidgetGap);
                 else
-                    marker = Padded(bounds, metrics);
+                    marker = Padded(bounds, room!.MarkerPadding ?? metrics.DropMarkerPadding);
                 across += width;
                 continue;
             }
@@ -195,7 +195,8 @@ public static class LayoutSolver
                 (slots, var roomSlot) = StackSolver.SolveWithRoom(entries, stackLength, gap, metrics.TitleLength,
                     room.Position, room.Thickness);
                 var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin + roomSlot.Start, roomSlot.Length);
-                marker = side.Kind == SideKind.Dock ? Padded(bounds, metrics) : bounds;
+                var padding = room.MarkerPadding ?? metrics.DropMarkerPadding;
+                marker = side.Kind == SideKind.Dock ? Padded(bounds, padding) : bounds;
             }
             else
             {
@@ -219,10 +220,10 @@ public static class LayoutSolver
 
     // The room less the padding the owner asked for, the same on every side, which keeps the marker apart from the
     // windows around it and centred between them.
-    private static LayoutRect Padded(LayoutRect room, DockingMetrics metrics)
+    private static LayoutRect Padded(LayoutRect room, double padding)
     {
-        var across = Math.Min(metrics.DropMarkerPadding, room.Width / 2);
-        var down = Math.Min(metrics.DropMarkerPadding, room.Height / 2);
+        var across = Math.Min(padding, room.Width / 2);
+        var down = Math.Min(padding, room.Height / 2);
         return new LayoutRect(room.X + across, room.Y + down, room.Width - across * 2, room.Height - down * 2);
     }
 

@@ -27,4 +27,9 @@ public enum DropRoomKind
 /// <param name="Thickness">How wide it is on a side or as a column, or how tall in a stack.</param>
 /// <param name="Column">For a new column, where it goes among the side's columns. For a stack, which column.</param>
 /// <param name="Position">For a stack, where it goes among the column's groups.</param>
-public sealed record DropRoom(DropRoomKind Kind, SideEdge Edge, double Thickness, int Column = 0, int Position = 0);
+/// <param name="MarkerPadding">
+/// In a dock, how far the marker keeps from everything around it in the room, or null for
+/// <see cref="DockingMetrics.DropMarkerPadding"/>.
+/// </param>
+public sealed record DropRoom(DropRoomKind Kind, SideEdge Edge, double Thickness, int Column = 0, int Position = 0,
+    double? MarkerPadding = null);

@@ -25,12 +25,14 @@ namespace AskiiArt.App.Tests.Fakes;
 /// </summary>
 internal sealed class TestCanvas : IDisposable
 {
-    public TestCanvas(CanvasSize? size = null, CharacterSet characterSet = CharacterSet.Unicode)
+    public TestCanvas(CanvasSize? size = null, CharacterSet characterSet = CharacterSet.Unicode,
+        ColorMode colorMode = ColorMode.Monochrome)
     {
         Fonts = new FontCatalog(BundledFonts.All, getSystemFamilyNames: () => [], loadSystemFont: _ => null);
         Atlases = new GlyphAtlasCache(NoFallbackFonts.Instance);
         ActiveDocument = new ActiveDocument(
-            new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet)));
+            new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet,
+                colorMode: colorMode)));
         ViewModel = new CanvasViewModel(ActiveDocument, new ToolRegistry([TextTool.Definition, EraserTool.Definition]), Fonts, Atlases);
     }
 

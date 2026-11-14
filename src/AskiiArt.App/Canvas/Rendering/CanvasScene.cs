@@ -17,6 +17,9 @@ internal sealed class CanvasScene : IDisposable
 
     public required CanvasColors Colors { get; init; }
 
+    /// <summary>The visible cells' backgrounds, or null when none of them has one.</summary>
+    public required CellBackgrounds? Backgrounds { get; init; }
+
     public required IReadOnlyList<GlyphBatch> Glyphs { get; init; }
 
     /// <summary>Cells drawn with a fallback font (ADR 0013); flagged until the owner designs the real marker.</summary>
@@ -36,6 +39,7 @@ internal sealed class CanvasScene : IDisposable
 
     public void Dispose()
     {
+        Backgrounds?.Dispose();
         foreach (var batch in Glyphs)
             batch.Dispose();
     }

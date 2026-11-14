@@ -8,8 +8,8 @@ namespace AskiiArt.App.Canvas.Rendering;
 
 /// <summary>
 /// Paints a <see cref="CanvasScene"/> onto a Skia canvas whose units are device pixels. Draw order
-/// follows ARCHITECTURE §12: the composite (paper, missing-glyph flags, glyphs), then grid lines,
-/// then the hover highlight. Safe to call from the render thread.
+/// follows ARCHITECTURE §12: the composite (paper, cell backgrounds, missing-glyph flags, glyphs),
+/// then grid lines, then the hover highlight and the caret. Safe to call from the render thread.
 /// </summary>
 internal static class CanvasScenePainter
 {
@@ -32,20 +32,26 @@ internal static class CanvasScenePainter
         canvas.Clear(colors.Pasteboard);
         Fill(canvas, paint, viewport.CanvasBounds, colors.Paper);
 
+        // Cells are whole device pixels (§12), so without smoothing each pixel fills its cell exactly.
+        var unsmoothed = new SKSamplingOptions(SKFilterMode.Nearest);
+        if (scene.Backgrounds is { } backgrounds)
+            canvas.DrawImage(backgrounds.Image, ToSkRect(backgrounds.Bounds), unsmoothed);
+
         foreach (var cell in scene.FallbackGlyphCells)
             Fill(canvas, paint, cell, colors.FallbackGlyph);
 
         foreach (var cell in scene.PlaceholderGlyphCells)
             Fill(canvas, paint, cell, colors.PlaceholderGlyph);
 
-        // The atlas pages are alpha-only, so Skia draws each glyph in the paint's colour.
-        paint.Color = colors.Ink;
+        // The atlas pages are alpha-only, so a page draws in the paint's colour (white) where it covers
+        // its glyph. Modulate multiplies that by each glyph's own colour.
+        paint.Color = SKColors.White;
         foreach (var batch in scene.Glyphs)
         {
             if (batch.Page is { } page)
             {
-                canvas.DrawAtlas(page.Image, batch.Sprites, batch.Transforms,
-                    new SKSamplingOptions(SKFilterMode.Nearest), paint);
+                canvas.DrawAtlas(page.Image, batch.Sprites, batch.Transforms, batch.Colors, SKBlendMode.Modulate,
+                    unsmoothed, paint);
             }
         }
 
@@ -103,6 +109,8 @@ internal static class CanvasScenePainter
     private static void Fill(SKCanvas canvas, SKPaint paint, PixelRect rect, SKColor color)
     {
         paint.Color = color;
-        canvas.DrawRect(SKRect.Create(rect.X, rect.Y, rect.Width, rect.Height), paint);
+        canvas.DrawRect(ToSkRect(rect), paint);
     }
+
+    private static SKRect ToSkRect(PixelRect rect) => SKRect.Create(rect.X, rect.Y, rect.Width, rect.Height);
 }

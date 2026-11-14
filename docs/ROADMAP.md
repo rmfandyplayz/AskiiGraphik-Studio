@@ -49,11 +49,10 @@
 
 Added after 2.3's testing (ADR 0032), before M3 so every tool from then on writes colour. Later milestones keep their numbers. Decided with the owner on 2026-11-14: a document is monochrome, ANSI (the standard 16 colours, shown with the VGA palette) or RGB. Each cell has a text colour and a background, and either can be none. Backgrounds composite as their own layer of colour. The base app has no text attributes such as bold, but the hook stays for plugins. Discord's 8 + 8 colours belong to its plugin (M8b).
 
-- [~] **2b.1 Colour model** (Core). Each cell's text colour and background, the document's colour mode with an undoable command that converts or removes colours, the 16-colour palette, compositing with backgrounds as their own plane, and file format version 2 with a migration.
-  *Owner checks:* CI is green, and an old file still opens.
-  *Note:* built 2026-11-14 with cells that can hold only a background, so Merge Down keeps the picture. ADRs 0036, 0037 · [test doc](testing/step-2b.1-colour-model.md)
-- [ ] **2b.2 Colour on the canvas.** The canvas draws each cell's colours, with a colour sample in the Debug menu, and stays smooth on a busy 500 × 500.
+- [x] **2b.1 Colour model.** Text and background colours per cell, the colour mode and its conversion, backgrounds composited on their own, and file format version 2. ADRs 0036, 0037 · [test doc](testing/step-2b.1-colour-model.md)
+- [~] **2b.2 Colour on the canvas.** The canvas draws each cell's colours, with a colour sample in the Debug menu, and stays smooth on a busy 500 × 500.
   *Owner checks:* the sample in light and dark mode, smooth zooming and panning, crisp text.
+  *Note:* built 2026-11-14. Each glyph's colour goes in the same `DrawAtlas` call, and backgrounds are one image a pixel per cell; Debug → Open Color Sample. ADR 0038 · [test doc](testing/step-2b.2-colour-on-the-canvas.md)
 - [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, the current text and background colours, the text tool writing them, a 1-cell colour brush, and a Colour window with an RGB picker (Avalonia.Controls.ColorPicker).
   *Owner checks:* typing and painting in colour across layers, switching modes and undoing, saving and reopening.
 - [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.

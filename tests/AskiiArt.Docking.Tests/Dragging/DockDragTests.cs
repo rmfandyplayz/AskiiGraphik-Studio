@@ -171,12 +171,13 @@ public sealed class DockDragTests
         var thin = Metrics.ThinDropMarkerThickness;
         var band = Metrics.DockBandLength;
         var padding = Metrics.DropMarkerPadding;
+        var margin = Metrics.Margin;
 
         LayoutRect? MarkerAt(double x, double y) => drag.PreviewAt(new LayoutPoint(x, y)).Marker;
 
-        // Columns: at the app window's edge, where the edge strip is as deep as the bands, between the two, and past
-        // the inner one.
-        Assert.Equal(new LayoutRect(1000 - padding - band, padding, band, 700 - padding * 2), MarkerAt(995, 600));
+        // Columns: at the app window's edge, where the edge strip is as deep as the bands and keeps the margin from
+        // everything, as on the other sides, between the two, and past the inner one.
+        Assert.Equal(new LayoutRect(1000 - margin - band, margin, band, 700 - margin * 2), MarkerAt(995, 600));
         Assert.Equal(new LayoutRect(760 - thin / 2, padding, thin, 700 - padding * 2), MarkerAt(765, 175));
         Assert.Equal(new LayoutRect(520 - padding - thin, padding, thin, 700 - padding * 2), MarkerAt(530, 300));
 
@@ -213,9 +214,9 @@ public sealed class DockDragTests
     {
         var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(995, 600));
 
-        // The room is the band's depth and the padding each side.
-        Assert.Equal(1000 - 56 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
-        Assert.Equal(1000 - 56 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
+        // The room is the band's depth and the margin each side.
+        Assert.Equal(1000 - 64 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
+        Assert.Equal(1000 - 64 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
     }
 
     [Fact]

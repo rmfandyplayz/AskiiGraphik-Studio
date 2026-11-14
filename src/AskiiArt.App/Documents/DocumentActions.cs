@@ -63,6 +63,9 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFil
             yield return new AppAction(DocumentActionIds.OpenSampleDocument, nameof(Strings.ActionOpenSampleDocument),
                 new AsyncRelayCommand(() => files.ReplaceWithNewAsync(
                     () => Task.FromResult<Document?>(SampleDocument.Create(Strings.DefaultLayerName)))));
+            yield return new AppAction(DocumentActionIds.OpenColorSample, nameof(Strings.ActionOpenColorSample),
+                new AsyncRelayCommand(() => files.ReplaceWithNewAsync(
+                    () => Task.FromResult<Document?>(ColorSampleDocument.Create(Strings.DefaultLayerName)))));
         }
 
         void OnDocumentChanged(object? sender, DocumentChangedEventArgs e)

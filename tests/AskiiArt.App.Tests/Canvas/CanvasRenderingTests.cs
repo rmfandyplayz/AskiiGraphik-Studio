@@ -31,7 +31,10 @@ public sealed class CanvasRenderingTests : IDisposable
         PlaceholderGlyph: SKColors.Pink,
         Caret: SKColors.Purple);
 
-    private readonly TestCanvas _canvas = new(new CanvasSize(4, 2));
+    private static readonly SKColor _blue = new(0, 0, 200);
+    private static readonly SKColor _green = new(0, 200, 0);
+
+    private readonly TestCanvas _canvas = new(new CanvasSize(4, 2), colorMode: ColorMode.Rgb);
     private readonly CanvasSceneBuilder _builder = new();
     private readonly GlyphAtlas _atlas;
 
@@ -64,6 +67,110 @@ public sealed class CanvasRenderingTests : IDisposable
         Assert.Equal(SKColors.Red, bitmap.GetPixel(cell.X + cell.Width / 2, cell.Y + cell.Height / 2));
         var neighbour = viewport.GetCellBounds(new CellPoint(2, 0));
         Assert.Equal(SKColors.White, bitmap.GetPixel(neighbour.X + neighbour.Width / 2, neighbour.Y + neighbour.Height / 2));
+    }
+
+    [Fact]
+    public void Paint_GlyphWithATextColour_IsDrawnInThatColour()
+    {
+        Write(new CellPoint(1, 0), Cell.FromGlyph(new Rune('█'), Rgb(_green), CellColor.Unset));
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport);
+
+        Assert.Equal(_green, CentreOf(bitmap, viewport.GetCellBounds(new CellPoint(1, 0))));
+    }
+
+    [Fact]
+    public void Paint_AnsiTextColour_IsDrawnAsTheVgaPaletteShowsIt()
+    {
+        new SetColorModeCommand(ColorMode.Ansi).Apply(_canvas.Document);
+        Write(new CellPoint(1, 0), Cell.FromGlyph(new Rune('█'), CellColor.FromAnsi(AnsiColor.BrightMagenta),
+            CellColor.Unset));
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport);
+
+        var vga = AnsiPalette.Vga[AnsiColor.BrightMagenta];
+        Assert.Equal(new SKColor(vga.Red, vga.Green, vga.Blue),
+            CentreOf(bitmap, viewport.GetCellBounds(new CellPoint(1, 0))));
+    }
+
+    [Fact]
+    public void Paint_Background_FillsTheWholeCellBehindItsGlyph()
+    {
+        // The upper half block inks exactly the top half of its cell, leaving the bottom half to the background.
+        Write(new CellPoint(1, 0), Cell.FromGlyph(new Rune('▀'), CellColor.Unset, Rgb(_blue)));
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport);
+
+        var cell = viewport.GetCellBounds(new CellPoint(1, 0));
+        var middle = cell.X + cell.Width / 2;
+        Assert.Equal(SKColors.Red, bitmap.GetPixel(middle, cell.Y + 1));
+        Assert.Equal(_blue, bitmap.GetPixel(middle, cell.Bottom - 1));
+        Assert.Equal(_blue, bitmap.GetPixel(cell.Right - 1, cell.Bottom - 1));
+        Assert.Equal(_blue, bitmap.GetPixel(cell.X, cell.Bottom - 1));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(cell.Right, cell.Bottom - 1));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(cell.X - 1, cell.Bottom - 1));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(middle, cell.Bottom));
+    }
+
+    [Fact]
+    public void Paint_CellWithOnlyABackground_FillsItsCellAndDrawsNoGlyph()
+    {
+        Write(new CellPoint(2, 1), Cell.FromBackground(Rgb(_blue)));
+        var viewport = CreateViewport();
+
+        using var scene = Build(viewport);
+        using var bitmap = PaintScene(scene);
+
+        Assert.Empty(scene.Glyphs);
+        Assert.All(Pixels(bitmap, viewport.GetCellBounds(new CellPoint(2, 1))), pixel => Assert.Equal(_blue, pixel));
+    }
+
+    [Fact]
+    public void Build_WithoutBackgrounds_HasNoBackgroundImage()
+    {
+        Write(new CellPoint(0, 0), 'A');
+
+        using var scene = Build(CreateViewport());
+
+        Assert.Null(scene.Backgrounds);
+    }
+
+    [Fact]
+    public void Paint_Backgrounds_LandOnTheirCellsWhenTheCanvasIsScrolled()
+    {
+        Write(new CellPoint(0, 0), Cell.FromBackground(Rgb(SKColors.Black)));
+        Write(new CellPoint(1, 0), Cell.FromBackground(Rgb(_blue)));
+        Write(new CellPoint(2, 0), Cell.FromBackground(Rgb(_green)));
+
+        // Two cells wide, scrolled so the first cell is out of view and the second is cut off on the left.
+        var viewport = new CanvasViewport(_canvas.ViewModel.Composite.Size, CellSize,
+            new PixelSize(CellSize.Width * 2, CellSize.Height * 2), margin: 0, new PixelPoint(CellSize.Width + 3, 0));
+        using var bitmap = Paint(viewport);
+
+        Assert.Equal(CellRect.FromEdges(1, 0, 4, 2), viewport.VisibleCells);
+        Assert.Equal(_blue, bitmap.GetPixel(0, 0));
+        var third = viewport.GetCellBounds(new CellPoint(2, 0));
+        Assert.Equal(_blue, bitmap.GetPixel(third.X - 1, third.Bottom - 1));
+        Assert.Equal(_green, bitmap.GetPixel(third.X, third.Y));
+        Assert.Equal(_green, bitmap.GetPixel(third.Right - 1, third.Bottom - 1));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(third.Right, third.Y));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(0, third.Bottom));
+    }
+
+    [Fact]
+    public void Paint_MissingGlyphFlag_ShowsOverABackground()
+    {
+        var noFontHasIt = Rune.GetRuneAt(char.ConvertFromUtf32(0x10FFFD), 0);
+        Write(new CellPoint(0, 1), Cell.FromGlyph(noFontHasIt, CellColor.Unset, Rgb(_blue)));
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport);
+
+        var cell = viewport.GetCellBounds(new CellPoint(0, 1));
+        Assert.Equal(SKColors.Pink, bitmap.GetPixel(cell.X + 1, cell.Y + 1));
     }
 
     [Fact]
@@ -197,6 +304,12 @@ public sealed class CanvasRenderingTests : IDisposable
         return [.. pixels];
     }
 
+    private static SKColor CentreOf(SKBitmap bitmap, PixelRect rect) =>
+        bitmap.GetPixel(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+
+    private static CellColor Rgb(SKColor color) =>
+        CellColor.FromRgb(new RgbColor(color.Red, color.Green, color.Blue));
+
     private static SKBitmap PaintScene(CanvasScene scene)
     {
         var size = scene.Viewport.ViewportSize;
@@ -222,11 +335,13 @@ public sealed class CanvasRenderingTests : IDisposable
 
     private void Write(CellPoint point, char glyph) => Write(point, glyph.ToString());
 
-    private void Write(CellPoint point, string glyph)
+    private void Write(CellPoint point, string glyph) => Write(point, Cell.FromGlyph(Rune.GetRuneAt(glyph, 0)));
+
+    private void Write(CellPoint point, Cell cell)
     {
         var document = _canvas.ViewModel.Composite.Document;
         var builder = new CellEditBuilder(document, document.ActiveFrame.Layers[0].Id);
-        builder.Set(point, Cell.FromGlyph(Rune.GetRuneAt(glyph, 0)));
+        builder.Set(point, cell);
         builder.Build()!.Apply(document);
     }
 }

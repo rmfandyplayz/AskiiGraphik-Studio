@@ -396,8 +396,8 @@ public sealed class WindowDrag
     // docs/DOCKING.md §5.2: the windows make room for a marker where the window would go. It's thin on a border in a
     // dock, and elsewhere as deep as a dock's bands, so it shows how big its zone is. Among a dock's windows, or where
     // a column would go, the room is wider by the padding each way, so the marker keeps the same distance from
-    // everything. On a side's edge strip it's as wide as the bands, as the owner asked, and on a widget side the
-    // widgets keep their gap from it.
+    // everything. On a side's edge strip it's as wide as the bands, as the owner asked. On a widget side the widgets
+    // keep their gap from it, and on a dock side it keeps the margin from everything, as on the other sides.
     private DropRoom? RoomFor(WindowDropZone zone)
     {
         var standard = _metrics.DockBandLength;
@@ -408,7 +408,8 @@ public sealed class WindowDrag
             WindowDropKind.EmptySide or WindowDropKind.OwnPlace => new DropRoom(DropRoomKind.EmptySide, zone.Edge, standard),
             WindowDropKind.SideEdge when IsAWidgetSide(zone.Edge) =>
                 new DropRoom(DropRoomKind.Column, zone.Edge, standard + _metrics.WidgetGap, zone.Column),
-            WindowDropKind.SideEdge => new DropRoom(DropRoomKind.Column, zone.Edge, standard + padding, zone.Column),
+            WindowDropKind.SideEdge => new DropRoom(DropRoomKind.Column, zone.Edge, standard + _metrics.Margin * 2,
+                zone.Column, MarkerPadding: _metrics.Margin),
             WindowDropKind.DockColumn => new DropRoom(DropRoomKind.Column, zone.Edge, thin, zone.Column),
             WindowDropKind.Stack => new DropRoom(DropRoomKind.Stack, zone.Edge, standard, 0, zone.Position),
             WindowDropKind.DockStack => new DropRoom(DropRoomKind.Stack, zone.Edge,

@@ -21,6 +21,8 @@ internal static class SampleDocument
     // From light to dark; the rings cycle through it.
     private const string Shading = " .:-=+*#%@";
 
+    private static readonly (double X, double Y)[] _ringCentres = [(150, 150), (380, 330), (120, 420)];
+
     private static readonly string[] _textBlock =
     [
         "AskiiArt sample canvas (temporary, until New and Open exist)",
@@ -49,21 +51,26 @@ internal static class SampleDocument
         return document;
     }
 
-    private static void DrawRings(CellEditBuilder cells)
+    /// <summary>The glyph the rings of shading put in a cell: a space between rings.</summary>
+    internal static char ShadingAt(int x, int y)
     {
         // Cells are about twice as tall as they're wide, so rows count double to keep rings round.
-        var centres = new[] { (X: 150.0, Y: 150.0), (X: 380.0, Y: 330.0), (X: 120.0, Y: 420.0) };
+        var nearest = _ringCentres.Min(centre =>
+            Math.Sqrt(Math.Pow(x - centre.X, 2) + Math.Pow((y - centre.Y) * 2, 2)));
+        var shade = (int)(nearest / 3) % (2 * Shading.Length - 2);
+        var index = shade < Shading.Length ? shade : 2 * Shading.Length - 2 - shade;
+        return Shading[index];
+    }
 
+    private static void DrawRings(CellEditBuilder cells)
+    {
         for (var y = 0; y < Size.Height; y++)
         {
             for (var x = 0; x < Size.Width; x++)
             {
-                var nearest = centres.Min(centre =>
-                    Math.Sqrt(Math.Pow(x - centre.X, 2) + Math.Pow((y - centre.Y) * 2, 2)));
-                var shade = (int)(nearest / 3) % (2 * Shading.Length - 2);
-                var index = shade < Shading.Length ? shade : 2 * Shading.Length - 2 - shade;
-                if (index > 0)
-                    Set(cells, x, y, Shading[index]);
+                var glyph = ShadingAt(x, y);
+                if (glyph != ' ')
+                    Set(cells, x, y, glyph);
             }
         }
     }
