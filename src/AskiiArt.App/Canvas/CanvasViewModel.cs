@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using AskiiArt.App.Canvas.FrameRate;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
@@ -61,6 +62,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     public LoadedFont Font { get; private set; }
 
     public GlyphAtlasCache Atlases { get; }
+
+    /// <summary>The Debug frame-rate readout in the status bar.</summary>
+    public FrameRateReadout FrameRate { get; } = new();
 
     public double FontSize { get; } = DefaultFontSize;
 
@@ -174,6 +178,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     {
         _activeDocument.SessionChanged -= OnSessionChanged;
         Detach();
+        FrameRate.Dispose();
     }
 
     [MemberNotNull(nameof(Session), nameof(Composite), nameof(ActiveTool), nameof(Font))]

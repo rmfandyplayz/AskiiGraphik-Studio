@@ -21,7 +21,7 @@ internal static class TestActions
         LayersPanelViewModel? layers = null) =>
     [
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
-        new CanvasActions(canvas.ViewModel),
+        new CanvasActions(canvas.ViewModel, includeDebugActions),
         new ToolActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument, canvas.TextExporter, shell),
         new WindowMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),

@@ -18,6 +18,7 @@
                           IsGridVisible="{Binding IsGridVisible}"
                           HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
                           Tool="{Binding ActiveTool}"
+                          FrameTimings="{Binding FrameRate.Timings}"
                           CanvasMargin="{DynamicResource AppCanvasMargin}"
                           PasteboardBrush="{DynamicResource AppCanvasPasteboardBrush}"
                           PaperBrush="{DynamicResource AppCanvasPaperBrush}"

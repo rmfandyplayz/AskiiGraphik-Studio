@@ -1,18 +1,24 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder status bar: the zoom, canvas size, character set, font and hovered cell. -->
+<!-- Placeholder status bar: the zoom, canvas size, character set, font and hovered cell, and at the right the Debug
+     frame-rate readout when it's on. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:canvas="using:AskiiArt.App.Canvas"
              x:Class="AskiiArt.App.Shell.StatusBarView"
              x:DataType="canvas:CanvasViewModel">
-  <StackPanel Orientation="Horizontal"
-              Margin="{DynamicResource AppStatusBarPadding}"
-              Spacing="{DynamicResource AppStatusBarSpacing}">
-    <TextBlock Text="{Binding ZoomText}" />
-    <TextBlock Text="{Binding CanvasSizeText}" />
-    <TextBlock Text="{Binding CharacterSetText}" />
-    <TextBlock Text="{Binding FontText}" />
-    <TextBlock Text="{Binding HoveredCellText}" />
-  </StackPanel>
+  <DockPanel Margin="{DynamicResource AppStatusBarPadding}">
+    <TextBlock x:Name="FrameRateText"
+               DockPanel.Dock="Right"
+               Margin="{DynamicResource AppStatusBarFrameRateMargin}"
+               Text="{Binding FrameRate.Text}"
+               IsVisible="{Binding FrameRate.IsVisible}" />
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource AppStatusBarSpacing}">
+      <TextBlock Text="{Binding ZoomText}" />
+      <TextBlock Text="{Binding CanvasSizeText}" />
+      <TextBlock Text="{Binding CharacterSetText}" />
+      <TextBlock Text="{Binding FontText}" />
+      <TextBlock Text="{Binding HoveredCellText}" />
+    </StackPanel>
+  </DockPanel>
 </UserControl>

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Diagnostics;
+using AskiiArt.App.Canvas.FrameRate;
 using AskiiArt.App.Canvas.Rendering;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Tools;
@@ -79,6 +81,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     public static readonly StyledProperty<ITool?> ToolProperty =
         AvaloniaProperty.Register<CanvasControl, ITool?>(nameof(Tool));
+
+    public static readonly StyledProperty<FrameTimings?> FrameTimingsProperty =
+        AvaloniaProperty.Register<CanvasControl, FrameTimings?>(nameof(FrameTimings));
 
     public static readonly DirectProperty<CanvasControl, CellPoint?> HoveredCellProperty =
         AvaloniaProperty.RegisterDirect<CanvasControl, CellPoint?>(nameof(HoveredCell),
@@ -256,6 +261,13 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         set => SetValue(ToolProperty, value);
     }
 
+    /// <summary>Where each painted frame is recorded for the Debug frame-rate readout, while it shows.</summary>
+    public FrameTimings? FrameTimings
+    {
+        get => GetValue(FrameTimingsProperty);
+        set => SetValue(FrameTimingsProperty, value);
+    }
+
     /// <summary>The cell under the pointer, or null when the pointer isn't over the canvas.</summary>
     public CellPoint? HoveredCell
     {
@@ -315,8 +327,10 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, Tool?.Overlay.Caret, caretThickness);
+        var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
-        context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene));
+        var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
+        context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

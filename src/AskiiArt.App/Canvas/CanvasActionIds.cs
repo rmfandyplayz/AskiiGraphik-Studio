@@ -10,4 +10,5 @@ internal static class CanvasActionIds
     public const string ZoomOut = "askiiart.view.zoomOut";
     public const string ActualSize = "askiiart.view.actualSize";
     public const string ShowGrid = "askiiart.view.showGrid";
+    public const string ShowFrameRate = "askiiart.debug.showFrameRate";
 }

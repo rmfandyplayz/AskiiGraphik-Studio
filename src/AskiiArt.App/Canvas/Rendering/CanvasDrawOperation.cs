@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Diagnostics;
+using AskiiArt.App.Canvas.FrameRate;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Rendering.SceneGraph;
@@ -12,14 +14,18 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <summary>
 /// Hands one frame's <see cref="CanvasScene"/> to Avalonia's render thread and paints it straight
 /// onto Skia through a lease, in one batched glyph draw per atlas page (ADR 0015). It owns the
-/// scene and disposes it when Avalonia is done with the frame.
+/// scene and disposes it when Avalonia is done with the frame. Each paint is recorded in
+/// <paramref name="timings"/> for the Debug frame-rate readout, with the <paramref name="buildTicks"/>
+/// the scene took to build.
 /// </summary>
-internal sealed class CanvasDrawOperation(Rect bounds, CanvasScene scene) : ICustomDrawOperation
+internal sealed class CanvasDrawOperation(Rect bounds, CanvasScene scene, FrameTimings? timings, long buildTicks)
+    : ICustomDrawOperation
 {
     // Avalonia normally paints and disposes on its render thread, but nothing promises that, so
     // painting and disposing never overlap.
     private readonly Lock _gate = new();
     private bool _isDisposed;
+    private long _buildTicks = buildTicks;
 
     public Rect Bounds => bounds;
 
@@ -39,6 +45,7 @@ internal sealed class CanvasDrawOperation(Rect bounds, CanvasScene scene) : ICus
             if (_isDisposed)
                 return;
 
+            var paintStarted = Stopwatch.GetTimestamp();
             using var lease = leaseFeature.Lease();
             var canvas = lease.SkCanvas;
             canvas.Save();
@@ -50,7 +57,19 @@ internal sealed class CanvasDrawOperation(Rect bounds, CanvasScene scene) : ICus
             canvas.SetMatrix(SKMatrix.CreateTranslation(MathF.Round(matrix.TransX), MathF.Round(matrix.TransY)));
             CanvasScenePainter.Paint(canvas, scene);
             canvas.Restore();
+            RecordFrame(paintStarted);
         }
+    }
+
+    // Avalonia paints a scene again when something drawn over the canvas changes, but its build counts only once.
+    private void RecordFrame(long paintStarted)
+    {
+        if (timings is not { IsRecording: true })
+            return;
+
+        var paintedAt = Stopwatch.GetTimestamp();
+        timings.Record(paintedAt, _buildTicks + paintedAt - paintStarted);
+        _buildTicks = 0;
     }
 
     public void Dispose()

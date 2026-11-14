@@ -50,12 +50,13 @@
 Added after 2.3's testing (ADR 0032), before M3 so every tool from then on writes colour. Later milestones keep their numbers. Decided with the owner on 2026-11-14: a document is monochrome, ANSI (the standard 16 colours, shown with the VGA palette) or RGB. Each cell has a text colour and a background, and either can be none. Backgrounds composite as their own layer of colour. The base app has no text attributes such as bold, but the hook stays for plugins. Discord's 8 + 8 colours belong to its plugin (M8b).
 
 - [x] **2b.1 Colour model.** Text and background colours per cell, the colour mode and its conversion, backgrounds composited on their own, and file format version 2. ADRs 0036, 0037 · [test doc](testing/step-2b.1-colour-model.md)
-- [~] **2b.2 Colour on the canvas.** The canvas draws each cell's colours, with a colour sample in the Debug menu, and stays smooth on a busy 500 × 500.
-  *Owner checks:* the sample in light and dark mode, smooth zooming and panning, crisp text.
-  *Note:* built 2026-11-14. Each glyph's colour goes in the same `DrawAtlas` call, and backgrounds are one image a pixel per cell; Debug → Open Color Sample. ADR 0038 · [test doc](testing/step-2b.2-colour-on-the-canvas.md)
-  *Note:* T1–T5 passed except the seams between box and block characters, fixed 2026-11-14 by fitting them to the cell (ADR 0039); retest T6.
-- [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, the current text and background colours, the text tool writing them, a 1-cell colour brush, and a Colour window with an RGB picker (Avalonia.Controls.ColorPicker).
+- [x] **2b.2 Colour on the canvas.** Each cell's colours drawn in the same batched glyph draw, a Debug colour sample, and box and block characters fitted to the cell so they join without seams. ADRs 0038, 0039 · [test doc](testing/step-2b.2-colour-on-the-canvas.md)
+- [~] **2b.2b Frame-rate readout.** Debug → Show Frame Rate shows the canvas's frame rate at the right of the status bar, to watch smoothness while testing. Added at the owner's request after 2b.2's testing.
+  *Owner checks:* the readout while panning, zooming and typing, and "idle" when nothing moves.
+  *Note:* built 2026-11-14. The average, the 1% low and the slowest draw from the last 2 seconds; waits over 100 ms are pauses, not slow frames. ADR 0040 · [test doc](testing/step-2b.2b-frame-rate-readout.md)
+- [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, a text colour and a background colour that X swaps, the text tool writing them, a Brush tool (B) with an FG brush and a BG brush on its sub-toolbar (1 and 2) that paint one cell's text colour or background, and three windows: Brush Options (the two colours), Color (an RGB picker from Avalonia.Controls.ColorPicker) and Swatches (the 16 ANSI colours).
   *Owner checks:* typing and painting in colour across layers, switching modes and undoing, saving and reopening.
+  *Note:* reshaped with the owner on 2026-11-14 (two brushes under one tool, and the windows). Avalonia's picker may later give way to our own if it can't be styled enough.
 - [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
   *Owner checks:* the exported art in a terminal on Windows and macOS.
 

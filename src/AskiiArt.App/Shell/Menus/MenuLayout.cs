@@ -160,6 +160,7 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(DocumentActionIds.OpenColorSample),
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
                 new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
+                new ActionMenuEntry(CanvasActionIds.ShowFrameRate),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(SubToolbarSampleActionIds.OnFile),
                 new ActionMenuEntry(SubToolbarSampleActionIds.OnTools),

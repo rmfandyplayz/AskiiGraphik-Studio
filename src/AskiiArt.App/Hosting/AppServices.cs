@@ -50,7 +50,9 @@ internal static class AppServices
             locations,
             includeDebugActions: BuildInfo.IsDebugBuild,
             isMacOS: OperatingSystem.IsMacOS()));
-        services.AddSingleton<IActionProvider, CanvasActions>();
+        services.AddSingleton<IActionProvider>(provider => new CanvasActions(
+            provider.GetRequiredService<CanvasViewModel>(),
+            includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
         services.AddSingleton<IActionProvider, WindowMenuActions>();

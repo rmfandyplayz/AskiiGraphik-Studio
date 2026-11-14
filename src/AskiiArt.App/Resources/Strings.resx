@@ -140,6 +140,14 @@
     <value>Zoom {0:0}%</value>
     <comment>{0} is the zoom as a percentage, for example 150.</comment>
   </data>
+  <data name="StatusFrameRateFormat" xml:space="preserve">
+    <value>{0:0} fps · 1% low {1:0} · slowest draw {2:0.0} ms</value>
+    <comment>Debug frame-rate readout. {0} is the average frames a second over the last 2 seconds, {1} the average of the slowest 1% of frames, and {2} the most milliseconds the canvas spent drawing one frame.</comment>
+  </data>
+  <data name="StatusFrameRateIdle" xml:space="preserve">
+    <value>Canvas idle</value>
+    <comment>Debug frame-rate readout when the canvas hasn't redrawn lately, because nothing changed.</comment>
+  </data>
   <data name="StatusCellFormat" xml:space="preserve">
     <value>Cell {0}, {1}</value>
     <comment>The cell under the pointer. {0} is the column and {1} the row, both counted from 0.</comment>
@@ -360,6 +368,10 @@
   </data>
   <data name="ActionOpenSampleDocument" xml:space="preserve">
     <value>Open _Sample Document</value>
+  </data>
+  <data name="ActionShowFrameRate" xml:space="preserve">
+    <value>Show _Frame Rate</value>
+    <comment>Debug menu: shows or hides the canvas's frame rate at the right of the status bar.</comment>
   </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>

@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas.FrameRate;
 using AskiiArt.App.Resources;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.Input;
@@ -10,10 +11,11 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid. Zooming with the
-/// mouse wheel is handled by the canvas control itself, because it zooms around the pointer.
+/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds
+/// Show Frame Rate. Zooming with the mouse wheel is handled by the canvas control itself, because
+/// it zooms around the pointer.
 /// </summary>
-internal sealed class CanvasActions(CanvasViewModel canvas) : IActionProvider
+internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugActions) : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
@@ -48,6 +50,20 @@ internal sealed class CanvasActions(CanvasViewModel canvas) : IActionProvider
             new RelayCommand(canvas.ToggleGrid),
             [new ActionShortcut(Key.OemQuotes, ShortcutModifiers.Command)],
             checkedState: gridState);
+
+        if (includeDebugActions)
+        {
+            var frameRateState = new ActionCheckedState(() => canvas.FrameRate.IsVisible);
+            canvas.FrameRate.PropertyChanged += (_, e) => OnFrameRatePropertyChanged(e, frameRateState);
+            yield return new AppAction(CanvasActionIds.ShowFrameRate, nameof(Strings.ActionShowFrameRate),
+                new RelayCommand(canvas.FrameRate.Toggle), checkedState: frameRateState);
+        }
+    }
+
+    private static void OnFrameRatePropertyChanged(PropertyChangedEventArgs e, ActionCheckedState frameRateState)
+    {
+        if (e.PropertyName == nameof(FrameRateReadout.IsVisible))
+            frameRateState.NotifyChanged();
     }
 
     private static void OnCanvasPropertyChanged(PropertyChangedEventArgs e, RelayCommand zoomIn, RelayCommand zoomOut,

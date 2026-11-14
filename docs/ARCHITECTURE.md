@@ -226,7 +226,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
   - **Monospace check:** measure the advance of a sample of printable ASCII glyphs. If they differ, warn the user but still allow the font; the grid uses the reference advance.
   - **Damaged files:** a file that isn't a readable font, or whose name, glyphs or cell size are broken, is rejected with a message and never crashes the app (ADR 0019).
   - **Missing glyphs:** drawn with an installed font that has them, or as a placeholder box if none does; a fallback glyph too big for the cell is shrunk to fit. Either way the cell is flagged as an error (ADR 0013); how the flag looks is still open (§23). It must never crash.
-- **Too-wide glyphs:** a glyph from the document's font that reaches well past its cell (like `↔` in some fonts) is squeezed sideways to fit; box-drawing and block characters are clipped instead, so they still join their neighbours (ADR 0014).
+- **Too-wide glyphs:** a glyph from the document's font that reaches well past its cell (like `↔` in some fonts) is squeezed sideways to fit; box-drawing and block characters are instead fitted to fill the cell exactly, with their lines on whole pixels, so they join their neighbours without seams (ADR 0039).
 - **Ligatures can't happen,** because each cell is rasterized as a single glyph and never shaped as a run of text.
 - **Glyph atlas:** rasterized glyphs are cached per (font, pixel size, render options) and reused. Glyphs are rasterized at the actual device-pixel size for the current zoom and DPI so text stays crisp. A glyph bitmap is never scaled.
 - **One rasterizer** (Principle 4): the atlas, PNG export and glyph-density measurement all share the same Skia code path and settings.

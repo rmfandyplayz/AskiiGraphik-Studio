@@ -76,6 +76,7 @@
   <!-- Status bar -->
   <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>
   <x:Double x:Key="AppStatusBarSpacing">24</x:Double>
+  <Thickness x:Key="AppStatusBarFrameRateMargin">24,0,0,0</Thickness>
 
   <!-- Toolbar -->
   <Thickness x:Key="AppToolbarPadding">8,4</Thickness>

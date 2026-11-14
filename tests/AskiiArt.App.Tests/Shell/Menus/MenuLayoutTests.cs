@@ -109,6 +109,7 @@ public sealed class MenuLayoutTests
                 DocumentActionIds.OpenColorSample,
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
+                CanvasActionIds.ShowFrameRate,
                 SubToolbarSampleActionIds.OnFile,
                 SubToolbarSampleActionIds.OnTools,
                 SubToolbarSampleActionIds.OnEdit,
