@@ -14,6 +14,9 @@ internal static class StackSolver
 
     public readonly record struct Slot(double Start, double Length, bool IsTitleOnly);
 
+    // How much less than the room asked for still counts as all of it, for rounding.
+    private const double RoomTolerance = 0.001;
+
     public static IReadOnlyList<Slot> Solve(IReadOnlyList<Entry> entries, double length, double gap, double titleLength)
     {
         if (entries.Count == 0)
@@ -47,7 +50,8 @@ internal static class StackSolver
     /// <summary>
     /// Like <see cref="Solve"/>, with room of <paramref name="thickness"/> before the group at <paramref name="position"/>,
     /// or past the last. It comes from the groups beside it, then the others, never below their minimums (RoomTaking), so
-    /// nothing changes title-only for it. With none to spare, the room is smaller.
+    /// nothing changes title-only for it. If they can't spare all of it, nothing moves, and the room lies across the
+    /// border instead, over the groups beside it.
     /// </summary>
     /// <returns>Where each group goes, and the room.</returns>
     public static (IReadOnlyList<Slot> Slots, Slot Room) SolveWithRoom(IReadOnlyList<Entry> entries, double length,
@@ -63,17 +67,18 @@ internal static class StackSolver
             .ToArray();
         var extraGap = slots.Count > 0 ? gap : 0;
         var found = RoomTaking.Take(lengths, floors, at, thickness + extraGap, othersToo: true);
-        var room = Math.Max(0, found - extraGap);
+        if (found < thickness + extraGap - RoomTolerance)
+            return (slots, AcrossTheBorder(slots, at, thickness, length));
 
         var placed = new Slot[slots.Count];
-        var roomSlot = new Slot(0, room, IsTitleOnly: false);
+        var roomSlot = new Slot(0, thickness, IsTitleOnly: false);
         var start = 0.0;
         for (var index = 0; index <= slots.Count; index++)
         {
             if (index == at)
             {
-                roomSlot = new Slot(start, room, IsTitleOnly: false);
-                start += room + gap;
+                roomSlot = new Slot(start, thickness, IsTitleOnly: false);
+                start += thickness + gap;
             }
 
             if (index == slots.Count)
@@ -84,6 +89,19 @@ internal static class StackSolver
         }
 
         return (placed, roomSlot);
+    }
+
+    // Centred on the border before the group at "at", or at the stack's end for the first or past the last.
+    private static Slot AcrossTheBorder(IReadOnlyList<Slot> slots, int at, double thickness, double length)
+    {
+        var border = length;
+        if (at == 0)
+            border = 0;
+        else if (at < slots.Count)
+            border = (slots[at - 1].Start + slots[at - 1].Length + slots[at].Start) / 2;
+
+        var fitted = Math.Min(thickness, length);
+        return new Slot(Math.Clamp(border - fitted / 2, 0, length - fitted), fitted, IsTitleOnly: false);
     }
 
     private static void SqueezeFromTheEnd(IReadOnlyList<Entry> entries, bool[] isTitleOnly, double usable,

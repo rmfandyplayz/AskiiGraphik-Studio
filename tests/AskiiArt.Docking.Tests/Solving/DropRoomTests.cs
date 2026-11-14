@@ -56,6 +56,32 @@ public sealed class DropRoomTests
     }
 
     [Fact]
+    public void WhenTheColumnCantSpareTheRoom_NothingMoves_AndTheMarkerLiesAcrossTheBorder()
+    {
+        // Each window at its minimum, 100.
+        var layout = Dock(SideEdge.Right, Column(Tabs("a"), Tabs("b")));
+        var measurements = Measure(new LayoutSize(1280, 200));
+        var before = LayoutSolver.Solve(layout, measurements, Metrics);
+
+        var room = new DropRoom(DropRoomKind.Stack, SideEdge.Right, 28, Position: 1);
+        var solved = LayoutSolver.Solve(layout, measurements with { DropRoom = room }, Metrics);
+
+        Assert.Equal(Bounds(before), Bounds(solved));
+        Assert.Equal(new LayoutRect(1044, 90, 232, 20), solved.DropMarker);
+    }
+
+    [Fact]
+    public void AtTheEdgeOfAWidgetSide_TheMarkerKeepsTheMargin_AndTheWidgetsTheirGap()
+    {
+        var layout = Widgets(SideEdge.Right, Tabs("a"));
+
+        var solved = Solve(layout, new DropRoom(DropRoomKind.Column, SideEdge.Right, 56, Column: 0));
+
+        Assert.Equal(new LayoutRect(1224, 8, 48, 704), solved.DropMarker);
+        Assert.Equal(new LayoutRect(976, 8, 240, 704), solved.PlaceOfWindow("a")!.Value.Bounds);
+    }
+
+    [Fact]
     public void WithNoRoom_ThereIsNoMarker()
     {
         var solved = LayoutSolver.Solve(Widgets(SideEdge.Right, Tabs("a")), Measure(_window), Metrics);
@@ -64,7 +90,7 @@ public sealed class DropRoomTests
     }
 
     [Fact]
-    public void ForAnyHeldWindowAndPointer_TheMarkerStaysInside_AndOverlapsNoWindow()
+    public void ForAnyHeldWindowAndPointer_TheMarkerStaysInside_AndOverlapsAWindowOnlyWhenNothingMoved()
     {
         Gen.Select(Valid, WindowSizes, Gen.Int[0, 100], Gen.Double[0, 1], Gen.Double[0, 1])
             .Sample((layout, size, pick, across, down) =>
@@ -87,10 +113,18 @@ public sealed class DropRoomTests
                 Assert.True(marker.X >= -Tolerance && marker.Y >= -Tolerance, $"{marker} starts outside {size}.");
                 Assert.True(marker.Right <= size.Width + Tolerance && marker.Bottom <= size.Height + Tolerance,
                     $"{marker} ends outside {size}.");
-                Assert.All(solved.WindowGroups, group => Assert.False(Overlap(marker, group.Bounds),
-                    $"{marker} overlaps {group.Bounds}."));
+
+                // A stack that can't spare the room keeps its windows where they are, under the marker.
+                if (solved.WindowGroups.Any(group => Overlap(marker, group.Bounds)))
+                {
+                    var still = LayoutSolver.Solve(preview.Layout, measurements, Metrics);
+                    Assert.Equal(Bounds(still), Bounds(solved));
+                }
             });
     }
+
+    private static List<LayoutRect> Bounds(SolvedLayout solved) =>
+        [.. solved.WindowGroups.Select(group => group.Bounds)];
 
     private static bool Overlap(LayoutRect a, LayoutRect b) =>
         a.X < b.Right - Tolerance && b.X < a.Right - Tolerance && a.Y < b.Bottom - Tolerance && b.Y < a.Bottom - Tolerance;

@@ -117,6 +117,40 @@ public sealed class DockDragTests
     }
 
     [Fact]
+    public void BesideWindowsSqueezedToTheirTabStrips_TheZonesTakeAQuarterOfEachStrip_AndStraddleTheBorders()
+    {
+        // "a" is from y 0 to 28, "b" from 28 to 56, and "c" fills the rest.
+        var column = Column(Squeezed("a"), Squeezed("b"), Tabs("c"));
+        var squeezed = LayoutEdits.FloatWindow(Dock(SideEdge.Right, column), "x", new LayoutPoint(100, 100), 200, 200);
+        var drag = Drag(squeezed, "x");
+
+        WindowDropZone? ZoneAt(double y) => drag.ZoneAt(new LayoutPoint(880, y));
+
+        Assert.Equal((WindowDropKind.DockStack, 0), (ZoneAt(3)!.Kind, ZoneAt(3)!.Position));
+        Assert.Equal(WindowDropKind.Tab, ZoneAt(14)!.Kind);
+        Assert.Equal((WindowDropKind.DockStack, 1), (ZoneAt(25)!.Kind, ZoneAt(25)!.Position));
+        Assert.Equal((WindowDropKind.DockStack, 1), (ZoneAt(31)!.Kind, ZoneAt(31)!.Position));
+        Assert.Equal(WindowDropKind.Tab, ZoneAt(42)!.Kind);
+        Assert.Equal((WindowDropKind.DockStack, 2), (ZoneAt(52)!.Kind, ZoneAt(52)!.Position));
+        Assert.Equal((WindowDropKind.DockStack, 2), (ZoneAt(60)!.Kind, ZoneAt(60)!.Position));
+        Assert.Equal(WindowDropKind.Tab, ZoneAt(70)!.Kind);
+        Assert.Equal([["a"], ["x"], ["b"], ["c"]], Groups(drag.LayoutAt(new LayoutPoint(880, 30)), 0));
+    }
+
+    [Fact]
+    public void ASqueezedLastWindow_GivesTheBottomQuarterOfItsStripToTheColumnsBottomBand()
+    {
+        // "a" is from y 0 to 672, and "b" from 672 to 700.
+        var squeezed = LayoutEdits.FloatWindow(
+            Dock(SideEdge.Right, Column(Tabs("a"), Squeezed("b"))), "x", new LayoutPoint(100, 100), 200, 200);
+        var drag = Drag(squeezed, "x");
+
+        Assert.Equal(1, drag.ZoneAt(new LayoutPoint(880, 660))!.Position);
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 680))!.Kind);
+        Assert.Equal(2, drag.ZoneAt(new LayoutPoint(880, 696))!.Position);
+    }
+
+    [Fact]
     public void OverADockWindow_ItsContentsStay_AndATabShowsWhereTheWindowWouldGo()
     {
         var drag = Drag(_dock, "x");
@@ -246,6 +280,21 @@ public sealed class DockDragTests
     }
 
     [Fact]
+    public void OnTheEdgeStripOfAWidgetSide_TheMarkerIsAsWideAsOnAnEmptySide_WithTheSameSpaceAllRound()
+    {
+        var side = Widgets(SideEdge.Right, Tabs("a"), Tabs("b"));
+        var drag = Drag(LayoutEdits.FloatWindow(side, "x", new LayoutPoint(100, 100), 200, 200), "x");
+        var margin = Metrics.Margin;
+        var band = Metrics.DockBandLength;
+
+        var marker = drag.PreviewAt(new LayoutPoint(_window.Width - 5, 300)).Marker!.Value;
+        var solved = SolvedWithRoom(drag, new LayoutPoint(_window.Width - 5, 300));
+
+        Assert.Equal(new LayoutRect(_window.Width - margin - band, margin, band, _window.Height - margin * 2), marker);
+        Assert.Equal(Metrics.WidgetGap, marker.X - solved.PlaceOfWindow("a")!.Value.Bounds.Right);
+    }
+
+    [Fact]
     public void AWidgetSideHoldingFour_StillTakesAColumnAtItsEdge()
     {
         var full = LayoutEdits.FloatWindow(
@@ -335,6 +384,8 @@ public sealed class DockDragTests
         var preview = drag.PreviewAt(at);
         return LayoutSolver.Solve(preview.Layout, Measure(_window) with { DropRoom = preview.Room }, Metrics);
     }
+
+    private static WindowGroup Squeezed(string windowId) => Tabs(windowId) with { IsTitleOnly = true };
 
     private static WindowDrag Drag(DockingLayout layout, string windowId) =>
         new(layout, windowId, _heldAtTheTopLeft, Measure(_window), Metrics);

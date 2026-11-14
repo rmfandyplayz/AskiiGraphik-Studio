@@ -26,9 +26,9 @@ internal sealed class DockTabMenuRequestedEventArgs(string windowId, Control tab
 }
 
 /// <summary>
-/// The tab strip a dock window has in place of its title, even with one tab (docs/DOCKING.md §3.3). Every window in a group
-/// has one, with the same tabs, and only the one showing is visible. Too many tabs scroll, with fades like a toolbar's.
-/// Placeholder: the owner designs the real one.
+/// The tab strip a dock window has in place of its title, even with one tab (docs/DOCKING.md §3.3). Every window in a
+/// group has one, with the same tabs, and only the one showing is visible. Too many tabs scroll, with fades like a
+/// toolbar's, and the tab showing is scrolled clear of them. Placeholder: the owner designs the real one.
 /// </summary>
 internal sealed class DockTabStrip : UserControl
 {
@@ -44,6 +44,9 @@ internal sealed class DockTabStrip : UserControl
     private ToolbarFadeAmounts _fades;
     private string? _selected;
     private IncomingTabView? _incoming;
+    private double? _revealFrom;
+    private bool _isRevealPending;
+    private bool _revealsSelected;
 
     public DockTabStrip()
     {
@@ -104,8 +107,13 @@ internal sealed class DockTabStrip : UserControl
     public IReadOnlyDictionary<string, double> TabLengths =>
         _views.ToDictionary(view => view.Tab.WindowId, view => view.View.Bounds.Width, StringComparer.Ordinal);
 
-    /// <summary>Shows these tabs, with <paramref name="selected"/> showing. Only what changed is redone.</summary>
-    public void SetTabs(IReadOnlyList<DockTab> tabs, string selected)
+    /// <summary>
+    /// Shows these tabs, with <paramref name="selected"/> showing. Only what changed is redone. When the tabs or the
+    /// one showing change, the strip scrolls as little as it can to show that tab clear of the fades, starting from
+    /// <paramref name="scrolledTo"/> if it's given, which is where the strip showing before was, so the tabs don't
+    /// jump.
+    /// </summary>
+    public void SetTabs(IReadOnlyList<DockTab> tabs, string selected, double? scrolledTo = null)
     {
         if (!tabs.SequenceEqual(_views.Select(view => view.Tab)))
             Rebuild(tabs);
@@ -115,8 +123,8 @@ internal sealed class DockTabStrip : UserControl
 
         _selected = selected;
         UpdateSelection();
-        if (_views.FirstOrDefault(view => view.Tab.WindowId == selected).View is { } shown)
-            shown.BringIntoView();
+        _revealsSelected = true;
+        RevealAfterLayout(scrolledTo);
     }
 
     /// <summary>The tab marking where a dragged window would go, while there is one.</summary>
@@ -144,8 +152,7 @@ internal sealed class DockTabStrip : UserControl
         _incoming = new IncomingTabView(index, title, marker, view, scrolledFrom);
         _tabs.Children.Insert(Math.Clamp(index, 0, _views.Count), view);
 
-        // Once it has a place, since a control that hasn't been laid out can't be scrolled to.
-        _tabs.LayoutUpdated += BringIncomingTabIntoView;
+        RevealAfterLayout(scrolledTo: null);
     }
 
     /// <summary>Takes away the incoming tab, if there is one, and scrolls back to where the strip was before it.</summary>
@@ -154,7 +161,10 @@ internal sealed class DockTabStrip : UserControl
         if (_incoming is not { } incoming)
             return;
 
-        _tabs.LayoutUpdated -= BringIncomingTabIntoView;
+        // Unless the tab showing changed meanwhile, the strip goes back to where it was, and stays there.
+        if (_isRevealPending && !_revealsSelected)
+            CancelReveal();
+
         _tabs.Children.Remove(incoming.View);
         incoming.View.Children.Remove(incoming.Marker);
         _scroller.Offset = incoming.ScrolledFrom;
@@ -209,10 +219,60 @@ internal sealed class DockTabStrip : UserControl
             _tabs.Children.Insert(Math.Clamp(incoming.Index, 0, _views.Count), incoming.View);
     }
 
-    private void BringIncomingTabIntoView(object? sender, EventArgs e)
+    // Once the tabs have places, since a tab that hasn't been laid out can't be scrolled to. A strip that's hidden is
+    // left alone: it's given its place again when it next shows.
+    private void RevealAfterLayout(double? scrolledTo)
     {
-        _tabs.LayoutUpdated -= BringIncomingTabIntoView;
-        _incoming?.View.BringIntoView();
+        _revealFrom = scrolledTo;
+        if (_isRevealPending)
+            return;
+
+        _isRevealPending = true;
+        _tabs.LayoutUpdated += Reveal;
+        _tabs.InvalidateMeasure();
+    }
+
+    // The incoming tab while there is one, and otherwise the tab showing.
+    private void Reveal(object? sender, EventArgs e)
+    {
+        var from = _revealFrom ?? _scroller.Offset.X;
+        var revealsSelected = _revealsSelected;
+        CancelReveal();
+
+        Control? tab = _incoming?.View;
+        if (tab is null && revealsSelected)
+            tab = _views.FirstOrDefault(view => view.Tab.WindowId == _selected).View;
+
+        if (tab is null || !IsEffectivelyVisible)
+            return;
+
+        var offset = ScrolledToShow(tab.Bounds.X, tab.Bounds.Right, from);
+        _scroller.Offset = _scroller.Offset.WithX(offset);
+    }
+
+    private void CancelReveal()
+    {
+        _tabs.LayoutUpdated -= Reveal;
+        _isRevealPending = false;
+        _revealsSelected = false;
+        _revealFrom = null;
+    }
+
+    // As near "from" as it can be with the tab clear of the fades. At either end of the strip there's no fade to clear.
+    private double ScrolledToShow(double tabStart, double tabEnd, double from)
+    {
+        var viewport = _scroller.Viewport.Width;
+        var clearance = Math.Min(FadeLength, viewport / 2);
+        var offset = from;
+
+        if (tabEnd + clearance > offset + viewport)
+            offset = tabEnd + clearance - viewport;
+
+        // Last, so a tab too long to clear both fades keeps its start in view.
+        if (tabStart - clearance < offset)
+            offset = tabStart - clearance;
+
+        return Math.Clamp(offset, 0, Math.Max(0, _scroller.Extent.Width - viewport));
     }
 
     private void UpdateSelection()

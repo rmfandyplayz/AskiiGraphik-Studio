@@ -12,6 +12,9 @@ namespace AskiiArt.App.Tests.Shell.Docking;
 /// <summary>A dock window's tab strip on its own, too narrow for its tabs, so it scrolls.</summary>
 public sealed class DockTabStripTests : IDisposable
 {
+    private const double FadeLength = 10;
+    private const double Tolerance = 0.5;
+
     private static readonly DockTab[] _tabs =
         [.. "abcdef".Select(letter => new DockTab(letter.ToString(), letter.ToString()))];
 
@@ -77,11 +80,73 @@ public sealed class DockTabStripTests : IDisposable
         Assert.Null(marker.Parent);
     }
 
-    // On the UI thread, which the test runs on but its constructor doesn't.
-    private void ShowStrip()
+    [AvaloniaFact]
+    public void ATabChosenBeforeTheStripIsLaidOut_IsScrolledIntoViewOnceItIs()
     {
-        _strip = new DockTabStrip();
-        _strip.SetTabs(_tabs, "a");
+        ShowStrip(selected: "f");
+
+        Assert.True(_strip.ScrollOffset > 0);
+        AssertClearOfTheFades("f");
+    }
+
+    [AvaloniaFact]
+    public void ChoosingATabUnderTheFade_ScrollsItClearOfIt()
+    {
+        ShowStrip();
+        var underTheFade = _tabs.First(tab => TabEnd(tab.WindowId) > _strip.Bounds.Width - FadeLength).WindowId;
+
+        _strip.SetTabs(_tabs, underTheFade);
+        Pump();
+
+        AssertClearOfTheFades(underTheFade);
+    }
+
+    [AvaloniaFact]
+    public void ChoosingATab_StartsFromWhereTheStripShowingBeforeWas_WhenTheTabIsClearThere()
+    {
+        ShowStrip();
+        var clearOfTheStartFade = _strip.TabFor("c")!.Bounds.X - FadeLength;
+
+        _strip.SetTabs(_tabs, "c", scrolledTo: clearOfTheStartFade);
+        Pump();
+
+        Assert.Equal(clearOfTheStartFade, _strip.ScrollOffset, Tolerance);
+    }
+
+    [AvaloniaFact]
+    public void AfterTheIncomingTabGoes_TheStripStaysWhereItWas_EvenBeforeItsBeenLaidOut()
+    {
+        ShowStrip(selected: "f");
+        var scrolled = _strip.ScrollOffset;
+
+        _strip.ShowIncomingTab(0, "g", new Border());
+        _strip.HideIncomingTab();
+        Pump();
+
+        Assert.Equal(scrolled, _strip.ScrollOffset, Tolerance);
+    }
+
+    private double TabEnd(string windowId) => _strip.TabFor(windowId)!.Bounds.Right - _strip.ScrollOffset;
+
+    // Inside the strip, and clear of a fade on each side that has more to scroll to.
+    private void AssertClearOfTheFades(string windowId)
+    {
+        var tab = _strip.TabFor(windowId)!.Bounds;
+        var offset = _strip.ScrollOffset;
+        var viewport = _strip.Bounds.Width;
+        var isAtTheEnd = offset + viewport >= _strip.TabLengths.Values.Sum() - Tolerance;
+        var startFade = offset > Tolerance ? FadeLength : 0;
+        var endFade = isAtTheEnd ? 0 : FadeLength;
+
+        Assert.True(tab.X - offset >= startFade - Tolerance, $"{windowId} starts at {tab.X - offset}.");
+        Assert.True(tab.Right - offset <= viewport - endFade + Tolerance, $"{windowId} ends at {tab.Right - offset}.");
+    }
+
+    // On the UI thread, which the test runs on but its constructor doesn't.
+    private void ShowStrip(string selected = "a")
+    {
+        _strip = new DockTabStrip { FadeLength = FadeLength };
+        _strip.SetTabs(_tabs, selected);
         _window = new Window { Width = 80, Height = 40, Content = _strip };
         _window.Show();
         Pump();

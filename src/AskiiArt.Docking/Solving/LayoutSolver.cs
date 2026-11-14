@@ -176,7 +176,10 @@ public static class LayoutSolver
             if (columnIndex == roomColumn && marker is null)
             {
                 var bounds = OnEdge(side.Edge, measurements.Available, across, width, margin, stackLength);
-                marker = Padded(bounds, metrics);
+                if (side.Kind == SideKind.Widgets)
+                    marker = WithoutTheGap(bounds, side.Edge, metrics.WidgetGap);
+                else
+                    marker = Padded(bounds, metrics);
                 across += width;
                 continue;
             }
@@ -221,6 +224,15 @@ public static class LayoutSolver
         var across = Math.Min(metrics.DropMarkerPadding, room.Width / 2);
         var down = Math.Min(metrics.DropMarkerPadding, room.Height / 2);
         return new LayoutRect(room.X + across, room.Y + down, room.Width - across * 2, room.Height - down * 2);
+    }
+
+    // A widget side's margins already set the marker apart, as on an empty side, so its room only adds the widgets' gap
+    // on the canvas side, where they start.
+    private static LayoutRect WithoutTheGap(LayoutRect room, SideEdge edge, double gap)
+    {
+        var width = Math.Max(0, room.Width - gap);
+        var x = edge == SideEdge.Right ? room.Right - width : room.X;
+        return new LayoutRect(x, room.Y, width, room.Height);
     }
 
     // How much of the app window's width the side takes, and where its drop marker goes, if it has one.

@@ -33,6 +33,7 @@ public sealed class DockTests : IDisposable
     private Window _window = null!;
     private DockingHost _host = null!;
     private ShellLayoutMetrics _metrics = null!;
+    private int _titleLength = 1;
 
     public DockTests()
     {
@@ -150,6 +151,34 @@ public sealed class DockTests : IDisposable
         Pump();
 
         Assert.Empty(_host.Children.OfType<LandingOutline>());
+    }
+
+    [AvaloniaFact]
+    public void AWindowDroppedIntoACrowdedStrip_HasItsTabScrolledIntoView()
+    {
+        ShowCrowdedStrip();
+
+        Assert.True(Frame(Sample).Tabs.TabLengths.Values.Sum() > StripOf(Sample).Width);
+        Assert.True(Frame(Sample).Tabs.ScrollOffset > 0);
+        AssertClearOfTheFades(Sample);
+    }
+
+    [AvaloniaFact]
+    public void ClickingATabPartlyOutOfView_ScrollsItIntoView_AndTheNextTabShownStartsFromThere()
+    {
+        ShowCrowdedStrip();
+
+        ClickTheVisiblePartOf(Layers);
+        Assert.Equal(0, Frame(Layers).Tabs.ScrollOffset);
+
+        ClickTheVisiblePartOf(Sample);
+        AssertClearOfTheFades(Sample);
+        var scrolled = Frame(Sample).Tabs.ScrollOffset;
+        Assert.True(scrolled > 0);
+
+        ClickTheVisiblePartOf(History);
+        Assert.Equal(scrolled, Frame(History).Tabs.ScrollOffset, 0.5);
+        AssertClearOfTheFades(History);
     }
 
     [AvaloniaFact]
@@ -348,8 +377,9 @@ public sealed class DockTests : IDisposable
 
     private static WindowGroup Tabs(params string[] windowIds) => new(windowIds);
 
-    // Headless text draws every letter as wide as it is tall, so long titles would push tabs past the end of the strip.
-    private static string TitleOf(string windowId) => windowId[6..7];
+    // Headless text draws every letter as wide as it is tall, so long titles push tabs past the end of the strip, which
+    // only the tests of a crowded strip want.
+    private string TitleOf(string windowId) => windowId[6..(6 + _titleLength)];
 
     private WindowFrame Frame(string windowId) =>
         _host.Children.OfType<WindowFrame>().Single(frame => frame.Title == TitleOf(windowId));
@@ -369,6 +399,43 @@ public sealed class DockTests : IDisposable
             .Single(frame => frame is { IsDocked: true, IsVisible: true } && frame.Tabs.WindowIds.Contains(windowId));
         var tab = showing.Tabs.TabFor(windowId)!;
         return tab.TranslatePoint(new Point(tab.Bounds.Width / 2, tab.Bounds.Height / 2), _host)!.Value;
+    }
+
+    // Layers, History and Sample as tabs, with titles too long for them all to fit. Sample windows aren't restored from
+    // a saved layout, so it's dropped in.
+    private void ShowCrowdedStrip()
+    {
+        _titleLength = 6;
+        ShowWindow(Dock(Column(Tabs(Layers, History))));
+        _docking.ToggleWindow(Sample);
+        Pump();
+
+        DragAndDrop(TitleRowOf(Sample), BoundsOf(Layers).Center);
+    }
+
+    private void ClickTheVisiblePartOf(string windowId)
+    {
+        var strip = _host.Children.OfType<WindowFrame>().Single(frame => frame is { IsDocked: true, IsVisible: true });
+        var bounds = new Rect(strip.Tabs.TranslatePoint(default, _host)!.Value, strip.Tabs.Bounds.Size);
+        var middle = TabOf(windowId);
+
+        Click(new Point(Math.Clamp(middle.X, bounds.X + 5, bounds.Right - 5), middle.Y));
+    }
+
+    // On the strip showing, inside it and clear of a fade on each side that has more to scroll to.
+    private void AssertClearOfTheFades(string windowId)
+    {
+        var strip = StripOf(windowId);
+        var tabs = Frame(windowId).Tabs;
+        var tab = tabs.TabFor(windowId)!;
+        var start = tab.TranslatePoint(default, _host)!.Value.X - strip.X;
+        var end = start + tab.Bounds.Width;
+        var isAtTheEnd = tabs.ScrollOffset + strip.Width >= tabs.TabLengths.Values.Sum() - 0.5;
+        var startFade = tabs.ScrollOffset > 0.5 ? _metrics.ToolbarFadeLength : 0;
+        var endFade = isAtTheEnd ? 0 : _metrics.ToolbarFadeLength;
+
+        Assert.True(start >= startFade - 0.5, $"{windowId}'s tab starts at {start}.");
+        Assert.True(end <= strip.Width - endFade + 0.5, $"{windowId}'s tab ends at {end}.");
     }
 
     private Rect StripOf(string windowId)

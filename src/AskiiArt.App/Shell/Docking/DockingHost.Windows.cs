@@ -193,6 +193,11 @@ internal sealed partial class DockingHost
         foreach (var windowId in windowIds.Where(id => !_windows.ContainsKey(id)))
             AddWindowFrame(windowId, catalog.Windows[windowId]);
 
+        var shownTabStrips = _windows.Values
+            .Where(frame => frame is { IsDocked: true, IsVisible: true })
+            .Select(frame => new ShownTabStrip(frame.Tabs.WindowIds, frame.Tabs.ScrollOffset))
+            .ToList();
+
         foreach (var (windowId, frame) in _windows)
         {
             frame.IsFloating = false;
@@ -200,7 +205,7 @@ internal sealed partial class DockingHost
             frame.ZIndex = windowId == _windowDrag?.WindowId ? DraggedLayer : WindowLayer;
         }
 
-        ShowDockTabs(layout, catalog);
+        ShowDockTabs(layout, catalog, shownTabStrips);
 
         for (var index = 0; index < layout.FloatingWindows.Count; index++)
         {
@@ -215,9 +220,10 @@ internal sealed partial class DockingHost
         ShowStackResizeHandles(layout);
     }
 
-    // Every window in a dock group has the group's tabs. A held window looks like a floating one, as a tab torn off would,
-    // whatever it would be if it landed.
-    private void ShowDockTabs(DockingLayout layout, ShellCatalog catalog)
+    // Every window in a dock group has the group's tabs. A held window looks like a floating one, as a tab torn off
+    // would, whatever it would be if it landed. The strip that shows next starts where the group's strip was, so
+    // showing another tab doesn't make the tabs jump.
+    private void ShowDockTabs(DockingLayout layout, ShellCatalog catalog, IReadOnlyList<ShownTabStrip> shownTabStrips)
     {
         var groups = layout.Sides
             .Where(side => side.Kind == SideKind.Dock)
@@ -231,16 +237,30 @@ internal sealed partial class DockingHost
                 .. group.WindowIds.Where(catalog.Windows.ContainsKey).Select(id => new DockTab(id, catalog.Windows[id].Title)),
             ];
 
+            var scrolledTo = ScrollOffsetBefore(group, shownTabStrips);
             foreach (var tab in tabs)
             {
                 if (!_windows.TryGetValue(tab.WindowId, out var frame))
                     continue;
 
                 frame.IsDocked = tab.WindowId != _windowDrag?.WindowId;
-                frame.Tabs.SetTabs(tabs, group.Selected);
+                frame.Tabs.SetTabs(tabs, group.Selected, scrolledTo);
             }
         }
     }
+
+    // The strip that showed most of the group's tabs, or of two that showed as many, the one that showed fewer others.
+    private static double? ScrollOffsetBefore(WindowGroup group, IReadOnlyList<ShownTabStrip> shownTabStrips) =>
+        shownTabStrips
+            .Select(strip => (strip, Shared: strip.WindowIds.Count(group.WindowIds.Contains)))
+            .Where(candidate => candidate.Shared > 0)
+            .OrderByDescending(candidate => candidate.Shared)
+            .ThenBy(candidate => candidate.strip.WindowIds.Count)
+            .Select(candidate => (double?)candidate.strip.ScrollOffset)
+            .FirstOrDefault();
+
+    // A dock window's tab strip as it was before the layout changed.
+    private sealed record ShownTabStrip(IReadOnlyList<string> WindowIds, double ScrollOffset);
 
     // From the frames showing, because a hidden frame's tabs haven't been laid out. A tab not laid out yet is left out,
     // and its group's tabs are then taken to share the strip.
