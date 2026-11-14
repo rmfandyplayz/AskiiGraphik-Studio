@@ -12,6 +12,10 @@ public sealed class GlyphRasterizerTests
 {
     private const float PixelSize = 32;
 
+    // Skia can round a pixel's coverage a level differently on one side of a cell than on the other, which no one can
+    // see, so lines count as the same when no pixel differs by more than this.
+    private const int UnnoticeableAlphaDifference = 2;
+
     [Fact]
     public void Draw_LetterFromTheDocumentFont_ReportsPrimaryAndInksTheCell()
     {
@@ -54,6 +58,118 @@ public sealed class GlyphRasterizerTests
         Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(0, 0, width, height)));
         Assert.Equal(0, TestBitmaps.CountInk(bitmap, SKRectI.Create(2 * width, 0, width, height)));
         Assert.True(TestBitmaps.CountInk(bitmap, SKRectI.Create(width, 0, width, height)) > width * height / 2);
+    }
+
+    // Font sizes the canvas uses at its zoom steps, where neighbouring blocks showed seams in step 2b.2's test.
+    private static readonly float[] _seamSizes = [5.28f, 8, 13.4f, 15, 16, 21.44f, 24, 30, 32, 48, 80, 96, 128];
+
+    /// <summary>Every bundled font at each of <see cref="_seamSizes"/>.</summary>
+    public static TheoryData<string, float> BundledFontsAtSeamSizes =>
+        [.. BundledFonts.All.SelectMany(font => _seamSizes.Select(size => (font.FamilyName, size)))];
+
+    [Theory]
+    [MemberData(nameof(BundledFontsAtSeamSizes))]
+    public void Draw_BlockElements_FillTheirPartOfTheCellToItsEdges(string familyName, float pixelSize)
+    {
+        using var fonts = new FontWithBlocks(familyName);
+        using var rasterizer = fonts.CreateRasterizer(pixelSize);
+        var (width, height) = (rasterizer.Metrics.Width, rasterizer.Metrics.Height);
+
+        // Leaving a row or column next to a half's inner edge, where a font may round its own way.
+        AssertSolid(rasterizer, '█', SKRectI.Create(0, 0, width, height));
+        AssertSolid(rasterizer, '▀', SKRectI.Create(0, 0, width, height / 2 - 1));
+        AssertSolid(rasterizer, '▄', SKRectI.Create(0, height - (height / 2 - 1), width, height / 2 - 1));
+        AssertSolid(rasterizer, '▌', SKRectI.Create(0, 0, width / 2 - 1, height));
+        AssertSolid(rasterizer, '▐', SKRectI.Create(width - (width / 2 - 1), 0, width / 2 - 1, height));
+    }
+
+    [Theory]
+    [MemberData(nameof(BundledFontsAtSeamSizes))]
+    public void Draw_BoxDrawingLines_MeetTheNextCellWithoutAGap(string familyName, float pixelSize)
+    {
+        using var fonts = new FontWithBlocks(familyName);
+        using var rasterizer = fonts.CreateRasterizer(pixelSize);
+        var (width, height) = (rasterizer.Metrics.Width, rasterizer.Metrics.Height);
+        var columns = Enumerable.Range(0, width).Select(x => SKRectI.Create(x, 0, 1, height)).ToArray();
+        var rows = Enumerable.Range(0, height).Select(y => SKRectI.Create(0, y, width, 1)).ToArray();
+
+        // A line that reaches the cell's edge is as strong in the edge's pixels as just inside them; one that falls
+        // short fades there, and that fade is the seam.
+        foreach (var glyph in new[] { '─', '═' })
+        {
+            AssertSameLine(rasterizer, glyph, columns[0], columns[1]);
+            AssertSameLine(rasterizer, glyph, columns[^1], columns[^2]);
+        }
+
+        foreach (var glyph in new[] { '│', '║' })
+        {
+            AssertSameLine(rasterizer, glyph, rows[0], rows[1]);
+            AssertSameLine(rasterizer, glyph, rows[^1], rows[^2]);
+        }
+
+        // A crossing has its other line in the middle, so only its two edges, where the next cells carry the lines
+        // on, are compared.
+        AssertSameLine(rasterizer, '┼', columns[0], columns[^1]);
+        AssertSameLine(rasterizer, '┼', rows[0], rows[^1]);
+    }
+
+    [Theory]
+    [MemberData(nameof(BundledFontsAtSeamSizes))]
+    public void Draw_StraightLines_LandOnWholePixels(string familyName, float pixelSize)
+    {
+        using var fonts = new FontWithBlocks(familyName);
+        using var rasterizer = fonts.CreateRasterizer(pixelSize);
+        var (width, height) = (rasterizer.Metrics.Width, rasterizer.Metrics.Height);
+        var middleColumn = SKRectI.Create(width / 2, 0, 1, height);
+        var middleRow = SKRectI.Create(0, height / 2, width, 1);
+
+        // Thin lines stay crisp instead of fading across two pixels, and a double line stays two lines.
+        AssertCrispLines(rasterizer, '─', middleColumn, 1);
+        AssertCrispLines(rasterizer, '━', middleColumn, 1);
+        AssertCrispLines(rasterizer, '═', middleColumn, 2);
+        AssertCrispLines(rasterizer, '│', middleRow, 1);
+        AssertCrispLines(rasterizer, '┃', middleRow, 1);
+        AssertCrispLines(rasterizer, '║', middleRow, 2);
+    }
+
+    [Theory]
+    [MemberData(nameof(BundledFontsAtSeamSizes))]
+    public void Draw_HalfBlocks_SplitTheCellOnAWholePixel(string familyName, float pixelSize)
+    {
+        using var fonts = new FontWithBlocks(familyName);
+        using var rasterizer = fonts.CreateRasterizer(pixelSize);
+
+        AssertSplitTheCell(rasterizer, '▀', '▄');
+        AssertSplitTheCell(rasterizer, '▌', '▐');
+    }
+
+    [Fact]
+    public void Draw_EighthBlocks_StayVisibleInTheSmallestCells()
+    {
+        using var fonts = new FontWithBlocks(BundledFonts.Default.FamilyName);
+        using var rasterizer = fonts.CreateRasterizer(_seamSizes[0]);
+
+        // An eighth of a 3 × 7 cell is under half a pixel, which would round away to nothing.
+        foreach (var glyph in new[] { '▏', '▕', '▁', '▔' })
+        {
+            Assert.Equal(GlyphSource.PrimaryFont, rasterizer.GetSource(new Rune(glyph)));
+            using var bitmap = DrawAlone(rasterizer, glyph);
+            Assert.True(TestBitmaps.Alphas(bitmap, SKRectI.Create(0, 0, bitmap.Width, bitmap.Height))
+                .Contains(byte.MaxValue), $"{glyph} vanished.");
+        }
+    }
+
+    [Fact]
+    public void Draw_WithoutHinting_LeavesBoxDrawingLinesWhereTheFontPutsThem()
+    {
+        using var font = TestFonts.Load("IBM Plex Mono");
+        var options = GlyphRenderOptions.Default with { Hinting = GlyphHinting.None };
+        using var rasterizer = new GlyphRasterizer(font, 13.4f, options, FixedFallbackFontProvider.None);
+        using var bitmap = DrawAlone(rasterizer, '─');
+
+        // IBM Plex Mono's line is 0.9 px thick at this size, so unsnapped it only partly covers its row.
+        var alphas = TestBitmaps.Alphas(bitmap, SKRectI.Create(rasterizer.Metrics.Width / 2, 0, 1, bitmap.Height));
+        Assert.Contains(alphas, alpha => alpha is > 0 and < byte.MaxValue);
     }
 
     [Fact]
@@ -238,9 +354,87 @@ public sealed class GlyphRasterizerTests
             new GlyphRasterizer(font, 0, GlyphRenderOptions.Default, FixedFallbackFontProvider.None));
     }
 
+    private static void AssertSolid(GlyphRasterizer rasterizer, char glyph, SKRectI region)
+    {
+        using var bitmap = DrawAlone(rasterizer, glyph);
+
+        var alphas = TestBitmaps.Alphas(bitmap, region);
+        if (alphas.Any(alpha => alpha != byte.MaxValue))
+        {
+            Assert.Fail($"{glyph} at {rasterizer.Metrics.PixelSize} px should fill {region} of its " +
+                $"{rasterizer.Metrics.Width} × {rasterizer.Metrics.Height} cell; " +
+                $"the lowest coverage there is {alphas.Min()}.");
+        }
+    }
+
+    private static void AssertSameLine(GlyphRasterizer rasterizer, char glyph, SKRectI edge, SKRectI comparedTo)
+    {
+        using var bitmap = DrawAlone(rasterizer, glyph);
+
+        var alphas = TestBitmaps.Alphas(bitmap, edge);
+        var expected = TestBitmaps.Alphas(bitmap, comparedTo);
+        var largestDifference = alphas.Zip(expected, (alpha, other) => Math.Abs(alpha - other)).Max();
+        Assert.True(alphas.Any(alpha => alpha > 0), $"{glyph} at {rasterizer.Metrics.PixelSize} px misses {edge}.");
+        Assert.True(largestDifference <= UnnoticeableAlphaDifference,
+            $"{glyph} at {rasterizer.Metrics.PixelSize} px should look the same in {edge} as in {comparedTo}: " +
+            $"[{string.Join(", ", alphas)}] against [{string.Join(", ", expected)}].");
+    }
+
+    private static void AssertCrispLines(GlyphRasterizer rasterizer, char glyph, SKRectI across, int lineCount)
+    {
+        using var bitmap = DrawAlone(rasterizer, glyph);
+
+        var alphas = TestBitmaps.Alphas(bitmap, across);
+        var lines = alphas.Where((alpha, index) => alpha > 0 && (index == 0 || alphas[index - 1] == 0)).Count();
+        var description =
+            $"{glyph} at {rasterizer.Metrics.PixelSize} px, across {across}: [{string.Join(", ", alphas)}]";
+        Assert.True(alphas.All(alpha => alpha is 0 or byte.MaxValue), $"{description} should be solid or blank.");
+        Assert.True(lines == lineCount, $"{description} should cross {lineCount} line(s).");
+    }
+
+    // Each half is solid or blank in every pixel, and the two together fill the cell without overlapping.
+    private static void AssertSplitTheCell(GlyphRasterizer rasterizer, char half, char otherHalf)
+    {
+        using var bitmap = DrawAlone(rasterizer, half);
+        using var otherBitmap = DrawAlone(rasterizer, otherHalf);
+
+        var cell = SKRectI.Create(0, 0, bitmap.Width, bitmap.Height);
+        var alphas = TestBitmaps.Alphas(bitmap, cell);
+        var otherAlphas = TestBitmaps.Alphas(otherBitmap, cell);
+        Assert.True(alphas.All(alpha => alpha is 0 or byte.MaxValue),
+            $"{half} at {rasterizer.Metrics.PixelSize} px should be solid or blank in every pixel.");
+        Assert.True(alphas.Zip(otherAlphas, (alpha, other) => alpha + other).All(sum => sum == byte.MaxValue),
+            $"{half} and {otherHalf} at {rasterizer.Metrics.PixelSize} px should fill the cell between them.");
+    }
+
+    private static SKBitmap DrawAlone(GlyphRasterizer rasterizer, char glyph)
+    {
+        var bitmap = CreateCellRow(rasterizer, 1);
+        using var canvas = new SKCanvas(bitmap);
+        rasterizer.Draw(canvas, 0, 0, new Rune(glyph), SKColors.Black);
+        return bitmap;
+    }
+
     private static GlyphRasterizer CreateRasterizer(LoadedFont font, IFallbackFontProvider? fallbackFonts = null) =>
         new(font, PixelSize, GlyphRenderOptions.Default, fallbackFonts ?? FixedFallbackFontProvider.None);
 
     private static SKBitmap CreateCellRow(GlyphRasterizer rasterizer, int cells) =>
         TestBitmaps.CreateTransparent(rasterizer.Metrics.Width * cells, rasterizer.Metrics.Height);
+
+    // A bundled font, with JetBrains Mono as its fallback. Roboto Mono has no box-drawing or block glyphs, so they come
+    // from there, as they would from a system font in the app.
+    private sealed class FontWithBlocks(string familyName) : IDisposable
+    {
+        private readonly LoadedFont _font = TestFonts.Load(familyName);
+        private readonly LoadedFont _fallback = FontLoader.LoadBundled(BundledFonts.Default);
+
+        public GlyphRasterizer CreateRasterizer(float pixelSize) =>
+            new(_font, pixelSize, GlyphRenderOptions.Default, new FixedFallbackFontProvider(_fallback));
+
+        public void Dispose()
+        {
+            _font.Dispose();
+            _fallback.Dispose();
+        }
+    }
 }

@@ -45,3 +45,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0036](0036-the-colour-model.md) | The colour model | Accepted |
 | [0037](0037-colour-in-the-file-format.md) | Colour in the file format (version 2) | Accepted |
 | [0038](0038-drawing-cell-colours.md) | Drawing cell colours | Accepted |
+| [0039](0039-box-drawing-and-block-glyphs-fill-the-cell.md) | Box-drawing and block glyphs fill the cell | Accepted |

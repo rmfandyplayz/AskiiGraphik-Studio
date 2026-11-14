@@ -93,6 +93,21 @@ This checks nothing changed for monochrome documents, which are all documents un
 
 - [ ] Pass  - [ ] Fail. Notes:
 
+### T6: No seams between box and block characters (retest)
+
+This rechecks T1 row 6 and T3 row 4, which showed thin lines between cells at many zoom levels. Box-drawing and block characters are now stretched to fill their cells exactly, and their lines are moved onto whole pixels (ADR 0039). It needs a build from the seam fix or later; the other tests don't need repeating.
+
+**Also on macOS:** Yes, at the default display resolution, because the Mac showed seams at different zoom levels
+
+| # | Do this | Expected result |
+|---|---|---|
+| 1 | **Debug → Open Color Sample** (choose **Don't Save** if it asks) and find the **No seams between cells** rows | Yellow box lines and shading blocks on navy, as in T1. |
+| 2 | Press **Ctrl+-** (Cmd+- on a Mac) until it stops at 25%, then **Ctrl+=** (Cmd+=) one step at a time up to 800%, looking at those two rows at every step. On Windows, do this at 100% display scaling and again at 125% (**Settings → System → Display → Scale**). | At every step: the `██` blocks are one solid yellow area, with no thin lines between cells or between the two rows; the box lines are unbroken where cells meet, and as bright as the letters, not faded; and the half blocks `▀▄▌▐` meet cleanly. |
+| 3 | **Document → Font…**, choose **IBM Plex Mono**, and repeat row 2 at 50%, 100%, 150% and 400% | The same: no seams, and both the single and the double box lines are unbroken. This font had the worst gaps. |
+| 4 | Do row 3 again with **Fira Code** | The same. |
+
+- [ ] Pass  - [ ] Fail. Notes:
+
 ## Worth poking at (optional, unscripted)
 
 - Switch light and dark mode a few times while zoomed in on the colour sample.

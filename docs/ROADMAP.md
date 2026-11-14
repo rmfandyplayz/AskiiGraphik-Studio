@@ -53,6 +53,7 @@ Added after 2.3's testing (ADR 0032), before M3 so every tool from then on write
 - [~] **2b.2 Colour on the canvas.** The canvas draws each cell's colours, with a colour sample in the Debug menu, and stays smooth on a busy 500 × 500.
   *Owner checks:* the sample in light and dark mode, smooth zooming and panning, crisp text.
   *Note:* built 2026-11-14. Each glyph's colour goes in the same `DrawAtlas` call, and backgrounds are one image a pixel per cell; Debug → Open Color Sample. ADR 0038 · [test doc](testing/step-2b.2-colour-on-the-canvas.md)
+  *Note:* T1–T5 passed except the seams between box and block characters, fixed 2026-11-14 by fitting them to the cell (ADR 0039); retest T6.
 - [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, the current text and background colours, the text tool writing them, a 1-cell colour brush, and a Colour window with an RGB picker (Avalonia.Controls.ColorPicker).
   *Owner checks:* typing and painting in colour across layers, switching modes and undoing, saving and reopening.
 - [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.

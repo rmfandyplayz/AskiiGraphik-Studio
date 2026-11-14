@@ -31,6 +31,7 @@ public sealed class GlyphRasterizer : IDisposable
     private readonly SKFont _measuringFont;
     private readonly float _referenceAdvance;
     private readonly Dictionary<LoadedFont, SKFont> _fallbackSkFonts = [];
+    private readonly Dictionary<LoadedFont, CellFitting> _cellFittings = [];
     private readonly SKPaint _paint;
     private bool _isDisposed;
 
@@ -84,17 +85,24 @@ public sealed class GlyphRasterizer : IDisposable
 
         canvas.Save();
         canvas.ClipRect(cell);
-        switch (source)
+        var drawingFont = source == GlyphSource.FallbackFont ? fallbackFont : Font;
+        var isFitted = source != GlyphSource.Placeholder && IsDrawnEdgeToEdge(rune) &&
+            TryDrawFittedToCell(canvas, drawingFont!, rune, cell);
+
+        if (!isFitted)
         {
-            case GlyphSource.PrimaryFont:
-                DrawPrimary(canvas, rune, cell);
-                break;
-            case GlyphSource.FallbackFont:
-                DrawFallback(canvas, GetFallbackSkFont(fallbackFont!), rune.ToString(), cell);
-                break;
-            case GlyphSource.Placeholder:
-                DrawPlaceholder(canvas, cell);
-                break;
+            switch (source)
+            {
+                case GlyphSource.PrimaryFont:
+                    DrawPrimary(canvas, rune, cell);
+                    break;
+                case GlyphSource.FallbackFont:
+                    DrawFallback(canvas, GetFallbackSkFont(fallbackFont!), rune.ToString(), cell);
+                    break;
+                case GlyphSource.Placeholder:
+                    DrawPlaceholder(canvas, cell);
+                    break;
+            }
         }
 
         canvas.Restore();
@@ -114,6 +122,10 @@ public sealed class GlyphRasterizer : IDisposable
             skFont.Dispose();
 
         _fallbackSkFonts.Clear();
+        foreach (var fitting in _cellFittings.Values)
+            fitting.Dispose();
+
+        _cellFittings.Clear();
         _paint.Dispose();
     }
 
@@ -224,6 +236,32 @@ public sealed class GlyphRasterizer : IDisposable
         skFont = CreateRenderingFont(fallbackFont.Typeface, Metrics.PixelSize);
         _fallbackSkFonts.Add(fallbackFont, skFont);
         return skFont;
+    }
+
+    // Box-drawing and block glyphs are fitted to the cell from their outlines, so neighbours join without seams at
+    // every size. Drawn as text instead, they fell up to a pixel short of the cell's edges, because the cell is
+    // rounded to whole pixels and hinting moves edges (ADR 0039). Bitmap glyphs have no outline and are drawn as usual.
+    private bool TryDrawFittedToCell(SKCanvas canvas, LoadedFont font, Rune rune, SKRectI cell)
+    {
+        using var outline = GetCellFitting(font).CreateOutline(rune);
+        if (outline is null)
+            return false;
+
+        outline.Offset(cell.Left, cell.Top);
+        canvas.DrawPath(outline, _paint);
+        return true;
+    }
+
+    private CellFitting GetCellFitting(LoadedFont font)
+    {
+        if (_cellFittings.TryGetValue(font, out var fitting))
+            return fitting;
+
+        // Moving lines onto whole pixels is this rasterizer's hinting for these glyphs, so it follows that setting.
+        fitting = new CellFitting(font, Metrics.PixelSize, new SKSizeI(Metrics.Width, Metrics.Height),
+            Options.Hinting != GlyphHinting.None);
+        _cellFittings.Add(font, fitting);
+        return fitting;
     }
 
     // A document-font glyph much wider than its cell (like ↔ in JetBrains Mono, whose tips reach

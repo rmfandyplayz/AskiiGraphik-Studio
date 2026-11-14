@@ -123,7 +123,7 @@ public readonly record struct CellMetrics
         return skFont.Size * FallbackAdvancePerEm;
     }
 
-    private static VerticalMetrics ReadVerticalMetrics(LoadedFont font, SKFont skFont) =>
+    internal static VerticalMetrics ReadVerticalMetrics(LoadedFont font, SKFont skFont) =>
         VerticalMetrics.Read(font.Typeface) ?? VerticalMetrics.FromSkia(skFont.Metrics, skFont.Size);
 
     private static bool IsUsableSide(float sizeInEms) =>
