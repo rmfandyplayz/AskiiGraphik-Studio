@@ -51,12 +51,11 @@ Added after 2.3's testing (ADR 0032), before M3 so every tool from then on write
 
 - [x] **2b.1 Colour model.** Text and background colours per cell, the colour mode and its conversion, backgrounds composited on their own, and file format version 2. ADRs 0036, 0037 · [test doc](testing/step-2b.1-colour-model.md)
 - [x] **2b.2 Colour on the canvas.** Each cell's colours drawn in the same batched glyph draw, a Debug colour sample, and box and block characters fitted to the cell so they join without seams. ADRs 0038, 0039 · [test doc](testing/step-2b.2-colour-on-the-canvas.md)
-- [~] **2b.2b Frame-rate readout.** Debug → Show Frame Rate shows the canvas's frame rate at the right of the status bar, to watch smoothness while testing. Added at the owner's request after 2b.2's testing.
-  *Owner checks:* the readout while panning, zooming and typing, and "idle" when nothing moves.
-  *Note:* built 2026-11-14. The average, the 1% low and the slowest draw from the last 2 seconds; waits over 100 ms are pauses, not slow frames. ADR 0040 · [test doc](testing/step-2b.2b-frame-rate-readout.md)
+- [x] **2b.2b Frame-rate readout.** Debug → Show Frame Rate: the average, the 1% low and the slowest draw at the right of the status bar. ADR 0040 · [test doc](testing/step-2b.2b-frame-rate-readout.md)
 - [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, a text colour and a background colour that X swaps, the text tool writing them, a Brush tool (B) with an FG brush and a BG brush on its sub-toolbar (1 and 2) that paint one cell's text colour or background, and three windows: Brush Options (the two colours), Color (an RGB picker from Avalonia.Controls.ColorPicker) and Swatches (the 16 ANSI colours).
   *Owner checks:* typing and painting in colour across layers, switching modes and undoing, saving and reopening.
   *Note:* reshaped with the owner on 2026-11-14 (two brushes under one tool, and the windows). Avalonia's picker may later give way to our own if it can't be styled enough.
+  *Note:* also decided 2026-11-14: the FG colour is what the FG brush paints and typing writes as text; the BG colour is what the BG brush paints and typing writes as background, where none keeps the cell's own. Brush Options' two buttons choose which one the Color and Swatches windows change. X swaps them; D resets both to none, marked as temporary. Right-click doesn't paint yet. Alt+click (Option+click) with the brush picks up a cell's colour. Esc is to switch to a Hand tool rather than only end typing, so a tool is always chosen (details still open).
 - [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
   *Owner checks:* the exported art in a terminal on Windows and macOS.
 
