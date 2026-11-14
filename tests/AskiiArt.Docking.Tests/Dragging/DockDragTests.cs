@@ -50,9 +50,9 @@ public sealed class DockDragTests
     }
 
     [Fact]
-    public void DroppedOnATopOrBottomBand_ItStacksAboveOrBelow()
+    public void DroppedOnTheTopOfAColumnsFirstTabStrip_OrItsBottomBand_ItStacksAboveOrBelow()
     {
-        var above = Drag(_dock, "x").LayoutAt(new LayoutPoint(880, 50));
+        var above = Drag(_dock, "x").LayoutAt(new LayoutPoint(880, 3));
         var below = Drag(_dock, "x").LayoutAt(new LayoutPoint(880, 330));
 
         Assert.Equal([["x"], ["a"], ["b", "c"]], Groups(above, 0));
@@ -174,13 +174,14 @@ public sealed class DockDragTests
 
         LayoutRect? MarkerAt(double x, double y) => drag.PreviewAt(new LayoutPoint(x, y)).Marker;
 
-        // Columns: at the app window's edge, between the two, and past the inner one.
-        Assert.Equal(new LayoutRect(1000 - padding - thin, padding, thin, 700 - padding * 2), MarkerAt(995, 600));
+        // Columns: at the app window's edge, where the edge strip is as deep as the bands, between the two, and past
+        // the inner one.
+        Assert.Equal(new LayoutRect(1000 - padding - band, padding, band, 700 - padding * 2), MarkerAt(995, 600));
         Assert.Equal(new LayoutRect(760 - thin / 2, padding, thin, 700 - padding * 2), MarkerAt(765, 175));
         Assert.Equal(new LayoutRect(520 - padding - thin, padding, thin, 700 - padding * 2), MarkerAt(530, 300));
 
         // Stacking: at the column's top, between "a" and the tabs, and at its bottom.
-        Assert.Equal(new LayoutRect(760 + padding, padding, 240 - padding * 2, band), MarkerAt(880, 50));
+        Assert.Equal(new LayoutRect(760 + padding, padding, 240 - padding * 2, band), MarkerAt(880, 3));
         Assert.Equal(new LayoutRect(760 + padding, 350 - thin / 2, 240 - padding * 2, thin), MarkerAt(880, 340));
         Assert.Equal(new LayoutRect(760 + padding, 700 - padding - band, 240 - padding * 2, band), MarkerAt(880, 690));
     }
@@ -212,8 +213,21 @@ public sealed class DockDragTests
     {
         var solved = SolvedWithRoom(Drag(_dock, "x"), new LayoutPoint(995, 600));
 
-        Assert.Equal(1000 - 28 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
-        Assert.Equal(1000 - 28 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
+        // The room is the band's depth and the padding each side.
+        Assert.Equal(1000 - 56 - 240, solved.PlaceOfWindow("a")!.Value.Bounds.X);
+        Assert.Equal(1000 - 56 - 480, solved.PlaceOfWindow("d")!.Value.Bounds.X);
+    }
+
+    [Fact]
+    public void AtTheTopOfAColumn_OnlyTheTopQuarterOfItsFirstTabStripStacks_AndTheRestMakesATab()
+    {
+        // "a"'s tab strip is from y 0 to 28, and its contents below.
+        var drag = Drag(_dock, "x");
+
+        Assert.Equal((WindowDropKind.DockStack, 0), (drag.ZoneAt(new LayoutPoint(880, 6))!.Kind,
+            drag.ZoneAt(new LayoutPoint(880, 6))!.Position));
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 8))!.Kind);
+        Assert.Equal(WindowDropKind.Tab, drag.ZoneAt(new LayoutPoint(880, 50))!.Kind);
     }
 
     [Fact]
@@ -221,7 +235,7 @@ public sealed class DockDragTests
     {
         var drag = Drag(_dock, "x");
 
-        var top = SolvedWithRoom(drag, new LayoutPoint(880, 50));
+        var top = SolvedWithRoom(drag, new LayoutPoint(880, 3));
         Assert.Equal(new LayoutRect(760, 56, 240, 294), top.PlaceOfWindow("a")!.Value.Bounds);
         Assert.Equal(new LayoutRect(760, 350, 240, 350), top.PlaceOfWindow("b")!.Value.Bounds);
 
@@ -333,10 +347,10 @@ public sealed class DockDragTests
     [Fact]
     public void AWindowDroppedBackWhereItWasInItsColumn_ChangesNothing()
     {
-        // Without "a", "b" and "c" fill the column, and the top band of their window is where "a" was.
+        // Without "a", "b" and "c" fill the column, and the top of their tab strip is where "a" was.
         var drag = Drag(_dock, "a");
 
-        Assert.Same(drag.Start, drag.LayoutAt(new LayoutPoint(880, 50)));
+        Assert.Same(drag.Start, drag.LayoutAt(new LayoutPoint(880, 3)));
     }
 
     [Fact]

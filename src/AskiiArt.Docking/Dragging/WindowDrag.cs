@@ -322,13 +322,14 @@ public sealed class WindowDrag
         return new WindowDropZone(kind, edge, 0, new LayoutRect(x, 0, strip, _available.Height));
     }
 
-    // A band along the top of the column's first window and the bottom of its last stacks the window there, and a
+    // The top quarter of the column's first tab strip stacks the window above it, as the owner chose, so that the top
+    // of every window works the same way. A band along the bottom of the column's last window stacks it there, and a
     // thinner zone on each border between two windows puts it between them. That one lies along the bottom of the upper
     // window's contents, so the lower window's tab strip keeps its whole height. A window squeezed to its tab strip has
-    // no contents, so its bands take a quarter of its strip instead, and the zone below it straddles the border, taking
-    // a quarter of the next window's strip too. Then a slot along the tab strip for each place a tab could go, after
-    // the zones above so that those win where they cross it. The rest makes it a tab at the end, or back where it was
-    // if it came from here.
+    // no contents, so its zone below takes the bottom quarter of its strip instead, and straddles the border, taking a
+    // quarter of the next window's strip too. Then a slot along the tab strip for each place a tab could go, after the
+    // zones above so that those win where they cross it. The rest makes it a tab at the end, or back where it was if it
+    // came from here.
     private List<WindowDropZone> DockGroupZones(SolvedWindowGroup group)
     {
         var bounds = group.Bounds;
@@ -336,12 +337,15 @@ public sealed class WindowDrag
         var body = BodyOf(group);
         var column = GroupsIn(group.Edge, group.Column);
         var next = group.Position + 1 < column.Count ? column[group.Position + 1] : null;
+        var zones = new List<WindowDropZone>();
 
-        List<WindowDropZone> zones;
+        if (group.Position == 0)
+            zones.Add(StackZone(group, 0, new LayoutRect(strip.X, strip.Y, strip.Width, strip.Height / 4)));
+
         if (body.Height > 0)
-            zones = BandsInTheBody(group, body, isLast: next is null);
+            zones.Add(ZoneBelowTheContents(group, body, isLast: next is null));
         else
-            zones = BandsInTheStrip(group, strip, next);
+            zones.Add(ZoneBelowTheStrip(group, strip, next));
 
         zones.AddRange(TabZones(group, strip));
         if (body.Height <= 0)
@@ -356,31 +360,18 @@ public sealed class WindowDrag
         return zones;
     }
 
-    private List<WindowDropZone> BandsInTheBody(SolvedWindowGroup group, LayoutRect body, bool isLast)
+    private WindowDropZone ZoneBelowTheContents(SolvedWindowGroup group, LayoutRect body, bool isLast)
     {
-        var band = Math.Min(_metrics.DockBandLength, body.Height / 4);
-        var below = isLast ? band : Math.Min(_metrics.DockBorderZoneThickness, body.Height / 4);
-        var zones = new List<WindowDropZone>();
-
-        if (group.Position == 0)
-            zones.Add(StackZone(group, 0, new LayoutRect(body.X, body.Y, body.Width, band)));
-
-        zones.Add(StackZone(group, group.Position + 1, new LayoutRect(body.X, body.Bottom - below, body.Width, below)));
-        return zones;
+        var thickness = isLast ? _metrics.DockBandLength : _metrics.DockBorderZoneThickness;
+        var length = Math.Min(thickness, body.Height / 4);
+        return StackZone(group, group.Position + 1, new LayoutRect(body.X, body.Bottom - length, body.Width, length));
     }
 
-    private List<WindowDropZone> BandsInTheStrip(SolvedWindowGroup group, LayoutRect strip, SolvedWindowGroup? next)
+    private WindowDropZone ZoneBelowTheStrip(SolvedWindowGroup group, LayoutRect strip, SolvedWindowGroup? next)
     {
-        var quarter = strip.Height / 4;
-        var top = strip.Bottom - quarter;
+        var top = strip.Bottom - strip.Height / 4;
         var bottom = next is { } below ? below.Bounds.Y + StripHeight(below) / 4 : strip.Bottom;
-        var zones = new List<WindowDropZone>();
-
-        if (group.Position == 0)
-            zones.Add(StackZone(group, 0, new LayoutRect(strip.X, strip.Y, strip.Width, quarter)));
-
-        zones.Add(StackZone(group, group.Position + 1, new LayoutRect(strip.X, top, strip.Width, bottom - top)));
-        return zones;
+        return StackZone(group, group.Position + 1, new LayoutRect(strip.X, top, strip.Width, bottom - top));
     }
 
     private static WindowDropZone StackZone(SolvedWindowGroup group, int position, LayoutRect bounds) =>
@@ -405,8 +396,8 @@ public sealed class WindowDrag
     // docs/DOCKING.md §5.2: the windows make room for a marker where the window would go. It's thin on a border in a
     // dock, and elsewhere as deep as a dock's bands, so it shows how big its zone is. Among a dock's windows, or where
     // a column would go, the room is wider by the padding each way, so the marker keeps the same distance from
-    // everything. At the edge of a widget side, it's as wide as on an empty side, and the widgets keep their gap from
-    // it.
+    // everything. On a side's edge strip it's as wide as the bands, as the owner asked, and on a widget side the
+    // widgets keep their gap from it.
     private DropRoom? RoomFor(WindowDropZone zone)
     {
         var standard = _metrics.DockBandLength;
@@ -417,8 +408,8 @@ public sealed class WindowDrag
             WindowDropKind.EmptySide or WindowDropKind.OwnPlace => new DropRoom(DropRoomKind.EmptySide, zone.Edge, standard),
             WindowDropKind.SideEdge when IsAWidgetSide(zone.Edge) =>
                 new DropRoom(DropRoomKind.Column, zone.Edge, standard + _metrics.WidgetGap, zone.Column),
-            WindowDropKind.SideEdge or WindowDropKind.DockColumn =>
-                new DropRoom(DropRoomKind.Column, zone.Edge, thin, zone.Column),
+            WindowDropKind.SideEdge => new DropRoom(DropRoomKind.Column, zone.Edge, standard + padding, zone.Column),
+            WindowDropKind.DockColumn => new DropRoom(DropRoomKind.Column, zone.Edge, thin, zone.Column),
             WindowDropKind.Stack => new DropRoom(DropRoomKind.Stack, zone.Edge, standard, 0, zone.Position),
             WindowDropKind.DockStack => new DropRoom(DropRoomKind.Stack, zone.Edge,
                 IsAtAColumnsEnd(zone) ? standard + padding : thin, zone.Column, zone.Position),
