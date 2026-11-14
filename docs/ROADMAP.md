@@ -97,7 +97,7 @@ Goal: a window with a grid you can type into, where you can pick a font, resize 
 
 Docking is adopted here, before most panels exist, so later panels don't need to be rehoused.
 
-- [~] **2.1 Dock shell.** Adds:
+- [x] **2.1 Dock shell.** Adds:
   - Dock, with the canvas painting the whole window and panels as widgets on top. Empty parts of the layout pass clicks to the canvas, and widgets always get clicks first
   - the safe area: centering, zoom and scroll limits count the docked widgets
   - the menu bar (except on a Mac) and the status bar as plain strips, and the toolbar and empty History and Layers panels as panels that can be docked, tabbed, floated inside the window and closed
@@ -151,7 +151,7 @@ Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delive
 
   *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.
   *Note:* Built (ADR 0035, amended). Tests in `docs/testing/step-2.5f-docks.md`, with a test for toolbars going past the app window's edge. Fixed on the way: the ≡ button opened a window's menu without hiding the items that don't apply. The owner confirmed its tests on all platforms on 2026-11-10.
-- [~] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
+- [x] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
 
   *Owner checks:* the opening rules, a last pass over how everything feels, and a new set of tests for what 2.1's old retest list was meant to cover, since that list checked Dock.
   *Note:* Built (ADR 0035), ready for testing in `docs/testing/step-2.5g-opening-rules-and-polish.md`, which covers only the edge cases, as the owner asked. Opening rules 4 and 5 (a tab in the largest dock window, or floating centred on the canvas region), and columns that stop shrinking at the narrowest a window can be. The owner's notes (mockups of 2026-11-12 onwards) are in: the windows move apart for a hatched marker, 20 thick on a dock's borders and 48 deep elsewhere, 4 from everything around it in a dock; a "+" tab and an outline when making a tab; dock zones that straddle borders; and a window alone on its side, widget or dock, goes back only from that side's edge strip. A dock window's Turn into Widget is now hidden rather than greyed out. Its T7 closes 2.1. The owner's retest of 2026-11-13 passed T1, T2 and T4 to T7. The fixes it asked for, zones beside windows squeezed to their tab strips, tabs that scroll into view, and the marker on a widget side's edge strip, are ready for testing in `docs/testing/step-2.5g-follow-ups.md`. Those passed on all platforms the same day. The owner's last notes, a dock column's top zone in its first tab strip and a marker as deep as the bands on a dock's edge strip, needed no test doc.
