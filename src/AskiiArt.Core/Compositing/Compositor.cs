@@ -10,9 +10,11 @@ namespace AskiiArt.Core.Compositing;
 /// compositing implementation: the renderer, exporters, clipboard and magic wand all use it.
 /// </summary>
 /// <remarks>
-/// At each cell, the topmost visible layer whose cell hides the layers below (by that layer's
-/// <see cref="CompositingPolicy"/>) wins. If no layer does, the result is <see cref="Cell.Empty"/>.
-/// Layer opacity and blend modes are reserved and ignored (§18).
+/// Glyphs and backgrounds are composited separately (ADR 0036). At each cell, the glyph and its
+/// text colour come from the topmost visible layer whose cell hides the glyphs below (by that
+/// layer's <see cref="CompositingPolicy"/>), and the background from the topmost visible layer
+/// whose cell has one. Either can be missing, so the result can hold a glyph, a background, both,
+/// or neither. Layer opacity and blend modes are reserved and ignored (§18).
 /// </remarks>
 public static class Compositor
 {
@@ -23,18 +25,27 @@ public static class Compositor
         ArgumentNullException.ThrowIfNull(frame);
 
         var layers = frame.Layers;
-        for (var index = layers.Count - 1; index >= 0; index--)
+        var glyphs = Cell.Empty;
+        var hasFoundGlyph = false;
+        var background = CellColor.Unset;
+        for (var index = layers.Count - 1; index >= 0 && (!hasFoundGlyph || background.IsUnset); index--)
         {
             var layer = layers[index];
             if (!layer.Properties.IsVisible)
                 continue;
 
             var cell = layer.GetCell(point);
-            if (CompositingPolicy.For(layer.Properties.SpaceHandling).HidesLayersBelow(cell))
-                return cell;
+            if (background.IsUnset)
+                background = cell.Background;
+
+            if (!hasFoundGlyph && CompositingPolicy.For(layer.Properties.SpaceHandling).HidesGlyphsBelow(cell))
+            {
+                glyphs = cell;
+                hasFoundGlyph = true;
+            }
         }
 
-        return Cell.Empty;
+        return glyphs.WithBackground(background);
     }
 
     /// <summary>
@@ -57,8 +68,9 @@ public static class Compositor
         var result = destination[..region.Area];
         result.Clear();
 
-        // Painting from the bottom up, each hiding cell overwrites what's below it, so the topmost
-        // one wins. That gives the same result as CompositeCell while reading whole rows at once.
+        // Painting from the bottom up, each layer's cell goes over what's below it, so the topmost
+        // glyph and the topmost background win. That gives the same result as CompositeCell while
+        // reading whole rows at once.
         foreach (var layer in frame.Layers)
         {
             if (!layer.Properties.IsVisible)
@@ -71,10 +83,21 @@ public static class Compositor
                 var target = result.Slice(row * region.Width, region.Width);
                 for (var column = 0; column < source.Length; column++)
                 {
-                    if (policy.HidesLayersBelow(source[column]))
-                        target[column] = source[column];
+                    var cell = source[column];
+                    if (!cell.IsEmpty)
+                        target[column] = PaintOver(target[column], cell, policy);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// What <paramref name="cell"/>, on a layer with <paramref name="policy"/>, shows over <paramref name="below"/>.
+    /// </summary>
+    internal static Cell PaintOver(Cell below, Cell cell, CompositingPolicy policy)
+    {
+        var glyphs = policy.HidesGlyphsBelow(cell) ? cell : below;
+        var background = cell.HasBackground ? cell.Background : below.Background;
+        return glyphs.WithBackground(background);
     }
 }

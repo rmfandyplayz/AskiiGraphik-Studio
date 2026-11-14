@@ -6,161 +6,58 @@
 
 - Milestones run in order. Only the current milestone is broken into steps; later milestones are listed as scopes. **Before starting a milestone, Claude Code proposes its step breakdown and the owner approves it.**
 - **One step = one Claude Code session.** Each step ends with something the owner can test (or, for core-only steps, green CI plus a short check). Steps are sized to fit comfortably in one usage window.
-- **Step status:** `[ ]` to do · `[~]` built and ready for the owner to test · `[x]` the owner confirmed it passes.
-- Claude Code sets `[~]` and the owner's confirmation sets `[x]`. Keep the notes under each step to one or two lines. Decisions go in ADRs, not here.
+- **Step status:** `[ ]` to do · `[~]` built and ready for the owner to test · `[x]` the owner confirmed it passes. Claude Code sets `[~]` and the owner's confirmation sets `[x]`.
+- **An open step** has its scope, what the owner checks, and a note of a line or two on where it stands.
+- **A done step shrinks to one line:** what it added, its ADRs and its test docs. Nothing is kept here twice: decisions are in the ADRs and ARCHITECTURE.md, placeholder choices in `docs/TEMPORARY-UI.md`, and each round of testing in the step's test doc and the git history.
 
 ---
 
-## M0: Foundation
+## M0: Foundation (done 2026-10-30)
 
-- [x] **0.1 Repo scaffold.** Create the solution and projects per ARCHITECTURE §4. Add `Directory.Build.props` (net10.0, nullable, warnings as errors, analyzers), `Directory.Packages.props`, `.editorconfig` (encoding the CLAUDE.md code style wherever analyzers can), `.gitattributes`, `LICENSE` (GPL-3.0), a stub `README.md`, `THIRD-PARTY-NOTICES.md`, `docs/decisions/0001-record-architecture-decisions.md` (which spells out the status and supersede rules), and the `docs/decisions/README.md` index. Add one trivial test per test project.
-  *Owner checks:* `dotnet build` and `dotnet test` succeed on Windows and on Mac.
-  *Note:* Built. Template mobile and browser projects were removed; xUnit and Verify are pinned to older versions so the headless tests work (ADR 0002).
-- [x] **0.2 CI.** Add a GitHub Actions workflow that builds and tests on Windows, macOS and Ubuntu on every push and pull request. Put a status badge in the README.
-  *Owner checks:* after a push, CI is green on all three.
-  *Note:* Built (`.github/workflows/ci.yml`, ADR 0005). Also runs the format check on Linux, since the owner works in Rider. Not run yet; the first push verifies it.
-- [x] **0.3 App skeleton.** The Avalonia app starts and shows an empty main window with a placeholder menu (File → Quit; Help → Open Log Folder, About). This step also adds:
-  - the DI container and logging to a rolling file
-  - `.resx` string resources, used by every visible string
-  - the theme token dictionary
-  - the action registry, with the three actions above
-  - platform-aware shortcuts (Quit is Ctrl+Q on Windows and Cmd+Q on macOS)
-  - an unhandled-exception handler
+- [x] **0.1 Repo scaffold.** The solution and projects, shared build settings, code style, license and the ADR process. ADRs 0001–0004 · [test doc](testing/step-0.1-repo-scaffold.md)
+- [x] **0.2 CI.** Build, test and format check on Windows, macOS and Ubuntu. ADR 0005 · [test doc](testing/step-0.2-ci.md)
+- [x] **0.3 App skeleton.** DI, file logging, string resources, theme tokens, the action registry, platform shortcuts and the error handler. ADRs 0006–0009 · [test doc](testing/step-0.3-app-skeleton.md)
 
-  *Owner checks:* the app launches on Windows and Mac, the menu and Quit shortcut work, and Open Log Folder shows a log file.
-  *Note:* Built (ADRs 0006–0009). Native menus (macOS menu bar), Serilog file log in the local app-data folder, error dialog, and a Debug-build-only Debug menu.
+## M1: MVP: type, undo, save (done 2026-11-01)
 
-## M1: MVP (type, undo, save)
+- [x] **1.1 Document model.** Documents, frames, layers and cells, compositing, change events, and resizing the canvas with an anchor. ADRs 0010, 0011 · [test doc](testing/step-1.1-document-model.md)
+- [x] **1.2 Commands and undo.** Cell edits, composite commands, coalescing, history with a memory budget, dirty state and the layer commands. ADR 0012 · [test doc](testing/step-1.2-commands-and-undo.md)
+- [x] **1.3 Fonts and glyph atlas.** Bundled fonts, cell size from font metrics, the monospace check, the rasterizer and atlas, and missing glyphs. ADRs 0013, 0014 · [test doc](testing/step-1.3-fonts-and-glyph-atlas.md)
+- [x] **1.4 Canvas control.** Virtualized drawing, zoom, pan, the grid, hover, the status bar and HiDPI. ADR 0015 · [test doc](testing/step-1.4-canvas-control.md)
+- [x] **1.5 Text mode.** The text tool, caret keys, typing coalesced into undo steps, and a character set per document. ADRs 0016–0018 · [test doc](testing/step-1.5-text-mode.md)
+- [x] **1.6 Document actions.** New, Resize Canvas, the font picker, and placeholder menus and toolbar. ADRs 0019, 0020 · [test doc](testing/step-1.6-document-actions.md)
+- [x] **1.7 Saving and opening.** `.asciiart` and `.asciiartz`, atomic saves, format migrations and unsaved-changes prompts. ADR 0021 · [test doc](testing/step-1.7-saving-and-opening.md)
+- [x] **1.8 Output and macOS windows.** Copy as Text, Export .txt, and the app outliving its window on a Mac. ADRs 0022–0024 · [test doc](testing/step-1.8-output-and-macos-windows.md)
 
-Goal: a window with a grid you can type into, where you can pick a font, resize the canvas, undo and redo, and save and load. Layers exist in the model but have no UI yet.
+## M2: Shell and layers (done 2026-11-13)
 
-- [x] **1.1 Document model** (Core). Document, Frame, Layer and Cell; `CellPoint` and `CellRect`; occupancy; compositing with the space-policy hook; change events with dirty regions; and canvas-resize logic with an anchor. Thorough unit tests, no UI.
-  *Owner checks:* CI is green. (There's nothing to click yet.)
-  *Note:* Built (ADRs 0010, 0011). Mutation is internal to Core, so only commands (1.2) can change a document; canvas hard limit is 4096 per side.
-- [x] **1.2 Commands and undo** (Core). Covers:
-  - the command interfaces, and a cell-edit command with a before/after diff
-  - composite commands and the coalescing hook
-  - history with a memory budget, and dirty-state tracking
-  - a resize-canvas command, and the layer commands (add, remove, reorder, properties), even though layers have no UI yet
-
-  Includes the property-based test: a random sequence of commands, then undo all, returns the original document.
-  *Owner checks:* CI is green.
-  *Note:* Built (ADR 0012). Coalescing uses caller-made `CoalescingGroup`s; the newest step survives the memory budget; CsCheck pinned at 4.9.1.
-- [x] **1.3 Fonts and glyph atlas** (Imaging). Covers:
-  - the bundled fonts, with their licenses
-  - loading fonts from a file and from the system
-  - deriving cell size from font metrics, and the monospace check
-  - glyph rasterization and the atlas cache
-  - missing-glyph handling (**ask the owner first**, ARCHITECTURE §23)
-
-  A test generates a "font sheet" PNG for each bundled font so the owner can eyeball it.
-  *Owner checks:* the font sheets look right; CI is green.
-  *Note:* Built (ADRs 0013, 0014). Missing glyphs use an installed fallback font or a placeholder box and are reported per cell; sheets go to `artifacts/font-sheets/`, and CI uploads them per OS.
-- [x] **1.4 Canvas control** (App). Renders a document (temporary sample content) with virtualization and the atlas. Covers:
-  - zoom (Ctrl/Cmd + mouse wheel, plus keyboard shortcuts)
-  - pan (scrollbars, middle-drag, space-drag)
-  - a grid toggle and hover highlight
-  - a status bar showing cell coordinates and zoom
-  - correct HiDPI rendering
-
-  *Owner checks:* zooming and panning are smooth on a 500×500 sample; text is crisp at 100% and 150% Windows scaling and on Retina.
-  *Note:* Built (ADR 0015). Skia lease with one `DrawAtlas` per atlas page; zoom 25–800%; temporary sample document and orange/red missing-glyph markers. The macOS glide-zoom and CI fixes from its testing landed in 1.5.
-- [x] **1.5 Text mode** (a Core tool, plus App wiring). Click to place the caret, and typing writes glyphs. Arrow keys, Home/End, Backspace, Delete and Enter work. Typing coalesces into undo steps. Undo and Redo actions use platform shortcuts. (**Ask about the charset policy first**, ARCHITECTURE §23.)
-  *Owner checks:* typing, editing, and undo/redo behave as the test doc describes.
-  *Note:* Built (ADRs 0016–0018). The text tool is always active and overwrites; per-document Unicode or ASCII only, with a temporary Edit → ASCII Only. Also fixes Cmd zooming during a touchpad glide and the macOS CI failure. The fixes from its testing (zoom-out drift, Backspace on a placed caret and at the edges, Enter following the current text) land in 1.6.
-- [x] **1.6 Document actions.** Adds:
-  - New (with a canvas-size dialog)
-  - Resize Canvas (a size + anchor dialog, with the >500 warning)
-  - a font picker (bundled fonts, system fonts, load from file)
-  - placeholder menus and a toolbar, bound to actions
-
-  *Owner checks:* each dialog works, resizing with different anchors and then undoing works, and changing the font resizes cells correctly.
-  *Note:* Built (ADRs 0019, 0020). New defaults to 80 × 25 and ASCII only; the font is per document and undoable, and file fonts last until the app closes. Also adds caret jumps (per-platform keys) and the fixes from 1.5 testing. The fixes from its own testing (damaged font files, the 10-cell jump moved off Alt on Windows and Linux, size boxes that clamp) land in 1.7.
-- [x] **1.7 Saving and opening.** Adds:
-  - Save, Save As and Open, in a plain variant (`.asciiart`) and a compressed one (`.asciiartz`), with header sniffing, a format version, and atomic saves
-  - round-trip tests, and the scaffolding for future format migrations
-  - unsaved-changes prompts on close, New and Open, and a window title that shows the file name plus a dirty marker
-  - the app starts with an empty document (the sample moves to the Debug menu), and opening a document whose font is missing says so
-
-  *Owner checks:* both variants save and reopen, the plain file shows the art when opened in a text editor, and the unsaved-changes prompts behave correctly.
-  *Note:* Built (ADR 0021). The fixes from 1.6 testing are in too (damaged fonts, Ctrl+Shift+arrow, size boxes that clamp). The fixes from its own testing (a damaged escape that failed CI on macOS, the open picker that didn't appear after saving on Windows) land in 1.8.
-- [x] **1.8 Output and macOS windows.** Adds:
-  - macOS window behavior: closing the window closes the document and the app keeps running, and clicking the Dock icon or choosing New or Open with no window opens one (requested in 0.3 testing; one window at a time)
-  - Copy as Text (to the clipboard) and Export .txt
-
-  *Owner checks:* copied art pastes correctly into a text editor, the exported file matches, and on a Mac, closing the window leaves the app running.
-  *Note:* Built (ADRs 0022, 0023). On a Mac the File menu can't exist with no window open, so New and Open are in the Dock menu then; Mac windows also show the unsaved dot. The fixes from 1.7 testing are in too.
-
-**The MVP is complete: the owner confirmed 1.8 on 2026-11-01.** (1.7 was split in two after 1.6 testing, with the owner's OK.)
-
-## M2: Shell and layers
-
-Docking is adopted here, before most panels exist, so later panels don't need to be rehoused.
-
-- [x] **2.1 Dock shell.** Adds:
-  - Dock, with the canvas painting the whole window and panels as widgets on top. Empty parts of the layout pass clicks to the canvas, and widgets always get clicks first
-  - the safe area: centering, zoom and scroll limits count the docked widgets
-  - the menu bar (except on a Mac) and the status bar as plain strips, and the toolbar and empty History and Layers panels as panels that can be docked, tabbed, floated inside the window and closed
-  - no canvas scrollbars for now, and a minimum window size
-  - the settings file, a saved layout, and a Window menu with panel toggles and Reset Layout
-
-  *Owner checks:* art shows around the widgets, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADRs 0025, 0026, 0029). Dock stays, as a see-through layer with floating kept inside the window; the owner chose this look over solid strips in M2 planning. Two rounds of testing led to fixes and design changes, awaiting a last retest of the changed parts. On 2026-11-02 the owner moved that retest into 2.5, so everything about docking and windows is checked together. This step stays open until then. Dock itself went in 2.5b, so what's left of its checks moved into 2.5b to 2.5g, and 2.5g closes it with T7 of `docs/testing/step-2.5g-opening-rules-and-polish.md`.
-- [x] **2.2 History panel.** Named undo steps in a list, and clicking an entry jumps to that point using ordinary undo and redo.
-
-  *Owner checks:* the list stays in sync with undo and redo, including while the panel floats.
-  *Note:* Built (ADR 0028), at the owner's suggestion alongside the 2.1 fixes, so both were tested together.
-- [x] **2.3 Layers panel.** Choosing the active layer; add, delete, duplicate, reorder, rename, visibility, lock and merge down.
-
-  *Owner checks:* each operation, its undo, and saving and reopening.
-  *Note:* Built (ADRs 0030, 0031), with a Layer menu whose actions the panel's buttons share. The owner confirmed it on both platforms on 2026-11-02, along with the fixes from its testing (the highlight after opening, saving the active layer).
-- [x] **2.4 Space option and hard eraser.** The per-layer space-as-empty option, tool switching, and a 1-cell hard eraser (a fast drag leaves no gaps, and one stroke is one undo step).
-
-  *Owner checks:* compositing and text export with the option on and off, erase strokes and their undo.
-  *Note:* Built (ADR 0033). Also has the fixes from 2.3's testing (ADR 0031) and a fix for a crash on a Mac when a closed window reported its position. The owner confirmed it on 2026-11-02.
-- [x] **2.4b Remembered font files.** Fonts loaded from a file are still there after a restart. Added at the owner's request on 2026-11-02, so documents using them stop falling back to the default font.
-
-  *Owner checks:* a loaded font survives a restart, a document using it opens without a warning, and a moved or damaged file does no harm.
-  *Note:* Built (ADR 0034). Fonts are remembered by file path in settings. The owner confirmed it on 2026-11-04.
-
-### 2.5 Docking pass
-
-Added at the owner's request after 2.1's testing. On 2026-11-04 the owner delivered a brief, and the pass became a replacement of the Dock library with our own system, split into these steps with the owner's OK (`docs/DOCKING.md`, ADR 0035). It also takes in 2.1's last retest.
-
-- [x] **2.5a Spec.** `docs/DOCKING.md`, ADR 0035, and this split. No code.
-
-  *Owner checks:* reads the spec and approves it or changes it. Nothing to test by hand.
-  *Note:* The owner approved it on 2026-11-04, assumptions included.
-- [x] **2.5b Replace Dock.** The new `AskiiArt.Docking` project and a host with no background, with everything in fixed places (the default layout). The Window menu, Reset Layout, a saved layout, the safe area, click-through and handing the keyboard back. Dock's packages go, and ADRs 0025 and 0029 are superseded. **Dragging is temporarily gone** until 2.5c and 2.5e.
-
-  *Owner checks:* art shows around the widgets, clicks on empty space reach the canvas, windows and toolbars get clicks first, the layout survives a restart (and, on a Mac, closing and reopening the window), and a damaged settings file is reported and recovered from.
-  *Note:* Built (ADR 0035). Sharing an edge and the corner rule are already in the solver, because it's one piece of code, and came forward from 2.5c. The owner confirmed it on 2026-11-04.
-- [x] **2.5c Toolbars.** Floating, dragging with zones and a live preview, right-click Horizontal and Vertical, vertical toolbars' views, fades and grips. The anchors and the rules for sharing space are already in the solver from 2.5b, so this is where they can be tried.
-
-  *Owner checks:* every anchor and direction, the fights along each edge, and how a drag feels.
-  *Note:* Built (ADR 0035). Debug → Allow Tiny Window was added, because the fights along an edge need less room than the normal minimum window size. After the first round: the toolbar's shape after a cancel is fixed, and zones now lie among toolbars like toolbars and match their thickness. The owner confirmed its tests on 2026-11-04, with changes to how a drag looks, which are tested in 2.5d's doc: a dashed strip with no copy when anchoring, a see-through dragged toolbar, running dashes and bigger corner squares.
-- [x] **2.5d Sub-toolbars.** One at a time, with a sample in the Debug menu, since tool groups arrive in M3.
-
-  *Owner checks:* where one sits for each kind of parent, its length limits, and what it pushes. The canvas doesn't move.
-  *Note:* Built (ADR 0035). A floating toolbar's sub-toolbar remembers the side it was on, as the owner asked, and it stays with its toolbar through a drag and its previews. The owner confirmed its tests on 2026-11-05, with a last change to drags, tested in `docs/testing/step-2.5d-hidden-toolbars.md`: other toolbars go out of sight, zones are always full length, and overlapped zones dim.
-- [x] **2.5e Widgets and floating windows.** Stacks of up to 4, title-only, hover buttons and menus, dragging between stacks, resizing, floating windows, and the empty-side edge strip.
-
-  *Owner checks:* the four examples of `02_ex_04`, the hover buttons, and how a drag feels.
-  *Note:* Built (ADR 0035). Debug → Sample Window 1 to 3 were added, because stacks can't be tried with only 2 windows. Choosing a side for a new widget came forward from 2.5g, because Turn into Widget needs it. The owner confirmed its tests on 2026-11-06, with changes tested in `docs/testing/step-2.5e-window-follow-ups.md`: windows follow the pointer past the app window's edge, a lone window floats at its remembered size or half height, double-clicking a title squeezes or opens it, lines on the gaps, and menus that offer the other kinds. Those passed on all platforms the same day.
-- [x] **2.5f Docks.** Columns, stacks, tabs, and converting between docks and widgets in every way the spec lists.
-
-  *Owner checks:* reorganizing tabs, the conversions, and both sides in each combination.
-  *Note:* Built (ADR 0035, amended). Tests in `docs/testing/step-2.5f-docks.md`, with a test for toolbars going past the app window's edge. Fixed on the way: the ≡ button opened a window's menu without hiding the items that don't apply. The owner confirmed its tests on all platforms on 2026-11-10.
-- [x] **2.5g Opening rules and polish.** Where new and reopened windows go, animation tuning, too-small windows, and any changes to the default layout. Closes 2.1, whose remaining checks have moved into 2.5b to 2.5g.
-
-  *Owner checks:* the opening rules, a last pass over how everything feels, and a new set of tests for what 2.1's old retest list was meant to cover, since that list checked Dock.
-  *Note:* Built (ADR 0035), ready for testing in `docs/testing/step-2.5g-opening-rules-and-polish.md`, which covers only the edge cases, as the owner asked. Opening rules 4 and 5 (a tab in the largest dock window, or floating centred on the canvas region), and columns that stop shrinking at the narrowest a window can be. The owner's notes (mockups of 2026-11-12 onwards) are in: the windows move apart for a hatched marker, 20 thick on a dock's borders and 48 deep elsewhere, 4 from everything around it in a dock; a "+" tab and an outline when making a tab; dock zones that straddle borders; and a window alone on its side, widget or dock, goes back only from that side's edge strip. A dock window's Turn into Widget is now hidden rather than greyed out. Its T7 closes 2.1. The owner's retest of 2026-11-13 passed T1, T2 and T4 to T7. The fixes it asked for, zones beside windows squeezed to their tab strips, tabs that scroll into view, and the marker on a widget side's edge strip, are ready for testing in `docs/testing/step-2.5g-follow-ups.md`. Those passed on all platforms the same day. The owner's last notes, a dock column's top zone in its first tab strip and a marker as deep as the bands on a dock's edge strip, needed no test doc.
+- [x] **2.1 Dock shell.** The canvas under see-through windows, the safe area, the settings file, a saved layout and the Window menu. Its last checks moved into 2.5. ADRs 0025–0027, 0029 (all but 0026 since superseded) · [test doc](testing/step-2.1-dock-shell.md)
+- [x] **2.2 History panel.** Named undo steps; clicking one jumps there. ADR 0028 · [test doc](testing/step-2.2-history-panel.md)
+- [x] **2.3 Layers panel.** The active layer and every layer operation, with a Layer menu. ADRs 0030, 0031 · [test doc](testing/step-2.3-layers-panel.md)
+- [x] **2.4 Space option and hard eraser.** Spaces as empty per layer, tool switching, and a 1-cell eraser. ADR 0033 · [test doc](testing/step-2.4-space-option-and-eraser.md)
+- [x] **2.4b Remembered font files.** Fonts loaded from a file survive a restart. ADR 0034 · [test doc](testing/step-2.4b-remembered-fonts.md)
+- **2.5 Docking pass.** Our own docking system replaced the Dock library. Spec: `docs/DOCKING.md`, ADR 0035.
+  - [x] **2.5a Spec.** `docs/DOCKING.md` and this split. No code.
+  - [x] **2.5b Replace Dock.** The `AskiiArt.Docking` project, the default layout, the Window menu, a saved layout, the safe area and click-through. [test doc](testing/step-2.5b-replace-dock.md)
+  - [x] **2.5c Toolbars.** Floating, dragging with zones and a live preview, Horizontal and Vertical, fades and grips. [test doc](testing/step-2.5c-toolbars.md)
+  - [x] **2.5d Sub-toolbars.** One at a time, with a Debug sample. [test doc](testing/step-2.5d-sub-toolbars.md), [follow-ups](testing/step-2.5d-hidden-toolbars.md)
+  - [x] **2.5e Widgets and floating windows.** Stacks, title-only windows, hover buttons and menus, dragging, resizing, floating and the edge strip. [test doc](testing/step-2.5e-widgets-and-floating-windows.md), [follow-ups](testing/step-2.5e-window-follow-ups.md)
+  - [x] **2.5f Docks.** Columns, tabs, and converting between docks and widgets. [test doc](testing/step-2.5f-docks.md)
+  - [x] **2.5g Opening rules and polish.** Where new windows go, the drop marker, too-small windows, and 2.1's last checks. [test doc](testing/step-2.5g-opening-rules-and-polish.md), [follow-ups](testing/step-2.5g-follow-ups.md)
 
 ## M2b: Colour
 
-Added after 2.3's testing, when the owner decided colour is in (ADR 0032). It comes before M3 so every tool from there on writes colour from the start. Later milestones keep their numbers.
+Added after 2.3's testing (ADR 0032), before M3 so every tool from then on writes colour. Later milestones keep their numbers. Decided with the owner on 2026-11-14: a document is monochrome, ANSI (the standard 16 colours, shown with the VGA palette) or RGB. Each cell has a text colour and a background, and either can be none. Backgrounds composite as their own layer of colour. The base app has no text attributes such as bold, but the hook stays for plugins. Discord's 8 + 8 colours belong to its plugin (M8b).
 
-A colour model for cells (foreground, background, and whichever attributes ANSI needs), the colours tools paint with, compositing, rendering and the file format, a colour panel, and ANSI export (`.ans` and the clipboard) as the real-world check of the model. The model itself is designed with the owner first (ARCHITECTURE §23). The owner's direction so far: a new document picks monochrome, RGB color or ANSI color, the way it picks its character set. ANSI color means the standard 16 colours, and Discord's 8 text and 8 background colours belong to its plugin (M8b). How background colour works gets decided in this milestone.
+- [~] **2b.1 Colour model** (Core). Each cell's text colour and background, the document's colour mode with an undoable command that converts or removes colours, the 16-colour palette, compositing with backgrounds as their own plane, and file format version 2 with a migration.
+  *Owner checks:* CI is green, and an old file still opens.
+  *Note:* built 2026-11-14 with cells that can hold only a background, so Merge Down keeps the picture. ADRs 0036, 0037 · [test doc](testing/step-2b.1-colour-model.md)
+- [ ] **2b.2 Colour on the canvas.** The canvas draws each cell's colours, with a colour sample in the Debug menu, and stays smooth on a busy 500 × 500.
+  *Owner checks:* the sample in light and dark mode, smooth zooming and panning, crisp text.
+- [ ] **2b.3 Painting with colour.** The New dialog's colour choice (monochrome by default), a temporary Edit → Colour menu that warns before converting or removing colours, the current text and background colours, the text tool writing them, a 1-cell colour brush, and a Colour window with an RGB picker (Avalonia.Controls.ColorPicker).
+  *Owner checks:* typing and painting in colour across layers, switching modes and undoing, saving and reopening.
+- [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
+  *Owner checks:* the exported art in a terminal on Windows and macOS.
 
 ## M3: Ramps and brushes
 
@@ -180,7 +77,7 @@ As described in ARCHITECTURE §17: an import dialog with a live preview, the str
 
 ## M7: Export and import
 
-PNG export (font, scale, padding, colors, and a transparent-background option), HTML export, text import, ANSI import, pasting text from the clipboard, and export options (line endings, trimming trailing spaces). PNG and HTML carry the document's colours (M2b).
+PNG export (font, scale, padding, colors, and a transparent-background option), HTML export, text import, ANSI import, a classic `.ans` export (CP437 with a SAUCE record) for old-school ANSI art viewers, pasting text from the clipboard, and export options (line endings, trimming trailing spaces). PNG and HTML carry the document's colours (M2b).
 
 ## M8: Customization
 
@@ -204,4 +101,4 @@ Whenever the owner delivers designs (layout, icons, text), Claude Code adds an i
 
 ## Reserved, not planned
 
-Per-cell alpha, layer opacity, blend modes, animation and wide characters. See ARCHITECTURE §18. The owner doesn't plan opacity for the base app; it and wide characters could come from plugins.
+Per-cell alpha, text attributes (bold, underline and so on), layer opacity, blend modes, animation and wide characters. See ARCHITECTURE §18. The owner doesn't plan opacity or attributes for the base app; they and wide characters could come from plugins.

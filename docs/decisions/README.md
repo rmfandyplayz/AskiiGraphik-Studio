@@ -42,3 +42,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0033](0033-space-option-tool-switching-and-eraser.md) | The space option, tool switching and the hard eraser | Accepted |
 | [0034](0034-remembered-font-files.md) | Fonts loaded from a file are remembered by path | Accepted |
 | [0035](0035-our-own-docking-system.md) | Our own docking system replaces the Dock library | Accepted |
+| [0036](0036-the-colour-model.md) | The colour model | Accepted |
+| [0037](0037-colour-in-the-file-format.md) | Colour in the file format (version 2) | Accepted |

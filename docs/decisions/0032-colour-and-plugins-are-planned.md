@@ -33,3 +33,4 @@ ARCHITECTURE §18 reserved colour and plugins as hooks with no plan. After testi
 
 Updated 2026-11-02: the owner wants a new document to pick monochrome, RGB color or ANSI color, like the character set. The rest of the colour model is still open (ARCHITECTURE §23).
 Updated 2026-11-04: ANSI color means the standard 16 colours. Discord's 8 text and 8 background colours belong to its plugin.
+Updated 2026-11-14: the colour model is decided in ADR 0036, and colour in the file format in ADR 0037.

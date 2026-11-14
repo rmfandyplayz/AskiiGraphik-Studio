@@ -45,8 +45,9 @@ public sealed class DocumentFileRoundTripPropertyTests
     {
         var characterSet = isAscii ? CharacterSet.Ascii : CharacterSet.Unicode;
         var glyphs = isAscii ? _asciiGlyphs : _unicodeGlyphs;
+        var colorMode = (ColorMode)random.Next(3);
         var document = Document.Create(new CanvasSize(width, height), Pick(random, _names), characterSet,
-            new FontReference(Pick(random, _fonts)));
+            new FontReference(Pick(random, _fonts)), colorMode);
         for (var index = 1; index < layerCount; index++)
             TestCells.AddLayer(document, Pick(random, _names));
 
@@ -60,14 +61,33 @@ public sealed class DocumentFileRoundTripPropertyTests
             });
 
             for (var index = 0; index < width * height; index++)
-            {
-                // About a third of the cells stay empty.
-                if (random.Next(3) != 0)
-                    layer.SetCell(index, Cell.FromGlyph(Pick(random, glyphs)));
-            }
+                layer.SetCell(index, CreateCell(random, glyphs, colorMode));
         }
 
         return document;
+    }
+
+    private static Cell CreateCell(Random random, Rune[] glyphs, ColorMode colorMode)
+    {
+        var background = PickColor(random, colorMode);
+
+        // About a third of the cells have no glyph, so are empty or hold only a background.
+        if (random.Next(3) == 0)
+            return Cell.FromBackground(background);
+
+        return Cell.FromGlyph(Pick(random, glyphs), PickColor(random, colorMode), background);
+    }
+
+    // Unset about half the time, otherwise any colour the mode allows.
+    private static CellColor PickColor(Random random, ColorMode colorMode)
+    {
+        if (colorMode == ColorMode.Monochrome || random.Next(2) == 0)
+            return CellColor.Unset;
+
+        if (colorMode == ColorMode.Ansi)
+            return CellColor.FromAnsi((AnsiColor)random.Next(16));
+
+        return TestCells.Rgb((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
     }
 
     private static T Pick<T>(Random random, T[] choices) => choices[random.Next(choices.Length)];

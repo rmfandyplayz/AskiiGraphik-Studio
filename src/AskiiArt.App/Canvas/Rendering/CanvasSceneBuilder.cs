@@ -42,8 +42,8 @@ internal sealed class CanvasSceneBuilder
             {
                 var cell = row[x];
 
-                // Nothing to draw: an empty cell, or a space, which has no ink in any font.
-                if (cell.IsEmpty || cell.Glyph.Value == SpaceCodePoint)
+                // No glyph to draw: none at all, or a space, which has no ink in any font.
+                if (!cell.HasGlyph || cell.Glyph.Value == SpaceCodePoint)
                     continue;
 
                 var entry = atlas.GetOrAdd(cell.Glyph);

@@ -172,7 +172,7 @@ public sealed class MainWindowTests : IDisposable
 
         window.KeyPress(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
         window.KeyRelease(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
-        Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).IsOccupied);
+        Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).HasGlyph);
     }
 
     [AvaloniaFact]

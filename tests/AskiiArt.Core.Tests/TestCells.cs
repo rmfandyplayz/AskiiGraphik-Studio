@@ -14,12 +14,19 @@ internal static class TestCells
 
     public static Cell Glyph(char character) => Cell.FromGlyph(new Rune(character));
 
-    public static Document CreateDocument(int width, int height) =>
-        Document.Create(new CanvasSize(width, height), "Layer");
+    public static Cell Glyph(char character, CellColor foreground, CellColor background) =>
+        Cell.FromGlyph(new Rune(character), foreground, background);
+
+    public static CellColor Ansi(AnsiColor color) => CellColor.FromAnsi(color);
+
+    public static CellColor Rgb(byte red, byte green, byte blue) => CellColor.FromRgb(new RgbColor(red, green, blue));
+
+    public static Document CreateDocument(int width, int height, ColorMode colorMode = ColorMode.Monochrome) =>
+        Document.Create(new CanvasSize(width, height), "Layer", colorMode: colorMode);
 
     /// <summary>
     /// Writes <paramref name="rows"/> into the layer starting at its top left. Each character is a
-    /// glyph, except <see cref="EmptyMarker"/>, which leaves the cell empty.
+    /// glyph without colours, except <see cref="EmptyMarker"/>, which leaves the cell empty.
     /// </summary>
     public static void Paint(Layer layer, params string[] rows)
     {
@@ -33,7 +40,10 @@ internal static class TestCells
         }
     }
 
-    /// <summary>Reads the whole layer back in the format <see cref="Paint"/> takes.</summary>
+    /// <summary>
+    /// Reads the whole layer's glyphs back in the format <see cref="Paint"/> takes. Colours aren't
+    /// shown, and a cell holding only a background reads as empty.
+    /// </summary>
     public static string[] Read(Layer layer)
     {
         var rows = new string[layer.Size.Height];
@@ -65,7 +75,7 @@ internal static class TestCells
         return rows;
     }
 
-    private static string Describe(Cell cell) => cell.IsEmpty ? EmptyMarker.ToString() : cell.Glyph.ToString();
+    private static string Describe(Cell cell) => cell.HasGlyph ? cell.Glyph.ToString() : EmptyMarker.ToString();
 
     public static Layer AddLayer(Document document, string name = "Extra")
     {

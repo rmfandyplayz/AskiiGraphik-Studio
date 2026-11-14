@@ -44,6 +44,19 @@ public sealed class TextExporterTests
         Assert.Equal([0xF0, 0x9F, 0x98, 0x80, (byte)'\n'], _exporter.Export(document));
     }
 
+    [Fact]
+    public void ToText_ACellWithOnlyABackground_IsASpace_AndABackgroundAboveAGlyphKeepsIt()
+    {
+        var document = TestCells.CreateDocument(3, 1, ColorMode.Ansi);
+        TestCells.Paint(document.ActiveFrame.Layers[0], "a·c");
+        var top = TestCells.AddLayer(document);
+        var blue = Cell.FromBackground(TestCells.Ansi(AnsiColor.Blue));
+        top.SetCell(1, blue);
+        top.SetCell(2, blue);
+
+        Assert.Equal("a c", _exporter.ToText(document, "\n"));
+    }
+
     [Theory]
     [InlineData(SpaceHandling.HidesLayersBelow, " ")]
     [InlineData(SpaceHandling.TreatedAsEmpty, "a")]

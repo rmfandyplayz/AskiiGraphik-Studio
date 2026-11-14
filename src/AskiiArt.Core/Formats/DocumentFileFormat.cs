@@ -27,7 +27,7 @@ public sealed record DocumentFileContents(Document Document, DocumentFileVariant
 public static class DocumentFileFormat
 {
     /// <summary>The format version this app writes, and the newest it can read.</summary>
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     /// <summary>The plain variant's file extension. It may change with the product name.</summary>
     public const string PlainExtension = ".asciiart";

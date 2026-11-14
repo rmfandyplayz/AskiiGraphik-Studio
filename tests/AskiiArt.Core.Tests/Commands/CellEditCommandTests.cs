@@ -66,6 +66,24 @@ public sealed class CellEditCommandTests
     }
 
     [Fact]
+    public void Builder_RejectsColorsTheDocumentsModeDoesNotAllow()
+    {
+        var origin = new CellPoint(0, 0);
+        var red = TestCells.Ansi(AnsiColor.Red);
+        var orangeText = TestCells.Glyph('a', TestCells.Rgb(255, 128, 0), CellColor.Unset);
+        var monochrome = TestCells.CreateDocument(1, 1);
+        var ansi = TestCells.CreateDocument(1, 1, ColorMode.Ansi);
+
+        Assert.Throws<ArgumentException>(() => BuilderFor(monochrome).Set(origin, Cell.FromBackground(red)));
+        Assert.Throws<ArgumentException>(() => BuilderFor(ansi).Set(origin, orangeText));
+        var builder = BuilderFor(ansi);
+        builder.Set(origin, TestCells.Glyph('a', red, red));
+        Assert.NotNull(builder.Build());
+
+        static CellEditBuilder BuilderFor(Document document) => new(document, document.ActiveFrame.Layers[0].Id);
+    }
+
+    [Fact]
     public void ApplyAndRevert_WriteTheAfterAndBeforeValues()
     {
         var document = TestCells.CreateDocument(3, 1);

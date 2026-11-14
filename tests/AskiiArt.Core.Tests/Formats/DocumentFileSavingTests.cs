@@ -39,8 +39,8 @@ public sealed class DocumentFileSavingTests : IDisposable
         await DocumentFileFormat.SaveAsync(TestCells.CreateDocument(2, 2), path, DocumentFileVariant.Plain,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.StartsWith("ASKIIART 1\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken),
-            StringComparison.Ordinal);
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
+        Assert.StartsWith($"ASKIIART {DocumentFileFormat.CurrentVersion}\n", text, StringComparison.Ordinal);
         Assert.Equal([path], Directory.GetFiles(_folder));
     }
 

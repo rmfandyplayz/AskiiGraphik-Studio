@@ -31,3 +31,4 @@ Step 2.4 adds the per-layer option that makes spaces see-through (chosen in M2 p
 - A long stroke merges its edits into one command as it goes, which costs time proportional to the stroke so far on each move. That's fine for a 1-cell eraser. Large brushes in M3 should measure it.
 - The tool letters aren't shown in the menus, because menu shortcuts are what they must avoid.
 - A coloured space is visible, so colour (M2b) has to decide whether the option still applies to one (ADR 0032).
+Updated 2026-11-14: `CompositingPolicy.HidesLayersBelow` is now `HidesGlyphsBelow`. A cell's background shows whatever its layer's space option, because backgrounds composite on their own (ADR 0036). In Merge Down, the lower layer's see-through spaces lose their glyph and keep their background. The format is version 2 now (ADR 0037). The owner may remove the space option one day, so nothing else should depend on it.

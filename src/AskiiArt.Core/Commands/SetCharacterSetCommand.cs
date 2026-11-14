@@ -8,7 +8,8 @@ namespace AskiiArt.Core.Commands;
 
 /// <summary>
 /// Changes the document's character set (ADR 0016). Every cell, in every layer, holding a glyph
-/// the new set doesn't allow becomes empty, and undo puts those glyphs back.
+/// the new set doesn't allow loses it, keeping any background (ADR 0036), and undo puts those
+/// glyphs back.
 /// </summary>
 public sealed class SetCharacterSetCommand : IDocumentCommand
 {
@@ -38,7 +39,7 @@ public sealed class SetCharacterSetCommand : IDocumentCommand
 
     /// <summary>
     /// How many cells switching <paramref name="document"/> to <paramref name="newCharacterSet"/>
-    /// would empty, so the user can be warned first.
+    /// would take a glyph from, so the user can be warned first.
     /// </summary>
     public static int CountCellsToRemove(Document document, CharacterSet newCharacterSet)
     {
@@ -51,7 +52,7 @@ public sealed class SetCharacterSetCommand : IDocumentCommand
             {
                 foreach (var cell in layer.GetRow(y))
                 {
-                    if (cell.IsOccupied && !newCharacterSet.Allows(cell.Glyph))
+                    if (cell.HasGlyph && !newCharacterSet.Allows(cell.Glyph))
                         count++;
                 }
             }
@@ -96,11 +97,11 @@ public sealed class SetCharacterSetCommand : IDocumentCommand
         for (var index = 0; index < layer.Size.CellCount; index++)
         {
             var cell = layer.GetCell(index);
-            if (!cell.IsOccupied || NewCharacterSet.Allows(cell.Glyph))
+            if (!cell.HasGlyph || NewCharacterSet.Allows(cell.Glyph))
                 continue;
 
             _removedCells.Add(new RemovedCell(layer.Id, index, cell));
-            layer.SetCell(index, Cell.Empty);
+            layer.SetCell(index, cell.WithoutGlyph());
         }
     }
 

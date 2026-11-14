@@ -65,7 +65,7 @@ public sealed class TextToolTests
 
         Type(" ");
 
-        Assert.True(Layer.GetCell(new CellPoint(0, 0)).IsOccupied);
+        Assert.True(Layer.GetCell(new CellPoint(0, 0)).HasGlyph);
         Assert.False(_tool.AllowsSpacePanning);
     }
 

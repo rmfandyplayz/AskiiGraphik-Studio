@@ -55,3 +55,4 @@ Step 1.7 adds Save, Save As and Open. ARCHITECTURE §13 sketches the format: a p
 - On macOS the save dialog adds the chosen type's extension itself, so a name ending in the other extension gets both (`cat.asciiartz.asciiart`, saved plain). Choosing the type in the dialog works on every OS.
 
 Updated 2026-11-01: `DocumentJson.Parse` also checks every escaped string and property name before parsing (step 1.8). An escape that makes no sense, such as half of a surrogate pair, is `Damaged`; it used to surface as an unexpected exception, which the corruption test found on macOS. The atomic write is now `AtomicFile`, shared with Export as Text (ADR 0022). After a Quit, Save or Don't Save asks for shutdown again rather than closing only the window (ADR 0023).
+Updated 2026-11-14: `CurrentVersion` is 2, which adds colour (ADR 0037). The occupancy now alternates cells without and with a glyph, since a cell can hold only a background.

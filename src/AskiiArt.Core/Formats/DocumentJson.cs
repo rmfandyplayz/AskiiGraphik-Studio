@@ -13,14 +13,20 @@ namespace AskiiArt.Core.Formats;
 
 /// <summary>
 /// The JSON both file variants store (ARCHITECTURE §13, ADR 0021). Each layer's glyphs are an
-/// array of row strings, so the art is visible in a text editor, with empty cells written as
-/// spaces. Which cells are occupied is stored separately as run lengths: row by row, alternately
-/// empty and occupied, starting with empty. Reserved fields are written only when they're not
-/// their defaults.
+/// array of row strings, so the art is visible in a text editor, with cells that have no glyph
+/// written as spaces. Which cells hold a glyph is stored separately as run lengths ("occupancy"):
+/// row by row, alternately without and with a glyph, starting with without. A layer with colours
+/// stores its text colours and backgrounds as runs too, each a count and the colour those cells
+/// share (ADR 0037). Reserved fields are written only when they're not their defaults.
 /// </summary>
 internal static class DocumentJson
 {
     private const string ActiveLayerProperty = "activeLayer";
+    private const string ColorModeProperty = "colorMode";
+    private const string ForegroundProperty = "foreground";
+    private const string BackgroundProperty = "background";
+    private const string RgbPrefix = "#";
+    private const int RgbTextLength = 7;
     private const string SpacesProperty = "spaces";
     private const string SpacesAreEmptyValue = "empty";
 
@@ -36,6 +42,14 @@ internal static class DocumentJson
 
     private static readonly JsonDocumentOptions _readerOptions = new() { MaxDepth = 16 };
 
+    // Indexed by AnsiColor, whose numbers follow the escape codes.
+    private static readonly string[] _ansiColorNames =
+    [
+        "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
+        "brightBlack", "brightRed", "brightGreen", "brightYellow", "brightBlue", "brightMagenta", "brightCyan",
+        "brightWhite"
+    ];
+
     /// <summary>Writes <paramref name="document"/> as UTF-8 JSON, ending with a line break.</summary>
     public static byte[] Write(Document document, Guid? activeLayerId = null)
     {
@@ -48,6 +62,7 @@ internal static class DocumentJson
             writer.WriteNumber("height", document.CanvasSize.Height);
             writer.WriteEndObject();
             writer.WriteString("characterSet", NameOf(document.CharacterSet));
+            writer.WriteString(ColorModeProperty, NameOf(document.ColorMode));
             writer.WriteString("font", document.Font.FamilyName);
             if (activeLayerId is { } activeLayer)
                 writer.WriteString(ActiveLayerProperty, activeLayer.ToString("D"));
@@ -127,6 +142,7 @@ internal static class DocumentJson
 
         var size = new CanvasSize(width, height);
         var characterSet = ReadCharacterSet(RequireString(root, "characterSet"));
+        var colorMode = ReadColorMode(RequireString(root, ColorModeProperty));
         var fontName = RequireString(root, "font");
         if (string.IsNullOrWhiteSpace(fontName))
             throw Damaged("The font name is empty.");
@@ -145,14 +161,14 @@ internal static class DocumentJson
         var ids = new HashSet<Guid>();
         for (var index = 0; index < layerArray.Count; index++)
         {
-            var layer = ReadLayer(RequireObject(layerArray[index], $"layers[{index}]"), size, characterSet);
+            var layer = ReadLayer(RequireObject(layerArray[index], $"layers[{index}]"), size, characterSet, colorMode);
             if (!ids.Add(layer.Id))
                 throw Damaged($"Two layers have the id {layer.Id}.");
 
             layers.Add(layer);
         }
 
-        return Document.CreateWithLayers(size, characterSet, new FontReference(fontName), layers);
+        return Document.CreateWithLayers(size, characterSet, colorMode, new FontReference(fontName), layers);
     }
 
     /// <summary>
@@ -189,6 +205,8 @@ internal static class DocumentJson
             writer.WriteString("blendMode", NameOf(properties.BlendMode));
 
         var occupancy = new OccupancyRunsWriter();
+        var foreground = new ColorRunsWriter();
+        var background = new ColorRunsWriter();
         var row = new StringBuilder();
         Span<char> glyph = stackalloc char[2];
         writer.WriteStartArray("rows");
@@ -197,8 +215,10 @@ internal static class DocumentJson
             row.Clear();
             foreach (var cell in layer.GetRow(y))
             {
-                occupancy.Add(cell.IsOccupied);
-                if (cell.IsEmpty)
+                occupancy.Add(cell.HasGlyph);
+                foreground.Add(cell.Foreground);
+                background.Add(cell.Background);
+                if (!cell.HasGlyph)
                 {
                     row.Append(' ');
                     continue;
@@ -216,10 +236,23 @@ internal static class DocumentJson
         // On one line: the runs are for the app, and one per line would bury the art.
         writer.WritePropertyName("occupancy");
         writer.WriteRawValue(occupancy.ToJson(), skipInputValidation: true);
+        WriteColorRuns(writer, ForegroundProperty, foreground);
+        WriteColorRuns(writer, BackgroundProperty, background);
         writer.WriteEndObject();
     }
 
-    private static Layer ReadLayer(JsonObject layerObject, CanvasSize size, CharacterSet characterSet)
+    // On one line like the occupancy, and only for a layer that has a colour.
+    private static void WriteColorRuns(Utf8JsonWriter writer, string name, ColorRunsWriter runs)
+    {
+        if (!runs.HasColor)
+            return;
+
+        writer.WritePropertyName(name);
+        writer.WriteRawValue(runs.ToJson(), skipInputValidation: true);
+    }
+
+    private static Layer ReadLayer(JsonObject layerObject, CanvasSize size, CharacterSet characterSet,
+        ColorMode colorMode)
     {
         if (!Guid.TryParseExact(RequireString(layerObject, "id"), "D", out var id))
             throw Damaged("A layer's id isn't a GUID.");
@@ -249,7 +282,7 @@ internal static class DocumentJson
                 if (x == size.Width)
                     throw Damaged($"Row {y} of layer {id} is longer than the canvas.");
 
-                if (occupancy.NextIsOccupied())
+                if (occupancy.NextHasGlyph())
                     layer.SetCell(index, ToCell(rune, characterSet));
 
                 x++;
@@ -260,7 +293,101 @@ internal static class DocumentJson
                 throw Damaged($"Row {y} of layer {id} is shorter than the canvas.");
         }
 
+        ReadColors(layerObject, layer, colorMode);
         return layer;
+    }
+
+    private static void ReadColors(JsonObject layerObject, Layer layer, ColorMode colorMode)
+    {
+        var area = layer.Size.CellCount;
+        var foreground = ReadColorRuns(layerObject, ForegroundProperty, area, colorMode);
+        var background = ReadColorRuns(layerObject, BackgroundProperty, area, colorMode);
+        if (foreground is null && background is null)
+            return;
+
+        for (var index = 0; index < area; index++)
+        {
+            var cell = layer.GetCell(index);
+            var textColor = foreground?.Next() ?? CellColor.Unset;
+            if (!textColor.IsUnset && !cell.HasGlyph)
+                throw Damaged($"Layer {layer.Id} has a text colour on a cell without a glyph.");
+
+            layer.SetCell(index, cell.WithForeground(textColor).WithBackground(background?.Next() ?? CellColor.Unset));
+        }
+    }
+
+    private static ColorRunsReader? ReadColorRuns(JsonObject layerObject, string name, int area, ColorMode colorMode)
+    {
+        if (layerObject[name] is null)
+            return null;
+
+        if (colorMode == ColorMode.Monochrome)
+            throw Damaged($"A monochrome document has '{name}' colours.");
+
+        var array = RequireArray(layerObject, name);
+        if (array.Count % 2 != 0)
+            throw Damaged($"'{name}' doesn't alternate counts and colours.");
+
+        var runs = new ColorRun[array.Count / 2];
+        long total = 0;
+        for (var index = 0; index < runs.Length; index++)
+        {
+            var count = RequireIntValue(array[2 * index], $"a '{name}' count");
+            if (count <= 0)
+                throw Damaged($"A '{name}' count isn't more than zero.");
+
+            runs[index] = new ColorRun(count, ReadColor(array[(2 * index) + 1], colorMode));
+            total += count;
+        }
+
+        if (total != area)
+            throw Damaged($"The '{name}' runs cover {total} cells instead of {area}.");
+
+        return new ColorRunsReader(runs);
+    }
+
+    private static CellColor ReadColor(JsonNode? node, ColorMode colorMode)
+    {
+        if (node is null)
+            return CellColor.Unset;
+
+        var text = RequireStringValue(node, "a colour");
+        var color = ParseColor(text) ?? throw Damaged($"'{text}' isn't a colour.");
+        if (!colorMode.Allows(color))
+            throw Damaged($"A document in {NameOf(colorMode)} colour can't hold '{text}'.");
+
+        return color;
+    }
+
+    private static CellColor? ParseColor(string text)
+    {
+        if (text.Length == RgbTextLength && text.StartsWith(RgbPrefix, StringComparison.Ordinal)
+            && TryParseHexByte(text.AsSpan(1, 2), out var red) && TryParseHexByte(text.AsSpan(3, 2), out var green)
+            && TryParseHexByte(text.AsSpan(5, 2), out var blue))
+        {
+            return CellColor.FromRgb(new RgbColor(red, green, blue));
+        }
+
+        var ansiIndex = Array.IndexOf(_ansiColorNames, text);
+        if (ansiIndex >= 0)
+            return CellColor.FromAnsi((AnsiColor)ansiIndex);
+
+        return null;
+    }
+
+    private static bool TryParseHexByte(ReadOnlySpan<char> digits, out byte value) =>
+        byte.TryParse(digits, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value);
+
+    // A JSON token: null when unset, else a quoted ANSI name or #rrggbb.
+    private static string ColorToken(CellColor color)
+    {
+        if (color.TryGetAnsi(out var ansi))
+            return $"\"{_ansiColorNames[(int)ansi]}\"";
+
+        if (color.TryGetRgb(out var rgb))
+            return $"\"{rgb}\"";
+
+        return "null";
     }
 
     private static Cell ToCell(Rune rune, CharacterSet characterSet)
@@ -333,6 +460,22 @@ internal static class DocumentJson
         "unicode" => CharacterSet.Unicode,
         "ascii" => CharacterSet.Ascii,
         _ => throw Damaged($"'{name}' isn't a character set.")
+    };
+
+    private static ColorMode ReadColorMode(string name) => name switch
+    {
+        "monochrome" => ColorMode.Monochrome,
+        "ansi" => ColorMode.Ansi,
+        "rgb" => ColorMode.Rgb,
+        _ => throw Damaged($"'{name}' isn't a colour mode.")
+    };
+
+    private static string NameOf(ColorMode colorMode) => colorMode switch
+    {
+        ColorMode.Monochrome => "monochrome",
+        ColorMode.Ansi => "ansi",
+        ColorMode.Rgb => "rgb",
+        _ => throw new ArgumentOutOfRangeException(nameof(colorMode), colorMode, null)
     };
 
     private static string NameOf(CharacterSet characterSet) => characterSet switch
@@ -425,6 +568,59 @@ internal static class DocumentJson
         }
     }
 
+    private readonly record struct ColorRun(int Count, CellColor Color);
+
+    /// <summary>Collects colours cell by cell, as runs of cells that share one.</summary>
+    private sealed class ColorRunsWriter
+    {
+        private readonly List<ColorRun> _runs = [];
+
+        /// <summary>True once any cell has a colour.</summary>
+        public bool HasColor { get; private set; }
+
+        public void Add(CellColor color)
+        {
+            HasColor |= !color.IsUnset;
+            if (_runs.Count > 0 && _runs[^1].Color == color)
+                _runs[^1] = _runs[^1] with { Count = _runs[^1].Count + 1 };
+            else
+                _runs.Add(new ColorRun(1, color));
+        }
+
+        public string ToJson()
+        {
+            var json = new StringBuilder("[");
+            foreach (var run in _runs)
+            {
+                if (json.Length > 1)
+                    json.Append(',');
+
+                json.Append(run.Count.ToString(CultureInfo.InvariantCulture)).Append(',').Append(ColorToken(run.Color));
+            }
+
+            return json.Append(']').ToString();
+        }
+    }
+
+    /// <summary>Walks colour runs cell by cell. Every count is above zero, and the runs cover every cell.</summary>
+    private sealed class ColorRunsReader(ColorRun[] runs)
+    {
+        private int _runIndex;
+        private int _usedInRun;
+
+        public CellColor Next()
+        {
+            if (_usedInRun == runs[_runIndex].Count)
+            {
+                _runIndex++;
+                _usedInRun = 0;
+            }
+
+            _usedInRun++;
+            return runs[_runIndex].Color;
+        }
+    }
+
     /// <summary>Walks occupancy run lengths cell by cell. The runs must cover every cell.</summary>
     private sealed class OccupancyRunsReader(int[] runs)
     {
@@ -432,7 +628,7 @@ internal static class DocumentJson
         private int _remainingInRun;
         private bool _isOccupied = true;
 
-        public bool NextIsOccupied()
+        public bool NextHasGlyph()
         {
             while (_remainingInRun == 0)
             {

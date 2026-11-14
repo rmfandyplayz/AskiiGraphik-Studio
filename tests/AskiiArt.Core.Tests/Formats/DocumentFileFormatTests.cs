@@ -12,7 +12,7 @@ namespace AskiiArt.Core.Tests.Formats;
 
 public sealed class DocumentFileFormatTests
 {
-    private const string PlainHeader = "ASKIIART 1\n";
+    private static string PlainHeader => $"ASKIIART {DocumentFileFormat.CurrentVersion}\n";
 
     [Theory]
     [InlineData(DocumentFileVariant.Plain)]
@@ -76,6 +76,63 @@ public sealed class DocumentFileFormatTests
         var exception = Assert.Throws<DocumentFileException>(() => DocumentFileFormat.Decode(Encoding.UTF8.GetBytes(changed)));
 
         Assert.Equal(DocumentFileProblem.Damaged, exception.Problem);
+    }
+
+    [Theory]
+    [InlineData(DocumentFileVariant.Plain, ColorMode.Ansi)]
+    [InlineData(DocumentFileVariant.Compressed, ColorMode.Ansi)]
+    [InlineData(DocumentFileVariant.Plain, ColorMode.Rgb)]
+    [InlineData(DocumentFileVariant.Compressed, ColorMode.Rgb)]
+    public void Colors_SurviveSavingAndOpening(DocumentFileVariant variant, ColorMode colorMode)
+    {
+        var document = CreateColoredDocument(colorMode);
+
+        var contents = DocumentFileFormat.Decode(DocumentFileFormat.Encode(document, variant));
+
+        Assert.Equal(colorMode, contents.Document.ColorMode);
+        Assert.Equal(TestCommands.Snapshot(document), TestCommands.Snapshot(contents.Document));
+    }
+
+    [Fact]
+    public void AMonochromeDocument_NamesItsModeButWritesNoColors()
+    {
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(TestCells.CreateDocument(3, 2),
+            DocumentFileVariant.Plain));
+
+        Assert.Contains("\"colorMode\": \"monochrome\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"foreground\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"background\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ALayersColors_AreRunsOnOneLine_WrittenOnlyForTheKindItHas()
+    {
+        var document = TestCells.CreateDocument(3, 1, ColorMode.Ansi);
+        var layer = document.ActiveFrame.Layers[0];
+        var red = TestCells.Ansi(AnsiColor.Red);
+        layer.SetCell(0, TestCells.Glyph('a', red, CellColor.Unset));
+        layer.SetCell(1, TestCells.Glyph('b', red, CellColor.Unset));
+
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(document, DocumentFileVariant.Plain));
+
+        Assert.Contains("\"colorMode\": \"ansi\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"foreground\": [2,\"red\",1,null]", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"background\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RgbColors_AreWrittenAsHex_AndCapitalsStillOpen()
+    {
+        var document = TestCells.CreateDocument(1, 1, ColorMode.Rgb);
+        var background = Cell.FromBackground(TestCells.Rgb(18, 171, 255));
+        document.ActiveFrame.Layers[0].SetCell(0, background);
+        var text = Encoding.UTF8.GetString(DocumentFileFormat.Encode(document, DocumentFileVariant.Plain));
+        Assert.Contains("\"background\": [1,\"#12abff\"]", text, StringComparison.Ordinal);
+
+        var capitals = text.Replace("#12abff", "#12ABFF", StringComparison.Ordinal);
+        var contents = DocumentFileFormat.Decode(Encoding.UTF8.GetBytes(capitals));
+
+        Assert.Equal(background, contents.Document.ActiveFrame.Layers[0].GetCell(0));
     }
 
     [Fact]
@@ -173,11 +230,13 @@ public sealed class DocumentFileFormatTests
     [Fact]
     public void Decode_NewerFormatVersion_SaysWhichVersion()
     {
+        var newer = DocumentFileFormat.CurrentVersion + 1;
+
         var exception = Assert.Throws<DocumentFileException>(() =>
-            DocumentFileFormat.Decode(Encoding.UTF8.GetBytes("ASKIIART 2\n{}")));
+            DocumentFileFormat.Decode(Encoding.UTF8.GetBytes($"ASKIIART {newer}\n{{}}")));
 
         Assert.Equal(DocumentFileProblem.NewerVersion, exception.Problem);
-        Assert.Equal(2, exception.FileVersion);
+        Assert.Equal(newer, exception.FileVersion);
     }
 
     [Theory]
@@ -227,7 +286,22 @@ public sealed class DocumentFileFormatTests
         "layer.occupancy=[1]",
         "layer.occupancy=[-1,13]",
         "layers.sameIdTwice",
-        "asciiDocument.withAccent"
+        "asciiDocument.withAccent",
+        "colorMode=\"sepia\"",
+        "colorMode=null",
+        "layer.foreground=[12,\"red\"]",
+        "ansi:layer.foreground=[12,\"red\"]",
+        "ansi:layer.background=[12]",
+        "ansi:layer.background=[0,\"red\",12,null]",
+        "ansi:layer.background=[11,\"red\"]",
+        "ansi:layer.background=[13,\"red\"]",
+        "ansi:layer.background=[12,\"purple\"]",
+        "ansi:layer.background=[12,7]",
+        "ansi:layer.background=[12,\"#ff0000\"]",
+        "ansi:layer.background={}",
+        "rgb:layer.background=[12,\"red\"]",
+        "rgb:layer.background=[12,\"#ff00\"]",
+        "rgb:layer.background=[12,\"#gg0000\"]"
     ];
 
     [Theory]
@@ -238,7 +312,19 @@ public sealed class DocumentFileFormatTests
         var frame = root["frames"]![0]!.AsObject();
         var layer = frame["layers"]![0]!.AsObject();
         var rows = layer["rows"]!.AsArray();
-        switch (damage)
+
+        // "ansi:" or "rgb:" in front switches the document to that colour mode first.
+        var change = damage;
+        foreach (var colorMode in new[] { "ansi", "rgb" })
+        {
+            if (damage.StartsWith(colorMode + ":", StringComparison.Ordinal))
+            {
+                root["colorMode"] = colorMode;
+                change = damage[(colorMode.Length + 1)..];
+            }
+        }
+
+        switch (change)
         {
             case "frames.twoFrames":
                 root["frames"]!.AsArray().Add(frame.DeepClone());
@@ -265,7 +351,7 @@ public sealed class DocumentFileFormatTests
                 layer["occupancy"] = new JsonArray(0, 12);
                 break;
             default:
-                SetValue(root, frame, layer, damage);
+                SetValue(root, frame, layer, change);
                 break;
         }
 
@@ -330,6 +416,30 @@ public sealed class DocumentFileFormatTests
         top.SetCell(new CellPoint(2, 2), Cell.FromGlyph(new Rune(0x1F600)));
         return document;
     }
+
+    /// <summary>
+    /// A two-layer document in <paramref name="colorMode"/> with each kind of coloured cell: a glyph
+    /// with both colours, a glyph with only a text colour, a coloured space and a background on its own.
+    /// </summary>
+    private static Document CreateColoredDocument(ColorMode colorMode)
+    {
+        var (first, second) = SampleColors(colorMode);
+        var document = TestCells.CreateDocument(4, 2, colorMode);
+        var bottom = document.ActiveFrame.Layers[0];
+        bottom.SetCell(0, TestCells.Glyph('a', first, second));
+        bottom.SetCell(1, TestCells.Glyph('b', first, CellColor.Unset));
+        bottom.SetCell(2, Cell.FromBackground(second));
+        bottom.SetCell(4, TestCells.Glyph(' ', CellColor.Unset, first));
+        TestCells.AddLayer(document).SetCell(7, Cell.FromBackground(first));
+        return document;
+    }
+
+    // Black is in the ANSI pair because, packed, it's the colour most easily mistaken for unset.
+    private static (CellColor First, CellColor Second) SampleColors(ColorMode colorMode) => colorMode switch
+    {
+        ColorMode.Ansi => (TestCells.Ansi(AnsiColor.Red), TestCells.Ansi(AnsiColor.Black)),
+        _ => (TestCells.Rgb(18, 52, 86), TestCells.Rgb(255, 255, 255))
+    };
 
     private static void SetValue(JsonObject root, JsonObject frame, JsonObject layer, string damage)
     {

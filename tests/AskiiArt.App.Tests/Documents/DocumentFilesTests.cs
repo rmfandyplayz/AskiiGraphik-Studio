@@ -67,7 +67,7 @@ public sealed class DocumentFilesTests : IDisposable
         Assert.False(History.HasUnsavedChanges);
         var reopened = await DocumentFileFormat.OpenAsync(file.Path, TestContext.Current.CancellationToken);
         Assert.Equal(DocumentFileVariant.Compressed, reopened.Variant);
-        Assert.True(reopened.Document.ActiveFrame.Layers[0].GetCell(new CellPoint(0, 0)).IsOccupied);
+        Assert.True(reopened.Document.ActiveFrame.Layers[0].GetCell(new CellPoint(0, 0)).HasGlyph);
     }
 
     [Fact]

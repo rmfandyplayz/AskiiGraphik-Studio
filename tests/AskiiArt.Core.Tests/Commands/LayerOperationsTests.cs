@@ -198,6 +198,52 @@ public sealed class LayerOperationsTests
             new SetLayerPropertiesCommand(Bottom.Id, Bottom.Properties).StepNameKey);
     }
 
+    [Theory]
+    [InlineData(SpaceHandling.HidesLayersBelow, SpaceHandling.HidesLayersBelow)]
+    [InlineData(SpaceHandling.HidesLayersBelow, SpaceHandling.TreatedAsEmpty)]
+    [InlineData(SpaceHandling.TreatedAsEmpty, SpaceHandling.HidesLayersBelow)]
+    [InlineData(SpaceHandling.TreatedAsEmpty, SpaceHandling.TreatedAsEmpty)]
+    public void MergeDown_KeepsTheColors_WhateverTheSpaceOptions(SpaceHandling upperOption, SpaceHandling lowerOption)
+    {
+        _history.Execute(new SetColorModeCommand(ColorMode.Ansi));
+        var lower = AddLayer("Lower");
+        var upper = AddLayer("Upper");
+        var red = TestCells.Ansi(AnsiColor.Red);
+        var green = TestCells.Ansi(AnsiColor.Green);
+        var blue = TestCells.Ansi(AnsiColor.Blue);
+        var none = CellColor.Unset;
+        Fill(Bottom, [.. Enumerable.Repeat(TestCells.Glyph('b', red, green), 8)]);
+
+        // Each column pairs a kind of lower cell with a kind of upper cell.
+        Fill(lower,
+        [
+            TestCells.Glyph(' ', none, blue), TestCells.Glyph(' ', none, blue), TestCells.Glyph('l', blue, none),
+            Cell.FromBackground(blue), TestCells.Glyph(' '), Cell.Empty, TestCells.Glyph('l', none, blue),
+            Cell.FromBackground(blue)
+        ]);
+        Fill(upper,
+        [
+            Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph(' ', none, red), TestCells.Glyph('u'),
+            Cell.FromBackground(red), TestCells.Glyph(' ', none, red), TestCells.Glyph(' '),
+            TestCells.Glyph(' ', none, red)
+        ]);
+        SetSpaceHandling(lower, lowerOption);
+        SetSpaceHandling(upper, upperOption);
+        var before = Composite();
+
+        _history.Execute(MergeLayerDown.Create(_document, upper.Id));
+        Assert.Equal(before, Composite());
+
+        _history.Undo();
+        Assert.Equal(before, Composite());
+    }
+
+    private void SetSpaceHandling(Layer layer, SpaceHandling spaceHandling)
+    {
+        var properties = layer.Properties with { SpaceHandling = spaceHandling };
+        _history.Execute(new SetLayerPropertiesCommand(layer.Id, properties));
+    }
+
     private Layer AddLayer(string name)
     {
         var command = new AddLayerCommand(_document.ActiveFrame.Layers.Count, new LayerProperties(name));
@@ -209,6 +255,17 @@ public sealed class LayerOperationsTests
     {
         var builder = new CellEditBuilder(_document, layer.Id);
         builder.Set(new CellPoint(x, y), Cell.FromGlyph(new Rune(glyph)));
+        _history.Execute(builder.Build()!);
+    }
+
+    // Writes the cells row by row from the layer's top left, as one edit.
+    private void Fill(Layer layer, Cell[] cells)
+    {
+        var width = _document.CanvasSize.Width;
+        var builder = new CellEditBuilder(_document, layer.Id);
+        for (var index = 0; index < cells.Length; index++)
+            builder.Set(new CellPoint(index % width, index / width), cells[index]);
+
         _history.Execute(builder.Build()!);
     }
 

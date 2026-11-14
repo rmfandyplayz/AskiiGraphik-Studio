@@ -36,3 +36,4 @@ ARCHITECTURE §9 asks for undo through commands that store only what they touch,
 - Paste (M4) writes cells on a layer that doesn't exist yet, so it will need a way to make a `CellEditCommand` without reading "before" from the document.
 
 Updated 2026-11-01: `BeginSave` and `MarkSaved(SavePoint)` mark the state a background save wrote, so edits made during it stay unsaved (step 1.7, ADR 0021).
+Updated 2026-11-14: `ResizeCanvasCommand` stores every cropped cell that holds anything, a background included. `SetColorModeCommand` converts or removes colours as one step (ADR 0036).

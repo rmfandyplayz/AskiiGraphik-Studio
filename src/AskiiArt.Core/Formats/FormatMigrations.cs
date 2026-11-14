@@ -24,11 +24,11 @@ internal interface IFormatMigration
 internal static class FormatMigrations
 {
     /// <summary>
-    /// Every migration, oldest first. Version 1 is the first format, so there are none yet. When
-    /// the format changes, bump <see cref="DocumentFileFormat.CurrentVersion"/> and add the
-    /// migration from the previous version here; a test fails until both are done.
+    /// Every migration, oldest first. When the format changes, bump
+    /// <see cref="DocumentFileFormat.CurrentVersion"/> and add the migration from the previous
+    /// version here; a test fails until both are done.
     /// </summary>
-    public static IReadOnlyList<IFormatMigration> All { get; } = [];
+    public static IReadOnlyList<IFormatMigration> All { get; } = [new AddColorModeMigration()];
 
     /// <summary>Runs the migrations from <paramref name="fromVersion"/> up to <paramref name="toVersion"/>.</summary>
     /// <exception cref="InvalidOperationException">A version in between has no migration.</exception>

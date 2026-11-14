@@ -8,13 +8,13 @@ namespace AskiiArt.Core.Commands;
 
 /// <summary>
 /// Merges a layer into the one below it, which keeps its own name and settings. Both layers
-/// together look the same before and after, because a cell is copied down exactly when compositing
-/// would have shown it over the lower layer.
+/// together look the same before and after, because each cell's glyph and background are merged
+/// the way compositing would have shown them (ADR 0036).
 /// </summary>
 /// <remarks>
 /// If the lower layer's spaces are see-through and the upper layer brings spaces that hide things,
 /// those would stop hiding. So the merged layer takes the upper layer's space option, and the lower
-/// layer's own spaces become empty, which looks the same as they did.
+/// layer's own spaces lose their glyph, keeping any background, which looks the same as they did.
 /// </remarks>
 public static class MergeLayerDown
 {
@@ -41,7 +41,7 @@ public static class MergeLayerDown
         for (var cellIndex = 0; cellIndex < cellCount && !changesLowerOption; cellIndex++)
         {
             var cell = upper.GetCell(cellIndex);
-            changesLowerOption = upperPolicy.HidesLayersBelow(cell) && !lowerPolicy.HidesLayersBelow(cell);
+            changesLowerOption = upperPolicy.HidesGlyphsBelow(cell) && !lowerPolicy.HidesGlyphsBelow(cell);
         }
 
         var cells = new CellEditBuilder(document, lower.Id);
@@ -50,11 +50,14 @@ public static class MergeLayerDown
             for (var x = 0; x < upper.Size.Width; x++)
             {
                 var point = new CellPoint(x, y);
-                var cell = upper.GetCell(point);
-                if (upperPolicy.HidesLayersBelow(cell))
-                    cells.Set(point, cell);
-                else if (changesLowerOption && lower.GetCell(point) is { IsOccupied: true } own && !lowerPolicy.HidesLayersBelow(own))
-                    cells.Set(point, Cell.Empty);
+                var original = lower.GetCell(point);
+                var own = original;
+                if (changesLowerOption && own.HasGlyph && !lowerPolicy.HidesGlyphsBelow(own))
+                    own = own.WithoutGlyph();
+
+                var merged = Compositor.PaintOver(own, upper.GetCell(point), upperPolicy);
+                if (merged != original)
+                    cells.Set(point, merged);
             }
         }
 

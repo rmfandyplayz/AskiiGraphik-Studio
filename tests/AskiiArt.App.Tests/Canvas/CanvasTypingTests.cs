@@ -79,7 +79,7 @@ public sealed class CanvasTypingTests : IDisposable
         _window.MouseUp(start - new Point(50, 50), MouseButton.Left);
         _window.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
 
-        Assert.True(Layer.GetCell(new CellPoint(0, 0)).IsOccupied);
+        Assert.True(Layer.GetCell(new CellPoint(0, 0)).HasGlyph);
         Assert.Equal(" ", GlyphAt(0, 0));
         Assert.Equal(0, _control.HorizontalOffset);
         Assert.Equal(0, _control.VerticalOffset);

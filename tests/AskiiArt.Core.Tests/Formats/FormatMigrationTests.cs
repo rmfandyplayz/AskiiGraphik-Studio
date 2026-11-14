@@ -36,6 +36,17 @@ public sealed class FormatMigrationTests
     }
 
     [Fact]
+    public void AVersion1File_OpensAsAMonochromeDocument()
+    {
+        var root = DocumentJson.Parse(DocumentJson.Write(TestCells.CreateDocument(2, 1)));
+        root.Remove("colorMode");
+
+        var contents = DocumentFileFormat.Decode(Encoding.UTF8.GetBytes("ASKIIART 1\n" + root.ToJsonString()));
+
+        Assert.Equal(ColorMode.Monochrome, contents.Document.ColorMode);
+    }
+
+    [Fact]
     public void Apply_WithAMissingMigration_Throws()
     {
         Assert.Throws<InvalidOperationException>(() => FormatMigrations.Apply(new JsonObject(), 1, 3,

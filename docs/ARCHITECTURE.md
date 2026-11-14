@@ -12,7 +12,7 @@
 A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspired by the old Windows freeware *ASCII Art Studio*, but it should feel like a modern image editor: layers, selections, customizable brushes, real undo history, dockable panels.
 
 - **Primary use:** density-based ASCII art, in plain monochrome or with ANSI-style color.
-- **Planned:** color and ANSI (milestone M2b) and plugins (M8b). See ADR 0032.
+- **Colour** (milestone M2b, ADR 0036): a document is monochrome, ANSI (the standard 16 colours) or RGB. **Planned:** plugins (M8b, ADR 0032).
 - **Must stay cheap to add later:** Unicode beyond ASCII, per-cell alpha, layer blend modes, animation frames. These are **reserved**. The model has room for them, but nothing designs, builds or exposes them (§18).
 - **Roles:** the owner designs all UI/UX (layout, icons, wording) and tests by hand. Claude Code owns implementation. Placeholder UI is allowed and expected (§14.6).
 - **Pace:** long-term, with quality first. Work proceeds in small steps, each covered by automated tests and then tested by the owner by hand.
@@ -99,20 +99,21 @@ A cell is a small value type, stored densely, with a target size of 16 bytes or 
 | Field | Behavior in v1 | Reserved for |
 |---|---|---|
 | `Glyph` (`System.Text.Rune`) | the character | any Unicode scalar value |
-| `Occupied` (flag) | **live**: empty vs. has a glyph | n/a |
-| `Foreground`, `Background` | always "unset" | color (M2b) |
-| `Attributes` (flags) | always none | bold, underline, etc. (M2b) |
+| `HasGlyph` (flag) | **live**: whether the cell has a glyph | n/a |
+| `Foreground`, `Background` | **live** (M2b): each unset, one of the 16 ANSI colours, or RGB (§5.11). Only a cell with a glyph has a text colour | n/a |
+| `Attributes` (flags) | always none | bold, underline and so on, for plugins only (ADR 0036) |
 | `Alpha` | always fully opaque | alpha update |
 
-Use `Rune`, never `char`. A `char` is a UTF-16 code unit and can't hold characters outside the Basic Multilingual Plane.
+A cell holds a glyph, a background, both or neither; `IsEmpty` means neither. Use `Rune`, never `char`. A `char` is a UTF-16 code unit and can't hold characters outside the Basic Multilingual Plane.
 
 ### 5.4 Occupancy: empty vs. space
 
 **Occupancy is structural and live in v1.** Layers can't work without it.
 
 - An **empty** cell holds nothing, so the layer below shows through. Erasing makes a cell empty.
-- An **occupied** cell holding a **space** is a deliberate blank. By default it **hides** the layer below.
-- The space rule is a **policy, not hardcoded behavior**. A per-layer option lets that layer's spaces be treated as empty during compositing (ADR 0033). It's one compositing policy object, not `if (glyph == ' ')` checks scattered through the code.
+- A cell holding **only a background** has no glyph, so the glyph below shows through, on its colour (§5.6).
+- A cell whose glyph is a **space** is a deliberate blank. By default it **hides** the glyphs below, though not their background.
+- The space rule is a **policy, not hardcoded behavior**. A per-layer option lets that layer's spaces be treated as empty during compositing (ADR 0033). It's one compositing policy object, not `if (glyph == ' ')` checks scattered through the code. The owner may remove the option one day, so nothing but the glyph plane depends on it (ADR 0036).
 
 ### 5.5 Layers
 
@@ -120,7 +121,7 @@ Each layer has a stable `Id` (a GUID; commands reference layers by id, never by 
 
 ### 5.6 Compositing
 
-Layers are flattened top to bottom, one cell at a time. The first visible layer whose cell is occupied, after applying the space policy, wins. If every layer is empty at that cell, the result is empty. An empty cell exports as a space in text output and as background in image output.
+Layers are flattened top to bottom, one cell at a time, in two planes (ADR 0036). The glyph and its text colour come from the first visible layer whose cell has a glyph that hides what's below, after applying the space policy. The background comes from the first visible layer whose cell has one. If every layer is empty at that cell, the result is empty. A cell without a glyph exports as a space in text output, and a cell without a background shows the paper colour in image output.
 
 There is one compositing implementation, in Core. The renderer, exporters, clipboard and the magic wand's "sample all layers" option all use it. Cached composite tiles can be added later if profiling shows a need.
 
@@ -142,7 +143,14 @@ The document raises change events that carry the **affected region**: the layer 
 ### 5.10 Document metadata
 
 - **Font reference:** the family name the document was authored with, changed with a command. Store this, not a file path. If the font isn't available when the document opens, fall back to the default font and tell the user. The style is always Regular and the size at 100% zoom is the same for every document, so neither is stored yet (ADR 0019).
-- **Document-level settings** (the character set, §6, and the space policy if it ends up per-document) live in the metadata and change only through commands.
+- **Document-level settings** (the character set, §6, and the colour mode, §5.11) live in the metadata and change only through commands.
+
+### 5.11 Colour
+
+- A document's **colour mode** is monochrome, ANSI or RGB, and the document never holds a colour its mode doesn't allow. New documents are monochrome. Changing the mode is one command that converts every colour, or removes them all for monochrome. The UI warns first with the number of cells that will look different (ADR 0036).
+- **ANSI** means the standard 16 colours, shown with the VGA palette. RGB converts to the nearest of them by the "redmean" distance.
+- An **unset** colour is the canvas's own ink or paper, and exports with no colour code.
+- The base app has **no text attributes**. `CellAttributes` is a hook for plugins.
 
 ## 6. Characters and width
 
@@ -248,6 +256,7 @@ compressed:  binary magic bytes + format version + Brotli-compressed UTF-8 JSON 
 - **Every file has a format version,** and every version bump comes with a migration so old files keep opening. If a file's version is newer than the app understands, refuse to open it with a clear message rather than guessing.
 - **Saves are atomic:** write to a temp file in the same directory, then replace the original. A half-written file is never left behind.
 - **Line endings** inside the JSON are always `\n`, on every OS.
+- **Colour** (format version 2, ADR 0037): the top level names the colour mode, and a layer with colour has one-line `foreground` and `background` runs. Version 1 files open as monochrome.
 - **The active layer** is saved as an optional id, so a document reopens where it was left. It isn't content: choosing a layer doesn't mark the document unsaved, and an id that's no use is ignored (ADR 0031).
 - **Round-trip guarantee:** load(save(doc)) == doc for both variants. This is tested (§19).
 
@@ -322,12 +331,12 @@ Here quality matters more than speed. This gets its own milestone, and the detai
 
 ## 18. Reserved features (hooks only, no design)
 
-Color and plugins now have milestones (M2b and M8b, ADR 0032). Until those start, they stay hooks like the rest. The owner doesn't plan opacity or blend modes for the base app.
+Colour is built in M2b (ADR 0036). Plugins have a milestone (M8b, ADR 0032) and stay a hook until it starts. The owner doesn't plan opacity, blend modes or text attributes for the base app.
 
 | Feature | Hook that exists now | Not built |
 |---|---|---|
 | Animation | The document holds a list of frames (exactly one); everything works on the active frame | Frame UI, timeline, playback, export |
-| Color / ANSI (M2b) | `Foreground`, `Background` and `Attributes` on Cell; optional in the file format | Color tools, palettes, ANSI import/export |
+| Text attributes | `Attributes` on Cell, always none; for plugins only (ADR 0036) | Bold, underline and the rest, in the model, the file format and the renderer |
 | Per-cell alpha | `Alpha` on Cell | Alpha compositing, alpha eraser |
 | Layer opacity / blend modes | Fields on Layer; compositing goes through one policy object | Any mode other than normal |
 | Plugins (M8b) | Tools, importers, exporters and actions use interfaces and DI registries | Loading external assemblies, sandboxing, plugin API versioning |
@@ -383,7 +392,6 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| The color model. Decided by the owner on 2026-11-02: a new document picks monochrome, RGB color or ANSI color, like the character set. *Decided on 2026-11-04:* ANSI color means the standard 16 colors, and Discord's 8 text and 8 background colors belong to its plugin (M8b). Still open: how background color works, whether a document can change its mode later, which attributes there are, and whether a colored space still counts for the space-as-empty option | M2b |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship | M3 |
 | Exact behavior of each tool | That tool's milestone |
@@ -401,7 +409,7 @@ Ask the owner about each of these at the milestone that needs it.
 - **Dock:** opaque windows that touch the edge of the app window and each other, with tabs (§14.4, `docs/DOCKING.md`). Not the macOS Dock, or the library this project used to use.
 - **Glyph atlas:** a cache of pre-rendered character images (§11).
 - **Intensity:** a 0–1 value for how much ink a cell should have (§7).
-- **Occupancy:** whether a cell holds anything at all (§5.4).
+- **Occupancy:** whether a cell has a glyph (§5.4). A cell without one can still hold a background; a cell holding neither is **empty**.
 - **Ramp:** a mapping from intensity to glyphs, for example `" .:-=+*#%@"` (§7).
 - **Round-trip:** saving and then loading a document; the result must equal the original.
 - **Safe area:** what windows and toolbars leave free for centring the canvas (§14.4).

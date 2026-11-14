@@ -55,7 +55,7 @@ public sealed class ResizeCanvasCommand : IDocumentCommand
         _croppedCells.Clear();
         foreach (var layer in document.Frames.SelectMany(frame => frame.Layers))
         {
-            var cells = CollectOccupiedCells(layer, plan.CroppedRegions);
+            var cells = CollectCellsThatHoldSomething(layer, plan.CroppedRegions);
             if (cells.Length > 0)
                 _croppedCells.Add(new CroppedLayerCells(layer.Id, cells));
         }
@@ -77,7 +77,7 @@ public sealed class ResizeCanvasCommand : IDocumentCommand
         }
     }
 
-    private static CroppedCell[] CollectOccupiedCells(Layer layer, IReadOnlyList<CellRect> regions)
+    private static CroppedCell[] CollectCellsThatHoldSomething(Layer layer, IReadOnlyList<CellRect> regions)
     {
         var cells = new List<CroppedCell>();
         foreach (var region in regions)
@@ -88,7 +88,7 @@ public sealed class ResizeCanvasCommand : IDocumentCommand
                 {
                     var index = layer.IndexOf(new CellPoint(x, y));
                     var cell = layer.GetCell(index);
-                    if (cell.IsOccupied)
+                    if (!cell.IsEmpty)
                         cells.Add(new CroppedCell(index, cell));
                 }
             }

@@ -63,6 +63,20 @@ public sealed class ResizeCanvasCommandTests
     }
 
     [Fact]
+    public void Undo_RestoresCroppedCellsThatHoldOnlyABackground()
+    {
+        var document = TestCells.CreateDocument(3, 1, ColorMode.Ansi);
+        document.ActiveFrame.Layers[0].SetCell(2, Cell.FromBackground(TestCells.Ansi(AnsiColor.Blue)));
+        var before = TestCommands.Snapshot(document);
+        var history = new CommandHistory(document);
+
+        history.Execute(new ResizeCanvasCommand(new CanvasSize(2, 1), ResizeAnchor.TopLeft));
+        history.Undo();
+
+        Assert.Equal(before, TestCommands.Snapshot(document));
+    }
+
+    [Fact]
     public void Constructor_RejectsAnUnknownAnchor()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new ResizeCanvasCommand(new CanvasSize(2, 2), (ResizeAnchor)42));

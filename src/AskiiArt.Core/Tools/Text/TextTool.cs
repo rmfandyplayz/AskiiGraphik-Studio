@@ -304,11 +304,11 @@ public sealed class TextTool : ITool
     private int ColumnAfterLastGlyph(int row)
     {
         var cells = _session.ActiveLayer.GetRow(row);
-        var lastOccupied = cells.Length - 1;
-        while (lastOccupied >= 0 && cells[lastOccupied].IsEmpty)
-            lastOccupied--;
+        var lastGlyph = cells.Length - 1;
+        while (lastGlyph >= 0 && !cells[lastGlyph].HasGlyph)
+            lastGlyph--;
 
-        return lastOccupied + 1;
+        return lastGlyph + 1;
     }
 
     private CellPoint ClampToCanvas(CellPoint point)

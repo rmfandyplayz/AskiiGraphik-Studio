@@ -14,10 +14,17 @@ namespace AskiiArt.Core.Tests.Commands;
 /// </summary>
 public sealed class UndoPropertyTests
 {
-    private const int KindCount = 12;
+    private const int KindCount = 13;
 
-    private static Cell[] Glyphs { get; } =
-        [Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('a'), TestCells.Glyph('#'), TestCells.Glyph('é')];
+    private static Cell[] Cells { get; } =
+    [
+        Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('a'), TestCells.Glyph('#'), TestCells.Glyph('é'),
+        TestCells.Glyph('a', TestCells.Ansi(AnsiColor.Red), CellColor.Unset),
+        TestCells.Glyph(' ', CellColor.Unset, TestCells.Ansi(AnsiColor.Blue)),
+        Cell.FromBackground(TestCells.Ansi(AnsiColor.Green)),
+        TestCells.Glyph('#', TestCells.Rgb(255, 128, 0), TestCells.Rgb(0, 0, 170)),
+        Cell.FromBackground(TestCells.Rgb(18, 52, 86))
+    ];
 
     private static Gen<(int Kind, int A, int B, int C)> Step { get; } =
         Gen.Select(Gen.Int[0, KindCount - 1], Gen.Int[0, 1000], Gen.Int[0, 1000], Gen.Int[0, 1000]);
@@ -27,8 +34,11 @@ public sealed class UndoPropertyTests
     {
         Step.Array[0, 40].Sample(steps =>
         {
-            var document = TestCells.CreateDocument(5, 4);
-            TestCells.Paint(document.ActiveFrame.Layers[0], "hello", "·····", "world");
+            var document = TestCells.CreateDocument(5, 4, ColorMode.Ansi);
+            var bottom = document.ActiveFrame.Layers[0];
+            TestCells.Paint(bottom, "hello", "·····", "world");
+            bottom.SetCell(1, TestCells.Glyph('e', TestCells.Ansi(AnsiColor.Red), CellColor.Unset));
+            bottom.SetCell(5, Cell.FromBackground(TestCells.Ansi(AnsiColor.Blue)));
             var history = new CommandHistory(document, memoryBudgetInBytes: long.MaxValue);
             var group = new CoalescingGroup();
 
@@ -90,6 +100,7 @@ public sealed class UndoPropertyTests
             8 => CreateComposite(document, layer, step),
             9 => new SetCharacterSetCommand((CharacterSet)(step.B % 2)),
             10 => new SetFontCommand(new FontReference(step.B % 2 == 0 ? "Font A" : "Font B")),
+            11 => new SetColorModeCommand((ColorMode)(step.B % 3)),
             _ => null
         };
     }
@@ -97,13 +108,14 @@ public sealed class UndoPropertyTests
     private static CellEditCommand? CreateCellEdit(Document document, Layer layer, int cellCountSeed, int seed)
     {
         var random = new Random(seed);
-        var glyphs = Glyphs.Where(cell => cell.IsEmpty || document.CharacterSet.Allows(cell.Glyph)).ToArray();
+        var cells = Cells.Where(cell => document.ColorMode.Allows(cell)
+            && (!cell.HasGlyph || document.CharacterSet.Allows(cell.Glyph))).ToArray();
         var builder = new CellEditBuilder(document, layer.Id);
         var cellCount = 1 + (cellCountSeed % 6);
         for (var index = 0; index < cellCount; index++)
         {
             var point = new CellPoint(random.Next(document.CanvasSize.Width), random.Next(document.CanvasSize.Height));
-            builder.Set(point, glyphs[random.Next(glyphs.Length)]);
+            builder.Set(point, cells[random.Next(cells.Length)]);
         }
 
         return builder.Build();

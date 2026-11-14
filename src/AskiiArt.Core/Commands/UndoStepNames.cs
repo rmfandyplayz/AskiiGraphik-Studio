@@ -24,6 +24,9 @@ public static class UndoStepNames
     /// <summary>Switching between Unicode and ASCII only.</summary>
     public const string SetCharacterSet = "UndoStepSetCharacterSet";
 
+    /// <summary>Switching between monochrome, ANSI and RGB colour.</summary>
+    public const string SetColorMode = "UndoStepSetColorMode";
+
     /// <summary>Adding a layer.</summary>
     public const string AddLayer = "UndoStepAddLayer";
 

@@ -24,10 +24,11 @@ public sealed class Document
 {
     private readonly List<Frame> _frames = [];
 
-    private Document(CanvasSize canvasSize, CharacterSet characterSet, FontReference font)
+    private Document(CanvasSize canvasSize, CharacterSet characterSet, ColorMode colorMode, FontReference font)
     {
         CanvasSize = canvasSize;
         CharacterSet = characterSet;
+        ColorMode = colorMode;
         Font = font;
         Frames = new ReadOnlyCollection<Frame>(_frames);
         ChangeTracker = new DocumentChangeTracker(this);
@@ -45,6 +46,9 @@ public sealed class Document
     /// <summary>Which characters the document may hold. Change it with <c>SetCharacterSetCommand</c>.</summary>
     public CharacterSet CharacterSet { get; private set; }
 
+    /// <summary>Which colours the document may hold. Change it with <c>SetColorModeCommand</c>.</summary>
+    public ColorMode ColorMode { get; private set; }
+
     /// <summary>The font the document is drawn with. Change it with <c>SetFontCommand</c>.</summary>
     public FontReference Font { get; private set; }
 
@@ -61,14 +65,19 @@ public sealed class Document
     /// <param name="firstLayerName">The first layer's name. Core has no UI text, so the caller supplies it.</param>
     /// <param name="characterSet">Which characters the document may hold.</param>
     /// <param name="font">The font; <see cref="FontReference.Default"/> if null.</param>
+    /// <param name="colorMode">Which colours the document may hold.</param>
     public static Document Create(CanvasSize canvasSize, string firstLayerName,
-        CharacterSet characterSet = CharacterSet.Unicode, FontReference? font = null)
+        CharacterSet characterSet = CharacterSet.Unicode, FontReference? font = null,
+        ColorMode colorMode = ColorMode.Monochrome)
     {
         ArgumentNullException.ThrowIfNull(firstLayerName);
         if (!Enum.IsDefined(characterSet))
             throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null);
 
-        var document = new Document(canvasSize, characterSet, font ?? FontReference.Default);
+        if (!Enum.IsDefined(colorMode))
+            throw new ArgumentOutOfRangeException(nameof(colorMode), colorMode, null);
+
+        var document = new Document(canvasSize, characterSet, colorMode, font ?? FontReference.Default);
         var frame = new Frame(document);
         document._frames.Add(frame);
         frame.InsertLayer(0, new Layer(Guid.NewGuid(), new LayerProperties(firstLayerName), canvasSize));
@@ -79,18 +88,21 @@ public sealed class Document
     /// Creates a document with one frame holding <paramref name="layers"/>, bottom first. Used to
     /// load files; the layers must be the canvas's size, with different ids.
     /// </summary>
-    internal static Document CreateWithLayers(CanvasSize canvasSize, CharacterSet characterSet, FontReference font,
-        IReadOnlyList<Layer> layers)
+    internal static Document CreateWithLayers(CanvasSize canvasSize, CharacterSet characterSet, ColorMode colorMode,
+        FontReference font, IReadOnlyList<Layer> layers)
     {
         ArgumentNullException.ThrowIfNull(font);
         ArgumentNullException.ThrowIfNull(layers);
         if (!Enum.IsDefined(characterSet))
             throw new ArgumentOutOfRangeException(nameof(characterSet), characterSet, null);
 
+        if (!Enum.IsDefined(colorMode))
+            throw new ArgumentOutOfRangeException(nameof(colorMode), colorMode, null);
+
         if (layers.Count == 0)
             throw new ArgumentException("A document needs at least one layer.", nameof(layers));
 
-        var document = new Document(canvasSize, characterSet, font);
+        var document = new Document(canvasSize, characterSet, colorMode, font);
         var frame = new Frame(document);
         document._frames.Add(frame);
         foreach (var layer in layers)
@@ -164,6 +176,19 @@ public sealed class Document
             return;
 
         CharacterSet = characterSet;
+        ChangeTracker.RecordSettingsChanged();
+    }
+
+    /// <summary>
+    /// Changes the colour mode alone. The caller converts the colours the new mode doesn't allow
+    /// first, so the document never holds one.
+    /// </summary>
+    internal void SetColorMode(ColorMode colorMode)
+    {
+        if (colorMode == ColorMode)
+            return;
+
+        ColorMode = colorMode;
         ChangeTracker.RecordSettingsChanged();
     }
 

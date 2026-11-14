@@ -52,7 +52,7 @@ public sealed class TextExporter : IExporter
             Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, y, size.Width, 1), row);
             foreach (var cell in row)
             {
-                if (cell.IsEmpty)
+                if (!cell.HasGlyph)
                 {
                     text.Append(EmptyCellCharacter);
                     continue;

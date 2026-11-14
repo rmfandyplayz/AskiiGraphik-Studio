@@ -29,3 +29,4 @@ ARCHITECTURE §23 asked whether input is free Unicode or can be limited to print
 - The file format stores the character set, and loading an ASCII document that holds other characters is a damaged file (ADR 0021).
 - Paste, import and image conversion (M4, M6, M7) must filter or map characters to the document's set before building cells.
 - Wide characters (CJK) can be typed in a Unicode document. They fill one cell, drawn small with a fallback font and the orange marker; how to flag them is still open (§23).
+Updated 2026-11-14: switching to ASCII removes only the glyphs the set doesn't allow, so such a cell keeps its background (ADR 0036).

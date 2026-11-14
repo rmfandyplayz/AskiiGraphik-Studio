@@ -596,6 +596,9 @@
   <data name="UndoStepSetCharacterSet" xml:space="preserve">
     <value>Change Character Set</value>
   </data>
+  <data name="UndoStepSetColorMode" xml:space="preserve">
+    <value>Change Color Mode</value>
+  </data>
   <data name="UndoStepAddLayer" xml:space="preserve">
     <value>Add Layer</value>
   </data>

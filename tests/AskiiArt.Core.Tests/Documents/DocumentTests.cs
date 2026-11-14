@@ -24,6 +24,15 @@ public sealed class DocumentTests
     }
 
     [Fact]
+    public void Create_IsMonochromeUnlessToldOtherwise_AndRejectsAnUnknownColorMode()
+    {
+        Assert.Equal(ColorMode.Monochrome, TestCells.CreateDocument(1, 1).ColorMode);
+        Assert.Equal(ColorMode.Rgb, Document.Create(new CanvasSize(1, 1), "Layer", colorMode: ColorMode.Rgb).ColorMode);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Document.Create(new CanvasSize(1, 1), "Layer", colorMode: (ColorMode)3));
+    }
+
+    [Fact]
     public void Create_GivesEveryDocumentADifferentLayerId()
     {
         var first = TestCells.CreateDocument(2, 2).ActiveFrame.Layers[0];

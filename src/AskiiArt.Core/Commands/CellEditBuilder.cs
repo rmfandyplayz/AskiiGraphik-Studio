@@ -34,16 +34,25 @@ public sealed class CellEditBuilder
 
     /// <summary>Sets the cell at <paramref name="point"/>. Setting the same cell again replaces the earlier value.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The point is outside the canvas.</exception>
-    /// <exception cref="ArgumentException">The document's character set doesn't allow the cell's glyph.</exception>
+    /// <exception cref="ArgumentException">
+    /// The document's character set doesn't allow the cell's glyph, or its colour mode doesn't allow
+    /// the cell's colours.
+    /// </exception>
     public void Set(CellPoint point, Cell cell)
     {
         if (!_layer.Size.Contains(point))
             throw new ArgumentOutOfRangeException(nameof(point), point, $"The point is outside the {_layer.Size} canvas.");
 
-        if (cell.IsOccupied && !_document.CharacterSet.Allows(cell.Glyph))
+        if (cell.HasGlyph && !_document.CharacterSet.Allows(cell.Glyph))
         {
             throw new ArgumentException(
                 $"The document's {_document.CharacterSet} character set doesn't allow U+{cell.Glyph.Value:X4}.", nameof(cell));
+        }
+
+        if (!_document.ColorMode.Allows(cell))
+        {
+            throw new ArgumentException($"A {_document.ColorMode} document can't hold the colours of {cell}.",
+                nameof(cell));
         }
 
         var index = _layer.IndexOf(point);

@@ -45,7 +45,7 @@ internal static class TestCommands
     {
         var snapshot = new StringBuilder();
         snapshot.Append("canvas ").Append(document.CanvasSize).Append(' ').Append(document.CharacterSet)
-            .Append(' ').Append(document.Font).Append('\n');
+            .Append(' ').Append(document.ColorMode).Append(' ').Append(document.Font).Append('\n');
         foreach (var frame in document.Frames)
         {
             snapshot.Append("frame\n");
@@ -54,9 +54,22 @@ internal static class TestCommands
                 snapshot.Append("layer ").Append(layer.Id).Append(' ').Append(layer.Properties).Append('\n');
                 foreach (var row in TestCells.Read(layer))
                     snapshot.Append("  ").Append(row).Append('\n');
+
+                AppendColors(snapshot, layer);
             }
         }
 
         return snapshot.ToString();
+    }
+
+    // The rows show only glyphs, so every cell with a colour is listed after them.
+    private static void AppendColors(StringBuilder snapshot, Layer layer)
+    {
+        for (var index = 0; index < layer.Size.CellCount; index++)
+        {
+            var cell = layer.GetCell(index);
+            if (!cell.Foreground.IsUnset || cell.HasBackground)
+                snapshot.Append("  cell ").Append(index).Append(": ").Append(cell).Append('\n');
+        }
     }
 }

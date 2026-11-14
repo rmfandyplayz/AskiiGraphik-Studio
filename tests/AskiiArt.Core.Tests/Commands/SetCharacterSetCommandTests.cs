@@ -64,4 +64,20 @@ public sealed class SetCharacterSetCommandTests
         Assert.True(change.SettingsChanged);
         Assert.Single(change.CellChanges);
     }
+
+    [Fact]
+    public void SwitchingToAscii_KeepsTheBackgroundOfAGlyphItRemoves()
+    {
+        var document = TestCells.CreateDocument(1, 1, ColorMode.Ansi);
+        var layer = document.ActiveFrame.Layers[0];
+        var colored = TestCells.Glyph('é', TestCells.Ansi(AnsiColor.Red), TestCells.Ansi(AnsiColor.Blue));
+        layer.SetCell(0, colored);
+        var history = new CommandHistory(document);
+
+        history.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));
+        Assert.Equal(Cell.FromBackground(TestCells.Ansi(AnsiColor.Blue)), layer.GetCell(0));
+
+        history.Undo();
+        Assert.Equal(colored, layer.GetCell(0));
+    }
 }

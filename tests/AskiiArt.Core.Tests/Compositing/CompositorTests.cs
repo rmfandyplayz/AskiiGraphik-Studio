@@ -8,6 +8,12 @@ namespace AskiiArt.Core.Tests.Compositing;
 
 public sealed class CompositorTests
 {
+    private static CellColor Red => TestCells.Ansi(AnsiColor.Red);
+
+    private static CellColor Green => TestCells.Ansi(AnsiColor.Green);
+
+    private static CellColor Blue => TestCells.Ansi(AnsiColor.Blue);
+
     [Fact]
     public void TheTopmostOccupiedCellWins_AndEmptyCellsShowTheLayerBelow()
     {
@@ -98,14 +104,19 @@ public sealed class CompositorTests
     public void CompositeRegion_AgreesWithCompositeCell()
     {
         var random = new Random(42);
-        var document = TestCells.CreateDocument(9, 7);
+        var document = TestCells.CreateDocument(9, 7, ColorMode.Ansi);
         TestCells.AddLayer(document);
         TestCells.AddLayer(document);
-        var glyphs = new[] { Cell.Empty, Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('#'), TestCells.Glyph('.') };
+        Cell[] cells =
+        [
+            Cell.Empty, Cell.Empty, TestCells.Glyph(' '), TestCells.Glyph('#'), TestCells.Glyph('.'),
+            TestCells.Glyph('#', Red, CellColor.Unset), TestCells.Glyph(' ', CellColor.Unset, Blue),
+            TestCells.Glyph('.', Blue, Red), Cell.FromBackground(Green)
+        ];
         foreach (var layer in document.ActiveFrame.Layers)
         {
             for (var index = 0; index < document.CanvasSize.CellCount; index++)
-                layer.SetCell(index, glyphs[random.Next(glyphs.Length)]);
+                layer.SetCell(index, cells[random.Next(cells.Length)]);
         }
 
         var middle = document.ActiveFrame.Layers[1];
@@ -154,13 +165,93 @@ public sealed class CompositorTests
     public void ThePolicy_OnlyTreatsU0020AsASpace()
     {
         var spacesAsEmpty = CompositingPolicy.For(SpaceHandling.TreatedAsEmpty);
-        Assert.False(spacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
-        Assert.True(spacesAsEmpty.HidesLayersBelow(TestCells.Glyph(' ')));
-        Assert.False(spacesAsEmpty.HidesLayersBelow(Cell.Empty));
-        Assert.False(CompositingPolicy.For(SpaceHandling.HidesLayersBelow).HidesLayersBelow(Cell.Empty));
+        Assert.False(spacesAsEmpty.HidesGlyphsBelow(TestCells.Glyph(' ')));
+        Assert.True(spacesAsEmpty.HidesGlyphsBelow(TestCells.Glyph(' ')));
+        Assert.False(spacesAsEmpty.HidesGlyphsBelow(Cell.Empty));
+        Assert.False(CompositingPolicy.For(SpaceHandling.HidesLayersBelow).HidesGlyphsBelow(Cell.Empty));
     }
 
     /// <summary>Creates a document with one layer per array, bottom first, painted with <see cref="TestCells.Paint"/>.</summary>
+    [Fact]
+    public void ABackgroundBelow_ShowsBehindAGlyphAbove()
+    {
+        var document = CreateStack(Cell.FromBackground(Blue), TestCells.Glyph('a', Red, CellColor.Unset));
+
+        Assert.Equal(TestCells.Glyph('a', Red, Blue), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void ABackgroundOnItsOwn_CoversTheBackgroundBelow_ButKeepsTheGlyphBelow()
+    {
+        var document = CreateStack(TestCells.Glyph('a', Red, Blue), Cell.FromBackground(Green));
+
+        Assert.Equal(TestCells.Glyph('a', Red, Green), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void ABackgroundWithNothingBelow_StaysABackgroundOnItsOwn()
+    {
+        var document = CreateStack(Cell.Empty, Cell.FromBackground(Blue));
+
+        Assert.Equal(Cell.FromBackground(Blue), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void TheTextColor_ComesWithItsGlyph()
+    {
+        var document = CreateStack(TestCells.Glyph('a', Red, CellColor.Unset), TestCells.Glyph('b'));
+
+        Assert.Equal(TestCells.Glyph('b'), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void ASpaceThatHidesTheLayersBelow_HidesTheirGlyph_ButNotTheirBackground()
+    {
+        var document = CreateStack(TestCells.Glyph('a', Red, Blue), TestCells.Glyph(' '));
+
+        Assert.Equal(TestCells.Glyph(' ', CellColor.Unset, Blue), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void AColoredSpace_OnALayerThatTreatsSpacesAsEmpty_PutsItsBackgroundBehindTheGlyphBelow()
+    {
+        var document = CreateStack(TestCells.Glyph('a', Red, CellColor.Unset),
+            TestCells.Glyph(' ', CellColor.Unset, Blue));
+        SetSpaceHandling(document.ActiveFrame.Layers[1], SpaceHandling.TreatedAsEmpty);
+
+        Assert.Equal(TestCells.Glyph('a', Red, Blue), CompositeTheOnlyCell(document));
+    }
+
+    [Fact]
+    public void AHiddenLayersBackground_IsSkipped()
+    {
+        var document = CreateStack(TestCells.Glyph('a'), Cell.FromBackground(Blue));
+        var top = document.ActiveFrame.Layers[1];
+        top.SetProperties(top.Properties with { IsVisible = false });
+
+        Assert.Equal(TestCells.Glyph('a'), CompositeTheOnlyCell(document));
+    }
+
+    // A 1 × 1 ANSI document with a layer for each cell, bottom first.
+    private static Document CreateStack(params Cell[] cellsBottomFirst)
+    {
+        var document = TestCells.CreateDocument(1, 1, ColorMode.Ansi);
+        document.ActiveFrame.Layers[0].SetCell(0, cellsBottomFirst[0]);
+        foreach (var cell in cellsBottomFirst.Skip(1))
+            TestCells.AddLayer(document).SetCell(0, cell);
+
+        return document;
+    }
+
+    // Composites a 1 × 1 document both ways and checks they agree.
+    private static Cell CompositeTheOnlyCell(Document document)
+    {
+        var destination = new Cell[1];
+        Compositor.CompositeRegion(document.ActiveFrame, document.CanvasSize.Bounds, destination);
+        Assert.Equal(destination[0], Compositor.CompositeCell(document.ActiveFrame, new CellPoint(0, 0)));
+        return destination[0];
+    }
+
     private static Document CreateLayered(params string[][] layers)
     {
         var document = TestCells.CreateDocument(layers[0][0].Length, layers[0].Length);
