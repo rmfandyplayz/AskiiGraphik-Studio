@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 <!-- Placeholder Color window (step 2b.3a): Avalonia's colour picker, without its palette or alpha, for the
-     colour Brush Options says the windows change. RGB documents only. -->
+     colour the Brush Options toolbar says the windows change. RGB documents only. -->
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:painting="using:AskiiArt.App.Painting"

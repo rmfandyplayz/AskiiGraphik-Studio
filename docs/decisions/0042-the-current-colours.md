@@ -31,3 +31,5 @@ Step 2b.3a gives the user colours to paint and type with. The owner asked for an
 - An ANSI swatch chosen in an RGB document stays ANSI, is written as its VGA value, and shows as that hex code in Brush Options.
 - If Avalonia's picker can't be styled enough, only `ColorPanelView` changes.
 - D goes or moves when the owner designs the shortcuts.
+
+Updated 2026-11-14: Brush Options is a toolbar, as the owner meant: "FG: [swatch] • BG: [swatch]", where clicking a swatch chooses the colour the windows change. Its swatches are toggle-looking radio buttons without a group name, so the copies of the toolbar shown during a drag can't untick the real ones. A colour of None shows as an empty square with a diagonal slash (`ColorSwatch`).

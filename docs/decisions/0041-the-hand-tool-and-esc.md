@@ -27,3 +27,5 @@ Until step 2b.3a, Esc removed the text caret or cancelled an eraser stroke, and 
 
 - A future tool that cancels something with Esc (a shape being dragged out) returns true from `KeyPressed`. Everything else falls through to the Hand tool.
 - When the Select tool arrives, it will probably take V and become where Esc goes, and the Hand tool may get another letter or go.
+
+Updated 2026-11-14: Avalonia's Hand cursor is the pointing finger of links. The pan cursor is now `DragMove` on a Mac, which is the system's open hand, and `SizeAll` (the four-way move arrows) on Windows and Linux, where `DragMove` is a drag-and-drop arrow (`PanCursor`).

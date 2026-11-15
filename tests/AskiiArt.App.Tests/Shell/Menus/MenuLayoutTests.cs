@@ -151,9 +151,10 @@ public sealed class MenuLayoutTests
         Assert.Equal(
         [
             WindowMenuActionIds.ToggleLayers, WindowMenuActionIds.ToggleHistory,
-            WindowMenuActionIds.ToggleBrushOptions, WindowMenuActionIds.ToggleColor, WindowMenuActionIds.ToggleSwatches,
+            WindowMenuActionIds.ToggleColor, WindowMenuActionIds.ToggleSwatches,
             WindowMenuActionIds.ToggleFileToolbar, WindowMenuActionIds.ToggleToolsToolbar,
             WindowMenuActionIds.ToggleEditToolbar, WindowMenuActionIds.ToggleViewToolbar,
+            WindowMenuActionIds.ToggleBrushOptionsToolbar,
             WindowMenuActionIds.ResetLayout
         ], ActionIdsIn(window.Entries));
     }

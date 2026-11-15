@@ -14,8 +14,6 @@ internal sealed class WindowMenuActions(ShellDocking docking) : IActionProvider
     {
         yield return CreateWindowToggle(WindowMenuActionIds.ToggleLayers, nameof(Strings.ActionToggleLayers), ShellDockingIds.LayersPanel);
         yield return CreateWindowToggle(WindowMenuActionIds.ToggleHistory, nameof(Strings.ActionToggleHistory), ShellDockingIds.HistoryPanel);
-        yield return CreateWindowToggle(WindowMenuActionIds.ToggleBrushOptions,
-            nameof(Strings.ActionToggleBrushOptions), ShellDockingIds.BrushOptionsPanel);
         yield return CreateWindowToggle(WindowMenuActionIds.ToggleColor, nameof(Strings.ActionToggleColor),
             ShellDockingIds.ColorPanel);
         yield return CreateWindowToggle(WindowMenuActionIds.ToggleSwatches, nameof(Strings.ActionToggleSwatches),
@@ -24,6 +22,8 @@ internal sealed class WindowMenuActions(ShellDocking docking) : IActionProvider
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleToolsToolbar, nameof(Strings.ActionToggleToolsToolbar), ShellDockingIds.ToolsToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleEditToolbar, nameof(Strings.ActionToggleEditToolbar), ShellDockingIds.EditToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleViewToolbar, nameof(Strings.ActionToggleViewToolbar), ShellDockingIds.ViewToolbar);
+        yield return CreateToolbarToggle(WindowMenuActionIds.ToggleBrushOptionsToolbar,
+            nameof(Strings.ActionToggleBrushOptionsToolbar), ShellDockingIds.BrushOptionsToolbar);
         yield return new AppAction(WindowMenuActionIds.ResetLayout, nameof(Strings.ActionResetLayout), new RelayCommand(docking.ResetLayout));
     }
 

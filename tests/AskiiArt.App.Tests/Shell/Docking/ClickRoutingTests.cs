@@ -85,7 +85,7 @@ public sealed class ClickRoutingTests : IDisposable
     [AvaloniaFact]
     public void EveryToolbar_GetsClicksFirst()
     {
-        Assert.Equal(4, Toolbars.Count);
+        Assert.Equal(5, Toolbars.Count);
         Assert.All(Toolbars, toolbar =>
         {
             var hit = _window.InputHitTest(RectIn(toolbar).Center) as Visual;
@@ -101,8 +101,7 @@ public sealed class ClickRoutingTests : IDisposable
     {
         Assert.All(Toolbars, toolbar =>
         {
-            var bar = toolbar.GetVisualDescendants().OfType<StackPanel>()
-                .Single(panel => panel.Name == ToolbarBuilder.ControlName);
+            var bar = toolbar.Bar!;
 
             Assert.True(bar.DesiredSize.Height <= toolbar.Bounds.Height,
                 $"The buttons need {bar.DesiredSize.Height}, and the toolbar gives them {toolbar.Bounds.Height}.");
@@ -160,7 +159,12 @@ public sealed class ClickRoutingTests : IDisposable
         Pump();
         Assert.Equal(before, Canvas.Viewport!.Insets.Top);
 
+        // Brush Options is still on the top edge. Its band is its own height, which can differ from the others'.
         _docking.ToggleToolbar(ShellDockingIds.EditToolbar);
+        Pump();
+        Assert.True(Canvas.Viewport!.Insets.Top > 0);
+
+        _docking.ToggleToolbar(ShellDockingIds.BrushOptionsToolbar);
         Pump();
         Assert.Equal(0, Canvas.Viewport!.Insets.Top);
 
@@ -365,7 +369,7 @@ public sealed class ClickRoutingTests : IDisposable
     public void TheToolbarsAndMenuBar_ShowInTheirPlaces()
     {
         Assert.All(Toolbars, toolbar => Assert.Contains(toolbar.GetVisualDescendants(),
-            visual => visual is StackPanel { Name: ToolbarBuilder.ControlName }));
+            visual => visual is StackPanel && visual == toolbar.Bar));
         Assert.Contains(Named<Border>("MenuBarStrip").GetVisualDescendants(), visual => visual is NativeMenuBar);
     }
 

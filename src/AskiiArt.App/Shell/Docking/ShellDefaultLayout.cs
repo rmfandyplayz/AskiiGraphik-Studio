@@ -24,6 +24,8 @@ internal static class ShellDefaultLayout
         new ToolbarPlacement(ShellDockingIds.ToolsToolbar, ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal),
         new ToolbarPlacement(ShellDockingIds.EditToolbar, ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
         new ToolbarPlacement(ShellDockingIds.ViewToolbar, ToolbarAnchor.BottomRight, ToolbarOrientation.Horizontal),
+        new ToolbarPlacement(ShellDockingIds.BrushOptionsToolbar, ToolbarAnchor.TopMiddle,
+            ToolbarOrientation.Horizontal),
     ],
     []);
 }

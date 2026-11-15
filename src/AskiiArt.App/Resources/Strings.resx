@@ -651,9 +651,9 @@
   <data name="ToolHand" xml:space="preserve">
     <value>Hand</value>
   </data>
-  <data name="ActionToggleBrushOptions" xml:space="preserve">
-    <value>_Brush Options</value>
-    <comment>Window menu: shows or hides the Brush Options window.</comment>
+  <data name="ActionToggleBrushOptionsToolbar" xml:space="preserve">
+    <value>_Brush Options Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with the FG and BG colors.</comment>
   </data>
   <data name="ActionToggleColor" xml:space="preserve">
     <value>_Color</value>
@@ -662,9 +662,6 @@
   <data name="ActionToggleSwatches" xml:space="preserve">
     <value>_Swatches</value>
     <comment>Window menu: shows or hides the Swatches window, the 16 ANSI colours.</comment>
-  </data>
-  <data name="PanelBrushOptions" xml:space="preserve">
-    <value>Brush Options</value>
   </data>
   <data name="PanelColor" xml:space="preserve">
     <value>Color</value>
@@ -736,8 +733,18 @@
   <data name="PaintColorsNeedColorsNote" xml:space="preserve">
     <value>This document has no colors. Choose ANSI Colors or RGB Colors in the Document menu to use them.</value>
   </data>
-  <data name="BrushOptionsKeysHint" xml:space="preserve">
-    <value>On the canvas, X swaps the two colors and D sets both to None. D is a temporary key.</value>
+  <data name="BrushOptionsForegroundLabel" xml:space="preserve">
+    <value>FG:</value>
+    <comment>Brush Options toolbar: before the FG color's swatch.</comment>
+  </data>
+  <data name="BrushOptionsBackgroundLabel" xml:space="preserve">
+    <value>BG:</value>
+    <comment>Brush Options toolbar: before the BG color's swatch.</comment>
+  </data>
+  <data name="BrushOptionsSwatchTipFormat" xml:space="preserve">
+    <value>{0}
+Click to change it in the Color and Swatches windows. On the canvas, X swaps the two colors and D sets both to None (D is a temporary key).</value>
+    <comment>Brush Options toolbar: a swatch's tooltip. {0} is the color, such as "FG: Red".</comment>
   </data>
   <data name="ColorPanelNeedsRgbNote" xml:space="preserve">
     <value>The color picker is for RGB documents. Choose RGB Colors in the Document menu, or use the Swatches window.</value>

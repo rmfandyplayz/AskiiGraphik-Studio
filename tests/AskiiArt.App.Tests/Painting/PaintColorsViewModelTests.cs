@@ -109,6 +109,19 @@ public sealed class PaintColorsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void TheTooltips_NameTheColors_AndFollowThem()
+    {
+        var changed = new List<string?>();
+        _viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        Colors.Foreground = _red;
+
+        Assert.StartsWith(_viewModel.ForegroundText, _viewModel.ForegroundTip, StringComparison.Ordinal);
+        Assert.StartsWith(_viewModel.BackgroundText, _viewModel.BackgroundTip, StringComparison.Ordinal);
+        Assert.Contains(nameof(PaintColorsViewModel.ForegroundTip), changed);
+    }
+
+    [Fact]
     public void NoneShowsNoColor()
     {
         Assert.Null(_viewModel.ForegroundBrush);

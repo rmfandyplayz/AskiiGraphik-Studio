@@ -76,8 +76,6 @@ internal sealed class MainWindowBuilder(
                 }),
             Window(ShellDockingIds.HistoryPanel, Strings.PanelHistory,
                 () => new HistoryPanelView { DataContext = history }),
-            Window(ShellDockingIds.BrushOptionsPanel, Strings.PanelBrushOptions,
-                () => new BrushOptionsView { DataContext = paintColors }),
             Window(ShellDockingIds.ColorPanel, Strings.PanelColor,
                 () => new ColorPanelView { DataContext = paintColors }),
             Window(ShellDockingIds.SwatchesPanel, Strings.PanelSwatches,
@@ -88,6 +86,9 @@ internal sealed class MainWindowBuilder(
             .. toolbars.Layouts.Select(toolbar => new ShellToolbarEntry(toolbar.Key,
                 () => bars.Build(toolbar.Value),
                 () => ToolbarMenu.Create(toolbar.Key, actions, docking))),
+            new ShellToolbarEntry(ShellDockingIds.BrushOptionsToolbar,
+                () => new BrushOptionsToolbar { DataContext = paintColors },
+                () => ToolbarMenu.Create(ShellDockingIds.BrushOptionsToolbar, actions, docking)),
         ]);
 
         docking.Attach(window.Panels, catalog, metrics);

@@ -328,7 +328,6 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaTheory]
-    [InlineData(ShellDockingIds.BrushOptionsPanel, typeof(BrushOptionsView))]
     [InlineData(ShellDockingIds.ColorPanel, typeof(ColorPanelView))]
     [InlineData(ShellDockingIds.SwatchesPanel, typeof(SwatchesView))]
     public void TheColorWindows_StartClosed_AndOpenWithTheirViews(string windowId, Type viewType)
@@ -348,6 +347,25 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.True(docking.IsWindowOpen(windowId));
         Assert.Contains(window.GetVisualDescendants(), visual => visual.GetType() == viewType);
+    }
+
+    [AvaloniaFact]
+    public void TheBrushOptionsToolbar_ShowsByDefault_AndHides()
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
+            .Build(KeyModifiers.Control);
+        _windows.Add(window);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(docking.IsToolbarVisible(ShellDockingIds.BrushOptionsToolbar));
+        Assert.Contains(window.GetVisualDescendants(), visual => visual is BrushOptionsToolbar);
+
+        docking.ToggleToolbar(ShellDockingIds.BrushOptionsToolbar);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(docking.IsToolbarVisible(ShellDockingIds.BrushOptionsToolbar));
     }
 
     private MainWindow ShowWindowWithUnsavedChanges()

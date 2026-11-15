@@ -669,7 +669,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private void UpdateCursor()
     {
         if (_panStart is not null || _isSpaceHeld || Tool?.PansWithPrimaryButton == true)
-            Cursor = _panCursor ??= new Cursor(StandardCursorType.Hand);
+            Cursor = _panCursor ??= new Cursor(PanCursor.TypeFor(OperatingSystem.IsMacOS()));
         else
             Cursor = null;
     }

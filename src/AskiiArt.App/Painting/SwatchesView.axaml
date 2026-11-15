@@ -14,12 +14,6 @@
       <Setter Property="Margin" Value="{StaticResource AppColorSwatchMargin}" />
       <Setter Property="Focusable" Value="False" />
     </Style>
-    <Style Selector="Border.swatch">
-      <Setter Property="Width" Value="{StaticResource AppColorSwatchSize}" />
-      <Setter Property="Height" Value="{StaticResource AppColorSwatchSize}" />
-      <Setter Property="BorderThickness" Value="{StaticResource AppColorSwatchBorderThickness}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource AppColorSwatchBorderBrush}" />
-    </Style>
     <Style Selector="TextBlock.note">
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
@@ -41,7 +35,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="painting:SwatchItem">
               <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Name}">
-                <Border Classes="swatch" Background="{Binding Brush}" />
+                <painting:ColorSwatch Fill="{Binding Brush}" />
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -49,8 +43,12 @@
         <Button x:Name="NoneButton"
                 HorizontalAlignment="Left"
                 Focusable="False"
-                Content="{x:Static res:Strings.SwatchNone}"
-                Command="{Binding ChooseNoneCommand}" />
+                Command="{Binding ChooseNoneCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingMedium}">
+            <painting:ColorSwatch />
+            <TextBlock Text="{x:Static res:Strings.SwatchNone}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
       </StackPanel>
     </StackPanel>
   </ScrollViewer>

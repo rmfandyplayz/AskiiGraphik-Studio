@@ -11,7 +11,6 @@ internal static class ShellDockingIds
 {
     public const string LayersPanel = "panel.layers";
     public const string HistoryPanel = "panel.history";
-    public const string BrushOptionsPanel = "panel.brushOptions";
     public const string ColorPanel = "panel.color";
     public const string SwatchesPanel = "panel.swatches";
 
@@ -24,4 +23,5 @@ internal static class ShellDockingIds
     public const string ToolsToolbar = "toolbar.tools";
     public const string EditToolbar = "toolbar.edit";
     public const string ViewToolbar = "toolbar.view";
+    public const string BrushOptionsToolbar = "toolbar.brushOptions";
 }
