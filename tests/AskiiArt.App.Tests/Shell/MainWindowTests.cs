@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
@@ -16,6 +17,9 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Text;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
@@ -366,6 +370,108 @@ public sealed class MainWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(docking.IsToolbarVisible(ShellDockingIds.BrushOptionsToolbar));
+    }
+
+    [AvaloniaFact]
+    public void ChoosingTheBrush_ShowsItsSubToolbar_AndChoosingAnotherToolHidesIt()
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = ShowWindow(docking);
+        Assert.Null(docking.SubToolbarParent);
+
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
+        var (foreground, background) = BrushButtons(window);
+        Assert.True(foreground.IsChecked);
+        Assert.False(background.IsChecked);
+
+        _canvas.Colors.Target = PaintColorTarget.Background;
+        Assert.False(foreground.IsChecked);
+        Assert.True(background.IsChecked);
+
+        _canvas.ViewModel.SelectTool(TextTool.Id);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(docking.SubToolbarParent);
+    }
+
+    [AvaloniaFact]
+    public void AWindowOpenedWhileTheBrushIsChosen_ShowsItsSubToolbar()
+    {
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+
+        ShowWindow(docking);
+
+        Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
+    }
+
+    [AvaloniaFact]
+    public void TappingAlt_OpensTheMenuBar()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+
+        TapAlt(window);
+
+        Assert.True(MenuBarOf(window).IsOpen);
+    }
+
+    [AvaloniaFact]
+    public void LettingGoOfAlt_AfterAnAltClickOnTheCanvas_LeavesTheMenuBarClosed()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var canvas = window.GetVisualDescendants().OfType<CanvasControl>().Single();
+        var centre = canvas.TranslatePoint(new Rect(canvas.Bounds.Size).Center, window)!.Value;
+
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        window.MouseDown(centre, MouseButton.Left, RawInputModifiers.Alt);
+        window.MouseUp(centre, MouseButton.Left, RawInputModifiers.Alt);
+        window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(MenuBarOf(window).IsOpen);
+
+        // Nothing is left half done: tapping Alt again opens the menu bar.
+        TapAlt(window);
+        Assert.True(MenuBarOf(window).IsOpen);
+    }
+
+    private MainWindow ShowWindow(ShellDocking docking)
+    {
+        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
+            .Build(KeyModifiers.Control);
+        _windows.Add(window);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        return window;
+    }
+
+    private MainWindow ShowWindowWithTheCanvasFocused()
+    {
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<CanvasControl>().Single().Focus();
+        Dispatcher.UIThread.RunJobs();
+        return window;
+    }
+
+    private static void TapAlt(MainWindow window)
+    {
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, null);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static Menu MenuBarOf(MainWindow window) => window.GetVisualDescendants().OfType<Menu>().Single();
+
+    private static (ToggleButton Foreground, ToggleButton Background) BrushButtons(MainWindow window)
+    {
+        var buttons = window.GetVisualDescendants().OfType<ToggleButton>().ToArray();
+        return (buttons.Single(button => Equals(button.Content, Strings.ActionForegroundBrush)),
+            buttons.Single(button => Equals(button.Content, Strings.ActionBackgroundBrush)));
     }
 
     private MainWindow ShowWindowWithUnsavedChanges()

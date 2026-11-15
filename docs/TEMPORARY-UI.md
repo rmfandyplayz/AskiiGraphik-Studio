@@ -14,8 +14,8 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Choice | Where | Step |
 |---|---|---|
 | Menus: File (New, Open, Save, Save As, Export as Text, Quit), Edit (Undo, Redo, Copy as Text), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a |
-| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. A fifth toolbar, Brush Options, has its own row below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
-| A Tools menu between Layer and View: Hand, Text and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a |
+| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Brush, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. A fifth toolbar, Brush Options, has its own row below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
+| A Tools menu between Layer and View: Hand, Text, Brush and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b |
 | A Window menu between View and Help: Layers, History, Color, Swatches, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
@@ -159,6 +159,15 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | In an RGB document an ANSI swatch stays an ANSI colour, shows as its hex code in Brush Options, and is typed as that RGB value | `Painting/PaintColorsViewModel.cs` | 2b.3a |
 | The colour mode is three check-mark items in the Document menu after ASCII Only (the roadmap first said an Edit → Color menu). Switching asks first when it would convert or remove colours | `Documents/ColorModeActions.cs`, `ColorModeConfirm*` strings | 2b.3a |
 | The New dialog's colour choice is three radio buttons under "Colors", Monochrome first and chosen | `Documents/NewDocumentWindow.axaml` | 2b.3a |
+| The Brush sits between Text and Eraser on the Tools toolbar and in the Tools menu | `Shell/Toolbars/ToolbarLayout.cs`, `MenuLayout.cs` | 2b.3b |
+| The Brush's sub-toolbar: two plain text toggle buttons, "FG Brush" and "BG Brush", beside the Tools toolbar while the Brush is chosen | `Painting/BrushSubToolbar.cs`, `Painting/BrushActions.cs` | 2b.3b |
+| Clicking a swatch on the Brush Options toolbar while the Brush is chosen switches between the FG and BG brushes too, since it's one choice | `Core/Tools/PaintColors.cs` | 2b.3b |
+| The FG brush leaves cells without a glyph alone, and a colour of None takes the cell's text colour or background away | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| A Brush stroke is one undo step named "Paint" | `Strings.resx` (`UndoStepPaint`) | 2b.3b |
+| Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Dragging with Alt held keeps picking colours from the cells under the pointer | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Alt+click in a monochrome document does nothing, so the chosen colour isn't lost; painting there does nothing either | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| No eyedropper pointer while Alt is held: the normal pointer stays | `Canvas/CanvasControl.cs` | 2b.3b |
 
 ## Ideas to revisit
 

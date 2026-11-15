@@ -38,6 +38,7 @@ internal sealed class PaintColorsViewModel : ObservableObject
         _followedDocument.Changed += OnDocumentChanged;
         activeDocument.SessionChanged += OnSessionChanged;
         colors.Changed += (_, _) => NotifyColorsChanged();
+        colors.TargetChanged += (_, _) => NotifyTargetChanged();
 
         Swatches =
         [
@@ -49,20 +50,14 @@ internal sealed class PaintColorsViewModel : ObservableObject
 
     public PaintColors Colors { get; }
 
-    /// <summary>Which colour the Color and Swatches windows change. The Brush Options toolbar chooses it.</summary>
+    /// <summary>
+    /// Which colour the Color and Swatches windows change, which is also the one the Brush paints (ADR 0043). The
+    /// Brush Options toolbar, the Brush's sub-toolbar and keys 1 and 2 choose it.
+    /// </summary>
     public PaintColorTarget Target
     {
-        get;
-        set
-        {
-            if (!SetProperty(ref field, value))
-                return;
-
-            OnPropertyChanged(nameof(IsForegroundTarget));
-            OnPropertyChanged(nameof(IsBackgroundTarget));
-            OnPropertyChanged(nameof(TargetText));
-            OnPropertyChanged(nameof(PickerColor));
-        }
+        get => Colors.Target;
+        set => Colors.Target = value;
     }
 
     // One radio button binds to each. A button being unticked is the other being ticked, so false is ignored.
@@ -205,6 +200,15 @@ internal sealed class PaintColorsViewModel : ObservableObject
         OnPropertyChanged(nameof(CanChooseSwatches));
         OnPropertyChanged(nameof(CanUsePicker));
         NotifyColorsChanged();
+    }
+
+    private void NotifyTargetChanged()
+    {
+        OnPropertyChanged(nameof(Target));
+        OnPropertyChanged(nameof(IsForegroundTarget));
+        OnPropertyChanged(nameof(IsBackgroundTarget));
+        OnPropertyChanged(nameof(TargetText));
+        OnPropertyChanged(nameof(PickerColor));
     }
 
     private void NotifyColorsChanged()

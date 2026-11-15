@@ -419,6 +419,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         base.OnPointerPressed(e);
         Focus();
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            AltClickMenuGuard.TreatAltAsUsed(this);
 
         var point = e.GetCurrentPoint(this);
         if (_viewport is null)

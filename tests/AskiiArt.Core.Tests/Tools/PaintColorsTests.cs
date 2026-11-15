@@ -88,4 +88,35 @@ public sealed class PaintColorsTests
         Assert.Equal(_red, _colors.BackgroundIn(ColorMode.Ansi));
         Assert.Equal(_orange, _colors.Foreground);
     }
+
+    [Fact]
+    public void TheTarget_StartsAsFG_AndRaisesTargetChangedOnlyWhenItChanges()
+    {
+        var targetChanges = 0;
+        _colors.TargetChanged += (_, _) => targetChanges++;
+        Assert.Equal(PaintColorTarget.Foreground, _colors.Target);
+
+        _colors.Target = PaintColorTarget.Background;
+        _colors.Target = PaintColorTarget.Background;
+
+        Assert.Equal(PaintColorTarget.Background, _colors.Target);
+        Assert.Equal(1, targetChanges);
+        Assert.Equal(0, _changes);
+    }
+
+    [Fact]
+    public void TheTargetColor_IsTheChosenOne()
+    {
+        _colors.Foreground = _orange;
+        _colors.Background = _red;
+        Assert.Equal(_orange, _colors.TargetColor);
+
+        _colors.Target = PaintColorTarget.Background;
+        Assert.Equal(_red, _colors.TargetColor);
+        Assert.Equal(CellColor.FromRgb(AnsiPalette.Vga[AnsiColor.Red]), _colors.TargetColorIn(ColorMode.Rgb));
+
+        _colors.TargetColor = CellColor.Unset;
+        Assert.True(_colors.Background.IsUnset);
+        Assert.Equal(_orange, _colors.Foreground);
+    }
 }

@@ -193,7 +193,8 @@ public sealed class MenuLayoutTests
     private static void AssertIsToolsMenu(MenuDefinition menu)
     {
         Assert.Equal(nameof(Strings.MenuTools), menu.LabelKey);
-        Assert.Equal([ToolActionIds.Hand, ToolActionIds.Text, ToolActionIds.Eraser], ActionIdsIn(menu.Entries));
+        Assert.Equal([ToolActionIds.Hand, ToolActionIds.Text, ToolActionIds.Brush, ToolActionIds.Eraser],
+            ActionIdsIn(menu.Entries));
     }
 
     private static void AssertIsViewMenu(MenuDefinition view)

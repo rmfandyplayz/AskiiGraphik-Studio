@@ -49,3 +49,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0040](0040-debug-frame-rate-readout.md) | The Debug frame-rate readout | Accepted |
 | [0041](0041-the-hand-tool-and-esc.md) | The Hand tool and Esc | Accepted |
 | [0042](0042-the-current-colours.md) | The current colours | Accepted |
+| [0043](0043-the-colour-brush.md) | The colour brush | Accepted |

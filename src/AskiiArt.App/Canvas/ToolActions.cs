@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
@@ -13,6 +14,7 @@ internal static class ToolActionIds
 {
     public const string Hand = Prefix + HandTool.Id;
     public const string Text = Prefix + TextTool.Id;
+    public const string Brush = Prefix + BrushTool.Id;
     public const string Eraser = Prefix + EraserTool.Id;
 
     private const string Prefix = "tool.";

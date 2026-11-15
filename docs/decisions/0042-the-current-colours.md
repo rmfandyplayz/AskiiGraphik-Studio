@@ -15,7 +15,7 @@ Step 2b.3a gives the user colours to paint and type with. The owner asked for an
 - **Tools are created from a `ToolContext`:** the editing session and the colours. Shared state for tools later (a ramp, a brush size) adds a property rather than a parameter to every tool's factory.
 - **The text tool** writes the current colours. Backspace and Delete remove only the glyph and keep the cell's background, as removing a glyph does elsewhere (ADR 0036). The hard eraser still empties the whole cell.
 - **X and D are canvas letters,** under the same rules as the tool letters (ADR 0033): they type while the caret is placed.
-- **The three windows share one `PaintColorsViewModel`.** Which colour the windows change is kept there, not in Core, because only the windows use it. Their buttons never take keyboard focus, so the canvas keeps the keyboard. The swatches are hidden in a monochrome document, and the picker shows only in an RGB document; in an ANSI one, its dot would jump between the 16 colours as you dragged.
+- **The three windows share one `PaintColorsViewModel`.** Which colour the windows change is `PaintColors.Target`, in Core, because the Brush paints the same choice (ADR 0043). Their buttons never take keyboard focus, so the canvas keeps the keyboard. The swatches are hidden in a monochrome document, and the picker shows only in an RGB document; in an ANSI one, its dot would jump between the 16 colours as you dragged.
 - **The picker is Avalonia.Controls.ColorPicker's `ColorView`,** with its alpha, palette and accent parts hidden. Its colour is set from code under a flag, and only the user moving it chooses a colour. While the colour is none, it shows the last colour picked, white at first.
 - **The colour mode** is chosen in the New dialog (monochrome by default) and switched with three check-mark items in the Document menu, which ask first when `CountCellsThatLookDifferent` finds cells that would change.
 
@@ -33,3 +33,5 @@ Step 2b.3a gives the user colours to paint and type with. The owner asked for an
 - D goes or moves when the owner designs the shortcuts.
 
 Updated 2026-11-14: Brush Options is a toolbar, as the owner meant: "FG: [swatch] • BG: [swatch]", where clicking a swatch chooses the colour the windows change. Its swatches are toggle-looking radio buttons without a group name, so the copies of the toolbar shown during a drag can't untick the real ones. A colour of None shows as an empty square with a diagonal slash (`ColorSwatch`).
+
+Updated 2026-11-14: which colour the windows change moved from `PaintColorsViewModel` into `PaintColors.Target`, because the Brush paints with the same choice (ADR 0043).

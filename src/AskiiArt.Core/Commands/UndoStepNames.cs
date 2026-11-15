@@ -59,4 +59,7 @@ public static class UndoStepNames
 
     /// <summary>A stroke of the eraser.</summary>
     public const string Erase = "UndoStepErase";
+
+    /// <summary>A stroke of the brush.</summary>
+    public const string Paint = "UndoStepPaint";
 }

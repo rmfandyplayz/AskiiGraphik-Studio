@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Shell.Menus;
 
 namespace AskiiArt.App.Shell.Toolbars;
@@ -27,7 +28,15 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
     [
         new ActionMenuEntry(ToolActionIds.Hand),
         new ActionMenuEntry(ToolActionIds.Text),
+        new ActionMenuEntry(ToolActionIds.Brush),
         new ActionMenuEntry(ToolActionIds.Eraser)
+    ]);
+
+    /// <summary>The Brush's sub-toolbar, beside the Tools toolbar while the Brush is the active tool.</summary>
+    public static ToolbarLayout CreateBrushSubToolbar() => new(
+    [
+        new ActionMenuEntry(BrushActionIds.ForegroundBrush),
+        new ActionMenuEntry(BrushActionIds.BackgroundBrush)
     ]);
 
     public static ToolbarLayout CreateEdit() => new(

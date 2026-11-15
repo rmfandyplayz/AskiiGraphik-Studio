@@ -18,6 +18,7 @@ using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
@@ -68,6 +69,7 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, LayerActions>();
         services.AddSingleton<IActionProvider, ColorModeActions>();
+        services.AddSingleton<IActionProvider, BrushActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),
             provider.GetRequiredService<DocumentFiles>(),
@@ -79,6 +81,7 @@ internal static class AppServices
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(HandTool.Definition);
         services.AddSingleton(TextTool.Definition);
+        services.AddSingleton(BrushTool.Definition);
         services.AddSingleton(EraserTool.Definition);
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<PaintColors>();

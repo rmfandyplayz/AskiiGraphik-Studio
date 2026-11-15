@@ -11,6 +11,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
@@ -35,9 +36,9 @@ internal sealed class TestCanvas : IDisposable
         ActiveDocument = new ActiveDocument(
             new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet,
                 colorMode: colorMode)));
-        ViewModel = new CanvasViewModel(ActiveDocument,
-            new ToolRegistry([HandTool.Definition, TextTool.Definition, EraserTool.Definition]), Colors, Fonts,
-            Atlases);
+        var tools = new ToolRegistry(
+            [HandTool.Definition, TextTool.Definition, BrushTool.Definition, EraserTool.Definition]);
+        ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, Fonts, Atlases);
     }
 
     /// <summary>The FG and BG colours the canvas's tools paint with.</summary>

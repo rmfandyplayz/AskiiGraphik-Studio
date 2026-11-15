@@ -177,6 +177,21 @@ public sealed class PaintColorsViewModelTests : IDisposable
         Assert.Null(_viewModel.ForegroundBrush);
     }
 
+    [Fact]
+    public void AChoiceMadeElsewhere_SuchAsByTheBrush_IsFollowed()
+    {
+        var changed = new List<string?>();
+        _viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        Colors.Target = PaintColorTarget.Background;
+
+        Assert.True(_viewModel.IsBackgroundTarget);
+        Assert.Contains(nameof(PaintColorsViewModel.IsBackgroundTarget), changed);
+        Assert.Contains(nameof(PaintColorsViewModel.IsForegroundTarget), changed);
+        Assert.Contains(nameof(PaintColorsViewModel.TargetText), changed);
+        Assert.Contains(nameof(PaintColorsViewModel.PickerColor), changed);
+    }
+
     private static string Describe(string format, string name) =>
         string.Format(CultureInfo.CurrentCulture, format, name);
 

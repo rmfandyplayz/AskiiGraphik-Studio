@@ -198,6 +198,10 @@ The eraser has two modes. Hard mode arrived with layers (step 2.4), one cell wid
 
 If alpha ever becomes real, a third mode could lower alpha instead. That mode is reserved; don't build it.
 
+### 8.4 Colour brush
+
+The Brush (step 2b.3b) paints colour onto cells that are already there, one cell wide until brushes have sizes (M3). It's an FG brush, which colours text, or a BG brush, which colours backgrounds, and that choice is the same one the colour windows change (ADR 0043). Alt+click (Option+click) picks the colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
+
 ## 9. Commands and undo
 
 - Undo uses the command pattern. Each command can apply and revert itself, and it stores **only what it touched**. For cell edits, that's a compact list of (layer id, cell index, before, after).

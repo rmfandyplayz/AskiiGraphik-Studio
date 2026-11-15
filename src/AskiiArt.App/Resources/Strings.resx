@@ -193,6 +193,17 @@
   <data name="ToolEraser" xml:space="preserve">
     <value>Eraser</value>
   </data>
+  <data name="ToolBrush" xml:space="preserve">
+    <value>Brush</value>
+  </data>
+  <data name="ActionForegroundBrush" xml:space="preserve">
+    <value>FG Brush</value>
+    <comment>The Brush's sub-toolbar: paint text colors. Key 1 chooses it too.</comment>
+  </data>
+  <data name="ActionBackgroundBrush" xml:space="preserve">
+    <value>BG Brush</value>
+    <comment>The Brush's sub-toolbar: paint backgrounds. Key 2 chooses it too.</comment>
+  </data>
   <data name="MenuTools" xml:space="preserve">
     <value>_Tools</value>
   </data>
@@ -644,6 +655,10 @@
   </data>
   <data name="UndoStepErase" xml:space="preserve">
     <value>Erase</value>
+  </data>
+  <data name="UndoStepPaint" xml:space="preserve">
+    <value>Paint</value>
+    <comment>History: a stroke of the Brush.</comment>
   </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>

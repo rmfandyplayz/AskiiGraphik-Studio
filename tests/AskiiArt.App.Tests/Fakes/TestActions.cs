@@ -7,6 +7,7 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,6 +34,7 @@ internal static class TestActions
             includeDebugActions),
         new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),
         new ColorModeActions(canvas.ActiveDocument, shell),
+        new BrushActions(canvas.Colors),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

@@ -4,6 +4,7 @@
 using AskiiArt.App.Painting;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;

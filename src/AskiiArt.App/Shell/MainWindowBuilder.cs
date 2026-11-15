@@ -92,7 +92,12 @@ internal sealed class MainWindowBuilder(
         ]);
 
         docking.Attach(window.Panels, catalog, metrics);
-        window.Closed += (_, _) => docking.SaveAndDetach();
+        var brushSubToolbar = new BrushSubToolbar(canvas, docking, actions);
+        window.Closed += (_, _) =>
+        {
+            docking.SaveAndDetach();
+            brushSubToolbar.Dispose();
+        };
     }
 
     // They exist exactly when the actions that open them do, which is in debug builds.
