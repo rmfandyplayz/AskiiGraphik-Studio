@@ -43,16 +43,18 @@ internal sealed partial class CanvasView : UserControl
     }
 
     // Here rather than as action shortcuts, which would fire while typing in any text box. It runs
-    // only for keys the canvas itself didn't use.
+    // only for keys the canvas itself didn't use, so Esc during a stroke only cancels the stroke.
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
 
-        if (!e.Handled && e.KeyModifiers == KeyModifiers.None && e.KeySymbol is { Length: 1 } letter &&
-            DataContext is CanvasViewModel canvas && canvas.TrySelectToolByLetter(letter[0]))
-        {
-            e.Handled = true;
-        }
+        if (e.Handled || e.KeyModifiers != KeyModifiers.None || DataContext is not CanvasViewModel canvas)
+            return;
+
+        if (e.Key == Key.Escape)
+            e.Handled = canvas.TrySwitchToHandTool();
+        else if (e.KeySymbol is { Length: 1 } letter)
+            e.Handled = canvas.TryUseShortcutLetter(letter[0]);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

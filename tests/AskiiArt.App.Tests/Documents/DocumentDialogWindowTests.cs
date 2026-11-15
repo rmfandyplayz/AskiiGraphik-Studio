@@ -35,7 +35,7 @@ public sealed class DocumentDialogWindowTests : IDisposable
 
         var result = ShowAndClickOk<NewDocumentSettings?>(dialog);
 
-        Assert.Equal(new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii), result);
+        Assert.Equal(new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii, ColorMode.Monochrome), result);
     }
 
     [AvaloniaFact]

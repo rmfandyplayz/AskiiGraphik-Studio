@@ -47,3 +47,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0038](0038-drawing-cell-colours.md) | Drawing cell colours | Accepted |
 | [0039](0039-box-drawing-and-block-glyphs-fill-the-cell.md) | Box-drawing and block glyphs fill the cell | Accepted |
 | [0040](0040-debug-frame-rate-readout.md) | The Debug frame-rate readout | Accepted |
+| [0041](0041-the-hand-tool-and-esc.md) | The Hand tool and Esc | Accepted |
+| [0042](0042-the-current-colours.md) | The current colours | Accepted |

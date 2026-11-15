@@ -69,6 +69,7 @@ public sealed class AppTests : IDisposable
         services.AddSingleton(new ShellDocking(settings, NullLogger<ShellDocking>.Instance));
         services.AddSingleton(new HistoryPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton(new LayersPanelViewModel(_canvas.ActiveDocument));
+        services.AddSingleton(_canvas.CreatePaintColorsViewModel());
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ShellToolbars.CreateDefault());

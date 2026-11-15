@@ -424,8 +424,10 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (_viewport is null)
             return;
 
+        // The Hand tool pans with the primary button, as Space + drag does with any tool (ADR 0041).
+        var primaryButtonPans = _isSpaceHeld || Tool?.PansWithPrimaryButton == true;
         var startsPan = point.Properties.IsMiddleButtonPressed ||
-                        (_isSpaceHeld && point.Properties.IsLeftButtonPressed);
+                        (primaryButtonPans && point.Properties.IsLeftButtonPressed);
         if (startsPan)
         {
             _panStart = ToDevicePixels(point.Position);
@@ -666,7 +668,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     private void UpdateCursor()
     {
-        if (_panStart is not null || _isSpaceHeld)
+        if (_panStart is not null || _isSpaceHeld || Tool?.PansWithPrimaryButton == true)
             Cursor = _panCursor ??= new Cursor(StandardCursorType.Hand);
         else
             Cursor = null;
@@ -700,6 +702,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (newTool is not null)
             newTool.OverlayChanged += OnToolOverlayChanged;
 
+        UpdateCursor();
         InvalidateVisual();
     }
 

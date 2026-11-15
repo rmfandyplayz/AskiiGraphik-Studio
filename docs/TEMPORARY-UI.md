@@ -13,10 +13,10 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 | Choice | Where | Step |
 |---|---|---|
-| Menus: File (New, Open, Save, Save As, Export as Text, Quit), Edit (Undo, Redo, Copy as Text), Document (Resize Canvas, Font, ASCII Only), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8 |
-| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Text, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b |
-| A Tools menu between Layer and View: Text and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4 |
-| A Window menu between View and Help: Layers, History, then the four toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b |
+| Menus: File (New, Open, Save, Save As, Export as Text, Quit), Edit (Undo, Redo, Copy as Text), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a |
+| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
+| A Tools menu between Layer and View: Hand, Text and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a |
+| A Window menu between View and Help: Layers, History, Brush Options, Color, Swatches, then the four toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
 | The window can't go below 1280 × 720, or below what its screen has room for when that's less | `Shell/WindowMinimumSize.cs`, `AppWindowMinWidth`, `AppWindowMinHeight` | 2.1 |
@@ -146,6 +146,18 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | The canvas scrolls to keep the caret on screen | `CanvasControl` | 1.5 |
 | Characters the document's character set doesn't allow are silently skipped | `TextTool` | 1.5 |
 | ASCII Only is a check-mark item in the Document menu (the Edit menu in 1.5), and switching to it asks first when it would remove characters | `DocumentActions`, `AsciiOnlyConfirm*` strings | 1.5, 1.6 |
+| The Hand tool shows the system's hand cursor for as long as it's chosen, not only while dragging | `Canvas/CanvasControl.cs` | 2b.3a |
+| From typing, one Esc goes straight to the Hand tool and the caret goes with it, rather than a first Esc removing the caret | `Canvas/CanvasView.axaml.cs` | 2b.3a |
+| Brush Options window: two round radio buttons, FG and BG, each a small colour square with a label such as "FG: Red" or "BG: None" (a hex code in RGB documents), a note in monochrome documents, and a line saying what X and D do | `Painting/BrushOptionsView.axaml` | 2b.3a |
+| Swatches window: a line saying which colour it changes, the 16 ANSI colours as small squares in rows that wrap, named in tooltips, and a None button. Monochrome documents show only a note | `Painting/SwatchesView.axaml` | 2b.3a |
+| Color window: Avalonia's colour picker with its alpha, palette and accent parts hidden, under a line saying which colour it changes. Only RGB documents get the picker; the others show a note. While the colour is None it shows the last colour picked, white at first | `Painting/ColorPanelView.axaml` | 2b.3a |
+| Brush Options, Color and Swatches aren't in the default layout. They open from the Window menu, where the docking system puts any window that has no place yet | `Shell/Docking/ShellDockingIds.cs` | 2b.3a |
+| The colour windows' buttons never take keyboard focus, so X and D keep working on the canvas after a click on them | the three `Painting` views | 2b.3a |
+| **D, which sets both colours to None, is temporary**: a stand-in until the owner designs the shortcuts. The Brush Options hint says so | `Canvas/CanvasViewModel.cs` (`ResetColorsLetter`), `BrushOptionsKeysHint` | 2b.3a |
+| Backspace and Delete with the text tool erase the glyph but keep the cell's background | `Core/Tools/Text/TextTool.cs` | 2b.3a |
+| In an RGB document an ANSI swatch stays an ANSI colour, shows as its hex code in Brush Options, and is typed as that RGB value | `Painting/PaintColorsViewModel.cs` | 2b.3a |
+| The colour mode is three check-mark items in the Document menu after ASCII Only (the roadmap first said an Edit → Color menu). Switching asks first when it would convert or remove colours | `Documents/ColorModeActions.cs`, `ColorModeConfirm*` strings | 2b.3a |
+| The New dialog's colour choice is three radio buttons under "Colors", Monochrome first and chosen | `Documents/NewDocumentWindow.axaml` | 2b.3a |
 
 ## Ideas to revisit
 
@@ -167,6 +179,9 @@ The owner's ideas, parked until the stage they belong to.
 - **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
 - **Removing the space option** (raised in M2b planning): the owner may drop the per-layer "spaces are empty" option one day. Nothing but the glyph plane of compositing depends on it, so removing it stays small (ADR 0036).
-- **A custom colour picker** (raised in M2b planning): 2b.3 uses Avalonia's ColorPicker. If it can't be customized enough, we build our own.
+- **A custom colour picker** (raised in M2b planning): 2b.3a uses Avalonia's ColorPicker. If it can't be customized enough, we build our own.
+- **Reference image layer** (raised in M2b planning): an image layer to work from, which the eyedropper (2b.3b) picks colours from the same way as from the canvas.
+- **Right-click paints the BG colour** (raised in M2b planning): maybe, for the brush. Right-click does nothing yet.
+- **The Select tool** (raised in 2b.3a's planning): it will probably replace the Hand tool, take V, and be where Esc goes (ADR 0041).
 - **Color and plugins** (decided after 2.3's testing, ADR 0032): colour and ANSI are in, as milestone M2b. Plugins are in, as M8b, with a built-in Discord ANSI message plugin. Opacity isn't planned; wide (CJK) characters could be a plugin.
 - **Notice when a file changes outside the app** (raised in 1.7): a message when the open document's file is deleted or changed elsewhere, instead of locking the file (ADR 0024). It's on the roadmap for M9.

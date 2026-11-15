@@ -458,13 +458,23 @@ public sealed class TextToolTests
     }
 
     [Fact]
-    public void Escape_RemovesTheCaret_AndRaisesOverlayChanged()
+    public void Escape_IsLeftToTheApp_WhichSwitchesToTheHandTool()
+    {
+        Click(1, 1);
+
+        Assert.False(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+
+        Assert.Equal(new CellPoint(1, 1), _tool.Caret);
+    }
+
+    [Fact]
+    public void Deactivating_RemovesTheCaret_AndRaisesOverlayChanged()
     {
         Click(1, 1);
         var overlayChanges = 0;
         _tool.OverlayChanged += (_, _) => overlayChanges++;
 
-        Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+        _tool.Deactivate();
 
         Assert.Null(_tool.Caret);
         Assert.Equal(ToolOverlay.None, _tool.Overlay);
@@ -540,10 +550,11 @@ public sealed class TextToolTests
     {
         var registry = new ToolRegistry([TextTool.Definition]);
 
-        var tool = registry.Get(TextTool.Id).Create(_session);
+        var context = new ToolContext(_session, new PaintColors());
+        var tool = registry.Get(TextTool.Id).Create(context);
 
         Assert.IsType<TextTool>(tool);
-        Assert.NotSame(tool, registry.Get(TextTool.Id).Create(_session));
+        Assert.NotSame(tool, registry.Get(TextTool.Id).Create(context));
         Assert.Throws<ArgumentException>(() => new ToolRegistry([TextTool.Definition, TextTool.Definition]));
     }
 

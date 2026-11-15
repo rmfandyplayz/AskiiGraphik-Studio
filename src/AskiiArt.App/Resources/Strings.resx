@@ -648,4 +648,152 @@
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>
   </data>
+  <data name="ToolHand" xml:space="preserve">
+    <value>Hand</value>
+  </data>
+  <data name="ActionToggleBrushOptions" xml:space="preserve">
+    <value>_Brush Options</value>
+    <comment>Window menu: shows or hides the Brush Options window.</comment>
+  </data>
+  <data name="ActionToggleColor" xml:space="preserve">
+    <value>_Color</value>
+    <comment>Window menu: shows or hides the Color window, a colour picker.</comment>
+  </data>
+  <data name="ActionToggleSwatches" xml:space="preserve">
+    <value>_Swatches</value>
+    <comment>Window menu: shows or hides the Swatches window, the 16 ANSI colours.</comment>
+  </data>
+  <data name="PanelBrushOptions" xml:space="preserve">
+    <value>Brush Options</value>
+  </data>
+  <data name="PanelColor" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="PanelSwatches" xml:space="preserve">
+    <value>Swatches</value>
+  </data>
+  <data name="ActionColorModeMonochrome" xml:space="preserve">
+    <value>_Monochrome</value>
+    <comment>Document menu, a check mark item: the document holds no colours.</comment>
+  </data>
+  <data name="ActionColorModeAnsi" xml:space="preserve">
+    <value>A_NSI Colors</value>
+    <comment>Document menu, a check mark item: the document holds the 16 standard ANSI colours.</comment>
+  </data>
+  <data name="ActionColorModeRgb" xml:space="preserve">
+    <value>R_GB Colors</value>
+    <comment>Document menu, a check mark item: the document holds any RGB colour.</comment>
+  </data>
+  <data name="ColorModeConfirmTitle" xml:space="preserve">
+    <value>Change Colors</value>
+  </data>
+  <data name="ColorModeRemoveMessageFormat" xml:space="preserve">
+    <value>Switching to monochrome removes the colors from {0:N0} cells. You can undo this.</value>
+    <comment>{0} is how many cells have a colour.</comment>
+  </data>
+  <data name="ColorModeConvertMessageFormat" xml:space="preserve">
+    <value>Switching to ANSI colors changes {0:N0} cells to the nearest of the 16 colors. You can undo this.</value>
+    <comment>{0} is how many cells have an RGB colour that isn't one of the 16.</comment>
+  </data>
+  <data name="ColorModeConfirmRemove" xml:space="preserve">
+    <value>Remove Colors</value>
+  </data>
+  <data name="ColorModeConfirmConvert" xml:space="preserve">
+    <value>Convert Colors</value>
+  </data>
+  <data name="ColorModeLabel" xml:space="preserve">
+    <value>Colors</value>
+    <comment>New dialog: the heading above the colour mode choices.</comment>
+  </data>
+  <data name="ColorModeMonochromeOption" xml:space="preserve">
+    <value>Monochrome (no colors)</value>
+  </data>
+  <data name="ColorModeAnsiOption" xml:space="preserve">
+    <value>ANSI (the 16 standard colors)</value>
+  </data>
+  <data name="ColorModeRgbOption" xml:space="preserve">
+    <value>RGB (any color)</value>
+  </data>
+  <data name="PaintColorNone" xml:space="preserve">
+    <value>None</value>
+    <comment>Brush Options: the colour is none, so typing keeps the default text colour or the cell's own background.</comment>
+  </data>
+  <data name="PaintColorForegroundFormat" xml:space="preserve">
+    <value>FG: {0}</value>
+    <comment>Brush Options: {0} is the text colour's name, such as Red, #FF8800 or None.</comment>
+  </data>
+  <data name="PaintColorBackgroundFormat" xml:space="preserve">
+    <value>BG: {0}</value>
+    <comment>Brush Options: {0} is the background colour's name, such as Red, #FF8800 or None.</comment>
+  </data>
+  <data name="PaintColorTargetForeground" xml:space="preserve">
+    <value>Changes the FG color</value>
+    <comment>Color and Swatches windows: which of the two colours they change.</comment>
+  </data>
+  <data name="PaintColorTargetBackground" xml:space="preserve">
+    <value>Changes the BG color</value>
+  </data>
+  <data name="PaintColorsNeedColorsNote" xml:space="preserve">
+    <value>This document has no colors. Choose ANSI Colors or RGB Colors in the Document menu to use them.</value>
+  </data>
+  <data name="BrushOptionsKeysHint" xml:space="preserve">
+    <value>On the canvas, X swaps the two colors and D sets both to None. D is a temporary key.</value>
+  </data>
+  <data name="ColorPanelNeedsRgbNote" xml:space="preserve">
+    <value>The color picker is for RGB documents. Choose RGB Colors in the Document menu, or use the Swatches window.</value>
+  </data>
+  <data name="SwatchNone" xml:space="preserve">
+    <value>None</value>
+    <comment>Swatches window: sets the colour to none.</comment>
+  </data>
+  <data name="AnsiColorBlack" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="AnsiColorRed" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="AnsiColorGreen" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="AnsiColorYellow" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="AnsiColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="AnsiColorMagenta" xml:space="preserve">
+    <value>Magenta</value>
+  </data>
+  <data name="AnsiColorCyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
+  <data name="AnsiColorWhite" xml:space="preserve">
+    <value>White</value>
+    <comment>The ANSI colour that most terminals show as light grey.</comment>
+  </data>
+  <data name="AnsiColorBrightBlack" xml:space="preserve">
+    <value>Bright Black</value>
+    <comment>The ANSI colour that most terminals show as dark grey.</comment>
+  </data>
+  <data name="AnsiColorBrightRed" xml:space="preserve">
+    <value>Bright Red</value>
+  </data>
+  <data name="AnsiColorBrightGreen" xml:space="preserve">
+    <value>Bright Green</value>
+  </data>
+  <data name="AnsiColorBrightYellow" xml:space="preserve">
+    <value>Bright Yellow</value>
+  </data>
+  <data name="AnsiColorBrightBlue" xml:space="preserve">
+    <value>Bright Blue</value>
+  </data>
+  <data name="AnsiColorBrightMagenta" xml:space="preserve">
+    <value>Bright Magenta</value>
+  </data>
+  <data name="AnsiColorBrightCyan" xml:space="preserve">
+    <value>Bright Cyan</value>
+  </data>
+  <data name="AnsiColorBrightWhite" xml:space="preserve">
+    <value>Bright White</value>
+  </data>
 </root>

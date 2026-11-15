@@ -9,7 +9,9 @@ namespace AskiiArt.Core.Tools.Text;
 
 /// <summary>
 /// Types text into the active layer, one glyph per cell, overwriting what's there (ADR 0017).
-/// Click a cell to place the caret; typed characters land at the caret and move it right.
+/// Click a cell to place the caret; typed characters land at the caret and move it right. Text is
+/// typed in the FG colour, over the BG colour, or over the cell's own background when the BG colour
+/// is none (ADR 0042).
 /// </summary>
 /// <remarks>
 /// Each keystroke is its own command, but the keystrokes of one typing burst coalesce into one
@@ -34,20 +36,35 @@ public sealed class TextTool : ITool
     public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text", 'T');
 
     /// <summary>Registers the text tool, as DI does.</summary>
-    public static ToolDefinition Definition { get; } = new(ToolDescriptor, session => new TextTool(session));
+    public static ToolDefinition Definition { get; } =
+        new(ToolDescriptor, context => new TextTool(context.Session, context.Colors));
 
     private readonly EditingSession _session;
+    private readonly PaintColors _colors;
     private TextBlock? _block;
     private bool _backspaceErasesCaretCell;
     private CoalescingGroup? _typingBurst;
     private DateTimeOffset _lastKeystrokeTime;
 
-    /// <summary>Creates a text tool for <paramref name="session"/>, with no caret yet.</summary>
+    /// <summary>
+    /// Creates a text tool for <paramref name="session"/> that types without colours, with no caret yet.
+    /// </summary>
     public TextTool(EditingSession session)
+        : this(session, new PaintColors())
+    {
+    }
+
+    /// <summary>
+    /// Creates a text tool for <paramref name="session"/> that types in <paramref name="colors"/>, with no
+    /// caret yet.
+    /// </summary>
+    public TextTool(EditingSession session, PaintColors colors)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(colors);
 
         _session = session;
+        _colors = colors;
     }
 
     /// <inheritdoc/>
@@ -59,10 +76,18 @@ public sealed class TextTool : ITool
     /// <summary>False: Space types a space.</summary>
     public bool AllowsSpacePanning => false;
 
-    /// <summary>The cell the next typed character goes into, or null before the first click and after Esc.</summary>
+    /// <summary>False: a click places the caret.</summary>
+    public bool PansWithPrimaryButton => false;
+
+    /// <summary>
+    /// The cell the next typed character goes into, or null before the first click and after the tool
+    /// is deactivated.
+    /// </summary>
     public CellPoint? Caret { get; private set; }
 
-    /// <summary>True while there's a caret. Esc removes it.</summary>
+    /// <summary>
+    /// True while there's a caret. Esc isn't the text tool's: the App switches to the Hand tool (ADR 0041).
+    /// </summary>
     public bool IsTakingText => Caret is not null;
 
     /// <inheritdoc/>
@@ -126,10 +151,7 @@ public sealed class TextTool : ITool
                 EraseBackwards(caret);
                 break;
             case ToolKey.Delete:
-                Write(caret, Cell.Empty, nextCaret: caret);
-                break;
-            case ToolKey.Escape:
-                Deactivate();
+                EraseGlyph(caret, nextCaret: caret);
                 break;
             default:
                 return false;
@@ -153,7 +175,10 @@ public sealed class TextTool : ITool
         if (!CanEdit())
             return true;
 
-        var cells = new CellEditBuilder(Document, _session.ActiveLayer.Id);
+        var layer = _session.ActiveLayer;
+        var cells = new CellEditBuilder(Document, layer.Id);
+        var foreground = _colors.ForegroundIn(Document.ColorMode);
+        var background = _colors.BackgroundIn(Document.ColorMode);
         var block = BlockAround(caret);
         var typedAnything = false;
         var isStuckAtRightEdge = false;
@@ -162,7 +187,8 @@ public sealed class TextTool : ITool
             if (!Document.CharacterSet.Allows(rune))
                 continue;
 
-            cells.Set(caret, Cell.FromGlyph(rune));
+            var cellBackground = background.IsUnset ? layer.GetCell(caret).Background : background;
+            cells.Set(caret, Cell.FromGlyph(rune, foreground, cellBackground));
             block = block.WithTyped(caret);
             var next = ClampToCanvas(caret with { X = caret.X + 1 });
             isStuckAtRightEdge = next == caret;
@@ -198,22 +224,24 @@ public sealed class TextTool : ITool
     {
         if (_backspaceErasesCaretCell || caret.X == 0)
         {
-            Write(caret, Cell.Empty, nextCaret: caret);
+            EraseGlyph(caret, nextCaret: caret);
             return;
         }
 
         var behind = caret with { X = caret.X - 1 };
-        Write(behind, Cell.Empty, nextCaret: behind);
+        EraseGlyph(behind, nextCaret: behind);
     }
 
-    // After an erase, the caret's cell is empty, so the next Backspace erases the cell before it.
-    private void Write(CellPoint point, Cell cell, CellPoint nextCaret)
+    // Erasing text takes away the glyph but keeps the background, which is painted rather than typed.
+    // After an erase, the caret's cell has no glyph, so the next Backspace erases the cell before it.
+    private void EraseGlyph(CellPoint point, CellPoint nextCaret)
     {
         if (!CanEdit())
             return;
 
-        var cells = new CellEditBuilder(Document, _session.ActiveLayer.Id);
-        cells.Set(point, cell);
+        var layer = _session.ActiveLayer;
+        var cells = new CellEditBuilder(Document, layer.Id);
+        cells.Set(point, layer.GetCell(point).WithoutGlyph());
         Execute(cells.Build(UndoStepNames.Typing));
         _backspaceErasesCaretCell = false;
         SetCaret(nextCaret);

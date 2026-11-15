@@ -47,3 +47,4 @@ Updated 2026-10-31: from the owner's 1.5 testing, Backspace erases a placed care
 Updated 2026-11-01: tool keys are commands from a per-platform keymap, with jumps of 3 and 10 cells and moves to the top and bottom of the column (step 1.6).
 Updated 2026-11-01: from the owner's 1.6 testing, the 10-cell jump on Windows and Linux moved from Alt+arrow to Ctrl+Shift+arrow, because a lone Alt opens the menu bar.
 Updated 2026-11-02: the text tool is no longer always active, and tools have shortcut letters that don't fire while the caret is placed (ADR 0033).
+Updated 2026-11-14: Esc is no longer the text tool's. It switches to the Hand tool, which removes the caret (ADR 0041). Typing writes the current FG and BG colours, and Backspace and Delete keep the cell's background (ADR 0042).

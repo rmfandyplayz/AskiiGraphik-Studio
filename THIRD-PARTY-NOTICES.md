@@ -9,7 +9,7 @@ AskiiArt uses the components below. Every one is under a license compatible with
 
 | Component | License | Source |
 |---|---|---|
-| Avalonia (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Skia) | MIT | https://github.com/AvaloniaUI/Avalonia |
+| Avalonia (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent, Avalonia.Skia, Avalonia.Controls.ColorPicker) | MIT | https://github.com/AvaloniaUI/Avalonia |
 | SkiaSharp | MIT | https://github.com/mono/SkiaSharp |
 | HarfBuzzSharp (dependency of Avalonia.Skia) | MIT | https://github.com/mono/SkiaSharp |
 | CommunityToolkit.Mvvm | MIT | https://github.com/CommunityToolkit/dotnet |

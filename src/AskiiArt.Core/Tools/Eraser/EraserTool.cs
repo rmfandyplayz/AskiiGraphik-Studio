@@ -21,7 +21,8 @@ public sealed class EraserTool : ITool
     public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolEraser", "tool.eraser", "paint", 'E');
 
     /// <summary>Registers the eraser, as DI does.</summary>
-    public static ToolDefinition Definition { get; } = new(ToolDescriptor, session => new EraserTool(session));
+    public static ToolDefinition Definition { get; } =
+        new(ToolDescriptor, context => new EraserTool(context.Session));
 
     private readonly EditingSession _session;
     private CoalescingGroup? _stroke;
@@ -51,6 +52,9 @@ public sealed class EraserTool : ITool
 
     /// <summary>True: Space + drag pans.</summary>
     public bool AllowsSpacePanning => true;
+
+    /// <summary>False: dragging erases.</summary>
+    public bool PansWithPrimaryButton => false;
 
     /// <summary>False: the eraser takes no text.</summary>
     public bool IsTakingText => false;
@@ -83,7 +87,10 @@ public sealed class EraserTool : ITool
     /// <inheritdoc/>
     public void PointerReleased(ToolPointerInput input) => _stroke = null;
 
-    /// <summary>Esc during a stroke takes it back as if it never happened.</summary>
+    /// <summary>
+    /// Esc during a stroke takes it back as if it never happened. Otherwise Esc isn't the eraser's, so the
+    /// App switches to the Hand tool (ADR 0041).
+    /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers)
     {
         if (key != ToolKey.Escape || _stroke is null)

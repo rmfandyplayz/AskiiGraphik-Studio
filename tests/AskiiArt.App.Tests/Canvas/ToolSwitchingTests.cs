@@ -8,6 +8,7 @@ using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -136,6 +137,90 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void Esc_SwitchesToTheHandTool_StraightFromTyping()
+    {
+        Click(new CellPoint(2, 1));
+        var text = Assert.IsType<TextTool>(Canvas.ActiveTool);
+
+        PressEscape();
+
+        Assert.IsType<HandTool>(Canvas.ActiveTool);
+        Assert.Null(text.Caret);
+        Assert.Same(Canvas.ActiveTool, _control.Tool);
+    }
+
+    [AvaloniaFact]
+    public void Esc_DuringAnEraserStroke_OnlyCancelsIt_AndTheNextEscSwitchesToTheHandTool()
+    {
+        var history = _canvas.Session.History;
+        var cells = new CellEditBuilder(_canvas.Document, Layer.Id);
+        cells.Set(new CellPoint(1, 1), Cell.FromGlyph(new Rune('a')));
+        history.Execute(cells.Build()!);
+        Canvas.SelectTool(EraserTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        _window.MouseDown(CentreOf(new CellPoint(1, 1)), MouseButton.Left);
+        PressEscape();
+
+        Assert.IsType<EraserTool>(Canvas.ActiveTool);
+        Assert.True(Layer.GetCell(new CellPoint(1, 1)).HasGlyph);
+
+        _window.MouseUp(CentreOf(new CellPoint(1, 1)), MouseButton.Left);
+        PressEscape();
+
+        Assert.IsType<HandTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void Esc_WithTheHandTool_KeepsIt()
+    {
+        Canvas.SelectTool(HandTool.Id);
+        var hand = Canvas.ActiveTool;
+
+        PressEscape();
+
+        Assert.Same(hand, Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void V_ChoosesTheHandTool()
+    {
+        PressLetter(Key.V, PhysicalKey.V, "v");
+
+        Assert.IsType<HandTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void X_SwapsTheColors_AndD_SetsBothToNone()
+    {
+        var red = CellColor.FromAnsi(AnsiColor.Red);
+        _canvas.Colors.Foreground = red;
+
+        PressLetter(Key.X, PhysicalKey.X, "x");
+
+        Assert.True(_canvas.Colors.Foreground.IsUnset);
+        Assert.Equal(red, _canvas.Colors.Background);
+
+        PressLetter(Key.D, PhysicalKey.D, "d");
+
+        Assert.True(_canvas.Colors.Background.IsUnset);
+    }
+
+    [AvaloniaFact]
+    public void XAndD_AreTyped_WhileACaretIsPlaced()
+    {
+        var red = CellColor.FromAnsi(AnsiColor.Red);
+        _canvas.Colors.Foreground = red;
+        Click(new CellPoint(2, 1));
+
+        PressLetter(Key.X, PhysicalKey.X, "x");
+        PressLetter(Key.D, PhysicalKey.D, "d");
+
+        Assert.Equal(red, _canvas.Colors.Foreground);
+        Assert.Equal(TextTool.Id, Canvas.ActiveTool.Descriptor.Id);
+    }
+
+    [AvaloniaFact]
     public void ALetterWithAModifier_DoesntChooseATool()
     {
         _window.KeyPress(Key.E, RawInputModifiers.Control, PhysicalKey.E, "e");
@@ -172,6 +257,13 @@ public sealed class ToolSwitchingTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         _window.MouseDown(CentreOf(cell), MouseButton.Left);
         _window.MouseUp(CentreOf(cell), MouseButton.Left);
+    }
+
+    private void PressEscape()
+    {
+        _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        _window.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Dispatcher.UIThread.RunJobs();
     }
 
     private void PressLetter(Key key, PhysicalKey physicalKey, string symbol)

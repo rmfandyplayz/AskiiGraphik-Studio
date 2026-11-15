@@ -1,0 +1,34 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Color window (step 2b.3a): Avalonia's colour picker, without its palette or alpha, for the
+     colour Brush Options says the windows change. RGB documents only. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:painting="using:AskiiArt.App.Painting"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Painting.ColorPanelView"
+             x:DataType="painting:PaintColorsViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.note">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Auto">
+    <StackPanel Margin="{StaticResource AppColorPanelPadding}" Spacing="{StaticResource AppSpacingSmall}">
+      <TextBlock Classes="note"
+                 IsVisible="{Binding !CanUsePicker}"
+                 Text="{x:Static res:Strings.ColorPanelNeedsRgbNote}" />
+      <StackPanel IsVisible="{Binding CanUsePicker}" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Classes="note" Text="{Binding TargetText}" />
+        <!-- The colour is set from code, not bound: see ColorPanelView.axaml.cs. -->
+        <ColorView x:Name="Picker"
+                   HorizontalAlignment="Left"
+                   IsAlphaEnabled="False"
+                   IsAlphaVisible="False"
+                   IsColorPaletteVisible="False"
+                   IsAccentColorsVisible="False" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

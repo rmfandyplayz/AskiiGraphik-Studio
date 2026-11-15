@@ -34,3 +34,5 @@ M2b adds colour (ADR 0032). The owner decided on 2026-11-14 that a document is m
 - The canvas (2b.2) draws backgrounds as their own pass, under the glyphs.
 - RGB to ANSI loses detail. The warning count lets the user back out, and undo restores the colours.
 - Code that asks "does this cell have a glyph?" uses `HasGlyph`. `IsEmpty` is only for "does this cell hold anything?".
+
+Updated 2026-11-14: the text tool writes the current colours from step 2b.3a, ahead of M3's tools. The picker is Avalonia's `ColorView`, in the Color window, shown only for RGB documents (ADR 0042).

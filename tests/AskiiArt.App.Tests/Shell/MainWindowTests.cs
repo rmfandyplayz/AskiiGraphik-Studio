@@ -6,6 +6,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -326,6 +327,29 @@ public sealed class MainWindowTests : IDisposable
         Assert.Null(builder.BuildApplicationMenu(KeyModifiers.Control));
     }
 
+    [AvaloniaTheory]
+    [InlineData(ShellDockingIds.BrushOptionsPanel, typeof(BrushOptionsView))]
+    [InlineData(ShellDockingIds.ColorPanel, typeof(ColorPanelView))]
+    [InlineData(ShellDockingIds.SwatchesPanel, typeof(SwatchesView))]
+    public void TheColorWindows_StartClosed_AndOpenWithTheirViews(string windowId, Type viewType)
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
+            .Build(KeyModifiers.Control);
+        _windows.Add(window);
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(docking.IsWindowOpen(windowId));
+
+        docking.ToggleWindow(windowId);
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(docking.IsWindowOpen(windowId));
+        Assert.Contains(window.GetVisualDescendants(), visual => visual.GetType() == viewType);
+    }
+
     private MainWindow ShowWindowWithUnsavedChanges()
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
@@ -357,9 +381,10 @@ public sealed class MainWindowTests : IDisposable
         return window;
     }
 
-    private MainWindowBuilder CreateBuilder(MenuLayout layout) =>
+    private MainWindowBuilder CreateBuilder(MenuLayout layout, ShellDocking? docking = null) =>
         new(_actions, layout, ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
-            new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
-            new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument));
+            docking ?? new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
+            new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
+            _canvas.CreatePaintColorsViewModel());
 }

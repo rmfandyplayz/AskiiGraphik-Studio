@@ -47,7 +47,7 @@ public sealed class ClickRoutingTests : IDisposable
         var builder = new MainWindowBuilder(actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
             ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell, _docking, new FakeAppSettings(),
-            new HistoryPanelViewModel(_canvas.ActiveDocument), layers);
+            new HistoryPanelViewModel(_canvas.ActiveDocument), layers, _canvas.CreatePaintColorsViewModel());
 
         _window = builder.Build(KeyModifiers.Control);
         _window.Width = 1200;

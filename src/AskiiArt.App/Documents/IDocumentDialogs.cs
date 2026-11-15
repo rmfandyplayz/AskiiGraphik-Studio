@@ -45,12 +45,14 @@ internal enum SaveChangesChoice
 }
 
 /// <summary>What the New dialog asks for.</summary>
-internal sealed record NewDocumentSettings(CanvasSize Size, CharacterSet CharacterSet)
+internal sealed record NewDocumentSettings(CanvasSize Size, CharacterSet CharacterSet, ColorMode ColorMode)
 {
     /// <summary>What the New dialog starts with, and the document the app opens with.</summary>
-    public static NewDocumentSettings Default { get; } = new(new CanvasSize(80, 25), CharacterSet.Ascii);
+    public static NewDocumentSettings Default { get; } =
+        new(new CanvasSize(80, 25), CharacterSet.Ascii, ColorMode.Monochrome);
 
-    public Document CreateDocument() => Document.Create(Size, Strings.DefaultLayerName, CharacterSet);
+    public Document CreateDocument() =>
+        Document.Create(Size, Strings.DefaultLayerName, CharacterSet, colorMode: ColorMode);
 }
 
 /// <summary>What the Resize Canvas dialog asks for.</summary>

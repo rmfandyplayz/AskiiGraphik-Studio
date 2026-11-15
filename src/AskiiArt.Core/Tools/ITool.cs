@@ -28,6 +28,12 @@ public interface ITool
     /// </summary>
     bool AllowsSpacePanning { get; }
 
+    /// <summary>
+    /// Whether dragging with the primary button pans the canvas instead of reaching the tool, as the
+    /// Hand tool does (ADR 0041). The tool's pointer methods then aren't called for that button.
+    /// </summary>
+    bool PansWithPrimaryButton { get; }
+
     /// <summary>True while typed characters go to this tool, so letter keys can't pick another tool.</summary>
     bool IsTakingText { get; }
 

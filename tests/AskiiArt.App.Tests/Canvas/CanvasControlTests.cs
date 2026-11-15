@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools.Hand;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -121,6 +122,25 @@ public sealed class CanvasControlTests : IDisposable
 
         Assert.Equal(50, _control.HorizontalOffset);
         Assert.Equal(50, _control.VerticalOffset);
+    }
+
+    [AvaloniaFact]
+    public void WithTheHandTool_LeftDragPans_WithAHandCursor()
+    {
+        _control.Tool = new HandTool();
+        Show();
+        Assert.NotNull(_control.Cursor);
+
+        _window.MouseDown(new Point(200, 150), MouseButton.Left);
+        _window.MouseMove(new Point(150, 100));
+        _window.MouseUp(new Point(150, 100), MouseButton.Left);
+
+        Assert.Equal(50, _control.HorizontalOffset);
+        Assert.Equal(50, _control.VerticalOffset);
+        Assert.NotNull(_control.Cursor);
+
+        _control.Tool = null;
+        Assert.Null(_control.Cursor);
     }
 
     [AvaloniaFact]

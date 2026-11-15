@@ -30,6 +30,7 @@
       <SolidColorBrush x:Key="AppDockBrush" Color="#FFF3F3F3" />
       <SolidColorBrush x:Key="AppDockBorderBrush" Color="#FFC8C8C8" />
       <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FFDCDCDC" />
+      <SolidColorBrush x:Key="AppColorSwatchBorderBrush" Color="#FF808080" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -55,6 +56,7 @@
       <SolidColorBrush x:Key="AppDockBrush" Color="#FF2B2B2B" />
       <SolidColorBrush x:Key="AppDockBorderBrush" Color="#FF3C3C3C" />
       <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FF3C3C3C" />
+      <SolidColorBrush x:Key="AppColorSwatchBorderBrush" Color="#FF8C8C8C" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -165,6 +167,12 @@
 
   <!-- History panel -->
   <Thickness x:Key="AppHistoryRowPadding">8,4</Thickness>
+
+  <!-- Brush Options, Color and Swatches windows -->
+  <Thickness x:Key="AppColorPanelPadding">8</Thickness>
+  <x:Double x:Key="AppColorSwatchSize">20</x:Double>
+  <Thickness x:Key="AppColorSwatchMargin">0,0,4,4</Thickness>
+  <Thickness x:Key="AppColorSwatchBorderThickness">1</Thickness>
 
   <!-- Layers panel -->
   <Thickness x:Key="AppLayerRowPadding">4,0</Thickness>

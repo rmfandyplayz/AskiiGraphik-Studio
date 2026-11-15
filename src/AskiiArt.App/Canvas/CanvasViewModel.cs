@@ -10,6 +10,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -28,20 +29,29 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     /// <summary>The font size at 100% zoom, in logical pixels. It's the same for every document (ADR 0019).</summary>
     public const double DefaultFontSize = 16;
 
+    /// <summary>The letter that swaps the FG and BG colours (ADR 0042).</summary>
+    public const char SwapColorsLetter = 'X';
+
+    /// <summary>The letter that sets both colours to none. A temporary key (ADR 0042).</summary>
+    public const char ResetColorsLetter = 'D';
+
     private readonly ActiveDocument _activeDocument;
     private readonly ToolRegistry _tools;
     private readonly FontCatalog _fonts;
     private string _selectedToolId = TextTool.Id;
 
-    public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, FontCatalog fonts, GlyphAtlasCache atlases)
+    public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, PaintColors colors, FontCatalog fonts,
+        GlyphAtlasCache atlases)
     {
         ArgumentNullException.ThrowIfNull(activeDocument);
         ArgumentNullException.ThrowIfNull(tools);
+        ArgumentNullException.ThrowIfNull(colors);
         ArgumentNullException.ThrowIfNull(fonts);
         ArgumentNullException.ThrowIfNull(atlases);
 
         _activeDocument = activeDocument;
         _tools = tools;
+        Colors = colors;
         _fonts = fonts;
         Atlases = atlases;
 
@@ -55,6 +65,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     /// <summary>The tools that can be chosen.</summary>
     public IReadOnlyList<ToolDefinition> Tools => _tools.All;
+
+    /// <summary>The FG and BG colours the tools paint with, shared by every document.</summary>
+    public PaintColors Colors { get; }
 
     public CompositeCache Composite { get; private set; }
 
@@ -153,24 +166,50 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         var definition = _tools.Get(toolId);
         ActiveTool.Deactivate();
         _selectedToolId = toolId;
-        ActiveTool = definition.Create(Session);
+        ActiveTool = definition.Create(new ToolContext(Session, Colors));
         OnPropertyChanged(nameof(ActiveTool));
     }
 
     /// <summary>
-    /// Picks the tool with this shortcut letter. Returns false when none has it, or when the active
-    /// tool is taking text, which is what the letter is for then.
+    /// Uses a single-letter shortcut (ADR 0033): a tool's letter picks that tool, <see cref="SwapColorsLetter"/>
+    /// swaps the colours and <see cref="ResetColorsLetter"/> sets both to none. Returns false when the letter
+    /// isn't a shortcut, or when the active tool is taking text, which is what the letter is for then.
     /// </summary>
-    public bool TrySelectToolByLetter(char letter)
+    public bool TryUseShortcutLetter(char letter)
     {
         if (ActiveTool.IsTakingText)
             return false;
 
         var wanted = char.ToUpperInvariant(letter);
-        if (Tools.FirstOrDefault(tool => tool.Descriptor.ShortcutLetter == wanted) is not { } definition)
+        if (Tools.FirstOrDefault(tool => tool.Descriptor.ShortcutLetter == wanted) is { } definition)
+        {
+            SelectTool(definition.Descriptor.Id);
+            return true;
+        }
+
+        switch (wanted)
+        {
+            case SwapColorsLetter:
+                Colors.Swap();
+                return true;
+            case ResetColorsLetter:
+                Colors.Reset();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// Switches to the Hand tool, as Esc does from any tool, so a tool is always chosen (ADR 0041). Returns
+    /// false when it's already the active one.
+    /// </summary>
+    public bool TrySwitchToHandTool()
+    {
+        if (_selectedToolId == HandTool.Id)
             return false;
 
-        SelectTool(definition.Descriptor.Id);
+        SelectTool(HandTool.Id);
         return true;
     }
 
@@ -189,7 +228,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         Composite.Changed += OnCompositeChanged;
         session.Document.Changed += OnDocumentChanged;
         Font = _fonts.Resolve(session.Document.Font);
-        ActiveTool = _tools.Get(_selectedToolId).Create(session);
+        ActiveTool = _tools.Get(_selectedToolId).Create(new ToolContext(session, Colors));
     }
 
     private void Detach()

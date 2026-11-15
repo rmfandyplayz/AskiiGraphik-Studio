@@ -7,6 +7,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
@@ -36,7 +37,8 @@ internal sealed class MainWindowBuilder(
     ShellDocking docking,
     IAppSettings settings,
     HistoryPanelViewModel history,
-    LayersPanelViewModel layers)
+    LayersPanelViewModel layers,
+    PaintColorsViewModel paintColors)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -74,6 +76,12 @@ internal sealed class MainWindowBuilder(
                 }),
             Window(ShellDockingIds.HistoryPanel, Strings.PanelHistory,
                 () => new HistoryPanelView { DataContext = history }),
+            Window(ShellDockingIds.BrushOptionsPanel, Strings.PanelBrushOptions,
+                () => new BrushOptionsView { DataContext = paintColors }),
+            Window(ShellDockingIds.ColorPanel, Strings.PanelColor,
+                () => new ColorPanelView { DataContext = paintColors }),
+            Window(ShellDockingIds.SwatchesPanel, Strings.PanelSwatches,
+                () => new SwatchesView { DataContext = paintColors }),
             .. SampleWindows(Window),
         ],
         [

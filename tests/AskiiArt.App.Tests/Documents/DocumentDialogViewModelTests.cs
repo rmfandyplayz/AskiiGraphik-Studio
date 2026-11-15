@@ -10,12 +10,54 @@ namespace AskiiArt.App.Tests.Documents;
 public sealed class DocumentDialogViewModelTests
 {
     [Fact]
-    public void New_StartsAt80By25_AsciiOnly()
+    public void New_StartsAt80By25_AsciiOnly_Monochrome()
     {
         var dialog = new NewDocumentViewModel();
 
-        Assert.Equal(new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii), dialog.Result);
+        Assert.Equal(new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii, ColorMode.Monochrome),
+            dialog.Result);
         Assert.False(dialog.IsUnicode);
+        Assert.True(dialog.IsMonochrome);
+        Assert.False(dialog.IsAnsi);
+        Assert.False(dialog.IsRgb);
+    }
+
+    [Theory]
+    [InlineData(ColorMode.Ansi)]
+    [InlineData(ColorMode.Rgb)]
+    public void New_ChoosingAColorMode_ChangesTheResult_AndUnticksTheOthers(ColorMode colorMode)
+    {
+        var dialog = new NewDocumentViewModel();
+
+        if (colorMode == ColorMode.Ansi)
+            dialog.IsAnsi = true;
+        else
+            dialog.IsRgb = true;
+
+        Assert.Equal(colorMode, dialog.Result!.ColorMode);
+        Assert.False(dialog.IsMonochrome);
+        Assert.Equal(colorMode == ColorMode.Ansi, dialog.IsAnsi);
+        Assert.Equal(colorMode == ColorMode.Rgb, dialog.IsRgb);
+    }
+
+    [Fact]
+    public void New_UntickingAColorMode_ChangesNothing()
+    {
+        var dialog = new NewDocumentViewModel { IsRgb = true };
+
+        dialog.IsRgb = false;
+
+        Assert.Equal(ColorMode.Rgb, dialog.ColorMode);
+    }
+
+    [Fact]
+    public void New_TheChosenSettings_CreateADocumentInThatColorMode()
+    {
+        var settings = new NewDocumentViewModel { IsAnsi = true }.Result!;
+
+        var document = settings.CreateDocument();
+
+        Assert.Equal(ColorMode.Ansi, document.ColorMode);
     }
 
     [Fact]

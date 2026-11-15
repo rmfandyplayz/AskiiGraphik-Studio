@@ -33,7 +33,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 | Area | Choice | Notes |
 |---|---|---|
 | Runtime | .NET 10 (LTS, supported to Nov 2028) | Latest C#, nullable enabled |
-| UI | Avalonia 12.x, latest stable | Avalonia has no LTS label; 12.x is the current stable line |
+| UI | Avalonia 12.x, latest stable, with Avalonia.Controls.ColorPicker for the RGB picker | Avalonia has no LTS label; 12.x is the current stable line. The picker may give way to our own (ADR 0042) |
 | MVVM | CommunityToolkit.Mvvm | Source-generated and minimal |
 | DI | Microsoft.Extensions.DependencyInjection | Holds the registries for tools, importers, exporters and actions |
 | Graphics | SkiaSharp | **Use the exact version Avalonia depends on.** Never pin a different one. |
@@ -180,9 +180,10 @@ Tools are **Core** classes with no UI dependencies. Each tool has:
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
 - **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
-- **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017).
+- **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017). The Hand tool also pans with a plain left-drag.
+- **Esc:** a tool uses Esc only to cancel what it's doing. Any other Esc on the canvas switches to the Hand tool, so a tool is always chosen (ADR 0041).
 
-Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session. Built-in tools register exactly the way a future plugin would (§18).
+Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session from a `ToolContext`: the session and the FG and BG colours, which every document shares (ADR 0042). Built-in tools register exactly the way a future plugin would (§18).
 
 ### 8.2 Planned tools
 

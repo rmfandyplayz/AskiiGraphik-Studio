@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
 using CommunityToolkit.Mvvm.Input;
 
@@ -10,6 +11,7 @@ namespace AskiiArt.App.Canvas;
 
 internal static class ToolActionIds
 {
+    public const string Hand = Prefix + HandTool.Id;
     public const string Text = Prefix + TextTool.Id;
     public const string Eraser = Prefix + EraserTool.Id;
 

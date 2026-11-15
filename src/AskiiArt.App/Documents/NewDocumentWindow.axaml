@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder New dialog (step 1.6): the canvas size and the character set. -->
+<!-- Edited with Claude Code (Anthropic). -->
+<!-- Placeholder New dialog (step 1.6): the canvas size, the character set and, since 2b.3a, the colour mode. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:documents="using:AskiiArt.App.Documents"
@@ -24,6 +25,16 @@
     <RadioButton GroupName="CharacterSet"
                  Content="{x:Static res:Strings.CharacterSetUnicodeOption}"
                  IsChecked="{Binding IsUnicode, Mode=TwoWay}" />
+    <TextBlock Text="{x:Static res:Strings.ColorModeLabel}" />
+    <RadioButton GroupName="ColorMode"
+                 Content="{x:Static res:Strings.ColorModeMonochromeOption}"
+                 IsChecked="{Binding IsMonochrome, Mode=TwoWay}" />
+    <RadioButton GroupName="ColorMode"
+                 Content="{x:Static res:Strings.ColorModeAnsiOption}"
+                 IsChecked="{Binding IsAnsi, Mode=TwoWay}" />
+    <RadioButton GroupName="ColorMode"
+                 Content="{x:Static res:Strings.ColorModeRgbOption}"
+                 IsChecked="{Binding IsRgb, Mode=TwoWay}" />
     <StackPanel Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Margin="{StaticResource AppDialogButtonsMargin}"

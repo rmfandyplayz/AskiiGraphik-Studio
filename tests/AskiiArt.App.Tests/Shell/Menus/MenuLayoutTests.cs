@@ -151,6 +151,7 @@ public sealed class MenuLayoutTests
         Assert.Equal(
         [
             WindowMenuActionIds.ToggleLayers, WindowMenuActionIds.ToggleHistory,
+            WindowMenuActionIds.ToggleBrushOptions, WindowMenuActionIds.ToggleColor, WindowMenuActionIds.ToggleSwatches,
             WindowMenuActionIds.ToggleFileToolbar, WindowMenuActionIds.ToggleToolsToolbar,
             WindowMenuActionIds.ToggleEditToolbar, WindowMenuActionIds.ToggleViewToolbar,
             WindowMenuActionIds.ResetLayout
@@ -166,8 +167,11 @@ public sealed class MenuLayoutTests
     private static void AssertIsDocumentMenu(MenuDefinition document)
     {
         Assert.Equal(nameof(Strings.MenuDocument), document.LabelKey);
-        Assert.Equal([DocumentActionIds.ResizeCanvas, DocumentActionIds.Font, DocumentActionIds.AsciiOnly],
-            ActionIdsIn(document.Entries));
+        Assert.Equal(
+        [
+            DocumentActionIds.ResizeCanvas, DocumentActionIds.Font, DocumentActionIds.AsciiOnly,
+            ColorModeActionIds.Monochrome, ColorModeActionIds.Ansi, ColorModeActionIds.Rgb
+        ], ActionIdsIn(document.Entries));
     }
 
     private static void AssertIsLayerMenu(MenuDefinition menu)
@@ -188,7 +192,7 @@ public sealed class MenuLayoutTests
     private static void AssertIsToolsMenu(MenuDefinition menu)
     {
         Assert.Equal(nameof(Strings.MenuTools), menu.LabelKey);
-        Assert.Equal([ToolActionIds.Text, ToolActionIds.Eraser], ActionIdsIn(menu.Entries));
+        Assert.Equal([ToolActionIds.Hand, ToolActionIds.Text, ToolActionIds.Eraser], ActionIdsIn(menu.Entries));
     }
 
     private static void AssertIsViewMenu(MenuDefinition view)

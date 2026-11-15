@@ -11,6 +11,9 @@ internal static class ShellDockingIds
 {
     public const string LayersPanel = "panel.layers";
     public const string HistoryPanel = "panel.history";
+    public const string BrushOptionsPanel = "panel.brushOptions";
+    public const string ColorPanel = "panel.color";
+    public const string SwatchesPanel = "panel.swatches";
 
     // Debug builds only.
     public const string SampleWindow1 = "panel.sample1";

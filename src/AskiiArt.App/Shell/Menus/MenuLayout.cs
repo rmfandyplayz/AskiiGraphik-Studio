@@ -64,13 +64,17 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(EditActionIds.CopyAsText)
         ]);
 
-        // ASCII Only sits here until the owner designs document options.
+        // ASCII Only and the colour modes sit here until the owner designs document options.
         var documentMenu = new MenuDefinition(nameof(Strings.MenuDocument),
         [
             new ActionMenuEntry(DocumentActionIds.ResizeCanvas),
             new ActionMenuEntry(DocumentActionIds.Font),
             new SeparatorMenuEntry(),
-            new ActionMenuEntry(DocumentActionIds.AsciiOnly)
+            new ActionMenuEntry(DocumentActionIds.AsciiOnly),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(ColorModeActionIds.Monochrome),
+            new ActionMenuEntry(ColorModeActionIds.Ansi),
+            new ActionMenuEntry(ColorModeActionIds.Rgb)
         ]);
 
         var layerMenu = new MenuDefinition(nameof(Strings.MenuLayer),
@@ -88,6 +92,7 @@ internal sealed record MenuLayout(
 
         var toolsMenu = new MenuDefinition(nameof(Strings.MenuTools),
         [
+            new ActionMenuEntry(ToolActionIds.Hand),
             new ActionMenuEntry(ToolActionIds.Text),
             new ActionMenuEntry(ToolActionIds.Eraser)
         ]);
@@ -105,6 +110,9 @@ internal sealed record MenuLayout(
         [
             new ActionMenuEntry(WindowMenuActionIds.ToggleLayers),
             new ActionMenuEntry(WindowMenuActionIds.ToggleHistory),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleBrushOptions),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleColor),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleSwatches),
             new SeparatorMenuEntry(),
             new ActionMenuEntry(WindowMenuActionIds.ToggleFileToolbar),
             new ActionMenuEntry(WindowMenuActionIds.ToggleToolsToolbar),

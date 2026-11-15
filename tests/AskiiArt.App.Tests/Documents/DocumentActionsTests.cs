@@ -35,7 +35,8 @@ public sealed class DocumentActionsTests : IDisposable
     {
         Type("ab");
         _dialogs.SaveChangesAnswer = SaveChangesChoice.DontSave;
-        _dialogs.NewDocumentAnswer = new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii);
+        _dialogs.NewDocumentAnswer =
+            new NewDocumentSettings(new CanvasSize(80, 25), CharacterSet.Ascii, ColorMode.Monochrome);
 
         await ExecuteAsync(DocumentActionIds.New);
 

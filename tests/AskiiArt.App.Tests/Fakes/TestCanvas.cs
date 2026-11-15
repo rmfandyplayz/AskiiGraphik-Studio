@@ -5,12 +5,14 @@ using System.Text;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Shell;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -19,7 +21,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace AskiiArt.App.Tests.Fakes;
 
 /// <summary>
-/// A canvas view model over a small empty document, with the text tool, the bundled fonts only
+/// A canvas view model over a small empty document, with the built-in tools, the bundled fonts only
 /// and no fallback fonts, so tests don't depend on what the machine has installed. Dispose it to
 /// release the fonts and atlases.
 /// </summary>
@@ -33,8 +35,13 @@ internal sealed class TestCanvas : IDisposable
         ActiveDocument = new ActiveDocument(
             new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet,
                 colorMode: colorMode)));
-        ViewModel = new CanvasViewModel(ActiveDocument, new ToolRegistry([TextTool.Definition, EraserTool.Definition]), Fonts, Atlases);
+        ViewModel = new CanvasViewModel(ActiveDocument,
+            new ToolRegistry([HandTool.Definition, TextTool.Definition, EraserTool.Definition]), Colors, Fonts,
+            Atlases);
     }
+
+    /// <summary>The FG and BG colours the canvas's tools paint with.</summary>
+    public PaintColors Colors { get; } = new();
 
     public ActiveDocument ActiveDocument { get; }
 
@@ -51,6 +58,9 @@ internal sealed class TestCanvas : IDisposable
     public CanvasViewModel ViewModel { get; }
 
     public TextExporter TextExporter { get; } = new();
+
+    /// <summary>What the Brush Options, Color and Swatches windows show, for this canvas's colours.</summary>
+    public PaintColorsViewModel CreatePaintColorsViewModel() => new(Colors, ActiveDocument);
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>

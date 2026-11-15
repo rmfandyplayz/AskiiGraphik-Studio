@@ -32,6 +32,7 @@ internal static class TestActions
         new SubToolbarSampleActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance),
             includeDebugActions),
         new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),
+        new ColorModeActions(canvas.ActiveDocument, shell),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

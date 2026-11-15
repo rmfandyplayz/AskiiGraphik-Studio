@@ -1,0 +1,57 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Swatches window (step 2b.3a): the 16 ANSI colours and None, which set the colour Brush
+     Options says the windows change. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:painting="using:AskiiArt.App.Painting"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Painting.SwatchesView"
+             x:DataType="painting:PaintColorsViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.swatch">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="{StaticResource AppColorSwatchMargin}" />
+      <Setter Property="Focusable" Value="False" />
+    </Style>
+    <Style Selector="Border.swatch">
+      <Setter Property="Width" Value="{StaticResource AppColorSwatchSize}" />
+      <Setter Property="Height" Value="{StaticResource AppColorSwatchSize}" />
+      <Setter Property="BorderThickness" Value="{StaticResource AppColorSwatchBorderThickness}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppColorSwatchBorderBrush}" />
+    </Style>
+    <Style Selector="TextBlock.note">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer>
+    <StackPanel Margin="{StaticResource AppColorPanelPadding}" Spacing="{StaticResource AppSpacingSmall}">
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsMonochrome}"
+                 Text="{x:Static res:Strings.PaintColorsNeedColorsNote}" />
+      <StackPanel IsVisible="{Binding CanChooseSwatches}" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Classes="note" Text="{Binding TargetText}" />
+        <ItemsControl x:Name="SwatchList" ItemsSource="{Binding Swatches}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="painting:SwatchItem">
+              <Button Classes="swatch" Command="{Binding Choose}" ToolTip.Tip="{Binding Name}">
+                <Border Classes="swatch" Background="{Binding Brush}" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button x:Name="NoneButton"
+                HorizontalAlignment="Left"
+                Focusable="False"
+                Content="{x:Static res:Strings.SwatchNone}"
+                Command="{Binding ChooseNoneCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
