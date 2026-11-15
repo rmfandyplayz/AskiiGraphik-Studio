@@ -130,8 +130,8 @@ internal static class ColorSampleDocument
             yield return BackgroundOnly(3, Ansi(color));
     }
 
-    // A colour round the colour wheel (0 to 1, from red), at a brightness from 0 to 1.
-    private static CellColor Hue(double wheelPosition, double brightness)
+    /// <summary>A colour round the colour wheel (0 to 1, from red), at a brightness from 0 to 1.</summary>
+    public static CellColor Hue(double wheelPosition, double brightness)
     {
         const double saturation = 0.75;
         var sector = wheelPosition % 1 * 6;

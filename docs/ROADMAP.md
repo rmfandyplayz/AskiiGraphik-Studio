@@ -63,8 +63,9 @@ Added after 2.3's testing (ADR 0032), before M3 so every tool from then on write
   *Note:* right-click doesn't paint yet. The eyedropper picks only from the canvas for now; a later image layer for reference images can be picked from the same way.
   *Note:* built 2026-11-14 (ADR 0043), ready for testing. The FG/BG brush and the Brush Options choice are one choice, as the owner asked; Alt+click picks from what you see, only the colour the brush paints. [test doc](testing/step-2b.3b-brush.md)
   *Note:* follow-ups after the owner's testing on 2026-11-15, ready for testing: the menu bar's letters no longer stay underlined after an Alt+click, and Esc while picking is tested with Alt let go first, since Alt+Esc is Windows'. [follow-ups](testing/step-2b.3b-follow-ups.md)
-- [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
+- [~] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
   *Owner checks:* the exported art in a terminal on Windows and macOS.
+  *Note:* built 2026-11-15 (ADR 0044), ready for testing. Both sit beside their Text versions and still work in a monochrome document, as the owner chose; Debug → Open ANSI Test Sample and Open RGB Test Sample give art sized for a terminal. [test doc](testing/step-2b.4-ansi-export.md)
 
 ## M3: Ramps and brushes
 

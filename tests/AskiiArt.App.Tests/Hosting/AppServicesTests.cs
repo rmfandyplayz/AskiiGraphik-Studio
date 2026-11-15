@@ -28,8 +28,10 @@ public sealed class AppServicesTests : IDisposable
         Assert.True(actions.Contains(ShellActionIds.OpenLogFolder));
         Assert.True(actions.Contains(ShellActionIds.About));
 
-        // The text exporter is registered as one of the exporters, as a plugin's would be.
-        Assert.Same(services.GetRequiredService<TextExporter>(), Assert.Single(services.GetServices<IExporter>()));
+        // The exporters are registered as a plugin's would be.
+        Assert.Equal<IExporter>(
+            [services.GetRequiredService<TextExporter>(), services.GetRequiredService<AnsiExporter>()],
+            services.GetServices<IExporter>());
     }
 
     [Fact]

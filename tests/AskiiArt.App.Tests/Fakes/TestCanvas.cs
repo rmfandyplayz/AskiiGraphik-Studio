@@ -60,12 +60,14 @@ internal sealed class TestCanvas : IDisposable
 
     public TextExporter TextExporter { get; } = new();
 
+    public AnsiExporter AnsiExporter { get; } = new();
+
     /// <summary>What the Brush Options, Color and Swatches windows show, for this canvas's colours.</summary>
     public PaintColorsViewModel CreatePaintColorsViewModel() => new(Colors, ActiveDocument);
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>
-        new(ActiveDocument, dialogs, shell, Fonts, TextExporter, NullLogger<DocumentFiles>.Instance);
+        new(ActiveDocument, dialogs, shell, Fonts, TextExporter, AnsiExporter, NullLogger<DocumentFiles>.Instance);
 
     public void Dispose()
     {

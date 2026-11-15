@@ -19,7 +19,7 @@ namespace AskiiArt.App.Documents;
 /// and logged; they never lose the document on screen.
 /// </summary>
 internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocumentDialogs dialogs, IAppShell shell,
-    FontCatalog fonts, TextExporter textExporter, ILogger<DocumentFiles> logger)
+    FontCatalog fonts, TextExporter textExporter, AnsiExporter ansiExporter, ILogger<DocumentFiles> logger)
 {
     public bool HasUnsavedChanges => activeDocument.Session.History.HasUnsavedChanges;
 
@@ -114,20 +114,25 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
     /// Asks for a file and writes the document there as text. The document itself is unchanged: it
     /// keeps its own file and any unsaved changes.
     /// </summary>
-    public async Task ExportAsTextAsync()
+    public Task ExportAsTextAsync() => ExportAsync(textExporter, ExportFileKind.Text);
+
+    /// <summary>Asks for a file and writes the document there as ANSI art, leaving the document unchanged.</summary>
+    public Task ExportAsAnsiAsync() => ExportAsync(ansiExporter, ExportFileKind.Ansi);
+
+    private async Task ExportAsync(IExporter exporter, ExportFileKind kind)
     {
         var folder = Path.GetDirectoryName(activeDocument.File?.Path);
-        if (await dialogs.PickTextFileToExportAsync(SuggestedFileName(), folder) is not { } path)
+        if (await dialogs.PickFileToExportAsync(kind, SuggestedFileName(), folder) is not { } path)
             return;
 
         if (!Path.HasExtension(path))
-            path += textExporter.FileExtension;
+            path += exporter.FileExtension;
 
         // Read now, on the UI thread; only the writing happens in the background.
-        var text = textExporter.Export(activeDocument.Session.Document);
+        var bytes = exporter.Export(activeDocument.Session.Document);
         try
         {
-            await AtomicFile.WriteAsync(path, text);
+            await AtomicFile.WriteAsync(path, bytes);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -137,7 +142,7 @@ internal sealed partial class DocumentFiles(ActiveDocument activeDocument, IDocu
         }
     }
 
-    // The document's own name, so Save As and Export as Text suggest the name it already has.
+    // The document's own name, so Save As and the exports suggest the name it already has.
     private string SuggestedFileName()
     {
         if (activeDocument.File is { } file)

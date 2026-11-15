@@ -96,10 +96,12 @@ internal static class AppServices
         services.AddSingleton<HistoryPanelViewModel>();
         services.AddSingleton<LayersPanelViewModel>();
 
-        // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). Text
-        // flattens with the same policy as the canvas.
+        // Export formats register the way a future plugin's would (ARCHITECTURE §16, §18). They
+        // flatten with the same policy as the canvas.
         services.AddSingleton<TextExporter>();
         services.AddSingleton<IExporter>(provider => provider.GetRequiredService<TextExporter>());
+        services.AddSingleton<AnsiExporter>();
+        services.AddSingleton<IExporter>(provider => provider.GetRequiredService<AnsiExporter>());
 
         // Fonts and glyphs.
         services.AddSingleton<FontCatalog>();

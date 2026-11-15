@@ -41,6 +41,12 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
         MimeTypes = ["text/plain"]
     };
 
+    // There's no registered type for .ans files, so the extension alone describes them.
+    private static readonly FilePickerFileType _ansiFiles = new(Strings.AnsiFileTypeName)
+    {
+        Patterns = ["*.ans"]
+    };
+
     // Opening offers both variants together: the header decides how a file is read, not its name.
     private static readonly FilePickerFileType _allDocuments = new(Strings.DocumentFileTypeName)
     {
@@ -136,18 +142,24 @@ internal sealed class AvaloniaDocumentDialogs(FontCatalog fonts, ILogger<FontPic
         return DocumentFile.ForSavePath(path, chosenVariant);
     }
 
-    public async Task<string?> PickTextFileToExportAsync(string suggestedName, string? folder)
+    public async Task<string?> PickFileToExportAsync(ExportFileKind kind, string suggestedName, string? folder)
     {
         if (AppWindows.Main is not { } owner)
             return null;
 
+        var (title, extension, fileType) = kind switch
+        {
+            ExportFileKind.Ansi => (Strings.ExportAnsiFilePickerTitle, "ans", _ansiFiles),
+            _ => (Strings.ExportFilePickerTitle, "txt", _textFiles)
+        };
+
         var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = Strings.ExportFilePickerTitle,
+            Title = title,
             SuggestedFileName = suggestedName,
             SuggestedStartLocation = await FindFolderAsync(owner, folder),
-            DefaultExtension = "txt",
-            FileTypeChoices = [_textFiles],
+            DefaultExtension = extension,
+            FileTypeChoices = [fileType],
             ShowOverwritePrompt = true
         });
 

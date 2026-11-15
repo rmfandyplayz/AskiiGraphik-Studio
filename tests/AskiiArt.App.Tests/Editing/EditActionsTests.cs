@@ -21,7 +21,8 @@ public sealed class EditActionsTests : IDisposable
 
     public EditActionsTests()
     {
-        _actions = new EditActions(_canvas.ActiveDocument, _canvas.TextExporter, _shell).CreateActions()
+        _actions = new EditActions(_canvas.ActiveDocument, _canvas.TextExporter, _canvas.AnsiExporter, _shell)
+            .CreateActions()
             .ToDictionary(action => action.Id);
     }
 
@@ -43,6 +44,24 @@ public sealed class EditActionsTests : IDisposable
         Assert.Equal("a " + Environment.NewLine + " b", Assert.Single(_shell.CopiedTexts));
         Assert.Equal([new ActionShortcut(Key.C, ShortcutModifiers.Command | ShortcutModifiers.Shift)],
             copyAsText.DefaultShortcuts);
+    }
+
+    [Fact]
+    public void CopyAsAnsi_CopiesTheVisibleArtWithItsColours_WithThisPlatformsLineBreaks()
+    {
+        var document = Document.Create(new CanvasSize(2, 2), "Layer", colorMode: ColorMode.Ansi);
+        var cells = new CellEditBuilder(document, document.ActiveFrame.Layers[0].Id);
+        var red = CellColor.FromAnsi(AnsiColor.Red);
+        cells.Set(new CellPoint(0, 0), Cell.FromGlyph(new Rune('a'), red, CellColor.Unset));
+        cells.Set(new CellPoint(1, 1), Cell.FromGlyph(new Rune('b')));
+        cells.Build()!.Apply(document);
+        _canvas.ActiveDocument.Replace(new EditingSession(document));
+        var copyAsAnsi = _actions[EditActionIds.CopyAsAnsi];
+
+        copyAsAnsi.Command.Execute(null);
+
+        Assert.Equal("\u001b[31ma \u001b[0m" + Environment.NewLine + " b", Assert.Single(_shell.CopiedTexts));
+        Assert.Empty(copyAsAnsi.DefaultShortcuts);
     }
 
     private AppAction Redo => _actions[EditActionIds.Redo];

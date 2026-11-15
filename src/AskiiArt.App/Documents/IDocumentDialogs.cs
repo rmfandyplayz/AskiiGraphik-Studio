@@ -29,10 +29,11 @@ internal interface IDocumentDialogs
     /// <param name="current">The document's file, or null if it's never been saved.</param>
     Task<DocumentFile?> PickFileToSaveAsync(string suggestedName, DocumentFile? current);
 
-    /// <summary>Asks where to export the document as a text file; returns its path.</summary>
+    /// <summary>Asks where to export the document as a file of the given kind; returns its path.</summary>
+    /// <param name="kind">The kind of file, which decides the dialog's title and file type.</param>
     /// <param name="suggestedName">The file name to suggest, without an extension.</param>
     /// <param name="folder">The folder to start in, or null for the dialog's own choice.</param>
-    Task<string?> PickTextFileToExportAsync(string suggestedName, string? folder);
+    Task<string?> PickFileToExportAsync(ExportFileKind kind, string suggestedName, string? folder);
 }
 
 /// <summary>The answer to "save the changes?".</summary>

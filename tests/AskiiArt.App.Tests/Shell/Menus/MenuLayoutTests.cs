@@ -20,7 +20,7 @@ public sealed class MenuLayoutTests
     private static string[] FileActionIds { get; } =
     [
         DocumentActionIds.New, DocumentActionIds.Open, DocumentActionIds.Save, DocumentActionIds.SaveAs,
-        DocumentActionIds.ExportAsText
+        DocumentActionIds.ExportAsText, DocumentActionIds.ExportAsAnsi
     ];
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class MenuLayoutTests
                 Assert.Equal(
                 [
                     DocumentActionIds.New, DocumentActionIds.Open, ShellActionIds.CloseWindow, DocumentActionIds.Save,
-                    DocumentActionIds.SaveAs, DocumentActionIds.ExportAsText
+                    DocumentActionIds.SaveAs, DocumentActionIds.ExportAsText, DocumentActionIds.ExportAsAnsi
                 ], ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
@@ -107,6 +107,8 @@ public sealed class MenuLayoutTests
             [
                 DocumentActionIds.OpenSampleDocument,
                 DocumentActionIds.OpenColorSample,
+                DocumentActionIds.OpenAnsiTestSample,
+                DocumentActionIds.OpenRgbTestSample,
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
                 CanvasActionIds.ShowFrameRate,
@@ -162,7 +164,8 @@ public sealed class MenuLayoutTests
     private static void AssertIsEditMenu(MenuDefinition edit)
     {
         Assert.Equal(nameof(Strings.MenuEdit), edit.LabelKey);
-        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo, EditActionIds.CopyAsText], ActionIdsIn(edit.Entries));
+        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo, EditActionIds.CopyAsText, EditActionIds.CopyAsAnsi],
+            ActionIdsIn(edit.Entries));
     }
 
     private static void AssertIsDocumentMenu(MenuDefinition document)

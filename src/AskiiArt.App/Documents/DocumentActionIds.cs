@@ -11,6 +11,7 @@ internal static class DocumentActionIds
     public const string Save = "askiiart.document.save";
     public const string SaveAs = "askiiart.document.saveAs";
     public const string ExportAsText = "askiiart.document.exportAsText";
+    public const string ExportAsAnsi = "askiiart.document.exportAsAnsi";
     public const string ResizeCanvas = "askiiart.document.resizeCanvas";
     public const string Font = "askiiart.document.font";
     public const string AsciiOnly = "askiiart.document.asciiOnly";
@@ -25,4 +26,12 @@ internal static class DocumentActionIds
     /// how the canvas draws colour.
     /// </summary>
     public const string OpenColorSample = "askiiart.debug.openColorSample";
+
+    /// <summary>
+    /// Debug builds only: replaces the document with a small ANSI one, for checking ANSI export in a terminal.
+    /// </summary>
+    public const string OpenAnsiTestSample = "askiiart.debug.openAnsiTestSample";
+
+    /// <summary>Debug builds only: the same in RGB, with rows of 24-bit colour.</summary>
+    public const string OpenRgbTestSample = "askiiart.debug.openRgbTestSample";
 }

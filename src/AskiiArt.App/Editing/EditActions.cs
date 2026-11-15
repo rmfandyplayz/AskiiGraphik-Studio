@@ -12,8 +12,9 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Editing;
 
-/// <summary>Undo and Redo, for the active document's history, and Copy as Text.</summary>
-internal sealed class EditActions(ActiveDocument activeDocument, TextExporter textExporter, IAppShell shell)
+/// <summary>Undo and Redo, for the active document's history, and Copy as Text and Copy as ANSI.</summary>
+internal sealed class EditActions(
+    ActiveDocument activeDocument, TextExporter textExporter, AnsiExporter ansiExporter, IAppShell shell)
     : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
@@ -46,6 +47,8 @@ internal sealed class EditActions(ActiveDocument activeDocument, TextExporter te
         yield return new AppAction(EditActionIds.CopyAsText, nameof(Strings.ActionCopyAsText),
             new AsyncRelayCommand(CopyAsTextAsync),
             [new ActionShortcut(Key.C, ShortcutModifiers.Command | ShortcutModifiers.Shift)]);
+        yield return new AppAction(EditActionIds.CopyAsAnsi, nameof(Strings.ActionCopyAsAnsi),
+            new AsyncRelayCommand(CopyAsAnsiAsync));
 
         void OnHistoryChanged(object? sender, EventArgs e)
         {
@@ -59,4 +62,7 @@ internal sealed class EditActions(ActiveDocument activeDocument, TextExporter te
     // With this platform's line breaks, which is what other apps expect from the clipboard (ADR 0022).
     private Task CopyAsTextAsync() =>
         shell.CopyTextAsync(textExporter.ToText(activeDocument.Session.Document, Environment.NewLine));
+
+    private Task CopyAsAnsiAsync() =>
+        shell.CopyTextAsync(ansiExporter.ToText(activeDocument.Session.Document, Environment.NewLine));
 }

@@ -48,6 +48,8 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFil
 
         yield return new AppAction(DocumentActionIds.ExportAsText, nameof(Strings.ActionExportAsText),
             new AsyncRelayCommand(files.ExportAsTextAsync));
+        yield return new AppAction(DocumentActionIds.ExportAsAnsi, nameof(Strings.ActionExportAsAnsi),
+            new AsyncRelayCommand(files.ExportAsAnsiAsync));
 
         yield return new AppAction(DocumentActionIds.ResizeCanvas, nameof(Strings.ActionResizeCanvas),
             new AsyncRelayCommand(ResizeCanvasAsync));
@@ -66,6 +68,12 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFil
             yield return new AppAction(DocumentActionIds.OpenColorSample, nameof(Strings.ActionOpenColorSample),
                 new AsyncRelayCommand(() => files.ReplaceWithNewAsync(
                     () => Task.FromResult<Document?>(ColorSampleDocument.Create(Strings.DefaultLayerName)))));
+            yield return new AppAction(DocumentActionIds.OpenAnsiTestSample, nameof(Strings.ActionOpenAnsiTestSample),
+                new AsyncRelayCommand(() => files.ReplaceWithNewAsync(() => Task.FromResult<Document?>(
+                    AnsiTestSampleDocument.Create(Strings.DefaultLayerName, ColorMode.Ansi)))));
+            yield return new AppAction(DocumentActionIds.OpenRgbTestSample, nameof(Strings.ActionOpenRgbTestSample),
+                new AsyncRelayCommand(() => files.ReplaceWithNewAsync(() => Task.FromResult<Document?>(
+                    AnsiTestSampleDocument.Create(Strings.DefaultLayerName, ColorMode.Rgb)))));
         }
 
         void OnDocumentChanged(object? sender, DocumentChangedEventArgs e)

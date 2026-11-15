@@ -8,6 +8,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Editing;
 using AskiiArt.Core.Formats;
 
 namespace AskiiArt.App.Tests.Documents;
@@ -249,7 +250,7 @@ public sealed class DocumentFilesTests : IDisposable
 
         await _files.ExportAsTextAsync();
 
-        Assert.Equal([("art", _folder)], _dialogs.ExportPickerShownWith);
+        Assert.Equal([(ExportFileKind.Text, "art", _folder)], _dialogs.ExportPickerShownWith);
         Assert.Equal("x   \n    \n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.Equal(file, ActiveDocument.File);
         Assert.True(History.HasUnsavedChanges);
@@ -262,8 +263,26 @@ public sealed class DocumentFilesTests : IDisposable
 
         await _files.ExportAsTextAsync();
 
-        Assert.Equal([("Untitled", null)], _dialogs.ExportPickerShownWith);
+        Assert.Equal([(ExportFileKind.Text, "Untitled", null)], _dialogs.ExportPickerShownWith);
         Assert.True(File.Exists(Path.Combine(_folder, "art.txt")));
+    }
+
+    [Fact]
+    public async Task ExportAsAnsi_WritesTheArtWithItsColours_AndAddsTheExtension()
+    {
+        var document = Document.Create(new CanvasSize(2, 1), "Layer", colorMode: ColorMode.Ansi);
+        _canvas.ActiveDocument.Replace(new EditingSession(document));
+        var edit = new CellEditBuilder(document, document.ActiveFrame.Layers[0].Id);
+        edit.Set(new CellPoint(0, 0), Cell.FromBackground(CellColor.FromAnsi(AnsiColor.Blue)));
+        History.Execute(edit.Build()!);
+        _dialogs.FileToExport = Path.Combine(_folder, "art");
+
+        await _files.ExportAsAnsiAsync();
+
+        Assert.Equal([(ExportFileKind.Ansi, "Untitled", null)], _dialogs.ExportPickerShownWith);
+        var text = await File.ReadAllTextAsync(Path.Combine(_folder, "art.ans"), TestContext.Current.CancellationToken);
+        Assert.Equal("\u001b[44m \u001b[49m \n", text);
+        Assert.True(History.HasUnsavedChanges);
     }
 
     [Fact]

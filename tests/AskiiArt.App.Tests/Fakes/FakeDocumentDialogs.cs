@@ -45,7 +45,7 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
     public List<(string SuggestedName, DocumentFile? Current)> SavePickerShownWith { get; } = [];
 
     /// <summary>The suggested name and folder each export picker was opened with.</summary>
-    public List<(string SuggestedName, string? Folder)> ExportPickerShownWith { get; } = [];
+    public List<(ExportFileKind Kind, string SuggestedName, string? Folder)> ExportPickerShownWith { get; } = [];
 
     public Task<NewDocumentSettings?> ShowNewDocumentAsync()
     {
@@ -83,9 +83,9 @@ internal sealed class FakeDocumentDialogs : IDocumentDialogs
         return Task.FromResult(FileToSave);
     }
 
-    public Task<string?> PickTextFileToExportAsync(string suggestedName, string? folder)
+    public Task<string?> PickFileToExportAsync(ExportFileKind kind, string suggestedName, string? folder)
     {
-        ExportPickerShownWith.Add((suggestedName, folder));
+        ExportPickerShownWith.Add((kind, suggestedName, folder));
         return Task.FromResult(FileToExport);
     }
 }

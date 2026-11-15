@@ -61,7 +61,8 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(EditActionIds.Undo),
             new ActionMenuEntry(EditActionIds.Redo),
             new SeparatorMenuEntry(),
-            new ActionMenuEntry(EditActionIds.CopyAsText)
+            new ActionMenuEntry(EditActionIds.CopyAsText),
+            new ActionMenuEntry(EditActionIds.CopyAsAnsi)
         ]);
 
         // ASCII Only and the colour modes sit here until the owner designs document options.
@@ -167,6 +168,8 @@ internal sealed record MenuLayout(
             [
                 new ActionMenuEntry(DocumentActionIds.OpenSampleDocument),
                 new ActionMenuEntry(DocumentActionIds.OpenColorSample),
+                new ActionMenuEntry(DocumentActionIds.OpenAnsiTestSample),
+                new ActionMenuEntry(DocumentActionIds.OpenRgbTestSample),
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
                 new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
                 new ActionMenuEntry(CanvasActionIds.ShowFrameRate),
@@ -204,6 +207,7 @@ internal sealed record MenuLayout(
         yield return new ActionMenuEntry(DocumentActionIds.SaveAs);
         yield return new SeparatorMenuEntry();
         yield return new ActionMenuEntry(DocumentActionIds.ExportAsText);
+        yield return new ActionMenuEntry(DocumentActionIds.ExportAsAnsi);
     }
 
     /// <summary>Every action id that appears in any menu, the Dock menu included.</summary>
