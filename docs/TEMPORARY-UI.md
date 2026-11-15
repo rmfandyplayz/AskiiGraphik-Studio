@@ -164,10 +164,11 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Clicking a swatch on the Brush Options toolbar while the Brush is chosen switches between the FG and BG brushes too, since it's one choice | `Core/Tools/PaintColors.cs` | 2b.3b |
 | The FG brush leaves cells without a glyph alone, and a colour of None takes the cell's text colour or background away | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | A Brush stroke is one undo step named "Paint" | `Strings.resx` (`UndoStepPaint`) | 2b.3b |
-| Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before. On Windows, Alt+Esc is the system's (it sends the window to the back), so Alt is let go first, with the mouse button still held | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | Dragging with Alt held keeps picking colours from the cells under the pointer | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | Alt+click in a monochrome document does nothing, so the chosen colour isn't lost; painting there does nothing either | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | No eyedropper pointer while Alt is held: the normal pointer stays | `Canvas/CanvasControl.cs` | 2b.3b |
+| Colours are picked with Alt+click on the Brush, not with a separate eyedropper tool (ARCHITECTURE §8.4). The owner OK'd it on 2026-11-15 but may change it for UX later; the picking lives in the Brush, so a separate tool could share it | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 
 ## Ideas to revisit
 
@@ -189,7 +190,7 @@ The owner's ideas, parked until the stage they belong to.
 - **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
 - **Removing the space option** (raised in M2b planning): the owner may drop the per-layer "spaces are empty" option one day. Nothing but the glyph plane of compositing depends on it, so removing it stays small (ADR 0036).
-- **A custom colour picker** (raised in M2b planning): 2b.3a uses Avalonia's ColorPicker. If it can't be customized enough, we build our own.
+- **A custom colour picker** (raised in M2b planning): 2b.3a uses Avalonia's ColorPicker, which has a fixed layout that doesn't grow with its window. The owner decided on 2026-11-15 that we'll build our own, for precise control over its layout and each part. It's planned for M8; Avalonia's stays until then, for testing.
 - **Reference image layer** (raised in M2b planning): an image layer to work from, which the eyedropper (2b.3b) picks colours from the same way as from the canvas.
 - **Right-click paints the BG colour** (raised in M2b planning): maybe, for the brush. Right-click does nothing yet.
 - **The Select tool** (raised in 2b.3a's planning): it will probably replace the Hand tool, take V, and be where Esc goes (ADR 0041).

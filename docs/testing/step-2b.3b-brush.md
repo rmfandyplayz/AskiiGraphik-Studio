@@ -89,7 +89,7 @@ This checks the eyedropper, and that letting go of Alt doesn't open the menu bar
 | 3 | Alt+click an empty cell | The FG square shows the red slash (None). |
 | 4 | Press **2** and Alt+click a cell with a blue background | The BG square turns blue, and the FG one doesn't change. |
 | 5 | Hold **Alt**, press the mouse button, and drag over cells with different backgrounds | The BG square follows the cell under the pointer. Let go. |
-| 6 | Hold **Alt**, press the mouse button on a cell with another colour, and press **Esc** before letting go | The BG square goes back to what it was before you pressed. |
+| 6 | Hold **Alt**, press the mouse button on a cell with another colour, let go of **Alt** while still holding the button, and press **Esc** before letting go of the button | The BG square goes back to what it was before you pressed. (Corrected 2026-11-15: on Windows, Alt+Esc sends the window to the back.) |
 | 7 | Hide the top layer, then Alt+click a cell where it had yellow | It picks what you see without that layer: the colour below, or None. Show the layer again. |
 | 8 | **Document → Monochrome**, and confirm. Alt+click a cell, then drag on the canvas | Both squares show the slash, as they do in any monochrome document, and nothing is painted. Press **Ctrl+Z** (Cmd+Z on a Mac): the canvas gets its colours back, and the squares show the colours they had before, so the Alt+click didn't change them. |
 

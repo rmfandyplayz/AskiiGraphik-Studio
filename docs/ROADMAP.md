@@ -58,10 +58,11 @@ Added after 2.3's testing (ADR 0032), before M3 so every tool from then on write
   *Note:* also decided 2026-11-14: the FG colour is what the FG brush paints and typing writes as text; the BG colour is what the BG brush paints and typing writes as background, where none keeps the cell's own. Brush Options' two buttons choose which one the Color and Swatches windows change. X swaps them; D resets both to none, marked as temporary. Esc switches to the Hand tool from any tool, except during a stroke, where it only cancels the stroke; the app still starts on the Text tool. The Hand tool is likely to give way to a Select tool later, which is why it's V. The first plan's 2b.3a (Hand) and 2b.3b (Colours) were merged into this step at the owner's request.
   *Note:* built 2026-11-14 (ADRs 0041 and 0042). The colour mode became three check-mark items in the Document menu, next to ASCII Only, instead of an Edit → Color menu. [test doc](testing/step-2b.3a-hand-tool-and-colours.md), [follow-ups](testing/step-2b.3a-follow-ups.md)
   *Note:* follow-ups after the owner's testing on 2026-11-14, ready for testing: Brush Options became a toolbar, None shows as a slashed square, and the pan cursor is an open hand on a Mac and the move arrows elsewhere.
-- [~] **2b.3b Brush.** A Brush tool (B) with an FG brush and a BG brush on its sub-toolbar (1 and 2) that paint one cell's text colour or background, and Alt+click (Option+click) with the brush to pick up a cell's colour.
+- [x] **2b.3b Brush.** A Brush tool (B) with an FG brush and a BG brush on its sub-toolbar (1 and 2) that paint one cell's text colour or background, and Alt+click (Option+click) with the brush to pick up a cell's colour.
   *Owner checks:* painting in colour across layers, undoing, saving and reopening.
   *Note:* right-click doesn't paint yet. The eyedropper picks only from the canvas for now; a later image layer for reference images can be picked from the same way.
   *Note:* built 2026-11-14 (ADR 0043), ready for testing. The FG/BG brush and the Brush Options choice are one choice, as the owner asked; Alt+click picks from what you see, only the colour the brush paints. [test doc](testing/step-2b.3b-brush.md)
+  *Note:* follow-ups after the owner's testing on 2026-11-15, ready for testing: the menu bar's letters no longer stay underlined after an Alt+click, and Esc while picking is tested with Alt let go first, since Alt+Esc is Windows'. [follow-ups](testing/step-2b.3b-follow-ups.md)
 - [ ] **2b.4 ANSI export.** Export .ans and Copy as ANSI, in UTF-8 with escape codes: 16-colour codes for an ANSI document, 24-bit ones for RGB.
   *Owner checks:* the exported art in a terminal on Windows and macOS.
 
@@ -87,7 +88,7 @@ PNG export (font, scale, padding, colors, and a transparent-background option), 
 
 ## M8: Customization
 
-A toolbar customizer: a window for searching tools and dragging them anywhere, adding to toolbars or making new ones. It replaces the earlier "layout builder" idea, since the docking pass already lets everything be placed anywhere. Also a tool palette, a shortcut-rebinding UI, a settings window, light/dark theme switching, layout presets, and frosted glass with a progressive blur for widgets, after a trial to see what they cost (`docs/DOCKING.md` §10).
+A toolbar customizer: a window for searching tools and dragging them anywhere, adding to toolbars or making new ones. It replaces the earlier "layout builder" idea, since the docking pass already lets everything be placed anywhere. Also our own colour picker in place of Avalonia's, laid out to grow with its window and with control over each part (decided 2026-11-15), a tool palette, a shortcut-rebinding UI, a settings window, light/dark theme switching, layout presets, and frosted glass with a progressive blur for widgets, after a trial to see what they cost (`docs/DOCKING.md` §10).
 
 ## M8b: Plugins
 

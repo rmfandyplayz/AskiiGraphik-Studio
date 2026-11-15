@@ -422,8 +422,7 @@ public sealed class MainWindowTests : IDisposable
     {
         var window = ShowWindowWithTheCanvasFocused();
         _canvas.ViewModel.SelectTool(BrushTool.Id);
-        var canvas = window.GetVisualDescendants().OfType<CanvasControl>().Single();
-        var centre = canvas.TranslatePoint(new Rect(canvas.Bounds.Size).Center, window)!.Value;
+        var centre = CentreOfTheCanvas(window);
 
         window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
         window.MouseDown(centre, MouseButton.Left, RawInputModifiers.Alt);
@@ -436,6 +435,31 @@ public sealed class MainWindowTests : IDisposable
         // Nothing is left half done: tapping Alt again opens the menu bar.
         TapAlt(window);
         Assert.True(MenuBarOf(window).IsOpen);
+    }
+
+    [AvaloniaFact]
+    public void HoldingAlt_AfterAnAltClickOnTheCanvas_KeepsTheMenuBarsLettersPlain()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var centre = CentreOfTheCanvas(window);
+
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        Assert.True(AreAccessKeysUnderlined(window));
+        window.MouseDown(centre, MouseButton.Left, RawInputModifiers.Alt);
+
+        // Windows repeats a key that's held down, so Alt keeps going down while it's held.
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        Assert.False(AreAccessKeysUnderlined(window));
+
+        window.MouseUp(centre, MouseButton.Left, RawInputModifiers.Alt);
+        window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(AreAccessKeysUnderlined(window));
+
+        // Alt on its own underlines them again.
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        Assert.True(AreAccessKeysUnderlined(window));
     }
 
     private MainWindow ShowWindow(ShellDocking docking)
@@ -466,6 +490,14 @@ public sealed class MainWindowTests : IDisposable
     }
 
     private static Menu MenuBarOf(MainWindow window) => window.GetVisualDescendants().OfType<Menu>().Single();
+
+    private static bool AreAccessKeysUnderlined(MainWindow window) => window.GetValue(AccessText.ShowAccessKeyProperty);
+
+    private static Point CentreOfTheCanvas(MainWindow window)
+    {
+        var canvas = window.GetVisualDescendants().OfType<CanvasControl>().Single();
+        return canvas.TranslatePoint(new Rect(canvas.Bounds.Size).Center, window)!.Value;
+    }
 
     private static (ToggleButton Foreground, ToggleButton Background) BrushButtons(MainWindow window)
     {

@@ -120,6 +120,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     private readonly CanvasSceneBuilder _sceneBuilder = new();
     private readonly WheelGestureTracker _wheelGesture = new();
+    private readonly AltClickMenuGuard _altClickMenuGuard = new();
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
@@ -419,8 +420,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         base.OnPointerPressed(e);
         Focus();
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
-            AltClickMenuGuard.TreatAltAsUsed(this);
+        _altClickMenuGuard.OnPointerPressed(this, e.KeyModifiers);
 
         var point = e.GetCurrentPoint(this);
         if (_viewport is null)
@@ -512,6 +512,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+        _altClickMenuGuard.OnKeyDown(this, e.Key);
 
         // A text tool wants Space as a typed space, so it isn't handled here: on macOS a handled
         // key never reaches text input.
@@ -530,6 +531,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     protected override void OnKeyUp(KeyEventArgs e)
     {
         base.OnKeyUp(e);
+        _altClickMenuGuard.OnKeyUp(this, e.Key);
         if (e.Key != Key.Space || !_isSpaceHeld)
             return;
 
@@ -548,6 +550,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     protected override void OnLostFocus(FocusChangedEventArgs e)
     {
         base.OnLostFocus(e);
+        _altClickMenuGuard.OnLostFocus();
         _isSpaceHeld = false;
         UpdateCursor();
     }
