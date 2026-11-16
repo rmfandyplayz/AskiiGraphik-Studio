@@ -33,7 +33,7 @@ Two to four plain-language sentences: what you can do now that you couldn't befo
 
 | # | Do this | Expected result |
 |---|---|---|
-| 1 | <one concrete action> | <what you should see> |
+| 1 | (one concrete action) | (what should be observed) |
 | 2 | ... | ... |
 
 ### T2: <name>
