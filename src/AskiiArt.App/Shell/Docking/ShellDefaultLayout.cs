@@ -5,7 +5,10 @@ using AskiiArt.Docking.Layouts;
 
 namespace AskiiArt.App.Shell.Docking;
 
-/// <summary>Where everything starts, and what Reset Layout goes back to (docs/DOCKING.md §9).</summary>
+/// <summary>
+/// Where everything starts, and what Reset Layout goes back to (docs/DOCKING.md §9). The owner's layout from step 3.2
+/// (ADR 0047): File, Tool Options and Colors along the top, View, Tools and Edit along the bottom.
+/// </summary>
 internal static class ShellDefaultLayout
 {
     public static DockingLayout Create(double widgetWidth) => new(
@@ -21,11 +24,12 @@ internal static class ShellDefaultLayout
     ],
     [
         new ToolbarPlacement(ShellDockingIds.FileToolbar, ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal),
-        new ToolbarPlacement(ShellDockingIds.ToolsToolbar, ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal),
-        new ToolbarPlacement(ShellDockingIds.EditToolbar, ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
-        new ToolbarPlacement(ShellDockingIds.ViewToolbar, ToolbarAnchor.BottomRight, ToolbarOrientation.Horizontal),
-        new ToolbarPlacement(ShellDockingIds.BrushOptionsToolbar, ToolbarAnchor.TopMiddle,
+        new ToolbarPlacement(ShellDockingIds.ToolOptionsToolbar, ToolbarAnchor.TopMiddle,
             ToolbarOrientation.Horizontal),
+        new ToolbarPlacement(ShellDockingIds.ColorsToolbar, ToolbarAnchor.TopRight, ToolbarOrientation.Horizontal),
+        new ToolbarPlacement(ShellDockingIds.ViewToolbar, ToolbarAnchor.BottomLeft, ToolbarOrientation.Horizontal),
+        new ToolbarPlacement(ShellDockingIds.ToolsToolbar, ToolbarAnchor.BottomMiddle, ToolbarOrientation.Horizontal),
+        new ToolbarPlacement(ShellDockingIds.EditToolbar, ToolbarAnchor.BottomRight, ToolbarOrientation.Horizontal),
     ],
     []);
 }

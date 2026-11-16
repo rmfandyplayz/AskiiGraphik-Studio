@@ -64,6 +64,9 @@ internal static class CanvasScenePainter
         if (scene.Caret is { } caret)
             DrawOutline(canvas, paint, caret, scene.CaretThickness, colors.Caret);
 
+        foreach (var strip in scene.BrushOutline)
+            Fill(canvas, paint, strip, colors.Caret);
+
         canvas.Restore();
     }
 

@@ -550,7 +550,7 @@ public sealed class TextToolTests
     {
         var registry = new ToolRegistry([TextTool.Definition]);
 
-        var context = new ToolContext(_session, new PaintColors());
+        var context = TestTools.Context(_session);
         var tool = registry.Get(TextTool.Id).Create(context);
 
         Assert.IsType<TextTool>(tool);

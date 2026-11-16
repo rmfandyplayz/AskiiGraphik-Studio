@@ -23,5 +23,6 @@ internal static class ShellDockingIds
     public const string ToolsToolbar = "toolbar.tools";
     public const string EditToolbar = "toolbar.edit";
     public const string ViewToolbar = "toolbar.view";
-    public const string BrushOptionsToolbar = "toolbar.brushOptions";
+    public const string ToolOptionsToolbar = "toolbar.toolOptions";
+    public const string ColorsToolbar = "toolbar.colors";
 }

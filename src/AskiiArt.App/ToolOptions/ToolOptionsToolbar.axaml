@@ -1,0 +1,78 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Tool Options toolbar (step 3.2): each option of the chosen tool, built from the tool's options as data
+     (ADR 0047). A number is a slider with its value beside it, and a choice is a row of buttons. The root is a
+     StackPanel so that a vertical toolbar can turn it, and the options follow it. Nothing here takes the keyboard,
+     so the canvas keeps it and [ and ] still work after a click. -->
+<StackPanel xmlns="https://github.com/avaloniaui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+            xmlns:options="using:AskiiArt.App.ToolOptions"
+            xmlns:res="using:AskiiArt.App.Resources"
+            x:Class="AskiiArt.App.ToolOptions.ToolOptionsToolbar"
+            x:DataType="options:ToolOptionsViewModel"
+            Orientation="Horizontal"
+            Spacing="{StaticResource AppToolOptionsSpacing}"
+            Margin="{StaticResource AppToolbarPadding}">
+  <StackPanel.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Slider">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Width" Value="{StaticResource AppToolOptionsSliderWidth}" />
+    </Style>
+    <Style Selector="RadioButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Padding" Value="{StaticResource AppToolOptionsChoicePadding}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </StackPanel.Styles>
+  <StackPanel.DataTemplates>
+    <DataTemplate DataType="options:NumberToolOptionItem">
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Text="{Binding Name}" />
+        <Slider Minimum="{Binding Minimum}"
+                Maximum="{Binding Maximum}"
+                Value="{Binding Value, Mode=TwoWay}"
+                SmallChange="1"
+                LargeChange="10"
+                TickFrequency="1"
+                IsSnapToTickEnabled="True" />
+        <TextBlock Text="{Binding Value}" MinWidth="{StaticResource AppToolOptionsValueWidth}" />
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate DataType="options:ChoiceToolOptionItem">
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Text="{Binding Name}" />
+        <ItemsControl ItemsSource="{Binding Choices}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <!-- Toggle buttons that act as radio buttons. Each sits alone in its own item, so none can untick
+                 another: what's down comes from the option's value. -->
+            <DataTemplate DataType="options:ToolOptionChoiceItem">
+              <RadioButton Theme="{StaticResource {x:Type ToggleButton}}"
+                           Content="{Binding Name}"
+                           IsChecked="{Binding IsChosen, Mode=TwoWay}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+  </StackPanel.DataTemplates>
+  <TextBlock Text="{x:Static res:Strings.ToolOptionsNone}"
+             Foreground="{DynamicResource AppSecondaryTextBrush}"
+             IsVisible="{Binding !HasOptions}" />
+  <ItemsControl x:Name="Options" ItemsSource="{Binding Items}" IsVisible="{Binding HasOptions}">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Orientation="{Binding $parent[options:ToolOptionsToolbar].Orientation}"
+                    Spacing="{StaticResource AppToolOptionsSpacing}" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+  </ItemsControl>
+</StackPanel>

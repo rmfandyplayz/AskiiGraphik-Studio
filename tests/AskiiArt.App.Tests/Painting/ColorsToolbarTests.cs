@@ -13,20 +13,20 @@ using Avalonia.VisualTree;
 
 namespace AskiiArt.App.Tests.Painting;
 
-/// <summary>The Brush Options toolbar: the two swatches, and choosing which colour the windows change.</summary>
-public sealed class BrushOptionsToolbarTests : IDisposable
+/// <summary>The Colors toolbar: the two swatches, and choosing which colour the windows change.</summary>
+public sealed class ColorsToolbarTests : IDisposable
 {
     private readonly TestCanvas _canvas = new(new CanvasSize(4, 1), colorMode: ColorMode.Ansi);
     private readonly PaintColorsViewModel _viewModel;
-    private readonly BrushOptionsToolbar _toolbar;
-    private readonly BrushOptionsToolbar _dragCopy;
+    private readonly ColorsToolbar _toolbar;
+    private readonly ColorsToolbar _dragCopy;
     private readonly Window _window;
 
-    public BrushOptionsToolbarTests()
+    public ColorsToolbarTests()
     {
         _viewModel = _canvas.CreatePaintColorsViewModel();
-        _toolbar = new BrushOptionsToolbar { DataContext = _viewModel };
-        _dragCopy = new BrushOptionsToolbar { DataContext = _viewModel };
+        _toolbar = new ColorsToolbar { DataContext = _viewModel };
+        _dragCopy = new ColorsToolbar { DataContext = _viewModel };
         _window = new Window { Content = new StackPanel { Children = { _toolbar, _dragCopy } } };
         _window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -91,9 +91,9 @@ public sealed class BrushOptionsToolbarTests : IDisposable
         Assert.True(background.Top > foreground.Bottom);
     }
 
-    private static RadioButton Button(BrushOptionsToolbar toolbar, string name) =>
+    private static RadioButton Button(ColorsToolbar toolbar, string name) =>
         toolbar.FindControl<RadioButton>(name)!;
 
-    private static ColorSwatch Swatch(BrushOptionsToolbar toolbar, string buttonName) =>
+    private static ColorSwatch Swatch(ColorsToolbar toolbar, string buttonName) =>
         Button(toolbar, buttonName).GetVisualDescendants().OfType<ColorSwatch>().Single();
 }

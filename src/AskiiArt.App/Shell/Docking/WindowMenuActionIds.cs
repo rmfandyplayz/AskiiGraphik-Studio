@@ -14,6 +14,7 @@ internal static class WindowMenuActionIds
     public const string ToggleToolsToolbar = "window.toggleToolsToolbar";
     public const string ToggleEditToolbar = "window.toggleEditToolbar";
     public const string ToggleViewToolbar = "window.toggleViewToolbar";
-    public const string ToggleBrushOptionsToolbar = "window.toggleBrushOptionsToolbar";
+    public const string ToggleToolOptionsToolbar = "window.toggleToolOptionsToolbar";
+    public const string ToggleColorsToolbar = "window.toggleColorsToolbar";
     public const string ResetLayout = "window.resetLayout";
 }

@@ -5,6 +5,8 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
 using Avalonia;
 using Avalonia.Controls;
@@ -141,6 +143,38 @@ public sealed class CanvasControlTests : IDisposable
 
         _control.Tool = null;
         Assert.Null(_control.Cursor);
+    }
+
+    [AvaloniaFact]
+    public void ABrush_OutlinesItsTipUnderThePointer_AndFollowsItsSize()
+    {
+        Show();
+        var values = _canvas.ToolSettings.For(BrushTool.OptionGroup);
+        values.Set(BrushTipOptions.Proportions, "mathematical");
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        _control.Tool = _canvas.ViewModel.ActiveTool;
+        var cellSize = Viewport.CellSize;
+
+        _window.MouseMove(new Point(cellSize.Width * 3.5, cellSize.Height * 2.5));
+        Assert.Equal(new CellPoint(3, 2), _control.BrushTopLeft);
+
+        values.Set(BrushTipOptions.Size, 3);
+        Assert.Equal(new CellPoint(2, 1), _control.BrushTopLeft);
+
+        _window.MouseMove(new Point(-5, -5));
+        Assert.Null(_control.BrushTopLeft);
+    }
+
+    [AvaloniaFact]
+    public void AToolWithoutATip_ShowsNoOutline()
+    {
+        Show();
+        _control.Tool = _canvas.ViewModel.ActiveTool;
+
+        _window.MouseMove(new Point(10, 10));
+
+        Assert.Null(_control.BrushTopLeft);
+        Assert.NotNull(_control.HoveredCell);
     }
 
     [AvaloniaFact]

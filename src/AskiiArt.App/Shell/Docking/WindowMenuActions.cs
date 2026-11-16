@@ -22,8 +22,10 @@ internal sealed class WindowMenuActions(ShellDocking docking) : IActionProvider
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleToolsToolbar, nameof(Strings.ActionToggleToolsToolbar), ShellDockingIds.ToolsToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleEditToolbar, nameof(Strings.ActionToggleEditToolbar), ShellDockingIds.EditToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleViewToolbar, nameof(Strings.ActionToggleViewToolbar), ShellDockingIds.ViewToolbar);
-        yield return CreateToolbarToggle(WindowMenuActionIds.ToggleBrushOptionsToolbar,
-            nameof(Strings.ActionToggleBrushOptionsToolbar), ShellDockingIds.BrushOptionsToolbar);
+        yield return CreateToolbarToggle(WindowMenuActionIds.ToggleToolOptionsToolbar,
+            nameof(Strings.ActionToggleToolOptionsToolbar), ShellDockingIds.ToolOptionsToolbar);
+        yield return CreateToolbarToggle(WindowMenuActionIds.ToggleColorsToolbar,
+            nameof(Strings.ActionToggleColorsToolbar), ShellDockingIds.ColorsToolbar);
         yield return new AppAction(WindowMenuActionIds.ResetLayout, nameof(Strings.ActionResetLayout), new RelayCommand(docking.ResetLayout));
     }
 

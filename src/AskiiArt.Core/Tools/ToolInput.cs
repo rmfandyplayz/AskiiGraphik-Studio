@@ -3,6 +3,8 @@
 
 using AskiiArt.Core.Documents;
 
+using AskiiArt.Core.Tools.Footprints;
+
 namespace AskiiArt.Core.Tools;
 
 /// <summary>Modifier keys held during tool input, the same on every platform.</summary>
@@ -108,10 +110,13 @@ public readonly record struct ToolPointerInput(
 
 /// <summary>
 /// What the canvas draws on top of the document for the active tool. It isn't part of the
-/// document. Brush and shape previews join it in later milestones.
+/// document. Shape previews join it in later milestones.
 /// </summary>
 /// <param name="Caret">The text caret's cell, or null when there's no caret.</param>
-public sealed record ToolOverlay(CellPoint? Caret)
+/// <param name="Footprint">
+/// The brush tip's footprint, which the canvas outlines under the pointer, or null for a tool without one.
+/// </param>
+public sealed record ToolOverlay(CellPoint? Caret, BrushFootprint? Footprint = null)
 {
     /// <summary>Nothing to draw.</summary>
     public static ToolOverlay None { get; } = new(Caret: null);

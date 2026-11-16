@@ -42,7 +42,7 @@ public sealed class HandToolTests
     {
         var registry = new ToolRegistry([HandTool.Definition]);
 
-        var tool = registry.Get(HandTool.Id).Create(new ToolContext(_session, new PaintColors()));
+        var tool = registry.Get(HandTool.Id).Create(TestTools.Context(_session));
 
         Assert.IsType<HandTool>(tool);
         Assert.Equal('V', HandTool.ToolDescriptor.ShortcutLetter);

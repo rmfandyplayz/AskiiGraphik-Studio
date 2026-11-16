@@ -118,7 +118,7 @@ public sealed class MainWindowLifetimeTests : IDisposable
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
             new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
-            _canvas.CreatePaintColorsViewModel());
+            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel());
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);
         _lifetimes.Add(lifetime);

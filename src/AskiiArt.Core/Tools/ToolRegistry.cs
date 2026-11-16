@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Tools.Options;
+
 namespace AskiiArt.Core.Tools;
 
 /// <summary>
 /// A tool that can be created for any editing session. Tools are made per session because
 /// they keep per-document state, such as the text caret.
 /// </summary>
-public sealed record ToolDefinition(ToolDescriptor Descriptor, Func<ToolContext, ITool> Create);
+public sealed record ToolDefinition(ToolDescriptor Descriptor, Func<ToolContext, ITool> Create)
+{
+    /// <summary>
+    /// The options the Tool Options toolbar shows for this tool, or null when it has none (ADR 0047). Tools of one
+    /// group share the same <see cref="ToolOptionGroup"/>, and so its values.
+    /// </summary>
+    public ToolOptionGroup? Options { get; init; }
+}
 
 /// <summary>
 /// Every available tool, registered through DI (ARCHITECTURE §8.1). Built-in tools register

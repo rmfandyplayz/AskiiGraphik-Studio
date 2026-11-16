@@ -37,6 +37,9 @@ internal sealed class CanvasScene : IDisposable
 
     public required int CaretThickness { get; init; }
 
+    /// <summary>The pieces of the brush tip's outline, each a filled strip along the inside of its cells.</summary>
+    public required IReadOnlyList<PixelRect> BrushOutline { get; init; }
+
     public void Dispose()
     {
         Backgrounds?.Dispose();

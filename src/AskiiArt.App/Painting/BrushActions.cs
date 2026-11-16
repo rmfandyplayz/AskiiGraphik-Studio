@@ -16,7 +16,7 @@ internal static class BrushActionIds
 
 /// <summary>
 /// The FG Brush and BG Brush buttons of the Brush's sub-toolbar (ADR 0043). They choose the same colour as the
-/// Brush Options toolbar does. Keys 1 and 2 aren't their shortcuts: those would fire while typing in any text box,
+/// Colors toolbar does. Keys 1 and 2 aren't their shortcuts: those would fire while typing in any text box,
 /// so the Brush takes them from the canvas itself.
 /// </summary>
 internal sealed class BrushActions(PaintColors colors) : IActionProvider

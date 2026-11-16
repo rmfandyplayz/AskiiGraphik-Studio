@@ -16,12 +16,14 @@ using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
+using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -93,6 +95,8 @@ internal static class AppServices
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<PaintColors>();
         services.AddSingleton<PaintColorsViewModel>();
+        services.AddSingleton<ToolSettings>();
+        services.AddSingleton<ToolOptionsViewModel>();
 
         // The document being edited. The app starts with an empty one, as New would make it.
         services.AddSingleton(_ =>

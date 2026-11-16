@@ -11,6 +11,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -35,23 +36,29 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     /// <summary>The letter that sets both colours to none. A temporary key (ADR 0042).</summary>
     public const char ResetColorsLetter = 'D';
 
+    // The size a font's cell shape is measured at. Big enough that rounding to whole pixels barely changes it.
+    private const float CellShapePixelSize = 64;
+
     private readonly ActiveDocument _activeDocument;
     private readonly ToolRegistry _tools;
     private readonly FontCatalog _fonts;
     private string _selectedToolId = TextTool.Id;
+    private double _cellWidthToHeight;
 
-    public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, PaintColors colors, FontCatalog fonts,
-        GlyphAtlasCache atlases)
+    public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, PaintColors colors,
+        ToolSettings toolSettings, FontCatalog fonts, GlyphAtlasCache atlases)
     {
         ArgumentNullException.ThrowIfNull(activeDocument);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(colors);
+        ArgumentNullException.ThrowIfNull(toolSettings);
         ArgumentNullException.ThrowIfNull(fonts);
         ArgumentNullException.ThrowIfNull(atlases);
 
         _activeDocument = activeDocument;
         _tools = tools;
         Colors = colors;
+        ToolSettings = toolSettings;
         _fonts = fonts;
         Atlases = atlases;
 
@@ -66,8 +73,14 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     /// <summary>The tools that can be chosen.</summary>
     public IReadOnlyList<ToolDefinition> Tools => _tools.All;
 
+    /// <summary>The chosen tool's definition, which says what options it has.</summary>
+    public ToolDefinition SelectedTool => _tools.Get(_selectedToolId);
+
     /// <summary>The FG and BG colours the tools paint with, shared by every document.</summary>
     public PaintColors Colors { get; }
+
+    /// <summary>The tools' option values, such as the brush size, shared by every document (ADR 0047).</summary>
+    public ToolSettings ToolSettings { get; }
 
     public CompositeCache Composite { get; private set; }
 
@@ -166,7 +179,8 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         var definition = _tools.Get(toolId);
         ActiveTool.Deactivate();
         _selectedToolId = toolId;
-        ActiveTool = definition.Create(new ToolContext(Session, Colors));
+        ActiveTool = definition.Create(CreateToolContext(Session));
+        OnPropertyChanged(nameof(SelectedTool));
         OnPropertyChanged(nameof(ActiveTool));
     }
 
@@ -228,7 +242,18 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         Composite.Changed += OnCompositeChanged;
         session.Document.Changed += OnDocumentChanged;
         Font = _fonts.Resolve(session.Document.Font);
-        ActiveTool = _tools.Get(_selectedToolId).Create(new ToolContext(session, Colors));
+        _cellWidthToHeight = CellWidthToHeightOf(Font);
+        ActiveTool = _tools.Get(_selectedToolId).Create(CreateToolContext(session));
+    }
+
+    // The tool asks for the cell shape each time it needs it, because the font can change while it's in use.
+    private ToolContext CreateToolContext(EditingSession session) =>
+        new(session, Colors, ToolSettings, () => _cellWidthToHeight);
+
+    private static double CellWidthToHeightOf(LoadedFont font)
+    {
+        var cell = CellMetrics.Measure(font, CellShapePixelSize);
+        return (double)cell.Width / cell.Height;
     }
 
     private void Detach()
@@ -268,6 +293,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
             return;
 
         Font = font;
+        _cellWidthToHeight = CellWidthToHeightOf(font);
         OnPropertyChanged(nameof(Font));
         OnPropertyChanged(nameof(FontText));
     }

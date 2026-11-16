@@ -6,19 +6,22 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Footprints;
+using AskiiArt.Core.Tools.Options;
 
 namespace AskiiArt.Core.Tests.Tools;
 
 public sealed class EraserToolTests
 {
     private readonly EditingSession _session;
+    private readonly ToolOptionValues _tipValues = new(EraserTool.OptionGroup);
     private readonly EraserTool _tool;
 
     public EraserToolTests()
     {
         _session = new EditingSession(TestCells.CreateDocument(6, 3));
         TestCells.Paint(Layer, "abcdef", "ghijkl", "mnopqr");
-        _tool = new EraserTool(_session);
+        _tool = new EraserTool(_session, TestTools.Tip(_tipValues));
     }
 
     private Layer Layer => _session.Document.ActiveFrame.Layers[0];
@@ -205,6 +208,94 @@ public sealed class EraserToolTests
         Move(3, 0);
 
         Assert.Equal(["·bcdef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void ASizedTip_ErasesItsFootprint_CentredOnThePointer()
+    {
+        TestTools.SetTip(_tipValues, 3);
+
+        Press(2, 1);
+        Release(2, 1);
+
+        Assert.Equal(["a···ef", "g···kl", "m···qr"], TestCells.Read(Layer));
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void ADragWithASizedTip_ErasesEverythingItSweeps()
+    {
+        TestTools.SetTip(_tipValues, 2);
+
+        Press(0, 0);
+        Move(4, 0);
+        Release(4, 0);
+
+        Assert.Equal(["······", "······", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void ACircularTip_LeavesItsCornersAlone()
+    {
+        TestTools.SetTip(_tipValues, 3, "circle");
+
+        Press(2, 1);
+        Release(2, 1);
+
+        Assert.Equal(["ab·def", "g···kl", "mn·pqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void TheBracketKeys_MakeTheTipSmallerAndBigger()
+    {
+        Assert.True(_tool.TextEntered("]"));
+        Assert.True(_tool.TextEntered("]"));
+        Assert.Equal(3, _tipValues.Get(BrushTipOptions.Size));
+
+        Assert.True(_tool.TextEntered("["));
+        Assert.Equal(2, _tipValues.Get(BrushTipOptions.Size));
+    }
+
+    [Fact]
+    public void TheOverlay_IsTheTipsFootprint_AndChangesWithIt()
+    {
+        var changes = 0;
+        _tool.OverlayChanged += (_, _) => changes++;
+        Assert.Equal(1, _tool.Overlay.Footprint?.Width);
+        Assert.Null(_tool.Overlay.Caret);
+
+        _tool.TextEntered("]");
+
+        Assert.Equal(1, changes);
+        Assert.Equal(2, _tool.Overlay.Footprint?.Width);
+        Assert.Same(_tool.Overlay, _tool.Overlay);
+    }
+
+    [Fact]
+    public void AStroke_KeepsItsTip_WhenTheSizeChangesDuringIt()
+    {
+        Press(0, 0);
+        _tool.TextEntered("]");
+        Assert.Equal(1, _tool.Overlay.Footprint?.Width);
+
+        Move(2, 0);
+        Release(2, 0);
+
+        Assert.Equal(["···def", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(2, _tool.Overlay.Footprint?.Width);
+    }
+
+    [Fact]
+    public void BeingDeactivated_StopsFollowingTheTip()
+    {
+        var changes = 0;
+        _tool.OverlayChanged += (_, _) => changes++;
+
+        _tool.Deactivate();
+        _tipValues.Set(BrushTipOptions.Size, 5);
+
+        Assert.Equal(0, changes);
     }
 
     [Fact]

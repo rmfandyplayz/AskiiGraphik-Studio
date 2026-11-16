@@ -6,6 +6,8 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Footprints;
+using AskiiArt.Core.Tools.Options;
 
 namespace AskiiArt.Core.Tests.Tools;
 
@@ -17,13 +19,14 @@ public sealed class BrushToolTests
 
     private readonly EditingSession _session;
     private readonly PaintColors _colors = new();
+    private readonly ToolOptionValues _tipValues = new(BrushTool.OptionGroup);
     private readonly BrushTool _tool;
 
     public BrushToolTests()
     {
         _session = new EditingSession(TestCells.CreateDocument(6, 3, ColorMode.Ansi));
         TestCells.Paint(Layer, "abc···", "ghi···", "mno···");
-        _tool = new BrushTool(_session, _colors);
+        _tool = new BrushTool(_session, _colors, TestTools.Tip(_tipValues));
         _colors.Foreground = _red;
         _colors.Background = _blue;
     }
@@ -303,6 +306,89 @@ public sealed class BrushToolTests
         Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
 
         Assert.Equal(_red, _colors.Foreground);
+    }
+
+    [Fact]
+    public void ASizedTip_PaintsItsFootprint_CentredOnThePointer()
+    {
+        _colors.Target = PaintColorTarget.Background;
+        TestTools.SetTip(_tipValues, 3);
+
+        Press(1, 1);
+        Release(1, 1);
+
+        Assert.Equal(_blue, CellAt(0, 0).Background);
+        Assert.Equal(_blue, CellAt(2, 2).Background);
+        Assert.True(CellAt(3, 1).Background.IsUnset);
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void ADragWithASizedTip_PaintsEverythingItSweeps()
+    {
+        _colors.Target = PaintColorTarget.Background;
+        TestTools.SetTip(_tipValues, 2);
+
+        Press(0, 0);
+        Move(4, 0);
+        Release(4, 0);
+
+        Assert.Equal(_blue, CellAt(5, 1).Background);
+        Assert.True(CellAt(0, 2).Background.IsUnset);
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void TheBracketKeys_ChangeTheSize_AndKeys1And2StillChooseTheBrush()
+    {
+        Assert.True(_tool.TextEntered("]"));
+        Assert.True(_tool.TextEntered("2"));
+        Assert.False(_tool.TextEntered("a"));
+
+        Assert.Equal(2, _tipValues.Get(BrushTipOptions.Size));
+        Assert.Equal(PaintColorTarget.Background, _colors.Target);
+    }
+
+    [Fact]
+    public void AltClick_PicksFromThePointersCell_WhateverTheSize()
+    {
+        TestTools.SetTip(_tipValues, 3);
+        Layer.SetCell(new CellPoint(1, 1), TestCells.Glyph('h', _green, CellColor.Unset));
+
+        Press(1, 1, ToolModifiers.Alt);
+        Release(1, 1);
+
+        Assert.Equal(_green, _colors.Foreground);
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void TheOverlay_IsTheTipsFootprint_AndStopsFollowingItOnceDeactivated()
+    {
+        var changes = 0;
+        _tool.OverlayChanged += (_, _) => changes++;
+
+        _tipValues.Set(BrushTipOptions.Size, 4);
+        Assert.Equal(1, changes);
+        Assert.Equal(4, _tool.Overlay.Footprint?.Width);
+
+        _tool.Deactivate();
+        _tipValues.Set(BrushTipOptions.Size, 5);
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void AStroke_KeepsItsTip_WhenTheSizeChangesDuringIt()
+    {
+        _colors.Target = PaintColorTarget.Background;
+        Press(0, 0);
+        _tool.TextEntered("]");
+
+        Move(2, 0);
+        Release(2, 0);
+
+        Assert.Equal(_blue, CellAt(2, 0).Background);
+        Assert.True(CellAt(2, 1).Background.IsUnset);
     }
 
     [Fact]

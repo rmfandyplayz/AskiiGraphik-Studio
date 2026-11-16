@@ -13,7 +13,7 @@ using Avalonia.Media;
 
 namespace AskiiArt.App.Tests.Painting;
 
-/// <summary>What the Brush Options, Color and Swatches windows show and change (ADR 0042).</summary>
+/// <summary>What the Colors toolbar and the Color and Swatches windows show and change (ADR 0042).</summary>
 public sealed class PaintColorsViewModelTests : IDisposable
 {
     private static readonly CellColor _red = CellColor.FromAnsi(AnsiColor.Red);

@@ -56,9 +56,12 @@ public sealed class ShellDockingTests : IDisposable
         Assert.Equal((SideEdge.Right, SideKind.Widgets), (side.Edge, side.Kind));
         Assert.Equal([ShellDockingIds.LayersPanel, ShellDockingIds.HistoryPanel], layout.OpenWindowIds());
         Assert.Equal(ToolbarAnchor.TopLeft, Anchor(layout, ShellDockingIds.FileToolbar));
+        Assert.Equal(ToolbarAnchor.TopMiddle, Anchor(layout, ShellDockingIds.ToolOptionsToolbar));
+        Assert.Equal(ToolbarAnchor.TopRight, Anchor(layout, ShellDockingIds.ColorsToolbar));
+        Assert.Equal(ToolbarAnchor.BottomLeft, Anchor(layout, ShellDockingIds.ViewToolbar));
         Assert.Equal(ToolbarAnchor.BottomMiddle, Anchor(layout, ShellDockingIds.ToolsToolbar));
-        Assert.Equal(ToolbarAnchor.TopRight, Anchor(layout, ShellDockingIds.EditToolbar));
-        Assert.Equal(ToolbarAnchor.BottomRight, Anchor(layout, ShellDockingIds.ViewToolbar));
+        Assert.Equal(ToolbarAnchor.BottomRight, Anchor(layout, ShellDockingIds.EditToolbar));
+        Assert.All(layout.Toolbars, toolbar => Assert.Equal(ToolbarOrientation.Horizontal, toolbar.Orientation));
     }
 
     [AvaloniaFact]

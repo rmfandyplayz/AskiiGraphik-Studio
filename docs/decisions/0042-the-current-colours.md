@@ -35,3 +35,5 @@ Step 2b.3a gives the user colours to paint and type with. The owner asked for an
 Updated 2026-11-14: Brush Options is a toolbar, as the owner meant: "FG: [swatch] • BG: [swatch]", where clicking a swatch chooses the colour the windows change. Its swatches are toggle-looking radio buttons without a group name, so the copies of the toolbar shown during a drag can't untick the real ones. A colour of None shows as an empty square with a diagonal slash (`ColorSwatch`).
 
 Updated 2026-11-14: which colour the windows change moved from `PaintColorsViewModel` into `PaintColors.Target`, because the Brush paints with the same choice (ADR 0043).
+
+Updated 2026-11-16: the Brush Options toolbar is now the Colors toolbar (ADR 0047).

@@ -13,6 +13,7 @@ using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
+using AskiiArt.App.ToolOptions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -38,7 +39,8 @@ internal sealed class MainWindowBuilder(
     IAppSettings settings,
     HistoryPanelViewModel history,
     LayersPanelViewModel layers,
-    PaintColorsViewModel paintColors)
+    PaintColorsViewModel paintColors,
+    ToolOptionsViewModel toolOptions)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
@@ -86,9 +88,12 @@ internal sealed class MainWindowBuilder(
             .. toolbars.Layouts.Select(toolbar => new ShellToolbarEntry(toolbar.Key,
                 () => bars.Build(toolbar.Value),
                 () => ToolbarMenu.Create(toolbar.Key, actions, docking))),
-            new ShellToolbarEntry(ShellDockingIds.BrushOptionsToolbar,
-                () => new BrushOptionsToolbar { DataContext = paintColors },
-                () => ToolbarMenu.Create(ShellDockingIds.BrushOptionsToolbar, actions, docking)),
+            new ShellToolbarEntry(ShellDockingIds.ToolOptionsToolbar,
+                () => new ToolOptionsToolbar { DataContext = toolOptions },
+                () => ToolbarMenu.Create(ShellDockingIds.ToolOptionsToolbar, actions, docking)),
+            new ShellToolbarEntry(ShellDockingIds.ColorsToolbar,
+                () => new ColorsToolbar { DataContext = paintColors },
+                () => ToolbarMenu.Create(ShellDockingIds.ColorsToolbar, actions, docking)),
         ]);
 
         docking.Attach(window.Panels, catalog, metrics);

@@ -158,7 +158,7 @@ public sealed class MenuLayoutTests
             WindowMenuActionIds.ToggleColor, WindowMenuActionIds.ToggleSwatches,
             WindowMenuActionIds.ToggleFileToolbar, WindowMenuActionIds.ToggleToolsToolbar,
             WindowMenuActionIds.ToggleEditToolbar, WindowMenuActionIds.ToggleViewToolbar,
-            WindowMenuActionIds.ToggleBrushOptionsToolbar,
+            WindowMenuActionIds.ToggleToolOptionsToolbar, WindowMenuActionIds.ToggleColorsToolbar,
             WindowMenuActionIds.ResetLayout
         ], ActionIdsIn(window.Entries));
     }

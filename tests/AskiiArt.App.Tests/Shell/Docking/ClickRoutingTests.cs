@@ -6,12 +6,14 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Painting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
+using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
@@ -47,10 +49,12 @@ public sealed class ClickRoutingTests : IDisposable
         var builder = new MainWindowBuilder(actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
             ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell, _docking, new FakeAppSettings(),
-            new HistoryPanelViewModel(_canvas.ActiveDocument), layers, _canvas.CreatePaintColorsViewModel());
+            new HistoryPanelViewModel(_canvas.ActiveDocument), layers, _canvas.CreatePaintColorsViewModel(),
+            _canvas.CreateToolOptionsViewModel());
 
         _window = builder.Build(KeyModifiers.Control);
-        _window.Width = 1200;
+        // Wide enough for the default layout's bottom row, which doesn't fit the smallest window.
+        _window.Width = 1920;
         _window.Height = 800;
         _window.Show();
         Pump();
@@ -85,7 +89,7 @@ public sealed class ClickRoutingTests : IDisposable
     [AvaloniaFact]
     public void EveryToolbar_GetsClicksFirst()
     {
-        Assert.Equal(5, Toolbars.Count);
+        Assert.Equal(6, Toolbars.Count);
         Assert.All(Toolbars, toolbar =>
         {
             var hit = _window.InputHitTest(RectIn(toolbar).Center) as Visual;
@@ -116,16 +120,20 @@ public sealed class ClickRoutingTests : IDisposable
         var region = RectIn(Canvas);
         var widgets = RectIn(Frames.First());
         var file = RectIn(ToolbarWith(Strings.ActionNew));
+        var toolOptions = RectIn(Toolbars.Single(toolbar => toolbar.Bar is ToolOptionsToolbar));
+        var colors = RectIn(Toolbars.Single(toolbar => toolbar.Bar is ColorsToolbar));
+        var view = RectIn(ToolbarWith(Strings.ActionZoomIn));
         var tools = RectIn(ToolbarWith(Strings.ToolText));
         var edit = RectIn(ToolbarWith(Strings.ActionUndo));
-        var view = RectIn(ToolbarWith(Strings.ActionZoomIn));
 
         Assert.True(file.Left < region.Width / 4 && file.Top < region.Center.Y);
+        Assert.True(toolOptions.Left > file.Right && toolOptions.Right < colors.Left);
+        Assert.True(toolOptions.Top < region.Center.Y);
+        Assert.True(colors.Right <= widgets.Left && colors.Top < region.Center.Y);
+        Assert.True(view.Left < region.Width / 4 && view.Bottom > region.Center.Y);
+        Assert.True(tools.Left > view.Right && tools.Right < edit.Left);
         Assert.True(tools.Bottom > region.Center.Y);
-        Assert.True(edit.Right <= widgets.Left && edit.Top < region.Center.Y);
-        Assert.True(view.Right <= widgets.Left && view.Bottom > region.Center.Y);
-        Assert.False(file.Intersects(edit));
-        Assert.False(tools.Intersects(view));
+        Assert.True(edit.Right <= widgets.Left && edit.Bottom > region.Center.Y);
     }
 
     [AvaloniaFact]
@@ -155,16 +163,16 @@ public sealed class ClickRoutingTests : IDisposable
         var before = Canvas.Viewport!.Insets.Top;
         Assert.True(before > 0);
 
-        _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
+        // The File toolbar is the tallest on the top edge, so the band keeps its height while it's there.
+        _docking.ToggleToolbar(ShellDockingIds.ToolOptionsToolbar);
         Pump();
         Assert.Equal(before, Canvas.Viewport!.Insets.Top);
 
-        // Brush Options is still on the top edge. Its band is its own height, which can differ from the others'.
-        _docking.ToggleToolbar(ShellDockingIds.EditToolbar);
+        _docking.ToggleToolbar(ShellDockingIds.ColorsToolbar);
         Pump();
-        Assert.True(Canvas.Viewport!.Insets.Top > 0);
+        Assert.Equal(before, Canvas.Viewport!.Insets.Top);
 
-        _docking.ToggleToolbar(ShellDockingIds.BrushOptionsToolbar);
+        _docking.ToggleToolbar(ShellDockingIds.FileToolbar);
         Pump();
         Assert.Equal(0, Canvas.Viewport!.Insets.Top);
 

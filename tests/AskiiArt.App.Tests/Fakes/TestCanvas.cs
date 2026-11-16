@@ -7,6 +7,7 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Painting;
 using AskiiArt.App.Shell;
+using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
@@ -14,6 +15,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -39,11 +41,14 @@ internal sealed class TestCanvas : IDisposable
                 colorMode: colorMode)));
         var tools = new ToolRegistry(
             [HandTool.Definition, TextTool.Definition, BrushTool.Definition, EraserTool.Definition]);
-        ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, Fonts, Atlases);
+        ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases);
     }
 
     /// <summary>The FG and BG colours the canvas's tools paint with.</summary>
     public PaintColors Colors { get; } = new();
+
+    /// <summary>The canvas's tools' option values, such as the brush size.</summary>
+    public ToolSettings ToolSettings { get; } = new();
 
     public ActiveDocument ActiveDocument { get; }
 
@@ -65,8 +70,11 @@ internal sealed class TestCanvas : IDisposable
 
     public AnsiExporter AnsiExporter { get; } = new();
 
-    /// <summary>What the Brush Options, Color and Swatches windows show, for this canvas's colours.</summary>
+    /// <summary>What the Colors toolbar and the Color and Swatches windows show, for this canvas's colours.</summary>
     public PaintColorsViewModel CreatePaintColorsViewModel() => new(Colors, ActiveDocument);
+
+    /// <summary>What the Tool Options toolbar shows, for this canvas's chosen tool.</summary>
+    public ToolOptionsViewModel CreateToolOptionsViewModel() => new(ViewModel);
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>

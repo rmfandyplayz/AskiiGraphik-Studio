@@ -14,6 +14,7 @@ using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
+using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using AskiiArt.Core.Tools;
@@ -353,8 +354,10 @@ public sealed class MainWindowTests : IDisposable
         Assert.Contains(window.GetVisualDescendants(), visual => visual.GetType() == viewType);
     }
 
-    [AvaloniaFact]
-    public void TheBrushOptionsToolbar_ShowsByDefault_AndHides()
+    [AvaloniaTheory]
+    [InlineData(ShellDockingIds.ColorsToolbar, typeof(ColorsToolbar))]
+    [InlineData(ShellDockingIds.ToolOptionsToolbar, typeof(ToolOptionsToolbar))]
+    public void TheColorsAndToolOptionsToolbars_ShowByDefault_AndHide(string toolbarId, Type viewType)
     {
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
         var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
@@ -363,13 +366,13 @@ public sealed class MainWindowTests : IDisposable
         window.Show();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.True(docking.IsToolbarVisible(ShellDockingIds.BrushOptionsToolbar));
-        Assert.Contains(window.GetVisualDescendants(), visual => visual is BrushOptionsToolbar);
+        Assert.True(docking.IsToolbarVisible(toolbarId));
+        Assert.Contains(window.GetVisualDescendants(), visual => visual.GetType() == viewType);
 
-        docking.ToggleToolbar(ShellDockingIds.BrushOptionsToolbar);
+        docking.ToggleToolbar(toolbarId);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.False(docking.IsToolbarVisible(ShellDockingIds.BrushOptionsToolbar));
+        Assert.False(docking.IsToolbarVisible(toolbarId));
     }
 
     [AvaloniaFact]
@@ -542,5 +545,5 @@ public sealed class MainWindowTests : IDisposable
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
             docking ?? new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
-            _canvas.CreatePaintColorsViewModel());
+            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel());
 }

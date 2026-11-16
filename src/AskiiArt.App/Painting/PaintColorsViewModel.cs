@@ -14,7 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Painting;
 
 /// <summary>
-/// What the Brush Options toolbar and the Color and Swatches windows show and change (ADR 0042): the two
+/// What the Colors toolbar and the Color and Swatches windows show and change (ADR 0042): the two
 /// current colours, shown as the active document would hold them, and which of the two the Color and Swatches
 /// windows change. It lives as long as the app, like the other windows' content, and follows the active
 /// document's colour mode.
@@ -52,7 +52,7 @@ internal sealed class PaintColorsViewModel : ObservableObject
 
     /// <summary>
     /// Which colour the Color and Swatches windows change, which is also the one the Brush paints (ADR 0043). The
-    /// Brush Options toolbar, the Brush's sub-toolbar and keys 1 and 2 choose it.
+    /// Colors toolbar, the Brush's sub-toolbar and keys 1 and 2 choose it.
     /// </summary>
     public PaintColorTarget Target
     {
@@ -100,7 +100,9 @@ internal sealed class PaintColorsViewModel : ObservableObject
     /// <summary>The BG button's tooltip: the colour, and what the button and the X and D keys do.</summary>
     public string BackgroundTip => Tip(BackgroundText);
 
-    /// <summary>Which colour the Color and Swatches windows change, for when Brush Options isn't showing.</summary>
+    /// <summary>
+    /// Which colour the Color and Swatches windows change, for when the Colors toolbar isn't showing.
+    /// </summary>
     public string TargetText => Target == PaintColorTarget.Foreground
         ? Strings.PaintColorTargetForeground
         : Strings.PaintColorTargetBackground;
@@ -223,5 +225,5 @@ internal sealed class PaintColorsViewModel : ObservableObject
     }
 
     private static string Tip(string colorText) =>
-        string.Format(CultureInfo.CurrentCulture, Strings.BrushOptionsSwatchTipFormat, colorText);
+        string.Format(CultureInfo.CurrentCulture, Strings.ColorsToolbarSwatchTipFormat, colorText);
 }

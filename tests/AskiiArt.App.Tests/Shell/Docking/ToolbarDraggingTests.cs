@@ -185,6 +185,7 @@ public sealed class ToolbarDraggingTests : IDisposable
     public void DroppingOnACorner_KeepsItsDirection()
     {
         ShowWindow();
+        FreeTheBottomLeftCorner();
         _docking.SetToolbarOrientation(File, ToolbarOrientation.Vertical);
         Pump();
 
@@ -243,6 +244,7 @@ public sealed class ToolbarDraggingTests : IDisposable
     public void OverACornerSquare_TheOutlineGoesAroundTheSquare()
     {
         ShowWindow();
+        FreeTheBottomLeftCorner();
         var corner = new Point(20, _host.Bounds.Height - 20);
 
         StartDrag(File, corner);
@@ -740,15 +742,15 @@ public sealed class ToolbarDraggingTests : IDisposable
         var where = BoundsOf(Edit).TopLeft;
         _docking.ToggleToolbar(Edit);
         Pump();
-        DragAndDrop(File, new Point(_host.Bounds.Width - 20 - 240, 20));
-        Assert.Equal(ToolbarAnchor.TopRight, Placement(File).Anchor);
+        DragAndDrop(File, new Point(_host.Bounds.Width - 20 - 240, _host.Bounds.Height - 20));
+        Assert.Equal(ToolbarAnchor.BottomRight, Placement(File).Anchor);
 
         _docking.ToggleToolbar(Edit);
         Pump();
 
         Assert.True(Placement(Edit).IsFloating);
         Assert.Equal(where, BoundsOf(Edit).TopLeft);
-        Assert.Equal(ToolbarAnchor.TopRight, Placement(File).Anchor);
+        Assert.Equal(ToolbarAnchor.BottomRight, Placement(File).Anchor);
     }
 
     [AvaloniaFact]
@@ -859,6 +861,13 @@ public sealed class ToolbarDraggingTests : IDisposable
     {
         StartDrag(toolbarId, to);
         _window.MouseUp(to, MouseButton.Left);
+        Pump();
+    }
+
+    // The View toolbar starts in the bottom-left corner.
+    private void FreeTheBottomLeftCorner()
+    {
+        _docking.ToggleToolbar(View);
         Pump();
     }
 

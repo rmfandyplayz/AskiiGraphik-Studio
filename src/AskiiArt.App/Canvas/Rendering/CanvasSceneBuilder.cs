@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
 
@@ -85,10 +86,43 @@ internal sealed class CanvasSceneBuilder
             FallbackGlyphCells = fallbackCells,
             PlaceholderGlyphCells = placeholderCells,
             IsGridVisible = overlays.IsGridVisible,
-            HoveredCell = BoundsOf(viewport, overlays.HoveredCell),
+            HoveredCell = overlays.Brush is null ? BoundsOf(viewport, overlays.HoveredCell) : null,
             Caret = BoundsOf(viewport, overlays.Caret),
-            CaretThickness = overlays.CaretThickness
+            CaretThickness = overlays.CaretThickness,
+            BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness)
         };
+    }
+
+    // Each edge becomes a strip inside its cells, as the caret's outline is, so it lands on whole pixels. Edges off
+    // the canvas are kept: the tip covers them, even though it can't paint there.
+    private static PixelRect[] OutlineOf(CanvasViewport viewport, BrushOutline? brush, int thickness)
+    {
+        if (brush is not { } outline)
+            return [];
+
+        var cell = viewport.CellSize;
+        var width = Math.Clamp(thickness, 1, Math.Max(1, Math.Min(cell.Width, cell.Height) / 2));
+        var origin = viewport.CanvasOrigin;
+        var left = origin.X + outline.TopLeft.X * cell.Width;
+        var top = origin.Y + outline.TopLeft.Y * cell.Height;
+
+        var edges = outline.Footprint.Edges;
+        var strips = new PixelRect[edges.Count];
+        for (var index = 0; index < edges.Count; index++)
+        {
+            var edge = edges[index];
+            var x = left + edge.Column * cell.Width;
+            var y = top + edge.Row * cell.Height;
+            strips[index] = edge.Side switch
+            {
+                FootprintEdgeSide.Top => new PixelRect(x, y, edge.Length * cell.Width, width),
+                FootprintEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, edge.Length * cell.Width, width),
+                FootprintEdgeSide.Left => new PixelRect(x, y, width, edge.Length * cell.Height),
+                _ => new PixelRect(x + cell.Width - width, y, width, edge.Length * cell.Height)
+            };
+        }
+
+        return strips;
     }
 
     private static PixelRect? BoundsOf(CanvasViewport viewport, CellPoint? cell) =>

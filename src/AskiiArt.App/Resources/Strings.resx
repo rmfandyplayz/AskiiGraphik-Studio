@@ -712,8 +712,12 @@
   <data name="ToolHand" xml:space="preserve">
     <value>Hand</value>
   </data>
-  <data name="ActionToggleBrushOptionsToolbar" xml:space="preserve">
-    <value>_Brush Options Toolbar</value>
+  <data name="ActionToggleToolOptionsToolbar" xml:space="preserve">
+    <value>Tool O_ptions Toolbar</value>
+    <comment>Window menu: shows or hides the toolbar with the chosen tool's options, such as the brush size.</comment>
+  </data>
+  <data name="ActionToggleColorsToolbar" xml:space="preserve">
+    <value>C_olors Toolbar</value>
     <comment>Window menu: shows or hides the toolbar with the FG and BG colors.</comment>
   </data>
   <data name="ActionToggleColor" xml:space="preserve">
@@ -774,15 +778,15 @@
   </data>
   <data name="PaintColorNone" xml:space="preserve">
     <value>None</value>
-    <comment>Brush Options: the colour is none, so typing keeps the default text colour or the cell's own background.</comment>
+    <comment>Colors toolbar: the colour is none, so typing keeps the default text colour or the cell's own background.</comment>
   </data>
   <data name="PaintColorForegroundFormat" xml:space="preserve">
     <value>FG: {0}</value>
-    <comment>Brush Options: {0} is the text colour's name, such as Red, #FF8800 or None.</comment>
+    <comment>Colors toolbar: {0} is the text colour's name, such as Red, #FF8800 or None.</comment>
   </data>
   <data name="PaintColorBackgroundFormat" xml:space="preserve">
     <value>BG: {0}</value>
-    <comment>Brush Options: {0} is the background colour's name, such as Red, #FF8800 or None.</comment>
+    <comment>Colors toolbar: {0} is the background colour's name, such as Red, #FF8800 or None.</comment>
   </data>
   <data name="PaintColorTargetForeground" xml:space="preserve">
     <value>Changes the FG color</value>
@@ -794,18 +798,18 @@
   <data name="PaintColorsNeedColorsNote" xml:space="preserve">
     <value>This document has no colors. Choose ANSI Colors or RGB Colors in the Document menu to use them.</value>
   </data>
-  <data name="BrushOptionsForegroundLabel" xml:space="preserve">
+  <data name="ColorsToolbarForegroundLabel" xml:space="preserve">
     <value>FG:</value>
-    <comment>Brush Options toolbar: before the FG color's swatch.</comment>
+    <comment>Colors toolbar: before the FG color's swatch.</comment>
   </data>
-  <data name="BrushOptionsBackgroundLabel" xml:space="preserve">
+  <data name="ColorsToolbarBackgroundLabel" xml:space="preserve">
     <value>BG:</value>
-    <comment>Brush Options toolbar: before the BG color's swatch.</comment>
+    <comment>Colors toolbar: before the BG color's swatch.</comment>
   </data>
-  <data name="BrushOptionsSwatchTipFormat" xml:space="preserve">
+  <data name="ColorsToolbarSwatchTipFormat" xml:space="preserve">
     <value>{0}
 Click to change it in the Color and Swatches windows. On the canvas, X swaps the two colors and D sets both to None (D is a temporary key).</value>
-    <comment>Brush Options toolbar: a swatch's tooltip. {0} is the color, such as "FG: Red".</comment>
+    <comment>Colors toolbar: a swatch's tooltip. {0} is the color, such as "FG: Red".</comment>
   </data>
   <data name="ColorPanelNeedsRgbNote" xml:space="preserve">
     <value>The color picker is for RGB documents. Choose RGB Colors in the Document menu, or use the Swatches window.</value>
@@ -863,5 +867,37 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="AnsiColorBrightWhite" xml:space="preserve">
     <value>Bright White</value>
+  </data>
+  <data name="ToolOptionsNone" xml:space="preserve">
+    <value>No options</value>
+    <comment>Tool Options toolbar: shown when the chosen tool has no options.</comment>
+  </data>
+  <data name="ToolOptionSize" xml:space="preserve">
+    <value>Size</value>
+    <comment>Tool Options toolbar: the brush or eraser size, in cells.</comment>
+  </data>
+  <data name="ToolOptionShape" xml:space="preserve">
+    <value>Shape</value>
+    <comment>Tool Options toolbar: the brush or eraser shape.</comment>
+  </data>
+  <data name="ToolOptionShapeSquare" xml:space="preserve">
+    <value>Square</value>
+    <comment>Tool Options toolbar: a square brush shape.</comment>
+  </data>
+  <data name="ToolOptionShapeCircle" xml:space="preserve">
+    <value>Circle</value>
+    <comment>Tool Options toolbar: a round brush shape.</comment>
+  </data>
+  <data name="ToolOptionProportions" xml:space="preserve">
+    <value>Proportions</value>
+    <comment>Tool Options toolbar: whether the brush's height counts cells or looks right on screen.</comment>
+  </data>
+  <data name="ToolOptionProportionsPerceptual" xml:space="preserve">
+    <value>Perceptual</value>
+    <comment>Tool Options toolbar: the brush looks square or round on screen, so it's fewer cells tall than wide.</comment>
+  </data>
+  <data name="ToolOptionProportionsMathematical" xml:space="preserve">
+    <value>Mathematical</value>
+    <comment>Tool Options toolbar: the brush is as many cells tall as wide, so a size 10 square is 10 by 10 cells.</comment>
   </data>
 </root>

@@ -7,6 +7,7 @@ using AskiiArt.App.Canvas.Rendering;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
 using SkiaSharp;
@@ -241,6 +242,38 @@ public sealed class CanvasRenderingTests : IDisposable
     }
 
     [Fact]
+    public void Paint_BrushOutline_GoesAroundTheTip_AndLeavesItsMiddleAlone()
+    {
+        var viewport = CreateViewport();
+        var square = BrushFootprint.Create(new BrushTip(2, BrushShape.Square, BrushProportions.Mathematical), 1);
+
+        using var scene = Build(viewport, hoveredCell: new CellPoint(1, 0),
+            brush: new BrushOutline(square, new CellPoint(1, 0)));
+        using var bitmap = PaintScene(scene);
+
+        var topLeft = viewport.GetCellBounds(new CellPoint(1, 0));
+        var bottomRight = viewport.GetCellBounds(new CellPoint(2, 1));
+        Assert.Null(scene.HoveredCell);
+        Assert.Equal(4, scene.BrushOutline.Count);
+        Assert.Equal(SKColors.Purple, bitmap.GetPixel(topLeft.X, topLeft.Y + topLeft.Height / 2));
+        Assert.Equal(SKColors.Purple, bitmap.GetPixel(bottomRight.Right - 1, bottomRight.Y + 1));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(topLeft.Right, topLeft.Bottom));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(topLeft.X - 1, topLeft.Y + topLeft.Height / 2));
+    }
+
+    [Fact]
+    public void Build_BrushOutline_KeepsItsEdgesOffTheCanvas()
+    {
+        var viewport = CreateViewport();
+        var circle = BrushFootprint.Create(new BrushTip(3, BrushShape.Circle, BrushProportions.Mathematical), 1);
+
+        using var scene = Build(viewport, brush: new BrushOutline(circle, new CellPoint(-1, -1)));
+
+        Assert.Equal(circle.Edges.Count, scene.BrushOutline.Count);
+        Assert.Contains(scene.BrushOutline, strip => strip.X < viewport.CanvasBounds.X);
+    }
+
+    [Fact]
     public void Paint_Caret_OutlinesItsCellAndLeavesTheMiddleAlone()
     {
         var viewport = CreateViewport();
@@ -323,9 +356,9 @@ public sealed class CanvasRenderingTests : IDisposable
         new(_canvas.ViewModel.Composite.Size, CellSize, new PixelSize(200, 100), margin: 10, default);
 
     private CanvasScene Build(CanvasViewport viewport, bool isGridVisible = false, CellPoint? hoveredCell = null,
-        CellPoint? caret = null) =>
+        CellPoint? caret = null, BrushOutline? brush = null) =>
         _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
-            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2));
+            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

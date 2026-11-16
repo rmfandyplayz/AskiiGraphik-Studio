@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder Brush Options toolbar (2b.3a follow-ups), as the owner sketched it: "FG: [swatch] • BG: [swatch]".
+<!-- Placeholder Colors toolbar (2b.3a follow-ups), as the owner sketched it: "FG: [swatch] • BG: [swatch]".
      Clicking a swatch makes it the colour the Color and Swatches windows change. The root is a StackPanel so that a
      vertical toolbar can turn it. -->
 <StackPanel xmlns="https://github.com/avaloniaui"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:painting="using:AskiiArt.App.Painting"
             xmlns:res="using:AskiiArt.App.Resources"
-            x:Class="AskiiArt.App.Painting.BrushOptionsToolbar"
+            x:Class="AskiiArt.App.Painting.ColorsToolbar"
             x:DataType="painting:PaintColorsViewModel"
             Orientation="Horizontal"
             Spacing="{StaticResource AppSpacingSmall}"
@@ -19,12 +19,12 @@
     </Style>
     <Style Selector="RadioButton">
       <Setter Property="Focusable" Value="False" />
-      <Setter Property="Padding" Value="{StaticResource AppBrushOptionsSwatchPadding}" />
+      <Setter Property="Padding" Value="{StaticResource AppColorsToolbarSwatchPadding}" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
   </StackPanel.Styles>
-  <TextBlock Text="{x:Static res:Strings.BrushOptionsForegroundLabel}" />
+  <TextBlock Text="{x:Static res:Strings.ColorsToolbarForegroundLabel}" />
   <!-- Toggle buttons that act as radio buttons. They have no GroupName: as siblings they're a group of their own,
        so the copies of this toolbar shown during a drag can't untick the real one. Not focusable, so the canvas keeps
        the keyboard and X and D still work after a click. -->
@@ -34,12 +34,12 @@
                ToolTip.Tip="{Binding ForegroundTip}">
     <painting:ColorSwatch Fill="{Binding ForegroundBrush}" />
   </RadioButton>
-  <Ellipse Width="{StaticResource AppBrushOptionsDotSize}"
-           Height="{StaticResource AppBrushOptionsDotSize}"
+  <Ellipse Width="{StaticResource AppColorsToolbarDotSize}"
+           Height="{StaticResource AppColorsToolbarDotSize}"
            Fill="{DynamicResource AppSecondaryTextBrush}"
            HorizontalAlignment="Center"
            VerticalAlignment="Center" />
-  <TextBlock Text="{x:Static res:Strings.BrushOptionsBackgroundLabel}" />
+  <TextBlock Text="{x:Static res:Strings.ColorsToolbarBackgroundLabel}" />
   <RadioButton x:Name="BackgroundButton"
                Theme="{StaticResource {x:Type ToggleButton}}"
                IsChecked="{Binding IsBackgroundTarget, Mode=TwoWay}"

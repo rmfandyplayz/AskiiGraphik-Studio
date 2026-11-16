@@ -177,14 +177,14 @@ Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging imple
 Tools are **Core** classes with no UI dependencies. Each tool has:
 
 - **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a category and a shortcut letter. The letter works while the canvas has focus and the active tool isn't taking text (ADR 0033).
-- **Options:** a plain model object (size, ramp id, mode, …) that the UI binds to. The tool doesn't know what draws its options panel.
+- **Options:** data, not controls. A tool's definition may carry a `ToolOptionGroup` (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool and can be exported. The Tool Options toolbar is drawn from the chosen tool's group, so the tool doesn't know what draws its options (ADR 0047).
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
 - **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
 - **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017). The Hand tool also pans with a plain left-drag.
 - **Esc:** a tool uses Esc only to cancel what it's doing. Any other Esc on the canvas switches to the Hand tool, so a tool is always chosen (ADR 0041).
 
-Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session from a `ToolContext`: the session and the FG and BG colours, which every document shares (ADR 0042). Built-in tools register exactly the way a future plugin would (§18).
+Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session from a `ToolContext`: the session, the FG and BG colours, which every document shares (ADR 0042), the tool settings, and the shape of the document's cells, which a brush that looks round needs (ADR 0047). Built-in tools register exactly the way a future plugin would (§18).
 
 ### 8.2 Planned tools
 
@@ -192,7 +192,7 @@ Planned tools, built over several milestones: text, brush, eraser, fill, pickup 
 
 ### 8.3 Eraser
 
-The eraser has two modes. Hard mode arrived with layers (step 2.4), one cell wide until brushes have sizes. Soft mode needs glyph density, so it arrives with ramps (M3).
+The eraser has two modes. Hard mode arrived with layers (step 2.4), and has sizes and shapes since 3.2 (ADR 0047). Soft mode needs glyph density, so it arrives with ramps (M3).
 
 - **Hard:** everything inside the brush footprint becomes empty, and everything outside it is untouched.
 - **Soft:** lowers intensity. Each affected glyph is mapped to a lighter one using glyph density and the active ramp. When intensity reaches zero, the cell becomes empty.
@@ -201,7 +201,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 
 ### 8.4 Colour brush
 
-The Brush (step 2b.3b) paints colour onto cells that are already there, one cell wide until brushes have sizes (M3). It's an FG brush, which colours text, or a BG brush, which colours backgrounds, and that choice is the same one the colour windows change (ADR 0043). Alt+click (Option+click) picks the colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
+The Brush (step 2b.3b) paints colour onto cells that are already there, with a size and shape since 3.2 (ADR 0047). It's an FG brush, which colours text, or a BG brush, which colours backgrounds, and that choice is the same one the colour windows change (ADR 0043). Alt+click (Option+click) picks the colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
 
 ## 9. Commands and undo
 

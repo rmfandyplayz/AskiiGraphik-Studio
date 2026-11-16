@@ -32,3 +32,5 @@ Step 2b.3b adds a Brush tool (B) that paints the FG colour as text colour or the
 - The guard can go when Avalonia counts a click as using Alt (its newer code is still the same here).
 
 Updated 2026-11-15: the guard also keeps the menu bar's letters from staying underlined after an Alt+click, which the owner's testing found, and Esc while picking needs Alt let go first on Windows.
+
+Updated 2026-11-16: the Brush Options toolbar is now the Colors toolbar (ADR 0047).

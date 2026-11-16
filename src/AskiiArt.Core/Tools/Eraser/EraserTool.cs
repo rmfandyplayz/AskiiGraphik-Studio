@@ -4,13 +4,16 @@
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Tools.Footprints;
+using AskiiArt.Core.Tools.Options;
 
 namespace AskiiArt.Core.Tools.Eraser;
 
 /// <summary>
-/// The hard eraser (ARCHITECTURE §8.3): dragging empties the cells under the pointer on the active
-/// layer, one cell wide for now. The erasing shows as it happens, so each move is its own command,
-/// and the moves of one stroke coalesce into one undo step, as a burst of typing does (ADR 0033).
+/// The hard eraser (ARCHITECTURE §8.3): dragging empties the cells under its tip on the active layer. The tip's size
+/// and shape are the Eraser group's options (ADR 0047), and [ and ] change its size. The erasing shows as it happens,
+/// so each move is its own command, and the moves of one stroke coalesce into one undo step, as a burst of typing
+/// does (ADR 0033).
 /// </summary>
 public sealed class EraserTool : ITool
 {
@@ -20,32 +23,45 @@ public sealed class EraserTool : ITool
     /// <summary>The eraser's identity. The name key is the App's resource key.</summary>
     public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolEraser", "tool.eraser", "paint", 'E');
 
+    /// <summary>The Eraser group's options: the tip's size, shape and proportions.</summary>
+    public static ToolOptionGroup OptionGroup { get; } = BrushTipOptions.CreateGroup(Id);
+
     /// <summary>Registers the eraser, as DI does.</summary>
-    public static ToolDefinition Definition { get; } =
-        new(ToolDescriptor, context => new EraserTool(context.Session));
+    public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new EraserTool(context.Session,
+        new BrushTipSource(context.Settings.For(OptionGroup), context.CellWidthToHeight)))
+    {
+        Options = OptionGroup
+    };
 
     private readonly EditingSession _session;
+    private readonly BrushTipSource _tip;
+    private ToolOverlay _overlay = ToolOverlay.None;
     private CoalescingGroup? _stroke;
-    private CellPoint _lastCell;
+
+    // The footprint a stroke started with, which it keeps throughout, and where its top-left last was.
+    private BrushFootprint? _strokeFootprint;
+    private CellPoint _lastTopLeft;
 
     // Where the history stood after this stroke's last edit, or null before its first. Esc only takes
     // back the newest step if it's still this stroke's.
     private int? _undoCountAfterLastEdit;
 
-    /// <summary>Creates an eraser for <paramref name="session"/>.</summary>
-    public EraserTool(EditingSession session)
+    /// <summary>
+    /// Creates an eraser for <paramref name="session"/> that erases with <paramref name="tip"/>'s footprint. Call
+    /// <see cref="Deactivate"/> when done with it, so it stops following the tip's settings.
+    /// </summary>
+    public EraserTool(EditingSession session, BrushTipSource tip)
     {
         ArgumentNullException.ThrowIfNull(session);
+        ArgumentNullException.ThrowIfNull(tip);
 
         _session = session;
+        _tip = tip;
+        _tip.Values.Changed += OnTipChanged;
     }
 
-    /// <summary>The eraser never draws anything over the document, so this never happens.</summary>
-    public event EventHandler? OverlayChanged
-    {
-        add { }
-        remove { }
-    }
+    /// <summary>Raised when the tip's size or shape changes, so the canvas outlines the new one.</summary>
+    public event EventHandler? OverlayChanged;
 
     /// <inheritdoc/>
     public ToolDescriptor Descriptor => ToolDescriptor;
@@ -59,8 +75,18 @@ public sealed class EraserTool : ITool
     /// <summary>False: the eraser takes no text.</summary>
     public bool IsTakingText => false;
 
-    /// <inheritdoc/>
-    public ToolOverlay Overlay => ToolOverlay.None;
+    /// <summary>The tip's footprint, for the canvas to outline under the pointer.</summary>
+    public ToolOverlay Overlay
+    {
+        get
+        {
+            var footprint = _strokeFootprint ?? _tip.Footprint;
+            if (_overlay.Footprint != footprint)
+                _overlay = new ToolOverlay(Caret: null, footprint);
+
+            return _overlay;
+        }
+    }
 
     /// <summary>Starts a stroke, unless the active layer is locked or hidden. It may start outside the canvas.</summary>
     public void PointerPressed(ToolPointerInput input)
@@ -69,23 +95,28 @@ public sealed class EraserTool : ITool
             return;
 
         _stroke = new CoalescingGroup();
+        _strokeFootprint = _tip.Footprint;
         _undoCountAfterLastEdit = null;
-        _lastCell = input.Cell;
-        Erase(input.Cell, input.Cell);
+        _lastTopLeft = _strokeFootprint.TopLeftAt(input);
+        Erase(_lastTopLeft, _lastTopLeft);
     }
 
     /// <summary>Continues the stroke in a straight line, because a fast drag reports cells far apart.</summary>
     public void PointerMoved(ToolPointerInput input)
     {
-        if (_stroke is null || input.Cell == _lastCell)
+        if (_stroke is null || _strokeFootprint is null)
             return;
 
-        Erase(_lastCell, input.Cell);
-        _lastCell = input.Cell;
+        var topLeft = _strokeFootprint.TopLeftAt(input);
+        if (topLeft == _lastTopLeft)
+            return;
+
+        Erase(_lastTopLeft, topLeft);
+        _lastTopLeft = topLeft;
     }
 
     /// <inheritdoc/>
-    public void PointerReleased(ToolPointerInput input) => _stroke = null;
+    public void PointerReleased(ToolPointerInput input) => EndStroke();
 
     /// <summary>
     /// Esc during a stroke takes it back as if it never happened. Otherwise Esc isn't the eraser's, so the
@@ -99,28 +130,43 @@ public sealed class EraserTool : ITool
         if (_undoCountAfterLastEdit == _session.History.UndoCount)
             _session.History.CancelNewestStep();
 
-        _stroke = null;
+        EndStroke();
         return true;
     }
 
-    /// <inheritdoc/>
-    public bool TextEntered(string text) => false;
+    /// <summary>[ makes the tip a cell smaller, and ] a cell bigger.</summary>
+    public bool TextEntered(string text) => BrushTipOptions.TryUseSizeKey(_tip.Values, text);
 
-    /// <summary>Keeps what the stroke has erased so far.</summary>
-    public void Deactivate() => _stroke = null;
+    /// <summary>Keeps what the stroke has erased so far, and stops following the tip's settings.</summary>
+    public void Deactivate()
+    {
+        EndStroke();
+        _tip.Values.Changed -= OnTipChanged;
+    }
 
-    private void Erase(CellPoint from, CellPoint to)
+    private void OnTipChanged(object? sender, EventArgs e) => OverlayChanged?.Invoke(this, EventArgs.Empty);
+
+    private void EndStroke()
+    {
+        var hadStroke = _strokeFootprint is not null;
+        _stroke = null;
+        _strokeFootprint = null;
+
+        // A size changed during the stroke shows only now.
+        if (hadStroke && _overlay.Footprint != _tip.Footprint)
+            OverlayChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void Erase(CellPoint fromTopLeft, CellPoint toTopLeft)
     {
         // Undoing during a stroke can take away the layer it started on.
-        if (!_session.CanEditActiveLayer)
+        if (!_session.CanEditActiveLayer || _strokeFootprint is null)
             return;
 
-        var cells = new CellEditBuilder(_session.Document, _session.ActiveLayer.Id);
-        foreach (var point in CellLine.Between(from, to))
-        {
-            if (_session.Document.CanvasSize.Contains(point))
-                cells.Set(point, Cell.Empty);
-        }
+        var document = _session.Document;
+        var cells = new CellEditBuilder(document, _session.ActiveLayer.Id);
+        foreach (var point in FootprintSweep.Cover(_strokeFootprint, fromTopLeft, toTopLeft, document.CanvasSize))
+            cells.Set(point, Cell.Empty);
 
         if (cells.Build(UndoStepNames.Erase) is not { } command)
             return;

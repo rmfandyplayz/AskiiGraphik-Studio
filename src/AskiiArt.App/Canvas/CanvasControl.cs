@@ -124,6 +124,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
+    private CellPoint? _brushTopLeft;
     private Point? _panStart;
     private PixelPoint _panStartOffset;
     private bool _isSpaceHeld;
@@ -315,6 +316,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     /// <summary>Where the canvas currently sits; null until the control has a size and a document.</summary>
     internal CanvasViewport? Viewport => _viewport;
 
+    /// <summary>Where the brush outline's top-left is, or null when none shows.</summary>
+    internal CellPoint? BrushTopLeft => _brushTopLeft;
+
     /// <summary>Which keys go to the tool, and as what. Tests swap in another platform's keys.</summary>
     internal ToolKeymap Keymap { get; set; } = ToolKeymap.ForCurrentPlatform();
 
@@ -327,7 +331,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             return;
 
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
-        var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, Tool?.Overlay.Caret, caretThickness);
+        var overlay = Tool?.Overlay;
+        var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
+            BrushOutlineOf(overlay));
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
@@ -661,14 +667,34 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         InvalidateVisual();
     }
 
+    // The hovered cell and the brush outline both follow the pointer. A brush outline follows it outside the canvas
+    // too, because a big tip still paints the cells it overlaps.
     private void UpdateHoveredCell()
     {
         var hovered = _pointerPosition is { } position ? _viewport?.CellAt(position) : null;
-        if (hovered == HoveredCell)
+        var brushTopLeft = FindBrushTopLeft();
+        if (hovered == HoveredCell && brushTopLeft == _brushTopLeft)
             return;
 
         HoveredCell = hovered;
+        _brushTopLeft = brushTopLeft;
         InvalidateVisual();
+    }
+
+    private CellPoint? FindBrushTopLeft()
+    {
+        if (Tool?.Overlay.Footprint is not { } footprint || _pointerPosition is not { } position)
+            return null;
+
+        return ToToolInput(position, KeyModifiers.None) is { } input ? footprint.TopLeftAt(input) : null;
+    }
+
+    private BrushOutline? BrushOutlineOf(ToolOverlay? overlay)
+    {
+        if (overlay?.Footprint is not { } footprint || _brushTopLeft is not { } topLeft)
+            return null;
+
+        return new BrushOutline(footprint, topLeft);
     }
 
     private void UpdateCursor()
@@ -708,12 +734,14 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             newTool.OverlayChanged += OnToolOverlayChanged;
 
         UpdateCursor();
+        UpdateHoveredCell();
         InvalidateVisual();
     }
 
     private void OnToolOverlayChanged(object? sender, EventArgs e)
     {
         ScrollCaretIntoView();
+        UpdateHoveredCell();
         InvalidateVisual();
     }
 

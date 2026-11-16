@@ -285,9 +285,11 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 |---|---|
 | Layers above History | Widgets on the right |
 | File toolbar: New, Open, Save | Top-left, horizontal |
-| Tools toolbar: Text, Eraser | Bottom middle, horizontal |
-| Edit toolbar: Undo, Redo, Resize Canvas, Font | Top-right, horizontal |
-| View toolbar: Zoom Out, Zoom In, Actual Size, Show Grid | Bottom-right, horizontal |
+| Tool Options toolbar: the chosen tool's options | Top middle, horizontal |
+| Colors toolbar: the FG and BG swatches | Top-right, horizontal |
+| View toolbar: Zoom Out, Zoom In, Actual Size, Show Grid | Bottom-left, horizontal |
+| Tools toolbar: Hand, Text, Brush, Eraser | Bottom middle, horizontal |
+| Edit toolbar: Undo, Redo, Resize Canvas, Font | Bottom-right, horizontal |
 
 **Saving:** the layout is saved in settings as before, under a new name, so everyone's layout resets once when this arrives. On load, anything invalid is repaired rather than rejected, and a window the app no longer has is skipped.
 
@@ -339,3 +341,5 @@ Updated 2026-11-13: in §5.2 the marker keeps the same distance from everything 
 Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g notes: the windows move apart again for the marker, which is thin only on a dock's borders and elsewhere the size of its zone, and a lone window's own place is its side's edge strip.
 
 Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g mockups. A window drag shows a thin marker, or a "+" tab and an outline, instead of a placeholder the size the window would land at with the others moving apart, and a dock's zones straddle its borders instead of lying inside each window.
+
+Updated 2026-11-16: the default layout is the owner's new one from step 3.2, with the Tool Options and Colors toolbars (ADR 0047).

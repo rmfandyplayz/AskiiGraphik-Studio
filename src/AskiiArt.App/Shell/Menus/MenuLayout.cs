@@ -120,7 +120,8 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(WindowMenuActionIds.ToggleToolsToolbar),
             new ActionMenuEntry(WindowMenuActionIds.ToggleEditToolbar),
             new ActionMenuEntry(WindowMenuActionIds.ToggleViewToolbar),
-            new ActionMenuEntry(WindowMenuActionIds.ToggleBrushOptionsToolbar),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleToolOptionsToolbar),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleColorsToolbar),
             new SeparatorMenuEntry(),
             new ActionMenuEntry(WindowMenuActionIds.ResetLayout)
         ]);

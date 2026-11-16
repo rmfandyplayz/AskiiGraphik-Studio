@@ -14,7 +14,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Choice | Where | Step |
 |---|---|---|
 | Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
-| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Brush, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. A fifth toolbar, Brush Options, has its own row below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
+| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Brush, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
 | A Tools menu between Layer and View: Hand, Text, Brush and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b |
 | A Window menu between View and Help: Layers, History, Color, Swatches, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
@@ -137,7 +137,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | The Text tool is active at first. With it, Space types a space and Space + drag doesn't pan; with the Eraser, Space + drag pans | `CanvasViewModel`, each tool's `AllowsSpacePanning` | 1.5, 2.4 |
 | T picks Text and E picks Eraser, only while the canvas has the keyboard and no caret is placed. Esc removes the caret, so it's the way from typing to these keys. They aren't shown in the menus | `CanvasView`, `ToolDescriptor.ShortcutLetter` | 2.4 |
 | The chosen tool stays chosen when New or Open replaces the document, and switching tools removes the caret | `CanvasViewModel.SelectTool` | 2.4 |
-| The Eraser: one cell wide, erases as you drag, one stroke is one History step named Erase. Esc during a stroke takes it back and leaves no step. It leaves locked and hidden layers alone, with no message. No special pointer | `Core/Tools/Eraser/EraserTool.cs` | 2.4 |
+| The Eraser: one cell wide until 3.2 gave it sizes, erases as you drag, one stroke is one History step named Erase. Esc during a stroke takes it back and leaves no step. It leaves locked and hidden layers alone, with no message. No special pointer | `Core/Tools/Eraser/EraserTool.cs` | 2.4 |
 | The space option is off for new layers. It can be changed on a locked or hidden layer, like visibility. Merge Down unticks it on the merged layer when that's what keeps the picture the same | `LayerProperties`, `MergeLayerDown` | 2.4 |
 | The caret is a blue outline around its cell, 2 pixels thick, not blinking | `AppCanvasCaretBrush`, `AppCanvasCaretThickness` | 1.5 |
 | Typing overwrites; nothing shifts sideways. At the right edge the caret stays in the last column | `TextTool` | 1.5 |
@@ -152,20 +152,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | ASCII Only is a check-mark item in the Document menu (the Edit menu in 1.5), and switching to it asks first when it would remove characters | `DocumentActions`, `AsciiOnlyConfirm*` strings | 1.5, 1.6 |
 | The Hand tool shows the pan cursor for as long as it's chosen, not only while dragging. Avalonia has no open hand of its own (its Hand is the link pointer), so the pan cursor is the system's open hand on a Mac and the four-way move arrows elsewhere, for Space + drag too | `Canvas/PanCursor.cs`, `Canvas/CanvasControl.cs` | 2b.3a, 2b.3a follow-ups |
 | From typing, one Esc goes straight to the Hand tool and the caret goes with it, rather than a first Esc removing the caret | `Canvas/CanvasView.axaml.cs` | 2b.3a |
-| Brush Options toolbar, as the owner sketched it: "FG:", a swatch button, a small dot, "BG:" and a swatch button. The chosen swatch looks pressed. Each swatch's tooltip names its colour (such as "FG: Red", or a hex code in RGB documents) and says what clicking, X and D do. It sits in the middle of the top edge by default | `Painting/BrushOptionsToolbar.axaml`, `Shell/Docking/ShellDefaultLayout.cs` | 2b.3a follow-ups |
-| A colour of None shows as an empty square with a red diagonal slash, top-left to bottom-right, on the Brush Options swatches and the Swatches window's None button | `Painting/ColorSwatch.cs`, `AppColorNoneSlash*` tokens | 2b.3a follow-ups |
+| Colors toolbar (Brush Options until 3.2), as the owner sketched it: "FG:", a swatch button, a small dot, "BG:" and a swatch button. The chosen swatch looks pressed. Each swatch's tooltip names its colour (such as "FG: Red", or a hex code in RGB documents) and says what clicking, X and D do. It sits in the top-right corner by default, in the owner's layout from 3.2 | `Painting/ColorsToolbar.axaml`, `Shell/Docking/ShellDefaultLayout.cs` | 2b.3a follow-ups, 3.2 |
+| A colour of None shows as an empty square with a red diagonal slash, top-left to bottom-right, on the Colors toolbar's swatches and the Swatches window's None button | `Painting/ColorSwatch.cs`, `AppColorNoneSlash*` tokens | 2b.3a follow-ups |
 | Swatches window: a line saying which colour it changes, the 16 ANSI colours as small squares in rows that wrap, named in tooltips, and a None button. Monochrome documents show only a note | `Painting/SwatchesView.axaml` | 2b.3a |
 | Color window: Avalonia's colour picker with its alpha, palette and accent parts hidden, under a line saying which colour it changes. Only RGB documents get the picker; the others show a note. While the colour is None it shows the last colour picked, white at first | `Painting/ColorPanelView.axaml` | 2b.3a |
 | Color and Swatches aren't in the default layout. They open from the Window menu, where the docking system puts any window that has no place yet | `Shell/Docking/ShellDockingIds.cs` | 2b.3a |
-| The Brush Options swatches and the colour windows' buttons never take keyboard focus, so X and D keep working on the canvas after a click on them | the `Painting` views | 2b.3a |
-| **D, which sets both colours to None, is temporary**: a stand-in until the owner designs the shortcuts. The Brush Options swatches' tooltips say so | `Canvas/CanvasViewModel.cs` (`ResetColorsLetter`), `BrushOptionsSwatchTipFormat` | 2b.3a |
+| The Colors toolbar's swatches and the colour windows' buttons never take keyboard focus, so X and D keep working on the canvas after a click on them | the `Painting` views | 2b.3a |
+| **D, which sets both colours to None, is temporary**: a stand-in until the owner designs the shortcuts. The Colors toolbar's swatch tooltips say so | `Canvas/CanvasViewModel.cs` (`ResetColorsLetter`), `ColorsToolbarSwatchTipFormat` | 2b.3a |
 | Backspace and Delete with the text tool erase the glyph but keep the cell's background | `Core/Tools/Text/TextTool.cs` | 2b.3a |
-| In an RGB document an ANSI swatch stays an ANSI colour, shows as its hex code in Brush Options, and is typed as that RGB value | `Painting/PaintColorsViewModel.cs` | 2b.3a |
+| In an RGB document an ANSI swatch stays an ANSI colour, shows as its hex code on the Colors toolbar, and is typed as that RGB value | `Painting/PaintColorsViewModel.cs` | 2b.3a |
 | The colour mode is three check-mark items in the Document menu after ASCII Only (the roadmap first said an Edit → Color menu). Switching asks first when it would convert or remove colours | `Documents/ColorModeActions.cs`, `ColorModeConfirm*` strings | 2b.3a |
 | The New dialog's colour choice is three radio buttons under "Colors", Monochrome first and chosen | `Documents/NewDocumentWindow.axaml` | 2b.3a |
 | The Brush sits between Text and Eraser on the Tools toolbar and in the Tools menu | `Shell/Toolbars/ToolbarLayout.cs`, `MenuLayout.cs` | 2b.3b |
 | The Brush's sub-toolbar: two plain text toggle buttons, "FG Brush" and "BG Brush", beside the Tools toolbar while the Brush is chosen | `Painting/BrushSubToolbar.cs`, `Painting/BrushActions.cs` | 2b.3b |
-| Clicking a swatch on the Brush Options toolbar while the Brush is chosen switches between the FG and BG brushes too, since it's one choice | `Core/Tools/PaintColors.cs` | 2b.3b |
+| Clicking a swatch on the Colors toolbar while the Brush is chosen switches between the FG and BG brushes too, since it's one choice | `Core/Tools/PaintColors.cs` | 2b.3b |
 | The FG brush leaves cells without a glyph alone, and a colour of None takes the cell's text colour or background away | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | A Brush stroke is one undo step named "Paint" | `Strings.resx` (`UndoStepPaint`) | 2b.3b |
 | Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before. On Windows, Alt+Esc is the system's (it sends the window to the back), so Alt is let go first, with the mouse button still held | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
@@ -173,6 +173,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Alt+click in a monochrome document does nothing, so the chosen colour isn't lost; painting there does nothing either | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
 | No eyedropper pointer while Alt is held: the normal pointer stays | `Canvas/CanvasControl.cs` | 2b.3b |
 | Colours are picked with Alt+click on the Brush, not with a separate eyedropper tool (ARCHITECTURE §8.4). The owner OK'd it on 2026-11-15 but may change it for UX later; the picking lives in the Brush, so a separate tool could share it | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+
+### Brush sizes (step 3.2, ADR 0047)
+
+| Choice | Where | Step |
+|---|---|---|
+| Tool Options toolbar: for a number, its name, a slider and the value; for a choice, its name and a plain text toggle button per value. A tool with no options shows "No options". In a vertical toolbar the options stack downwards, but each one stays a row. The slider never takes keyboard focus | `ToolOptions/ToolOptionsToolbar.axaml` | 3.2 |
+| The brush outline is drawn in the caret's colour and thickness, just inside the cells it goes around, and replaces the hover highlight while the Brush or Eraser is chosen. It follows the pointer off the canvas too, since a big brush can reach in from outside | `Canvas/Rendering/CanvasSceneBuilder.cs`, `CanvasScenePainter.cs` | 3.2 |
+| An even size, which has no middle cell, leans towards the half of the cell the pointer is in | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
+| Circles take the cells whose centres fall inside a slightly shrunk ellipse, so size 3 is a plus and sizes 4 and 5 have their corners cut | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
+| A perceptual brush is `size` cells wide and as many cells tall as looks the same on screen (about half as many in most fonts), rounded and at least 1 | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
+| A size changed with `[` or `]` in the middle of a stroke takes effect on the next stroke | `Core/Tools/Brush/BrushTool.cs`, `Eraser/EraserTool.cs` | 3.2 |
+| Defaults the owner agreed: size 1, from 1 to 100, Circle, Perceptual; `[` and `]` change the size by 1. The Brush and the Eraser each have their own size and shape, and they aren't remembered between runs until 3.5 | `Core/Tools/Footprints/BrushTipOptions.cs` | 3.2 |
+| The Window menu lists "Tool O_ptions Toolbar" and "C_olors Toolbar" after the other toolbars' items | `Strings.resx`, `Shell/Menus/MenuLayout.cs` | 3.2 |
+| **Below a window about 1,750 px wide,** the default bottom row (View, Tools, Edit) doesn't fit beside the widgets, so View and Edit shrink and scroll. The owner will decide what to change | `Shell/Docking/ShellDefaultLayout.cs` | 3.2 |
 
 ## Ideas to revisit
 
