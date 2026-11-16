@@ -167,7 +167,7 @@ One mechanism powers brushes, soft erase and image conversion.
 - A **ramp** is an ordered, user-editable mapping from intensity bands to glyphs, for example `" .:-=+*#%@"`. Ramps are first-class objects: they're named, stored in user settings, and can be exported and imported as small files so users can share them. Whether intensity 0 maps to an empty cell or to a space is part of each ramp's definition.
 - **Glyph density** is how much ink a glyph actually puts on screen in a given font, measured by rasterizing it (Imaging, §11). It's used to auto-generate a ramp from a font, to sort a user's characters by darkness, for soft erase (glyph → intensity → lighter glyph), and for image conversion.
 
-Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider.
+Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included.
 
 ## 8. Tools
 
@@ -398,7 +398,7 @@ Ask the owner about each of these at the milestone that needs it.
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should selection changes count as undo steps? | M4 |
-| Default ramp(s) to ship | M3 |
+| Default ramp(s) to ship. *Decided in M3's planning:* Standard, Standard Alphanumerical, Fine, Blocks and Braille, each painting an empty cell at intensity 0 (ADR 0045) | M3 |
 | Exact behavior of each tool | That tool's milestone |
 | Big-text font format (FIGlet?), and which fonts can legally be bundled | M5 |
 | How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M8b; the license before accepting outside code |

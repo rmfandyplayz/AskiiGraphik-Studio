@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell.Docking;
 
@@ -170,6 +171,7 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(DocumentActionIds.OpenColorSample),
                 new ActionMenuEntry(DocumentActionIds.OpenAnsiTestSample),
                 new ActionMenuEntry(DocumentActionIds.OpenRgbTestSample),
+                new ActionMenuEntry(RampActionIds.OpenDensitySample),
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
                 new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
                 new ActionMenuEntry(CanvasActionIds.ShowFrameRate),

@@ -58,7 +58,16 @@ Added after 2.3's testing (ADR 0032), before M3 so every tool from then on write
 
 ## M3: Ramps and brushes
 
-Measure glyph density for each font. Add the ramp model, a ramp editor panel, and ramp presets that can be saved, loaded and shared as files. Add the brush tool (size, shape, intensity, ramp, and pen pressure where available), the soft eraser, a tool options panel and a character picker panel.
+Glyph density, ramps and their editor and files, a Brush that paints ramps, a Character Brush, the soft eraser, a Tool Options toolbar and a character picker. Steps agreed with the owner on 2026-11-16.
+
+- [~] **3.1 Glyph density and ramps.** The ramp model and the map from intensity to character, the ramps we ship (Standard, Standard Alphanumerical, Fine, Blocks and Braille), and each character's darkness measured per font the way the canvas draws it. The owner checks a Debug density sample.
+  *Note:* built 2026-11-16 (ADR 0045), ready for testing. Debug → Open Density Sample lists each character's darkness in the document's font and paints each ramp from 0 to 1. No bundled font has braille, so it's always borrowed. [test doc](testing/step-3.1-glyph-density-and-ramps.md)
+- [ ] **3.2 Brush sizes and shapes.** Size, square or circle (a Perceptual Circle looks round on screen; a Mathematical Circle counts cells), an outline under the pointer, and the Tool Options toolbar: a special toolbar built from the active tool's options as data, so the settings can be exported later. The colour Brush and the hard Eraser get sizes.
+- [ ] **3.3 The Brush paints ramps.** Tool groups replace the one-off Brush sub-toolbar and the Debug samples. The Brush group is Brush (ramps), FG and BG, on keys 1–3. Ramp, intensity and softness go on Tool Options, with Blend as the only blend mode for now. A ramp the document's character set can't hold doesn't paint.
+- [ ] **3.4 Soft eraser.** Hard and soft erasing, for text and for backgrounds separately. The exact shape gets settled at the start of the step.
+- [ ] **3.5 Ramp editor and ramp files.** A Ramps window to view, edit, preview, sort by darkness, generate, add, duplicate, rename and delete ramps, and to import and export them as files. Your ramps and brush settings are remembered between runs.
+- [ ] **3.6 Character Brush and character picker.** A separate Character Brush that paints one chosen character, and a Characters window that chooses it.
+- [ ] **3.7 Pen pressure.** Pressure scales the Brush's intensity. Built and covered by automated tests; checking it on a real tablet waits for M9.
 
 ## M4: Selection
 
@@ -86,7 +95,7 @@ Added with M2b (ADR 0032). Loading plugins, a versioned public API for tools, im
 
 ## M9: Ship-readiness
 
-Autosave and crash recovery, recent files, a notice when the open file is deleted or changed outside the app (ADR 0024), a file association for the document extension, the app icon, and an About / credits / licenses screen. Packaging for Windows (installer or zip), macOS (an unsigned `.app` bundle, with instructions in the README) and Linux (AppImage or tarball). A release workflow that runs when a tag is pushed.
+Autosave and crash recovery, recent files, checking pen pressure (3.7) on a real drawing tablet and a choice of what it controls, a notice when the open file is deleted or changed outside the app (ADR 0024), a file association for the document extension, the app icon, and an About / credits / licenses screen. Packaging for Windows (installer or zip), macOS (an unsigned `.app` bundle, with instructions in the README) and Linux (AppImage or tarball). A release workflow that runs when a tag is pushed.
 
 ---
 

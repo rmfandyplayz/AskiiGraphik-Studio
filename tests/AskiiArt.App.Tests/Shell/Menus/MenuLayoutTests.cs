@@ -6,6 +6,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -109,6 +110,7 @@ public sealed class MenuLayoutTests
                 DocumentActionIds.OpenColorSample,
                 DocumentActionIds.OpenAnsiTestSample,
                 DocumentActionIds.OpenRgbTestSample,
+                RampActionIds.OpenDensitySample,
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
                 CanvasActionIds.ShowFrameRate,

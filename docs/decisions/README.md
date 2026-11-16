@@ -51,3 +51,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0042](0042-the-current-colours.md) | The current colours | Accepted |
 | [0043](0043-the-colour-brush.md) | The colour brush | Accepted |
 | [0044](0044-ansi-export.md) | ANSI export | Accepted |
+| [0045](0045-ramps-and-glyph-density.md) | Ramps and glyph density | Accepted |

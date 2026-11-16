@@ -33,6 +33,7 @@ internal sealed class TestCanvas : IDisposable
     {
         Fonts = new FontCatalog(BundledFonts.All, getSystemFamilyNames: () => [], loadSystemFont: _ => null);
         Atlases = new GlyphAtlasCache(NoFallbackFonts.Instance);
+        Densities = new GlyphDensityCache(NoFallbackFonts.Instance);
         ActiveDocument = new ActiveDocument(
             new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet,
                 colorMode: colorMode)));
@@ -56,6 +57,8 @@ internal sealed class TestCanvas : IDisposable
 
     public GlyphAtlasCache Atlases { get; }
 
+    public GlyphDensityCache Densities { get; }
+
     public CanvasViewModel ViewModel { get; }
 
     public TextExporter TextExporter { get; } = new();
@@ -73,6 +76,7 @@ internal sealed class TestCanvas : IDisposable
     {
         ViewModel.Dispose();
         Atlases.Dispose();
+        Densities.Dispose();
         Fonts.Dispose();
     }
 

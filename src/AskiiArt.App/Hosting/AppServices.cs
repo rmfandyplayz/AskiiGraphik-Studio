@@ -10,6 +10,7 @@ using AskiiArt.App.Fonts;
 using AskiiArt.App.Hosting.Logging;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Painting;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -76,6 +77,12 @@ internal static class AppServices
             provider.GetRequiredService<IDocumentDialogs>(),
             provider.GetRequiredService<IAppShell>(),
             includeDebugActions: BuildInfo.IsDebugBuild));
+        services.AddSingleton<IActionProvider>(provider => new RampActions(
+            provider.GetRequiredService<ActiveDocument>(),
+            provider.GetRequiredService<DocumentFiles>(),
+            provider.GetRequiredService<FontCatalog>(),
+            provider.GetRequiredService<GlyphDensityCache>(),
+            includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<ActionRegistry>();
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
@@ -107,6 +114,7 @@ internal static class AppServices
         services.AddSingleton<FontCatalog>();
         services.AddSingleton<IFallbackFontProvider, SystemFallbackFontProvider>();
         services.AddSingleton<GlyphAtlasCache>();
+        services.AddSingleton<GlyphDensityCache>();
         services.AddSingleton<CanvasViewModel>();
 
         services.AddSingleton(MenuLayout.CreateDefault(OperatingSystem.IsMacOS(),

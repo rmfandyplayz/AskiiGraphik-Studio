@@ -396,6 +396,30 @@
     <value>Open _RGB Test Sample</value>
     <comment>Debug menu: the same sample in RGB, with rows of 24-bit colour.</comment>
   </data>
+  <data name="ActionOpenDensitySample" xml:space="preserve">
+    <value>Open _Density Sample</value>
+    <comment>Debug menu: replaces the document with one listing its font's characters from lightest to darkest, to check glyph density.</comment>
+  </data>
+  <data name="RampStandard" xml:space="preserve">
+    <value>Standard</value>
+    <comment>Name of a built-in ramp: the classic short ramp.</comment>
+  </data>
+  <data name="RampStandardAlphanumerical" xml:space="preserve">
+    <value>Standard Alphanumerical</value>
+    <comment>Name of a built-in ramp of letters and digits.</comment>
+  </data>
+  <data name="RampFine" xml:space="preserve">
+    <value>Fine</value>
+    <comment>Name of a built-in ramp: a long one, for smooth gradients.</comment>
+  </data>
+  <data name="RampBlocks" xml:space="preserve">
+    <value>Blocks</value>
+    <comment>Name of a built-in ramp of shade and block characters.</comment>
+  </data>
+  <data name="RampBraille" xml:space="preserve">
+    <value>Braille</value>
+    <comment>Name of a built-in ramp of braille patterns.</comment>
+  </data>
   <data name="UntitledDocumentName" xml:space="preserve">
     <value>Untitled</value>
   </data>

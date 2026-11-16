@@ -9,6 +9,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Tests.Fakes;
+using AskiiArt.Core.Ramps;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AskiiArt.App.Tests.Resources;
@@ -35,6 +36,13 @@ public sealed class StringsTests
 
         foreach (var action in registry.All)
             Assert.False(string.IsNullOrWhiteSpace(UiText.Get(action.LabelKey)), action.Id);
+    }
+
+    [Fact]
+    public void EveryBuiltInRamp_HasANameInStringsResx()
+    {
+        foreach (var ramp in BuiltInRamps.All)
+            Assert.False(string.IsNullOrWhiteSpace(UiText.Get(ramp.NameKey)), ramp.Id);
     }
 
     [Fact]
