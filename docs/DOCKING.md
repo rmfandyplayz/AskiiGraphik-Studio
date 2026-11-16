@@ -321,7 +321,7 @@ Showing a hidden toolbar puts it back on its anchor, or floats it there if the a
 
 **A widget side is a dock side with stricter rules:** one column, single-tab groups, at most 4. Converting mostly flips a flag, and allowing tabs in widgets later means relaxing one rule. Sides are held by edge, with sizes along and across an axis, rather than by "left and right, vertical".
 
-**Windows and toolbars are registered by id,** with a title, minimum size and a way to make the view. That's what the customizer (M8) and plugins (M8b) need.
+**Windows and toolbars are registered by id,** with a title, minimum size and a way to make the view. That's what the customizer (M8) and plugins (M9) need.
 
 **Tests:**
 

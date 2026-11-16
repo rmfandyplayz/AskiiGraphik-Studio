@@ -1,4 +1,5 @@
-<!-- Written by Claude (Anthropic). Template for manual test docs. Copy to docs/testing/step-<id>-<slug>.md and fill in. -->
+<!-- Written by Claude (Anthropic). Template for manual test docs. Copy to docs/testing/step-<id>-<slug>.md and fill in.
+     Only the current milestone's test docs sit beside this file; finished milestones' move to old/milestone_<id>/. -->
 <!-- Edited with Claude Code (Anthropic). -->
 <!-- The owner tests on Windows by default. Mark a test "Also on macOS: Yes" only where the
      platforms can differ: shortcuts and modifier keys, native menus, file and font dialogs,

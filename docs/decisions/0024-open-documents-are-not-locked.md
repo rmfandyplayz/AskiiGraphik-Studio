@@ -13,7 +13,7 @@ In 1.7 testing the owner found that a saved document can be deleted in the OS wh
 
 The app holds no file open between reads and writes, so it doesn't stop other programs from deleting or changing a document. The owner agreed after hearing the costs below.
 
-A notice comes with M9 instead: when the document's file is deleted or changed outside the app, the app says so (for example, that Save will create the file again).
+A notice comes with M10 instead: when the document's file is deleted or changed outside the app, the app says so (for example, that Save will create the file again).
 
 ## Alternatives
 
@@ -23,3 +23,5 @@ A notice comes with M9 instead: when the document's file is deleted or changed o
 
 - Until the notice is built, a deleted or changed file goes unnoticed: Save writes over whatever is there, or creates the file again.
 - Other programs can read and edit an open document freely.
+
+Updated 2026-11-16: Ship-readiness, which brings the notice, is now M10 (ADR 0046).

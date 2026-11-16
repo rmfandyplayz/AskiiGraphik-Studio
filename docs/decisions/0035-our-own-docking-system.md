@@ -21,7 +21,7 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 - **A host panel with no background** (`DockingHost`), so empty pixels reach the canvas with no workaround.
 - **Unchanged from ADR 0029:** the menu bar (except on macOS) and the status bar are plain strips outside the host, the canvas's scrollbars are off unless `CanvasView.ShowScrollBars` is set, and the window has a minimum size lowered to fit small screens.
 - **Safe area:** the solver works it out, and `MainWindow` passes it to `CanvasView` after each layout pass. Sides count, and so does an anchored toolbar along the edge it lies on.
-- **Windows and toolbars are registered by id,** ready for M8's customizer and M8b's plugins.
+- **Windows and toolbars are registered by id,** ready for M8's customizer and M9's plugins.
 - **A drag is data too.** `ToolbarDrag` holds the zones, worked out once at the start, and gives the layout and the preview for any pointer position. The preview and the drop both ask it, and nothing is committed until the drop. `ToolbarDragController` only connects the pointer to it.
 - **Zones have fixed places, and the solver doesn't know about them.** Every other toolbar is out of sight during a drag, so zones have nothing to fit around, and `ToolbarDrag` works each one out from the canvas region and the dragged toolbar's shape alone. An earlier version had zones go through the solver's lanes as reserved spots, with toolbars shrinking for them, but the owner found strips of different lengths inconsistent, and a thick strip could push a corner toolbar down.
 - **The landing preview is a second real toolbar view,** not a picture of the first, for a toolbar pushed back inside the canvas region. Over a zone only its outline shows, around the zone. Measuring a copy both ways also tells a drag the toolbar's size each way round, without turning the real one and losing its scroll position.
@@ -59,3 +59,4 @@ Little depends on it: 6 files and 4 packages. Windows don't know their host (ARC
 - The same word, "Dock", is still the macOS icon bar in the app's code and in test docs.
 
 Updated 2026-11-12: a window drag's preview is room the solver makes for a marker, or an incoming tab, not the edited layout (owner's 2.5g mockups and notes).
+Updated 2026-11-16: plugins are M9 now (ADR 0046).

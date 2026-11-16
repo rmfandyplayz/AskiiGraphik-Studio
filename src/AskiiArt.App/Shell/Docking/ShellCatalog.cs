@@ -29,7 +29,7 @@ internal sealed record ShellToolbarEntry(string Id, Func<Control> CreateView, Fu
 
 /// <summary>
 /// The windows and toolbars that exist, registered by id, so the layout can stay plain data. The toolbar
-/// customizer (M8) and plugins (M8b) add to this.
+/// customizer (M8) and plugins (M9) add to this.
 /// </summary>
 internal sealed class ShellCatalog(IReadOnlyList<ShellWindowEntry> windows, IReadOnlyList<ShellToolbarEntry> toolbars)
 {

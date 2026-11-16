@@ -61,6 +61,8 @@ ADRs and ARCHITECTURE.md must always describe how the code works **now**. A stal
    - `dotnet test`
    - `dotnet format --verify-no-changes`
 6. Write `docs/testing/step-<id>-<slug>.md` from `docs/testing/TEMPLATE.md`. Give exact steps and expected results, written for a tester who doesn't read code.
+   - `docs/testing/` holds only `TEMPLATE.md` and the current milestone's test docs. Older ones live in `docs/testing/old/milestone_<id>/` (for example `milestone_2b`), and once there are releases, in `old/version_<name>/`.
+   - When the owner confirms a milestone's last step, move that milestone's test docs into its `old/` folder, and update the ROADMAP links that point at them, in the same change.
 7. Mark the step `[~]` in ROADMAP.md, with a note of a line or two.
 8. Stop and summarize:
    - what you built

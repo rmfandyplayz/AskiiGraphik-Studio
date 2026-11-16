@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder About dialog. The real About / credits / licenses screen comes in M9. -->
+<!-- Placeholder About dialog. The real About / credits / licenses screen comes in M10. -->
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:dialogs="using:AskiiArt.App.Shell.Dialogs"

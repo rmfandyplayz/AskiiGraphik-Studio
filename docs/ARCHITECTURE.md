@@ -12,7 +12,7 @@
 A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspired by the old Windows freeware *ASCII Art Studio*, but it should feel like a modern image editor: layers, selections, customizable brushes, real undo history, dockable panels.
 
 - **Primary use:** density-based ASCII art, in plain monochrome or with ANSI-style color.
-- **Colour** (milestone M2b, ADR 0036): a document is monochrome, ANSI (the standard 16 colours) or RGB. **Planned:** plugins (M8b, ADR 0032).
+- **Colour** (milestone M2b, ADR 0036): a document is monochrome, ANSI (the standard 16 colours) or RGB. **Planned:** plugins (M9, ADRs 0032 and 0046).
 - **Must stay cheap to add later:** Unicode beyond ASCII, per-cell alpha, layer blend modes, animation frames. These are **reserved**. The model has room for them, but nothing designs, builds or exposes them (§18).
 - **Roles:** the owner designs all UI/UX (layout, icons, wording) and tests by hand. Claude Code owns implementation. Placeholder UI is allowed and expected (§14.6).
 - **Pace:** long-term, with quality first. Work proceeds in small steps, each covered by automated tests and then tested by the owner by hand.
@@ -56,7 +56,8 @@ docs/
   ARCHITECTURE.md  ROADMAP.md
   DOCKING.md                 how windows and toolbars behave
   decisions/                 ADRs, named NNNN-short-title.md
-  testing/                   TEMPLATE.md plus one manual test doc per step
+  testing/                   TEMPLATE.md plus the current milestone's manual test docs, one per step
+    old/                     earlier test docs, a folder per milestone (milestone_2b) or release (version_<name>)
 src/
   AskiiArt.Core/             model, commands, selection, ramps, tool logic, file format. BCL only.
   AskiiArt.Imaging/          fonts, glyph rasterization and atlas, glyph density, PNG export, image→ASCII. Core + SkiaSharp.
@@ -336,7 +337,7 @@ Here quality matters more than speed. This gets its own milestone, and the detai
 
 ## 18. Reserved features (hooks only, no design)
 
-Colour is built in M2b (ADR 0036). Plugins have a milestone (M8b, ADR 0032) and stay a hook until it starts. The owner doesn't plan opacity, blend modes or text attributes for the base app.
+Colour is built in M2b (ADR 0036). Plugins have a milestone (M9, ADRs 0032 and 0046) and stay a hook until it starts. The owner doesn't plan opacity, blend modes or text attributes for the base app.
 
 | Feature | Hook that exists now | Not built |
 |---|---|---|
@@ -344,7 +345,7 @@ Colour is built in M2b (ADR 0036). Plugins have a milestone (M8b, ADR 0032) and 
 | Text attributes | `Attributes` on Cell, always none; for plugins only (ADR 0036) | Bold, underline and the rest, in the model, the file format and the renderer |
 | Per-cell alpha | `Alpha` on Cell | Alpha compositing, alpha eraser |
 | Layer opacity / blend modes | Fields on Layer; compositing goes through one policy object | Any mode other than normal |
-| Plugins (M8b) | Tools, importers, exporters and actions use interfaces and DI registries | Loading external assemblies, sandboxing, plugin API versioning |
+| Plugins (M9) | Tools, importers, exporters and actions use interfaces and DI registries | Loading external assemblies, sandboxing, plugin API versioning |
 | Wide characters | `CharWidth` service; one-column grid | Double-width cells |
 
 If implementing something would require making a reserved feature real, stop and ask.
@@ -360,7 +361,7 @@ If implementing something would require making a reserved feature real, stop and
 - **Headless UI tests** (Avalonia.Headless) cover only things that survive a UI redesign: canvas input producing document changes, action wiring and shortcuts, and dirty-state and save prompts. They make no pixel or layout assertions about placeholder UI. If a headless test turns out to be flaky, delete it and cover the case in the manual test doc instead.
 - **CI** runs every test on Windows, macOS and Linux. Linux gets no manual testing, so CI is its only safety net.
 
-**Manual tests** (the owner runs these): every roadmap step produces `docs/testing/step-<id>-<slug>.md`, based on `docs/testing/TEMPLATE.md`.
+**Manual tests** (the owner runs these): every roadmap step produces `docs/testing/step-<id>-<slug>.md`, based on `docs/testing/TEMPLATE.md`. When a milestone is done, its test docs move to `docs/testing/old/milestone_<id>/` (after releases begin, `old/version_<name>/`).
 
 ## 20. Threading, errors and logging
 
@@ -395,13 +396,14 @@ Ask the owner about each of these at the milestone that needs it.
 
 | Question | Needed by |
 |---|---|
-| How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned | The owner's UI design (bring it up by step 1.4) |
+| How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned. *The owner's lean (after 3.1):* a character borrowed from another font, such as braille, which no bundled font has, isn't flagged on the canvas but is warned about some other way, since it may look different on another computer or after export | M8 (UI Pass) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship. *Decided in M3's planning:* Standard, Standard Alphanumerical, Fine, Blocks and Braille, each painting an empty cell at intensity 0 (ADR 0045) | M3 |
+| What a soft background eraser does, since a background colour has no intensity to lower. 3.4 builds soft and hard text erasers and a hard background eraser | M5 |
 | Exact behavior of each tool | That tool's milestone |
 | Big-text font format (FIGlet?), and which fonts can legally be bundled | M5 |
-| How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M8b; the license before accepting outside code |
+| How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M9; the license before accepting outside code |
 | How to flag wide characters visually | When Unicode input is allowed |
 | When the owner's UI design will arrive, and in what form (Figma, AXAML, screenshots) | Any time |
 
