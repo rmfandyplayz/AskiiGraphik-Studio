@@ -66,7 +66,7 @@ ADRs and ARCHITECTURE.md must always describe how the code works **now**. A stal
 7. Mark the step `[~]` in ROADMAP.md, with a note of a line or two.
 8. Stop and summarize:
    - what you built
-   - how to run it
+   - how to run it, if it isn't just clicking the play button in Rider
    - the path to the test doc
    - any ADRs you wrote
    - anything that needs the owner's input
