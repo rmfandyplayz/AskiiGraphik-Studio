@@ -60,4 +60,4 @@ The last test is always this table, when anything is left over: tests from earli
 
 ## Worth poking at (optional)
 
-Follow the same conventions as the `## Tests` section, but this section is for specifically edge/weird cases. Not doing these should not pose a problem.
+Follow the same conventions as the `## Tests` section (except for the re-tests), but this section is for specifically edge/weird cases. Not doing these should not pose a problem.
