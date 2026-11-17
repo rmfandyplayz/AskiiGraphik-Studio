@@ -39,7 +39,15 @@ public static partial class LayoutEdits
     /// Floats a toolbar with its top left at <paramref name="position"/>, keeping its direction. It goes last
     /// among the toolbars, so it's drawn over any other floating one it lands on.
     /// </summary>
-    public static DockingLayout FloatToolbar(DockingLayout layout, string toolbarId, LayoutPoint position)
+    public static DockingLayout FloatToolbar(DockingLayout layout, string toolbarId, LayoutPoint position) =>
+        FloatToolbar(layout, toolbarId, position, ToolbarCorner.TopLeft);
+
+    /// <summary>
+    /// Floats a toolbar with its <paramref name="pivot"/> corner at <paramref name="position"/>. That corner stays
+    /// put as the toolbar grows or shrinks (ADR 0048).
+    /// </summary>
+    public static DockingLayout FloatToolbar(DockingLayout layout, string toolbarId, LayoutPoint position,
+        ToolbarCorner pivot)
     {
         var toolbar = layout.Toolbars.FirstOrDefault(other => other.ToolbarId == toolbarId);
         if (toolbar is null)
@@ -50,7 +58,7 @@ public static partial class LayoutEdits
             Toolbars =
             [
                 .. layout.Toolbars.Where(other => other.ToolbarId != toolbarId),
-                Floated(toolbar, position),
+                Floated(toolbar, position, pivot),
             ],
         };
     }
@@ -68,17 +76,19 @@ public static partial class LayoutEdits
         Orientation = ToolbarAnchors.RequiredOrientation(anchor) ?? toolbar.Orientation,
         IsVisible = true,
         FloatingAt = null,
+        FloatingPivot = ToolbarCorner.TopLeft,
     };
 
     // Leaving an anchor, it remembers which side faced the canvas, so its sub-toolbar stays on that side.
-    private static ToolbarPlacement Floated(ToolbarPlacement toolbar, LayoutPoint position) => toolbar with
+    private static ToolbarPlacement Floated(ToolbarPlacement toolbar, LayoutPoint position,
+        ToolbarCorner pivot = ToolbarCorner.TopLeft)
     {
-        IsVisible = true,
-        FloatingAt = position,
-        SubToolbarSide = toolbar.IsFloating
-            ? toolbar.SubToolbarSide
-            : ToolbarAnchors.CanvasSide(toolbar.Anchor, toolbar.Orientation),
-    };
+        var side = toolbar.SubToolbarSide;
+        if (!toolbar.IsFloating)
+            side = ToolbarAnchors.CanvasSide(toolbar.Anchor, toolbar.Orientation);
+
+        return toolbar with { IsVisible = true, FloatingAt = position, FloatingPivot = pivot, SubToolbarSide = side };
+    }
 
     private static DockingLayout WithToolbar(DockingLayout layout, string toolbarId,
         Func<ToolbarPlacement, ToolbarPlacement> change) => layout with

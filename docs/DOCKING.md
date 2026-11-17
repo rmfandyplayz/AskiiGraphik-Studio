@@ -130,7 +130,7 @@ Works like Illustrator:
 - **At most one toolbar per anchor.**
 - **Corners:** the toolbar's origin is at the corner, horizontal or vertical. Right-click chooses.
 - **Edge middles:** centred on that edge, with no dead space around it. They follow the edge: horizontal on top and bottom, vertical on left and right.
-- **Floating:** anywhere in the canvas region, horizontal or vertical. A floating toolbar may overlap an anchored one, which doesn't move for it.
+- **Floating:** anywhere in the canvas region, horizontal or vertical. A floating toolbar may overlap an anchored one, which doesn't move for it. It keeps the corner nearest it in place: the corner of the quarter of the canvas region its middle was in when dropped. So it grows and shrinks away from the edges it's nearest.
 
 ### 4.2 The toolbar itself
 
@@ -343,3 +343,5 @@ Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g notes: the windows mov
 Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g mockups. A window drag shows a thin marker, or a "+" tab and an outline, instead of a placeholder the size the window would land at with the others moving apart, and a dock's zones straddle its borders instead of lying inside each window.
 
 Updated 2026-11-16: the default layout is the owner's new one from step 3.2, with the Tool Options and Colors toolbars (ADR 0047).
+
+Updated 2026-11-16: §4.1, a floating toolbar keeps the corner nearest it in place, from the owner's 3.2 testing notes (ADR 0048).

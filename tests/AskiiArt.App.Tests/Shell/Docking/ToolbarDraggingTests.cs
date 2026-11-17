@@ -226,9 +226,12 @@ public sealed class ToolbarDraggingTests : IDisposable
         DragAndDrop(File, _middleOfNowhere);
 
         Assert.True(Placement(File).IsFloating);
+        Assert.InRange(BoundsOf(File).X, _middleOfNowhere.X - 30, _middleOfNowhere.X);
+
+        // Its middle is right of the canvas region's, so it keeps its top right in place (ADR 0048).
         var at = Placement(File).FloatingAt!.Value;
-        Assert.Equal(new Point(at.X, at.Y), BoundsOf(File).TopLeft);
-        Assert.InRange(at.X, _middleOfNowhere.X - 30, _middleOfNowhere.X);
+        Assert.Equal(ToolbarCorner.TopRight, Placement(File).FloatingPivot);
+        Assert.Equal(new Point(at.X, at.Y), BoundsOf(File).TopRight);
     }
 
     [AvaloniaFact]
@@ -813,14 +816,16 @@ public sealed class ToolbarDraggingTests : IDisposable
     {
         ShowWindow();
         DragAndDrop(File, _middleOfNowhere);
-        var where = BoundsOf(File).TopLeft;
+        var where = BoundsOf(File).TopRight;
         var vertical = (MenuItem)Frame(File).ContextMenu!.Items[1]!;
 
         vertical.Command!.Execute(vertical.CommandParameter);
         Pump();
 
+        // The corner it keeps in place (ADR 0048).
+        Assert.Equal(ToolbarCorner.TopRight, Placement(File).FloatingPivot);
         Assert.Equal(ToolbarOrientation.Vertical, Frame(File).Orientation);
-        Assert.Equal(where, BoundsOf(File).TopLeft);
+        Assert.Equal(where, BoundsOf(File).TopRight);
     }
 
     [AvaloniaFact]

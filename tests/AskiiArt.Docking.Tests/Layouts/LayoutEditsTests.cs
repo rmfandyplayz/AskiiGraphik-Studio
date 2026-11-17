@@ -240,6 +240,19 @@ public sealed class LayoutEditsTests
         Assert.False(LayoutEdits.MoveToolbarToAnchor(layout, "file", ToolbarAnchor.TopRight).Toolbars[0].IsFloating);
     }
 
+    [Fact]
+    public void AToolbarLeavingFloating_ForgetsWhichCornerWasPinned()
+    {
+        var layout = new DockingLayout([],
+            [new ToolbarPlacement("file", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal)], []);
+
+        var floated = LayoutEdits.FloatToolbar(layout, "file", new LayoutPoint(300, 200), ToolbarCorner.BottomRight);
+        var docked = LayoutEdits.MoveToolbarToAnchor(floated, "file", ToolbarAnchor.TopRight);
+
+        Assert.Equal(ToolbarCorner.BottomRight, floated.Toolbars[0].FloatingPivot);
+        Assert.Equal(ToolbarCorner.TopLeft, docked.Toolbars[0].FloatingPivot);
+    }
+
     [Theory]
     [InlineData(ToolbarAnchor.TopLeft, false, true)]
     [InlineData(ToolbarAnchor.BottomRight, false, true)]

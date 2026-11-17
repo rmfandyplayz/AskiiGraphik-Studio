@@ -54,3 +54,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0045](0045-ramps-and-glyph-density.md) | Ramps and glyph density | Accepted |
 | [0046](0046-ui-pass-and-renumbered-milestones.md) | The UI Pass, with plugins and ship-readiness renumbered | Accepted |
 | [0047](0047-tool-options-and-brush-sizes.md) | Tool options and brush sizes | Accepted |
+| [0048](0048-floating-toolbars-keep-their-nearest-corner.md) | Floating toolbars keep their nearest corner | Accepted |

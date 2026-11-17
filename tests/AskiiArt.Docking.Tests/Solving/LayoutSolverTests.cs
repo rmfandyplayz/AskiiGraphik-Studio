@@ -330,6 +330,22 @@ public sealed class LayoutSolverTests
         Assert.Equal(solved.CanvasRegion.Right - Metrics.Margin, solved.Toolbars[0].Bounds.Right, tolerance: Tolerance);
     }
 
+    [Theory]
+    [InlineData(ToolbarCorner.TopLeft, 300, 200)]
+    [InlineData(ToolbarCorner.TopRight, 150, 200)]
+    [InlineData(ToolbarCorner.BottomLeft, 300, 160)]
+    [InlineData(ToolbarCorner.BottomRight, 150, 160)]
+    public void AFloatingToolbar_HasItsPinnedCornerWhereItFloats(ToolbarCorner pivot, double x, double y)
+    {
+        var floating = Floating(new LayoutPoint(300, 200), ToolbarOrientation.Horizontal);
+        var layout = floating with { Toolbars = [floating.Toolbars[0] with { FloatingPivot = pivot }] };
+
+        var solved = LayoutSolver.Solve(layout, Measure(_window, One("float", 150, 40)), Metrics);
+
+        Assert.Equal(x, solved.Toolbars[0].Bounds.X, tolerance: Tolerance);
+        Assert.Equal(y, solved.Toolbars[0].Bounds.Y, tolerance: Tolerance);
+    }
+
     [Fact]
     public void AFloatingToolbarTooLongForTheRegion_IsCutToFit()
     {

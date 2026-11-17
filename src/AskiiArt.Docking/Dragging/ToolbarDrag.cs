@@ -99,9 +99,12 @@ public sealed class ToolbarDrag
 
         // It saves where it lands, not where the pointer was. A toolbar dropped over a window sits beside that
         // window, and shouldn't jump under the pointer's old spot if the window closes later.
-        return WhereItLands(floated) is { } landed
-            ? LayoutEdits.FloatToolbar(Start, _toolbarId, new LayoutPoint(landed.X, landed.Y))
-            : floated;
+        var solved = Solve(floated);
+        if (solved.Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == _toolbarId)?.Bounds is not { } landed)
+            return floated;
+
+        var (corner, pivot) = PinnedCorner(landed, ToolbarSolver.InnerRegion(solved.CanvasRegion, _metrics));
+        return LayoutEdits.FloatToolbar(Start, _toolbarId, corner, pivot);
     }
 
     /// <summary>What dropping with the pointer at <paramref name="position"/> would do, and how to show that.</summary>
@@ -175,15 +178,29 @@ public sealed class ToolbarDrag
     private SolvedLayout Solve(DockingLayout layout) =>
         LayoutSolver.Solve(layout, MeasurementsFor(OrientationIn(layout)), _metrics);
 
-    private LayoutRect? WhereItLands(DockingLayout layout) =>
-        Solve(layout).Toolbars.FirstOrDefault(toolbar => toolbar.ToolbarId == _toolbarId)?.Bounds;
-
     private HashSet<ToolbarAnchor> ZonesUnder(LayoutRect toolbar, LayoutRect? subToolbar) =>
     [
         .. Zones
             .Where(zone => zone.Bounds.Intersects(toolbar) || (subToolbar is { } sub && zone.Bounds.Intersects(sub)))
             .Select(zone => zone.Anchor),
     ];
+
+    // The corner nearest the same corner of the region: the one for the quarter of the region its middle is in. It
+    // stays put as the toolbar grows or shrinks, so the toolbar never grows into the edges it's nearest (ADR 0048).
+    private static (LayoutPoint Position, ToolbarCorner Pivot) PinnedCorner(LayoutRect bounds, LayoutRect region)
+    {
+        var isRight = bounds.X + bounds.Width / 2 > region.X + region.Width / 2;
+        var isBottom = bounds.Y + bounds.Height / 2 > region.Y + region.Height / 2;
+        var pivot = (isRight, isBottom) switch
+        {
+            (false, false) => ToolbarCorner.TopLeft,
+            (true, false) => ToolbarCorner.TopRight,
+            (false, true) => ToolbarCorner.BottomLeft,
+            (true, true) => ToolbarCorner.BottomRight,
+        };
+
+        return (new LayoutPoint(isRight ? bounds.Right : bounds.X, isBottom ? bounds.Bottom : bounds.Y), pivot);
+    }
 
     private static bool IsAt(LayoutRect bounds, LayoutPoint topLeft) =>
         Math.Abs(bounds.X - topLeft.X) < SameSpotTolerance && Math.Abs(bounds.Y - topLeft.Y) < SameSpotTolerance;

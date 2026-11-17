@@ -42,6 +42,40 @@ public sealed class LayoutJsonTests
     }
 
     [Fact]
+    public void WhichCornerOfAFloatingToolbarIsPinned_IsSaved()
+    {
+        var layout = new DockingLayout([],
+        [
+            new ToolbarPlacement("a", ToolbarAnchor.TopLeft, ToolbarOrientation.Horizontal,
+                FloatingAt: new LayoutPoint(1, 2), FloatingPivot: ToolbarCorner.BottomRight),
+        ], []);
+
+        var read = LayoutJson.TryRead(LayoutJson.Write(layout))!;
+
+        Assert.Equal(ToolbarCorner.BottomRight, read.Toolbars[0].FloatingPivot);
+    }
+
+    // Before ADR 0048, every floating toolbar was pinned by its top left.
+    [Fact]
+    public void AFloatingToolbarSavedBeforePinnedCorners_IsPinnedByItsTopLeft()
+    {
+        const string saved = """
+            {
+              "sides": [],
+              "toolbars": [
+                { "toolbarId": "a", "anchor": "TopLeft", "orientation": "Horizontal", "floatingAt": { "x": 3, "y": 4 } }
+              ],
+              "closedWindows": []
+            }
+            """;
+
+        var read = LayoutJson.TryRead(saved)!;
+
+        Assert.Equal(new LayoutPoint(3, 4), read.Toolbars[0].FloatingAt);
+        Assert.Equal(ToolbarCorner.TopLeft, read.Toolbars[0].FloatingPivot);
+    }
+
+    [Fact]
     public void ALayoutSavedBeforeFloatingSizesAndOpenLengths_StillReads()
     {
         const string saved = """

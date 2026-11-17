@@ -230,6 +230,20 @@ public sealed class LayoutRepairTests
     }
 
     [Theory]
+    [InlineData(ToolbarCorner.BottomRight, ToolbarCorner.BottomRight)]
+    [InlineData((ToolbarCorner)99, ToolbarCorner.TopLeft)]
+    public void AFloatingToolbar_KeepsItsPinnedCorner_UnlessItIsNonsense(ToolbarCorner saved, ToolbarCorner repaired)
+    {
+        var floating = new ToolbarPlacement("file", ToolbarAnchor.BottomLeft, ToolbarOrientation.Horizontal,
+            FloatingAt: new LayoutPoint(10, 10), FloatingPivot: saved);
+
+        var file = LayoutRepair.Repair(_empty with { Toolbars = [floating] }, _small).Toolbars[0];
+
+        Assert.True(file.IsFloating);
+        Assert.Equal(repaired, file.FloatingPivot);
+    }
+
+    [Theory]
     [InlineData(double.NaN, 0)]
     [InlineData(0, double.PositiveInfinity)]
     public void AFloatingToolbarWithANonsensePlace_GoesBackToItsAnchor(double x, double y)

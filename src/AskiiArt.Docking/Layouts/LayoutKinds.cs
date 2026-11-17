@@ -86,6 +86,25 @@ public enum ToolbarOrientation
     Vertical,
 }
 
+/// <summary>
+/// The corner of a floating toolbar that stays put when it grows or shrinks: the one nearest the same corner of the
+/// canvas region when it was dropped (ADR 0048).
+/// </summary>
+public enum ToolbarCorner
+{
+    /// <summary>Its top left, so it grows right and down.</summary>
+    TopLeft,
+
+    /// <summary>Its top right, so it grows left and down.</summary>
+    TopRight,
+
+    /// <summary>Its bottom left, so it grows right and up.</summary>
+    BottomLeft,
+
+    /// <summary>Its bottom right, so it grows left and up.</summary>
+    BottomRight,
+}
+
 /// <summary>Which side of a toolbar its sub-toolbar sits on. A vertical toolbar's sides are its left and right.</summary>
 public enum SubToolbarSide
 {

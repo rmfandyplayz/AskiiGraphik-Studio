@@ -216,11 +216,20 @@ public static class LayoutRepair
         var anchor = Enum.IsDefined(toolbar.Anchor) ? toolbar.Anchor : fallback.Anchor;
         var orientation = Enum.IsDefined(toolbar.Orientation) ? toolbar.Orientation : fallback.Orientation;
         var side = Enum.IsDefined(toolbar.SubToolbarSide) ? toolbar.SubToolbarSide : fallback.SubToolbarSide;
+        var pivot = Enum.IsDefined(toolbar.FloatingPivot) ? toolbar.FloatingPivot : ToolbarCorner.TopLeft;
 
         // A floating toolbar holds no anchor and chooses its own direction. Being far outside the window is fine,
         // because the solver moves it just enough to stay inside.
         if (toolbar.FloatingAt is { } position && double.IsFinite(position.X) && double.IsFinite(position.Y))
-            return toolbar with { Anchor = anchor, Orientation = orientation, SubToolbarSide = side };
+        {
+            return toolbar with
+            {
+                Anchor = anchor,
+                Orientation = orientation,
+                SubToolbarSide = side,
+                FloatingPivot = pivot,
+            };
+        }
 
         var valid = toolbar with
         {
@@ -228,6 +237,7 @@ public static class LayoutRepair
             Orientation = ToolbarAnchors.RequiredOrientation(anchor) ?? orientation,
             FloatingAt = null,
             SubToolbarSide = side,
+            FloatingPivot = ToolbarCorner.TopLeft,
         };
 
         if (!valid.IsVisible)

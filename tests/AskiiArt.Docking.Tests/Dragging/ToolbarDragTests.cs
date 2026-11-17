@@ -286,8 +286,40 @@ public sealed class ToolbarDragTests
         Assert.Equal(ToolbarOrientation.Horizontal, file.Orientation);
 
         // Held at its left end and halfway down.
-        var size = ToolbarSizes["file"];
-        Assert.Equal(new LayoutPoint(_middleOfNowhere.X, _middleOfNowhere.Y - size.Height / 2), file.FloatingAt);
+        var bounds = BoundsOf(dropped, "file");
+        Assert.Equal(_middleOfNowhere.X, bounds.X, Tolerance);
+        Assert.Equal(_middleOfNowhere.Y - ToolbarSizes["file"].Height / 2, bounds.Y, Tolerance);
+    }
+
+    // The owner found a floating toolbar always grew from its top left, even in the canvas's bottom right corner.
+    [Theory]
+    [InlineData(100, 100, ToolbarCorner.TopLeft)]
+    [InlineData(800, 100, ToolbarCorner.TopRight)]
+    [InlineData(100, 600, ToolbarCorner.BottomLeft)]
+    [InlineData(800, 600, ToolbarCorner.BottomRight)]
+    public void ADroppedToolbar_IsPinnedByTheCornerOfTheQuarterItsMiddleIsIn(double x, double y, ToolbarCorner corner)
+    {
+        var dropped = Drag(_layout, "file").LayoutAt(new LayoutPoint(x, y));
+
+        var bounds = BoundsOf(dropped, "file");
+        Assert.Equal(corner, Toolbar(dropped, "file").FloatingPivot);
+        Assert.Equal(x, bounds.X, Tolerance);
+        Assert.Equal(y - ToolbarSizes["file"].Height / 2, bounds.Y, Tolerance);
+    }
+
+    [Fact]
+    public void AToolbarDroppedInTheBottomRight_GrowsUpAndLeft()
+    {
+        var dropped = Drag(_layout, "file").LayoutAt(new LayoutPoint(800, 600));
+        var sizes = new Dictionary<string, LayoutSize>(ToolbarSizes) { ["file"] = new(250, 60) };
+
+        var before = BoundsOf(dropped, "file");
+        var after = LayoutSolver.Solve(dropped, Measure(_window, sizes), Metrics).Toolbars
+            .Single(toolbar => toolbar.ToolbarId == "file").Bounds;
+
+        Assert.Equal(before.Right, after.Right, Tolerance);
+        Assert.Equal(before.Bottom, after.Bottom, Tolerance);
+        Assert.Equal(250, after.Width, Tolerance);
     }
 
     [Fact]
@@ -309,8 +341,10 @@ public sealed class ToolbarDragTests
 
         var dropped = Drag(layout, "file").LayoutAt(new LayoutPoint(950, 350));
 
-        var at = Toolbar(dropped, "file").FloatingAt!.Value;
-        Assert.Equal(_window.Width - 240 - 8 - 8 - ToolbarSizes["file"].Width, at.X, Tolerance);
+        var landed = BoundsOf(dropped, "file");
+        var afterTheWindowCloses = BoundsOf(dropped with { Sides = [] }, "file");
+        Assert.Equal(_window.Width - 240 - 8 - 8 - ToolbarSizes["file"].Width, landed.X, Tolerance);
+        Assert.Equal(landed.X, afterTheWindowCloses.X, Tolerance);
     }
 
     [Fact]
@@ -428,6 +462,10 @@ public sealed class ToolbarDragTests
 
     private static ToolbarPlacement Toolbar(DockingLayout layout, string toolbarId) =>
         layout.Toolbars.Single(toolbar => toolbar.ToolbarId == toolbarId);
+
+    private static LayoutRect BoundsOf(DockingLayout layout, string toolbarId) =>
+        LayoutSolver.Solve(layout, Measure(_window), Metrics).Toolbars
+            .Single(toolbar => toolbar.ToolbarId == toolbarId).Bounds;
 
     private static LayoutPoint Center(ToolbarDrag drag, ToolbarAnchor anchor)
     {

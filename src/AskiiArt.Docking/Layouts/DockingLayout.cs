@@ -201,17 +201,21 @@ public sealed record FloatingSize(string WindowId, double Width, double Height);
 /// <param name="Anchor">Which of the 8 places it's on. A floating toolbar doesn't hold this anchor.</param>
 /// <param name="Orientation">Which way its buttons run.</param>
 /// <param name="IsVisible">Whether it's showing.</param>
-/// <param name="FloatingAt">Where its top left goes if it's floating, or null if it's on its anchor.</param>
+/// <param name="FloatingAt">
+/// Where its <paramref name="FloatingPivot"/> corner goes if it's floating, or null if it's on its anchor.
+/// </param>
 /// <param name="SubToolbarSide">
 /// Where its sub-toolbar goes while it's floating: the side that faced the canvas when it was last on an anchor.
 /// </param>
+/// <param name="FloatingPivot">Which of its corners stays put while it's floating, as its size changes.</param>
 public sealed record ToolbarPlacement(
     string ToolbarId,
     ToolbarAnchor Anchor,
     ToolbarOrientation Orientation,
     bool IsVisible = true,
     LayoutPoint? FloatingAt = null,
-    SubToolbarSide SubToolbarSide = SubToolbarSide.BelowOrRight)
+    SubToolbarSide SubToolbarSide = SubToolbarSide.BelowOrRight,
+    ToolbarCorner FloatingPivot = ToolbarCorner.TopLeft)
 {
     /// <summary>Whether it's floating rather than on its anchor.</summary>
     [JsonIgnore]

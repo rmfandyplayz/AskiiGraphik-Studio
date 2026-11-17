@@ -99,7 +99,10 @@ internal static partial class ToolbarSolver
 
         var width = Math.Min(size.Width, inner.Width);
         var height = Math.Min(size.Height, inner.Height);
-        var wanted = toolbar.FloatingAt ?? default;
+        var pivot = toolbar.FloatingAt ?? default;
+        var isRight = toolbar.FloatingPivot is ToolbarCorner.TopRight or ToolbarCorner.BottomRight;
+        var isBottom = toolbar.FloatingPivot is ToolbarCorner.BottomLeft or ToolbarCorner.BottomRight;
+        var wanted = new LayoutPoint(isRight ? pivot.X - width : pivot.X, isBottom ? pivot.Y - height : pivot.Y);
 
         // Max last, so rounding can't put it outside when it exactly fills the room.
         var bounds = new LayoutRect(
