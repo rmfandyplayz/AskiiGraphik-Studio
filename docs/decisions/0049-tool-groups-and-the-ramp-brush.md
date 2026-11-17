@@ -38,8 +38,8 @@ Step 3.3 makes the Brush paint ramps (ADR 0045). It also replaces the one-off Br
   - **The weight** comes from `BrushFalloff`. It's 1 inside `1 − softness` of the radius, then follows a smoothstep down to 0 at the edge. Distance is measured on the footprint's own axes: Euclidean for a circle, Chebyshev for a square.
   - **The new level** is `LevelAt(d + (intensity − d) × weight)`.
   - In one stroke, each cell blends once, from what it was before the stroke, with the greatest weight it got. A second stroke pushes further.
-  - A cell whose level doesn't change is left alone, so a glyph not in the ramp survives unless it moves a whole level.
-- **Colours:** the Brush writes FG, and BG unless BG is None, but only on cells whose glyph changes. Lightening a cell to nothing removes its glyph and keeps its background.
+  - A cell whose level doesn't change keeps its glyph, so a glyph not in the ramp survives unless it moves a whole level.
+- **Colours:** the Brush writes FG, and BG unless BG is None, on every glyph it reaches, even one whose level doesn't change. Lightening a cell to nothing removes its glyph and keeps its background, and an empty cell it leaves empty keeps its background too.
 - **Options and warnings are data:**
   - A `ToolDefinition` has a list of option groups, and may have a `WarningFor`, which gives a resource key when the tool can't work.
   - The Brush has the tip group, then Ramp, Intensity, Softness and Blend mode.
@@ -61,3 +61,5 @@ Step 3.3 makes the Brush paint ramps (ADR 0045). It also replaces the one-off Br
 - Replace and Darken can't be chosen until they're built.
 - A plugin's tool has to name a group, even when it's the group's only tool.
 - The soft Eraser (§8.3) can reuse the falloff and the blend.
+
+Updated 2026-11-17: the Brush colours every glyph it reaches, not only the ones whose glyph changes. The owner asked for this after testing step 3.3: someone who changes the colour expects the new stroke to show it. It may change again, or become an option, once others have tried it.

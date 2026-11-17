@@ -189,6 +189,24 @@ public sealed class ToolbarDraggingTests : IDisposable
         Assert.Equal(onTheLeftEdge ? _toolbarWidth : 300, bar.Bounds.Width);
     }
 
+    // The owner found that Tool Options only slid to its new size when a sub-toolbar came or went at the same time,
+    // such as choosing the Brush, and snapped when only its options changed, such as choosing the Eraser.
+    [AvaloniaTheory]
+    [InlineData(300)]
+    [InlineData(50)]
+    public void WhenItsButtonsChangeLength_TheToolbarSlidesToItsNewSize(double length)
+    {
+        _motionDuration = TimeSpan.FromSeconds(10);
+        ShowWindow();
+        var before = BoundsOf(File).Width;
+
+        Frame(File).Bar!.Width = length;
+        Pump();
+
+        // Barely started on a ten-second move.
+        Assert.True(Math.Abs(BoundsOf(File).Width - before) < Math.Abs(length - _toolbarWidth) / 2);
+    }
+
     [AvaloniaFact]
     public void OverAnEdgeMiddle_TheToolbarTurnsToShowWhatADropWouldDo_AndTurnsBackAwayFromIt()
     {

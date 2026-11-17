@@ -186,14 +186,49 @@ public sealed class BrushToolTests
         Assert.Equal('#', TestCells.Read(Layer)[0][0]);
     }
 
+    // The owner found that keeping the colours of a glyph that didn't change surprised them: a new colour should
+    // show wherever the stroke goes.
     [Fact]
-    public void AGlyphTheBrushDoesntMoveAWholeLevel_IsLeftAlone_ColorsAndAll()
+    public void AGlyphTheBrushDoesntMoveAWholeLevel_KeepsItsCharacter_AndTakesTheColors()
     {
         Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('W', _green, _green));
 
         Click(0, 0);
 
-        Assert.Equal(TestCells.Glyph('W', _green, _green), CellAt(0, 0));
+        Assert.Equal(TestCells.Glyph('W', _red, _blue), CellAt(0, 0));
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void AGlyphTheBrushDoesntMoveAWholeLevel_KeepsItsBackground_WhenTheBackgroundIsNone()
+    {
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('@', _green, _green));
+        _colors.Background = CellColor.Unset;
+
+        Click(0, 0);
+
+        Assert.Equal(TestCells.Glyph('@', _red, _green), CellAt(0, 0));
+    }
+
+    [Fact]
+    public void AnEmptyCellTheBrushLeavesEmpty_KeepsItsBackground()
+    {
+        Layer.SetCell(new CellPoint(0, 0), Cell.FromBackground(_green));
+        _options.Set(RampBrushOptions.Intensity, 0);
+
+        Click(0, 0);
+
+        Assert.Equal(Cell.FromBackground(_green), CellAt(0, 0));
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void ACellAlreadyAsTheBrushWouldPaintIt_LeavesNoUndoStep()
+    {
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('@', _red, _blue));
+
+        Click(0, 0);
+
         Assert.Equal(0, History.UndoCount);
     }
 

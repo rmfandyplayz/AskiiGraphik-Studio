@@ -320,11 +320,20 @@ internal sealed partial class DockingHost : Panel
 
         // Unlimited first, to learn the size each toolbar wants. The solver then decides what it gets.
         _available = available;
-        _toolbarSizes.Clear();
+        foreach (var toolbarId in _toolbarSizes.Keys.Where(id => !_toolbars.ContainsKey(id)).ToList())
+            _toolbarSizes.Remove(toolbarId);
+
         foreach (var (toolbarId, view) in _toolbars)
         {
             view.Measure(Size.Infinity);
-            _toolbarSizes[toolbarId] = new LayoutSize(view.DesiredSize.Width, view.DesiredSize.Height);
+            var wanted = new LayoutSize(view.DesiredSize.Width, view.DesiredSize.Height);
+
+            // A toolbar's buttons only change by themselves because of something the user did, such as choosing a
+            // tool with other options, so it slides to its new size. However the change arrives, it's noticed here.
+            if (_toolbarSizes.TryGetValue(toolbarId, out var had) && had != wanted)
+                _animateNextArrange = true;
+
+            _toolbarSizes[toolbarId] = wanted;
         }
 
         var measurements = new LayoutMeasurements(available, catalog.MinimumWindowHeights, _toolbarSizes,

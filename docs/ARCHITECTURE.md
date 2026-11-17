@@ -204,7 +204,7 @@ If alpha ever becomes real, a third mode could lower alpha instead. That mode is
 
 The Brush group (ADR 0049) has three brushes, which share one size and shape (ADR 0047). Alt+click (Option+click) picks colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
 
-- **Brush** paints a ramp's characters (§7, ADR 0045). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on the cells it changes, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
+- **Brush** paints a ramp's characters (§7, ADR 0045). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on every glyph it reaches, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
 - **FG Brush and BG Brush** (step 2b.3b) paint colour onto cells that are already there: text colour or background. Choosing one chooses the colour the colour windows change, and choosing the other colour while one of them is active switches to the other brush (ADRs 0042, 0043).
 
 ## 9. Commands and undo

@@ -126,7 +126,7 @@ public sealed class ClickRoutingTests : IDisposable
         Pump();
 
         _canvas.ViewModel.SelectTool(EraserTool.Id);
-        Pump();
+        PumpUntilStill();
 
         var toolbar = Toolbars.Single(toolbar => toolbar.Bar is ToolOptionsToolbar);
         var bar = toolbar.Bar!;
@@ -137,15 +137,20 @@ public sealed class ClickRoutingTests : IDisposable
     }
 
     // The slider kept room for tick marks it doesn't have, which made Tool Options far taller than its neighbours.
-    [AvaloniaFact]
-    public void ToolOptions_IsNoTallerThanTheFileToolbar()
+    // Then its choices' smaller padding made it a little shorter, and "No options" far shorter.
+    [AvaloniaTheory]
+    [InlineData(BrushTool.Id)]
+    [InlineData(ColorBrushTool.ForegroundId)]
+    [InlineData(EraserTool.Id)]
+    [InlineData(HandTool.Id)]
+    public void ToolOptions_IsAsTallAsTheFileToolbar(string toolId)
     {
-        _canvas.ViewModel.SelectTool(BrushTool.Id);
-        Pump();
+        _canvas.ViewModel.SelectTool(toolId);
+        PumpUntilStill();
 
         var toolOptions = Toolbars.Single(toolbar => toolbar.Bar is ToolOptionsToolbar).Bar!.DesiredSize.Height;
         var file = ToolbarView.Bar!.DesiredSize.Height;
-        Assert.True(toolOptions <= file, $"Tool Options wants {toolOptions}, and File {file}.");
+        Assert.Equal(file, toolOptions);
     }
 
     [AvaloniaFact]
@@ -651,6 +656,14 @@ public sealed class ClickRoutingTests : IDisposable
         _window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
 
     private Rect RectIn(Visual visual) => new(visual.TranslatePoint(default, _window)!.Value, visual.Bounds.Size);
+
+    // Lets the toolbars finish sliding to their new places.
+    private static void PumpUntilStill()
+    {
+        Pump();
+        Thread.Sleep(ShellLayoutMetrics.FromResources(Application.Current!).MotionDuration * 2);
+        Pump();
+    }
 
     private static void Pump()
     {

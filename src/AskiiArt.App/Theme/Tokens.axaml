@@ -184,7 +184,6 @@
   <x:Double x:Key="AppToolOptionsSpacing">16</x:Double>
   <x:Double x:Key="AppToolOptionsSliderWidth">120</x:Double>
   <x:Double x:Key="AppToolOptionsValueWidth">36</x:Double>
-  <Thickness x:Key="AppToolOptionsChoicePadding">6,3</Thickness>
 
   <!-- Layers panel -->
   <Thickness x:Key="AppLayerRowPadding">4,0</Thickness>

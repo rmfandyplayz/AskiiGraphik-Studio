@@ -17,11 +17,11 @@ namespace AskiiArt.Core.Tools.Brush;
 /// intensity, by the tip's weight there, and shows the ramp's glyph for where it gets to. A cell's darkness is its
 /// level in the ramp (<see cref="Ramp.NearestLevel"/>), and an empty cell's is 0. Within one stroke a cell moves by the
 /// greatest weight that reached it, from where it was before the stroke, so going over it again adds nothing, and the
-/// next stroke takes it further. A cell whose level changes gets the current colours, as typing gives them, and one
-/// lightened to nothing loses its glyph and keeps its background. It doesn't paint while the ramp has characters the
-/// document's character set can't hold. The tip is the Brush group's (ADR 0047), and [ and ] change its size. The
-/// moves of one stroke coalesce into one undo step. Alt+click (Option+click) picks both colours up from what the canvas
-/// shows instead.
+/// next stroke takes it further. Every glyph it reaches gets the current colours, as typing gives them, even one whose
+/// level doesn't change. One lightened to nothing loses its glyph and keeps its background, as does an empty cell it
+/// leaves empty. It doesn't paint while the ramp has characters the document's character set can't hold. The tip is
+/// the Brush group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo step.
+/// Alt+click (Option+click) picks both colours up from what the canvas shows instead.
 /// </summary>
 public sealed class BrushTool : ITool
 {
@@ -284,15 +284,17 @@ public sealed class BrushTool : ITool
         var darknessBefore = ramp.IntensityOf(levelBefore);
         var level = ramp.LevelAt(darknessBefore + (stroke.Intensity - darknessBefore) * weight);
 
-        // A glyph the ramp doesn't hold stays as it is until the brush moves it a whole level.
-        if (level == levelBefore)
+        // The brush paints glyphs, so it leaves the background of a cell it doesn't give one.
+        if (level == levelBefore && !before.HasGlyph)
             return before;
 
-        if (ramp.GlyphOf(level) is not { } glyph)
+        // A glyph it doesn't move a whole level keeps its character, even one the ramp doesn't hold.
+        var glyph = level == levelBefore ? before.Glyph : ramp.GlyphOf(level);
+        if (glyph is not { } shown)
             return before.WithoutGlyph();
 
         var background = stroke.Background.IsUnset ? before.Background : stroke.Background;
-        return Cell.FromGlyph(glyph, stroke.Foreground, background);
+        return Cell.FromGlyph(shown, stroke.Foreground, background);
     }
 
     private int LevelOf(Cell cell)

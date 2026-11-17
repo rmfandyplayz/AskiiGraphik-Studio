@@ -155,15 +155,15 @@ Checks that the Brush blends with what's there: one stroke counts once, a second
 
 ### T9: Colours
 
-Checks that the Brush writes the FG and BG colours on the cells it changes, and that Alt+click picks both colours up.
+Checks that the Brush writes the FG and BG colours on every character it reaches, and that Alt+click picks both colours up.
 
 **Also on macOS:** No
 
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | Choose **Red** as FG and **Blue** as BG in Swatches. With the Brush at **Size 3**, **Softness 0%** and **Intensity 100%**, click an empty area | A 3 × 3 patch of red **@** on blue |
-| 2 | Choose **Green** as FG and **None** as BG. Click the middle of the patch again | Nothing changes, because those cells are already **@**. The Brush only colours cells whose character it changes |
-| 3 | Set **Intensity 50%** and click the middle of the patch again | The patch becomes green **+**, still on blue, because a BG of None keeps the background |
+| 2 | Choose **Green** as FG and **None** as BG. Click the middle of the patch again | The patch stays **@** and turns green, still on blue. The Brush colours every character it reaches, even ones it doesn't change, and a BG of None keeps the background |
+| 3 | Set **Intensity 50%** and click the middle of the patch again | The patch becomes green **+**, still on blue |
 | 4 | Set **Intensity 0%** and click it again | The characters go, and the blue background stays |
 | 5 | Set **Intensity 100%** and paint a green **@** somewhere on that blue patch. Choose **Yellow** as FG and **Red** as BG, then **Alt+click** the green **@** | Both swatches change: FG to Green and BG to Blue. Nothing is painted |
 

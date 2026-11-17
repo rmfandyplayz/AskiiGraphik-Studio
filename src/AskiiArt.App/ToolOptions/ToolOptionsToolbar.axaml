@@ -22,7 +22,8 @@
     <GridLength x:Key="SliderPostContentMargin">0</GridLength>
     <x:Double x:Key="SliderHorizontalHeight">0</x:Double>
     <x:Double x:Key="SliderVerticalWidth">0</x:Double>
-    <!-- The Fluent dropdown is taller than a button, for touch, which made this toolbar taller than the others. -->
+    <!-- The Fluent dropdown is taller than a button, for touch, which made this toolbar taller than the others. With
+         no minimum and a button's padding, it's as tall as the other toolbars' buttons. -->
     <x:Double x:Key="ComboBoxMinHeight">0</x:Double>
   </StackPanel.Resources>
   <StackPanel.Styles>
@@ -36,12 +37,11 @@
     </Style>
     <Style Selector="RadioButton">
       <Setter Property="Focusable" Value="False" />
-      <Setter Property="Padding" Value="{StaticResource AppToolOptionsChoicePadding}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="ComboBox">
       <Setter Property="Focusable" Value="False" />
-      <Setter Property="Padding" Value="{StaticResource AppToolOptionsChoicePadding}" />
+      <Setter Property="Padding" Value="{DynamicResource ButtonPadding}" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
   </StackPanel.Styles>
@@ -110,9 +110,12 @@
       </StackPanel>
     </DataTemplate>
   </StackPanel.DataTemplates>
-  <TextBlock Text="{x:Static res:Strings.ToolOptionsNone}"
-             Foreground="{DynamicResource AppSecondaryTextBrush}"
-             IsVisible="{Binding !HasOptions}" />
+  <!-- Spaced like a button, so that with no options this toolbar is still as tall as the others. -->
+  <Border Padding="{DynamicResource ButtonPadding}"
+          BorderThickness="{DynamicResource ButtonBorderThemeThickness}"
+          IsVisible="{Binding !HasOptions}">
+    <TextBlock Text="{x:Static res:Strings.ToolOptionsNone}" Foreground="{DynamicResource AppSecondaryTextBrush}" />
+  </Border>
   <ItemsControl x:Name="Options" ItemsSource="{Binding Items}" IsVisible="{Binding HasOptions}">
     <ItemsControl.ItemsPanel>
       <ItemsPanelTemplate>
