@@ -86,6 +86,7 @@ internal sealed partial class DockingHost : Panel
     private bool _animateNextArrange;
     private string? _justDroppedToolbarId;
     private bool _isFrameRequested;
+    private bool _isLayingOut;
     private ToolbarDragDisplay? _drag;
     private SubToolbarDisplay? _subToolbar;
 
@@ -299,6 +300,20 @@ internal sealed partial class DockingHost : Panel
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        // Placing the toolbars here changes their buttons' room, which mustn't ask for another pass.
+        _isLayingOut = true;
+        try
+        {
+            return MeasureEverything(availableSize);
+        }
+        finally
+        {
+            _isLayingOut = false;
+        }
+    }
+
+    private Size MeasureEverything(Size availableSize)
+    {
         var available = new LayoutSize(FiniteOrZero(availableSize.Width), FiniteOrZero(availableSize.Height));
         if (_layout is not { } layout || _catalog is not { } catalog || _metrics is not { } metrics)
             return new Size(available.Width, available.Height);
@@ -340,6 +355,19 @@ internal sealed partial class DockingHost : Panel
     }
 
     protected override Size ArrangeOverride(Size finalSize)
+    {
+        _isLayingOut = true;
+        try
+        {
+            return ArrangeEverything(finalSize);
+        }
+        finally
+        {
+            _isLayingOut = false;
+        }
+    }
+
+    private Size ArrangeEverything(Size finalSize)
     {
         if (_solved is not { } solved || _metrics is not { } metrics)
             return finalSize;
@@ -535,11 +563,20 @@ internal sealed partial class DockingHost : Panel
             menu.Closed += (_, _) => RaiseEvent(new RoutedEventArgs(PanelEvents.DoneTypingEvent));
         }
 
+        frame.BarSizeChanged += OnToolbarBarSizeChanged;
         _toolbars.Add(toolbarId, frame);
         Children.Add(frame);
         ToolbarFrameCreated?.Invoke(this, new ToolbarFrameCreatedEventArgs(toolbarId, frame));
 
         return frame;
+    }
+
+    // A toolbar's buttons changed size by themselves, so the toolbars need placing again to give it the room it now
+    // wants.
+    private void OnToolbarBarSizeChanged(object? sender, EventArgs e)
+    {
+        if (!_isLayingOut)
+            InvalidateMeasure();
     }
 
     private ToolbarFrame NewToolbarFrame(Control bar, bool showsGrips = true) => new()

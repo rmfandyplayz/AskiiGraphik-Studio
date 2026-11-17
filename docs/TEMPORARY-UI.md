@@ -178,7 +178,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| Tool Options toolbar: for a number, its name, a slider and the value; for a choice, its name and a plain text toggle button per value. A tool with no options shows "No options". In a vertical toolbar the options stack downwards, but each one stays a row. The slider never takes keyboard focus | `ToolOptions/ToolOptionsToolbar.axaml` | 3.2 |
+| Tool Options toolbar: for a number, its name, a slider and the value; for a choice, its name and a plain text toggle button per value. A tool with no options shows "No options". In a vertical toolbar the options stack downwards, but each one stays a row. The slider never takes keyboard focus, and has no tick marks or room kept for them | `ToolOptions/ToolOptionsToolbar.axaml` | 3.2 |
 | The brush outline is drawn in the caret's colour and thickness, just inside the cells it goes around, and replaces the hover highlight while the Brush or Eraser is chosen. It follows the pointer off the canvas too, since a big brush can reach in from outside | `Canvas/Rendering/CanvasSceneBuilder.cs`, `CanvasScenePainter.cs` | 3.2 |
 | An even size, which has no middle cell, leans towards the half of the cell the pointer is in | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
 | Circles take the cells whose centres fall inside a slightly shrunk ellipse, so size 3 is a plus and sizes 4 and 5 have their corners cut | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |

@@ -17,6 +17,9 @@ using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Hand;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -112,6 +115,37 @@ public sealed class ClickRoutingTests : IDisposable
             Assert.True(bar.DesiredSize.Width <= toolbar.Bounds.Width,
                 $"The buttons need {bar.DesiredSize.Width}, and the toolbar gives them {toolbar.Bounds.Width}.");
         });
+    }
+
+    // The Eraser has no sub-toolbar, so nothing but its options appearing can make the toolbar grow. The owner found
+    // it squeezed into the room "No options" had.
+    [AvaloniaFact]
+    public void ToolOptions_GrowsToFitTheEraserOptions_ChosenStraightAfterAToolWithNone()
+    {
+        _canvas.ViewModel.SelectTool(HandTool.Id);
+        Pump();
+
+        _canvas.ViewModel.SelectTool(EraserTool.Id);
+        Pump();
+
+        var toolbar = Toolbars.Single(toolbar => toolbar.Bar is ToolOptionsToolbar);
+        var bar = toolbar.Bar!;
+        Assert.True(bar.DesiredSize.Width <= toolbar.Bounds.Width,
+            $"The options need {bar.DesiredSize.Width}, and the toolbar gives them {toolbar.Bounds.Width}.");
+        Assert.True(bar.DesiredSize.Height <= toolbar.Bounds.Height,
+            $"The options need {bar.DesiredSize.Height}, and the toolbar gives them {toolbar.Bounds.Height}.");
+    }
+
+    // The slider kept room for tick marks it doesn't have, which made Tool Options far taller than its neighbours.
+    [AvaloniaFact]
+    public void ToolOptions_IsNoTallerThanTheFileToolbar()
+    {
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        Pump();
+
+        var toolOptions = Toolbars.Single(toolbar => toolbar.Bar is ToolOptionsToolbar).Bar!.DesiredSize.Height;
+        var file = ToolbarView.Bar!.DesiredSize.Height;
+        Assert.True(toolOptions <= file, $"Tool Options wants {toolOptions}, and File {file}.");
     }
 
     [AvaloniaFact]

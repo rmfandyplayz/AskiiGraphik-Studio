@@ -13,6 +13,14 @@
             Orientation="Horizontal"
             Spacing="{StaticResource AppToolOptionsSpacing}"
             Margin="{StaticResource AppToolbarPadding}">
+  <StackPanel.Resources>
+    <!-- The Fluent slider keeps room above and below its track for tick marks, which made this toolbar much taller
+         than the others. It has no tick marks, so it gets none. -->
+    <GridLength x:Key="SliderPreContentMargin">0</GridLength>
+    <GridLength x:Key="SliderPostContentMargin">0</GridLength>
+    <x:Double x:Key="SliderHorizontalHeight">0</x:Double>
+    <x:Double x:Key="SliderVerticalWidth">0</x:Double>
+  </StackPanel.Resources>
   <StackPanel.Styles>
     <Style Selector="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center" />

@@ -166,6 +166,29 @@ public sealed class ToolbarDraggingTests : IDisposable
         Assert.Empty(Zones);
     }
 
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WhenItsButtonsGrowLonger_TheToolbarGrowsToFitThem(bool onTheLeftEdge)
+    {
+        ShowWindow();
+        if (onTheLeftEdge)
+            DragAndDrop(File, _leftEdge);
+
+        var bar = Frame(File).Bar!;
+        if (onTheLeftEdge)
+            bar.Height = 300;
+        else
+            bar.Width = 300;
+
+        Pump();
+
+        Assert.True(bar.DesiredSize.Width <= BoundsOf(File).Width);
+        Assert.True(bar.DesiredSize.Height <= BoundsOf(File).Height);
+        Assert.Equal(onTheLeftEdge ? 300 : 30, bar.Bounds.Height);
+        Assert.Equal(onTheLeftEdge ? _toolbarWidth : 300, bar.Bounds.Width);
+    }
+
     [AvaloniaFact]
     public void OverAnEdgeMiddle_TheToolbarTurnsToShowWhatADropWouldDo_AndTurnsBackAwayFromIt()
     {

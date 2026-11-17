@@ -31,10 +31,23 @@ internal sealed partial class ToolbarFrame : UserControl
         get => Scroller.Content as Control;
         set
         {
+            if (Bar is { } old)
+                old.PropertyChanged -= OnBarPropertyChanged;
+
             Scroller.Content = value;
             TurnBar();
+
+            if (value is not null)
+                value.PropertyChanged += OnBarPropertyChanged;
         }
     }
+
+    /// <summary>
+    /// Raised when the buttons take up a different length, such as when the Tool Options toolbar shows another tool's
+    /// options. Avalonia doesn't pass that on by itself: a frame given less room than its buttons want goes on
+    /// wanting the room it was given, so only whoever placed it can let it grow. It's raised during the placing too.
+    /// </summary>
+    public event EventHandler? BarSizeChanged;
 
     /// <summary>How far one wheel notch scrolls.</summary>
     public double WheelStep { get; init; }
@@ -147,6 +160,17 @@ internal sealed partial class ToolbarFrame : UserControl
             part.InvalidateMeasure();
 
         InvalidateMeasure();
+    }
+
+    private void OnBarPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        // DesiredSize doesn't raise a change, so this watches the room the buttons are given along the toolbar, where
+        // they're never squeezed: they scroll instead.
+        if (e.Property != BoundsProperty || e.OldValue is not Rect old || e.NewValue is not Rect now)
+            return;
+
+        if (IsHorizontal ? old.Width != now.Width : old.Height != now.Height)
+            BarSizeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void TurnBar()
