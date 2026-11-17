@@ -387,14 +387,14 @@ public sealed class MainWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
-        var buttons = BrushSubToolbarButtons(window);
+        var buttons = SubToolbarButtons(window, Strings.ToolForegroundBrush);
         Assert.Equal([Strings.ToolBrush, Strings.ToolForegroundBrush, Strings.ToolBackgroundBrush],
             buttons.Select(button => button.Content));
         Assert.Equal([true, false, false], buttons.Select(button => button.IsChecked));
 
         _canvas.ViewModel.SelectTool(ColorBrushTool.BackgroundId);
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(buttons, BrushSubToolbarButtons(window));
+        Assert.Equal(buttons, SubToolbarButtons(window, Strings.ToolForegroundBrush));
         Assert.Equal([false, false, true], buttons.Select(button => button.IsChecked));
 
         _canvas.ViewModel.SelectTool(TextTool.Id);
@@ -403,12 +403,28 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void ChoosingAnEraser_ShowsTheEraserGroupsSubToolbar()
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = ShowWindow(docking);
+
+        _canvas.ViewModel.SelectTool(SoftEraserTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
+        var buttons = SubToolbarButtons(window, Strings.ToolSoftEraser);
+        Assert.Equal([Strings.ToolEraser, Strings.ToolSoftEraser, Strings.ToolBackgroundEraser],
+            buttons.Select(button => button.Content));
+        Assert.Equal([false, true, false], buttons.Select(button => button.IsChecked));
+    }
+
+    [AvaloniaFact]
     public void AToolGroupWithOneTool_HasNoSubToolbar()
     {
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
         ShowWindow(docking);
 
-        _canvas.ViewModel.SelectTool(EraserTool.Id);
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Null(docking.SubToolbarParent);
@@ -532,12 +548,12 @@ public sealed class MainWindowTests : IDisposable
         return canvas.TranslatePoint(new Rect(canvas.Bounds.Size).Center, window)!.Value;
     }
 
-    // The buttons of the toolbar the FG Brush's button is on, which is the Brush group's sub-toolbar.
-    private static ToggleButton[] BrushSubToolbarButtons(MainWindow window)
+    // The buttons of the toolbar the button showing toolName is on, which is its group's sub-toolbar.
+    private static ToggleButton[] SubToolbarButtons(MainWindow window, string toolName)
     {
-        var foreground = window.GetVisualDescendants().OfType<ToggleButton>()
-            .Single(button => Equals(button.Content, Strings.ToolForegroundBrush));
-        var bar = foreground.GetVisualAncestors().OfType<StackPanel>()
+        var tool = window.GetVisualDescendants().OfType<ToggleButton>()
+            .Single(button => Equals(button.Content, toolName));
+        var bar = tool.GetVisualAncestors().OfType<StackPanel>()
             .First(panel => panel.Name == ToolbarBuilder.ControlName);
         return [.. bar.GetVisualDescendants().OfType<ToggleButton>()];
     }

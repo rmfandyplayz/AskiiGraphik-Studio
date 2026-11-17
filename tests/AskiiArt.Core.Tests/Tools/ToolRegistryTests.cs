@@ -19,10 +19,12 @@ public sealed class ToolRegistryTests
         ColorBrushTool.ForegroundDefinition,
         ColorBrushTool.BackgroundDefinition,
         EraserTool.Definition,
+        SoftEraserTool.Definition,
+        EraserTool.BackgroundDefinition,
     ];
 
     [Fact]
-    public void TheBuiltInTools_AreGrouped_WithTheBrushesTogether()
+    public void TheBuiltInTools_AreGrouped_WithTheBrushesTogether_AndTheErasersTogether()
     {
         var registry = new ToolRegistry(_builtInTools, BuiltInToolGroups.All);
 
@@ -30,7 +32,20 @@ public sealed class ToolRegistryTests
         Assert.Equal(
             [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId],
             registry.GroupOf(ColorBrushTool.BackgroundId).ToolIds);
+        Assert.Equal(
+            [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId],
+            registry.GroupOf(SoftEraserTool.Id).ToolIds);
         Assert.Same(BuiltInToolGroups.Eraser, registry.GetGroup(BuiltInToolGroups.Eraser.Id));
+    }
+
+    [Fact]
+    public void TheEraserGroupsTools_ShareTheirOwnTip()
+    {
+        Assert.All(
+            [EraserTool.Definition, SoftEraserTool.Definition, EraserTool.BackgroundDefinition],
+            tool => Assert.Same(EraserTool.OptionGroup, tool.OptionGroups[0]));
+        Assert.NotSame(BrushTool.TipOptions, EraserTool.OptionGroup);
+        Assert.Single(EraserTool.BackgroundDefinition.OptionGroups);
     }
 
     [Fact]

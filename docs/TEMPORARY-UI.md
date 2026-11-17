@@ -15,7 +15,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 |---|---|---|
 | Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
 | Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
-| A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush and Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3 |
+| A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4 |
 | A Window menu between View and Help: Layers, History, Color, Swatches, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
@@ -134,7 +134,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Choice | Where | Step |
 |---|---|---|
 | The Text tool is active at first. With it, Space types a space and Space + drag doesn't pan; with the Eraser, Space + drag pans | `CanvasViewModel`, each tool's `AllowsSpacePanning` | 1.5, 2.4 |
-| T picks Text and E picks Eraser, only while the canvas has the keyboard and no caret is placed. Esc removes the caret, so it's the way from typing to these keys. They aren't shown in the menus | `CanvasView`, `ToolDescriptor.ShortcutLetter` | 2.4 |
+| T picks Text and E picks the eraser used last, only while the canvas has the keyboard and no caret is placed. Esc removes the caret, so it's the way from typing to these keys. They aren't shown in the menus | `CanvasView`, `ToolGroup.ShortcutLetter` | 2.4, 3.3, 3.4 |
 | The chosen tool stays chosen when New or Open replaces the document, and switching tools removes the caret | `CanvasViewModel.SelectTool` | 2.4 |
 | The Eraser: one cell wide until 3.2 gave it sizes, erases as you drag, one stroke is one History step named Erase. Esc during a stroke takes it back and leaves no step. It leaves locked and hidden layers alone, with no message. No special pointer | `Core/Tools/Eraser/EraserTool.cs` | 2.4 |
 | The space option is off for new layers. It can be changed on a locked or hidden layer, like visibility. Merge Down unticks it on the merged layer when that's what keeps the picture the same | `LayerProperties`, `MergeLayerDown` | 2.4 |
@@ -181,7 +181,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Circles take the cells whose centres fall inside a slightly shrunk ellipse, so size 3 is a plus and sizes 4 and 5 have their corners cut | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
 | A perceptual brush is `size` cells wide and as many cells tall as looks the same on screen (about half as many in most fonts), rounded and at least 1 | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
 | A size changed with `[` or `]` in the middle of a stroke takes effect on the next stroke | `Core/Tools/Brush/BrushTool.cs`, `ColorBrushTool.cs`, `Eraser/EraserTool.cs` | 3.2 |
-| Defaults the owner agreed: size 1, from 1 to 100, Circle, Perceptual; `[` and `]` change the size by 1. The Brush and the Eraser each have their own size and shape, and they aren't remembered between runs until 3.5 | `Core/Tools/Footprints/BrushTipOptions.cs` | 3.2 |
+| Defaults the owner agreed: size 1, from 1 to 100, Circle, Perceptual; `[` and `]` change the size by 1. The brushes and the erasers each share their own size and shape (3.3, 3.4), and they aren't remembered between runs until 3.5 | `Core/Tools/Footprints/BrushTipOptions.cs` | 3.2 |
 | The Window menu lists "Tool O_ptions Toolbar" and "C_olors Toolbar" after the other toolbars' items | `Strings.resx`, `Shell/Menus/MenuLayout.cs` | 3.2 |
 | **Below a window about 1,750 px wide,** the default bottom row (View, Tools, Edit) doesn't fit beside the widgets, so View and Edit shrink and scroll. The owner will decide what to change | `Shell/Docking/ShellDefaultLayout.cs` | 3.2 |
 
@@ -196,13 +196,26 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Tool Options: a percentage shows as "50%", and the value beside a slider has room for "100%" (`AppToolOptionsValueWidth` is 36) | `ToolOptions/ToolOptionItems.cs`, `Theme/Tokens.axaml` | 3.3 |
 | Tool Options: when the tool can't work, a warning in orange text follows the options. For a ramp an ASCII document can't hold it reads "This ramp needs a Unicode document", and the ramp stays listed | `ToolOptionsToolbar.axaml`, `Strings.resx` (`ToolWarningRampDoesNotFit`) | 3.3 |
 | Tool Options is as tall as the other toolbars: its choice buttons and dropdowns have the toolbar buttons' padding, the Fluent dropdown's minimum height is turned off, and "No options" is spaced like a button | `ToolOptionsToolbar.axaml` | 3.3 |
-| The ramp Brush's defaults: the Standard ramp, Intensity 100%, Softness 50%, Blend. The three brushes share one size and shape; the Eraser has its own | `Core/Tools/Brush/RampBrushOptions.cs`, `BrushTool.cs` | 3.3 |
+| The ramp Brush's defaults: the Standard ramp, Intensity 100%, Softness 50%, Blend. The three brushes share one size and shape; the erasers have their own. The ramp is shared with the Soft Eraser (3.4) | `Core/Tools/Brush/RampBrushOptions.cs`, `RampStrokes/RampOptions.cs`, `BrushTool.cs` | 3.3 |
 | Blend mode lists Blend, then Replace and Darken greyed out, as the owner asked for a proof of concept | `Core/Tools/Brush/RampBrushOptions.cs` | 3.3 |
 | The soft edge fades along an S-shaped curve (smoothstep), so there's no visible step where the fade starts | `Core/Tools/Footprints/BrushFalloff.cs` | 3.3 |
 | In one stroke a cell blends once, with the strongest weight the brush gave it, so scrubbing doesn't keep darkening it. A second stroke pushes it further | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
 | A cell whose level doesn't change keeps its glyph, so a letter that isn't in the ramp survives a light pass, but it takes the colours. Every glyph the stroke reaches takes them in full, even at the faintest edge of a soft tip, since colours don't blend. An empty cell the brush leaves empty keeps its background | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
 | A glyph that measures exactly halfway between two levels counts as the lighter one | `Core/Ramps/Ramp.cs` | 3.3 |
 | Esc during a ramp Brush stroke takes the stroke back, and Alt+click with the ramp Brush picks both colours; in a monochrome document it picks nothing | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
+
+### Erasers (step 3.4, ADR 0050)
+
+| Choice | Where | Step |
+|---|---|---|
+| The Eraser group's sub-toolbar and keys 1–3: Eraser, Soft Eraser, BG Eraser. The group's button is called "Eraser", like its first tool, as the Brush group's is. E brings back the eraser used last | `Core/Tools/BuiltInToolGroups.cs`, `Strings.resx` (`ToolGroupEraser`, `ToolSoftEraser`, `ToolBackgroundEraser`) | 3.4 |
+| The Soft Eraser's defaults: Strength 100%, Softness 50%. Its Softness is its own, not the Brush's. Tool Options shows Size, Shape, Proportions, Ramp, Strength, Softness | `Core/Tools/Eraser/SoftEraserOptions.cs`, `SoftEraserTool.cs` | 3.4 |
+| Strength is how far one stroke takes the middle of the tip towards empty: 100% empties it, 50% halves its darkness. Each glyph rounds to the nearest level, so at low Strength a light glyph stops lightening: at 40%, `.` never clears | `Core/Tools/RampStrokes/RampStroke.cs` | 3.4 |
+| In one stroke a cell lightens once, so scrubbing doesn't keep lightening it. A second stroke lightens it further | `Core/Tools/RampStrokes/RampStroke.cs` | 3.4 |
+| A lightened glyph keeps its text colour and background, and one lightened to nothing leaves its background. Empty cells aren't touched. A letter that isn't in the ramp stays until the Soft Eraser moves it a whole level | `Core/Tools/Eraser/SoftEraserTool.cs` | 3.4 |
+| With a ramp the document can't hold, the Soft Eraser erases nothing and shows the Brush's warning | `Core/Tools/RampStrokes/RampOptions.cs` | 3.4 |
+| The BG Eraser has only Size, Shape and Proportions. In a monochrome document it stays listed, erases nothing, and Tool Options says "This document has no background colours" in orange | `Core/Tools/Eraser/EraserTool.cs`, `Strings.resx` (`ToolWarningNoBackgrounds`) | 3.4 |
+| All three erasers name their History step "Erase", and Esc during a stroke takes it back | `Core/Tools/Eraser/` | 3.4 |
 
 ## Ideas to revisit
 
@@ -231,7 +244,7 @@ The owner's ideas, parked until the stage they belong to.
 - **Color and plugins** (decided after 2.3's testing, ADR 0032): colour and ANSI are in, as milestone M2b. Plugins are in, as M9 (first M8b, ADR 0046), with a built-in Discord ANSI message plugin. Opacity isn't planned; wide (CJK) characters could be a plugin.
 - **Tool Options toolbar** (raised in M3 planning): it's built from the active tool's options as data, so it isn't a plain container of tool buttons. It will probably be edited through a menu of its own rather than by dragging its contents, and tool settings should be exportable one day (like brush presets).
 - **Blend modes for the Brush** (raised in M3 planning): Blend only for now. Replace and Darken only could come later, perhaps from a dropdown on Tool Options where they show greyed out until then.
-- **Erasing text and backgrounds separately** (raised in M3 planning): the owner wants to erase a background without erasing the text first. 3.4 builds separate erasers: soft and hard for text, and hard for backgrounds, since what a soft background eraser does waits for M5. A better way, such as a toggle on Tool Options, gets found in the UI Pass (M8).
+- **Erasing text and backgrounds separately** (raised in M3 planning): the owner wants to erase a background without erasing the text first. 3.4 built separate erasers: soft and hard for text, and hard for backgrounds, since what a soft background eraser does waits for M5. A better way, such as a toggle on Tool Options, gets found in the UI Pass (M8).
 - **Pen pressure choices** (raised in M3 planning): pressure scales intensity for now; later the user chooses what it controls. Checked on a real tablet in M10.
 - **Shipped or measured ramp order** (raised after 3.1's testing): Standard keeps its classic `.:-=+*#%@`, though every bundled font measures `-` lighter than `:`. The user could switch a ramp between its shipped order and the order the font's measured darkness gives.
 - **Ramps and brushes across the whole darkness range** (raised after 3.1's testing): letters and symbols ink at most about a quarter of a cell (`@` is about 25%), while blocks reach all of it. Other ramps or brushes could make use of that later.

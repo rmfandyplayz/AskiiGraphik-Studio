@@ -21,7 +21,7 @@ public sealed class EraserToolTests
     {
         _session = new EditingSession(TestCells.CreateDocument(6, 3));
         TestCells.Paint(Layer, "abcdef", "ghijkl", "mnopqr");
-        _tool = new EraserTool(_session, TestTools.Tip(_tipValues));
+        _tool = new EraserTool(EraserTarget.Everything, _session, TestTools.Tip(_tipValues));
     }
 
     private Layer Layer => _session.Document.ActiveFrame.Layers[0];

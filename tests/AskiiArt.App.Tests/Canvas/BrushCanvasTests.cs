@@ -82,11 +82,31 @@ public sealed class BrushCanvasTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void TheEKey_ChoosesTheEraserUsedLast_AndKeys1To3ChooseTheErasers()
+    {
+        PressKey(Key.E, PhysicalKey.E, "e");
+        Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
+
+        PressKey(Key.D2, PhysicalKey.Digit2, "2");
+        Assert.IsType<SoftEraserTool>(Canvas.ActiveTool);
+
+        PressKey(Key.D3, PhysicalKey.Digit3, "3");
+        Assert.Equal(EraserTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
+
+        PressKey(Key.B, PhysicalKey.B, "b");
+        PressKey(Key.E, PhysicalKey.E, "e");
+        Assert.Equal(EraserTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
+
+        PressKey(Key.D1, PhysicalKey.Digit1, "1");
+        Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
+    }
+
+    [AvaloniaFact]
     public void ANumberKey_ChoosesNothing_InAGroupWithoutThatManyTools()
     {
         Canvas.SelectTool(EraserTool.Id);
 
-        PressKey(Key.D2, PhysicalKey.Digit2, "2");
+        PressKey(Key.D4, PhysicalKey.Digit4, "4");
 
         Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
     }

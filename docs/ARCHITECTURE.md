@@ -191,20 +191,21 @@ Tools edit through an **editing session**: the document, its undo history and th
 
 Planned tools, built over several milestones: text, brush, eraser, fill, pickup (eyedropper), line, curve, rectangle, rounded rectangle, ellipse, big text, table, the selection tools (§10), and move. Each tool's detailed behavior is specified with the owner when its milestone starts.
 
-### 8.3 Eraser
+### 8.3 Erasers
 
-The eraser has two modes. Hard mode arrived with layers (step 2.4), and has sizes and shapes since 3.2 (ADR 0047). Soft mode needs glyph density, so it arrives with ramps (M3).
+The Eraser group (ADR 0050) has three erasers, which share one size and shape (ADR 0047), separate from the brushes'.
 
-- **Hard:** everything inside the brush footprint becomes empty, and everything outside it is untouched.
-- **Soft:** lowers intensity. Each affected glyph is mapped to a lighter one using glyph density and the active ramp. When intensity reaches zero, the cell becomes empty.
+- **Eraser** (step 2.4): everything inside the footprint becomes empty, and everything outside it is untouched.
+- **Soft Eraser** (step 3.4): lightens text along the ramp it shares with the Brush (§8.4). Each glyph moves lighter by the strength times the tip's weight there, once per stroke, and one lightened to nothing goes. Glyphs keep their colours, and backgrounds stay. A glyph that isn't in the ramp counts as the level that measures nearest.
+- **BG Eraser** (step 3.4): takes backgrounds away, and leaves glyphs and their colours. In a monochrome document it erases nothing, and Tool Options says so.
 
-If alpha ever becomes real, a third mode could lower alpha instead. That mode is reserved; don't build it.
+What a soft background eraser does is still open (§23). If alpha ever becomes real, an eraser could lower alpha instead. That one is reserved; don't build it.
 
 ### 8.4 Brushes
 
 The Brush group (ADR 0049) has three brushes, which share one size and shape (ADR 0047). Alt+click (Option+click) picks colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
 
-- **Brush** paints a ramp's characters (§7, ADR 0045). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on every glyph it reaches, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
+- **Brush** paints a ramp's characters (§7, ADR 0045), along the ramp it shares with the Soft Eraser (§8.3). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on every glyph it reaches, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
 - **FG Brush and BG Brush** (step 2b.3b) paint colour onto cells that are already there: text colour or background. Choosing one chooses the colour the colour windows change, and choosing the other colour while one of them is active switches to the other brush (ADRs 0042, 0043).
 
 ## 9. Commands and undo
@@ -404,7 +405,7 @@ Ask the owner about each of these at the milestone that needs it.
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should selection changes count as undo steps? | M4 |
 | Default ramp(s) to ship. *Decided in M3's planning:* Standard, Standard Alphanumerical, Fine, Blocks and Braille, each painting an empty cell at intensity 0 (ADR 0045) | M3 |
-| What a soft background eraser does, since a background colour has no intensity to lower. 3.4 builds soft and hard text erasers and a hard background eraser | M5 |
+| What a soft background eraser does, since a background colour has no intensity to lower. 3.4 built soft and hard text erasers and a hard background eraser (ADR 0050) | M5 |
 | Exact behavior of each tool | That tool's milestone |
 | Big-text font format (FIGlet?), and which fonts can legally be bundled | M5 |
 | How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M9; the license before accepting outside code |

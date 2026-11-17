@@ -99,7 +99,9 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(ToolActionIds.Brush),
             new ActionMenuEntry(ToolActionIds.ForegroundBrush),
             new ActionMenuEntry(ToolActionIds.BackgroundBrush),
-            new ActionMenuEntry(ToolActionIds.Eraser)
+            new ActionMenuEntry(ToolActionIds.Eraser),
+            new ActionMenuEntry(ToolActionIds.SoftEraser),
+            new ActionMenuEntry(ToolActionIds.BackgroundEraser)
         ]);
 
         var viewMenu = new MenuDefinition(nameof(Strings.MenuView),

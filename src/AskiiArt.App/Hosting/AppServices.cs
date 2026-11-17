@@ -90,6 +90,8 @@ internal static class AppServices
         services.AddSingleton(ColorBrushTool.ForegroundDefinition);
         services.AddSingleton(ColorBrushTool.BackgroundDefinition);
         services.AddSingleton(EraserTool.Definition);
+        services.AddSingleton(SoftEraserTool.Definition);
+        services.AddSingleton(EraserTool.BackgroundDefinition);
         services.AddSingleton(BuiltInToolGroups.Hand);
         services.AddSingleton(BuiltInToolGroups.Text);
         services.AddSingleton(BuiltInToolGroups.Brush);

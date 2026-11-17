@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
-using System.Text;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
@@ -9,15 +8,14 @@ using AskiiArt.Core.Editing;
 using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 
 namespace AskiiArt.Core.Tools.Brush;
 
 /// <summary>
 /// The Brush, which paints a ramp (ADR 0049). Each cell under the tip moves from its darkness now towards the brush's
-/// intensity, by the tip's weight there, and shows the ramp's glyph for where it gets to. A cell's darkness is its
-/// level in the ramp (<see cref="Ramp.NearestLevel"/>), and an empty cell's is 0. Within one stroke a cell moves by the
-/// greatest weight that reached it, from where it was before the stroke, so going over it again adds nothing, and the
-/// next stroke takes it further. Every glyph it reaches gets the current colours, as typing gives them, even one whose
+/// intensity, by the tip's weight there, and shows the ramp's glyph for where it gets to, once per stroke
+/// (<see cref="RampStroke"/>). Every glyph it reaches gets the current colours, as typing gives them, even one whose
 /// level doesn't change. One lightened to nothing loses its glyph and keeps its background, as does an empty cell it
 /// leaves empty. It doesn't paint while the ramp has characters the document's character set can't hold. The tip is
 /// the Brush group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo step.
@@ -37,15 +35,16 @@ public sealed class BrushTool : ITool
     /// <summary>Registers the brush, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new BrushTool(context.Session,
         context.Colors, new BrushTipSource(context.Settings.For(TipOptions), context.CellWidthToHeight),
-        context.Settings.For(RampBrushOptions.Group), context.Densities))
+        context.Settings.For(RampOptions.Group), context.Settings.For(RampBrushOptions.Group), context.Densities))
     {
-        OptionGroups = [TipOptions, RampBrushOptions.Group],
-        WarningFor = RampBrushOptions.WarningFor
+        OptionGroups = [TipOptions, RampOptions.Group, RampBrushOptions.Group],
+        WarningFor = RampOptions.WarningFor
     };
 
     private readonly EditingSession _session;
     private readonly PaintColors _colors;
     private readonly BrushTipSource _tip;
+    private readonly ToolOptionValues _ramp;
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
     private ToolOverlay _overlay = ToolOverlay.None;
@@ -57,32 +56,38 @@ public sealed class BrushTool : ITool
     // The colours a pick replaces, which Esc gives back.
     private (CellColor Foreground, CellColor Background) _colorsBeforePick;
 
-    private Stroke? _stroke;
+    private RampStroke? _stroke;
 
     /// <summary>
     /// Creates a brush for <paramref name="session"/> that paints with <paramref name="tip"/>'s footprint, the ramp
-    /// and strength <paramref name="options"/> say, and <paramref name="colors"/>. Call <see cref="Deactivate"/> when
-    /// done with it, so it stops following the tip's settings.
+    /// <paramref name="ramp"/> chooses, the strength <paramref name="options"/> say, and <paramref name="colors"/>.
+    /// Call <see cref="Deactivate"/> when done with it, so it stops following the tip's settings.
     /// </summary>
     /// <param name="session">The editing session the brush changes.</param>
     /// <param name="colors">The current colours, which painted cells get.</param>
     /// <param name="tip">The Brush group's tip.</param>
+    /// <param name="ramp">The values of <see cref="RampOptions.Group"/>.</param>
     /// <param name="options">The values of <see cref="RampBrushOptions.Group"/>.</param>
     /// <param name="densities">How dark glyphs look in the document's font, now.</param>
-    public BrushTool(EditingSession session, PaintColors colors, BrushTipSource tip, ToolOptionValues options,
-        Func<IGlyphDensityProvider> densities)
+    public BrushTool(EditingSession session, PaintColors colors, BrushTipSource tip, ToolOptionValues ramp,
+        ToolOptionValues options, Func<IGlyphDensityProvider> densities)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(colors);
         ArgumentNullException.ThrowIfNull(tip);
+        ArgumentNullException.ThrowIfNull(ramp);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(densities);
+        if (ramp.Group != RampOptions.Group)
+            throw new ArgumentException("These aren't the ramp's options.", nameof(ramp));
+
         if (options.Group != RampBrushOptions.Group)
             throw new ArgumentException("These aren't the Brush's own options.", nameof(options));
 
         _session = session;
         _colors = colors;
         _tip = tip;
+        _ramp = ramp;
         _options = options;
         _densities = densities;
         _tip.Values.Changed += OnTipChanged;
@@ -115,7 +120,7 @@ public sealed class BrushTool : ITool
     {
         get
         {
-            var footprint = _stroke?.Falloff.Footprint ?? _tip.Footprint;
+            var footprint = _stroke?.Footprint ?? _tip.Footprint;
             if (_overlay.Footprint != footprint)
                 _overlay = new ToolOverlay(Caret: null, footprint);
 
@@ -136,19 +141,19 @@ public sealed class BrushTool : ITool
         }
 
         var document = _session.Document;
-        if (!_session.CanEditActiveLayer || !RampBrushOptions.CanPaintIn(_options, document))
+        if (!_session.CanEditActiveLayer || !RampOptions.FitsIn(_ramp, document))
             return;
 
-        var softness = _options.Get(RampBrushOptions.Softness) / 100.0;
+        // The stroke keeps the settings it starts with, so it paints one ramp with one tip and one strength.
+        var ramp = RampOptions.ReadRamp(_ramp).Ramp;
+        var foreground = _colors.ForegroundIn(document.ColorMode);
+        var background = _colors.BackgroundIn(document.ColorMode);
         _gesture = Gesture.Painting;
-        _stroke = new Stroke(
-            RampBrushOptions.ReadRamp(_options).Ramp,
-            _options.Get(RampBrushOptions.Intensity) / 100.0,
-            BrushFalloff.Create(_tip.Footprint, softness),
-            _colors.ForegroundIn(document.ColorMode),
-            _colors.BackgroundIn(document.ColorMode));
-        _stroke.LastTopLeft = _stroke.Falloff.Footprint.TopLeftAt(input);
-        Paint(_stroke.LastTopLeft, _stroke.LastTopLeft);
+        _stroke = new RampStroke(_session, ramp,
+            BrushFalloff.Create(_tip.Footprint, _options.Get(RampBrushOptions.Softness) / 100.0),
+            target: _options.Get(RampBrushOptions.Intensity) / 100.0, strength: 1, _densities,
+            (before, levelBefore, level) => Paint(ramp, foreground, background, before, levelBefore, level),
+            UndoStepNames.Paint, input);
     }
 
     /// <summary>
@@ -161,14 +166,9 @@ public sealed class BrushTool : ITool
         {
             Pick(input.Cell);
         }
-        else if (_gesture == Gesture.Painting && _stroke is not null)
+        else if (_gesture == Gesture.Painting)
         {
-            var topLeft = _stroke.Falloff.Footprint.TopLeftAt(input);
-            if (topLeft == _stroke.LastTopLeft)
-                return;
-
-            Paint(_stroke.LastTopLeft, topLeft);
-            _stroke.LastTopLeft = topLeft;
+            _stroke?.MoveTo(input);
         }
     }
 
@@ -184,8 +184,8 @@ public sealed class BrushTool : ITool
         if (key != ToolKey.Escape || _gesture == Gesture.None)
             return false;
 
-        if (_gesture == Gesture.Painting && _stroke?.UndoCountAfterLastEdit == _session.History.UndoCount)
-            _session.History.CancelNewestStep();
+        if (_gesture == Gesture.Painting)
+            _stroke?.Cancel();
         else if (_gesture == Gesture.Picking)
             _colors.Set(_colorsBeforePick.Foreground, _colorsBeforePick.Background);
 
@@ -243,103 +243,18 @@ public sealed class BrushTool : ITool
         _colors.Set(shown.Foreground, shown.Background);
     }
 
-    private void Paint(CellPoint fromTopLeft, CellPoint toTopLeft)
+    // Every glyph the stroke reaches takes the colours, even one it doesn't move a whole level, which keeps its
+    // character, even one the ramp doesn't hold. An empty cell it leaves empty keeps its background.
+    private static Cell Paint(Ramp ramp, CellColor foreground, CellColor background, Cell before, int levelBefore,
+        int level)
     {
-        // Undoing during a stroke can take away the layer it started on, or lock it.
-        if (!_session.CanEditActiveLayer || _stroke is null)
-            return;
-
-        var document = _session.Document;
-        var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(document, layer.Id);
-        var reached = FootprintSweep.CoverWeighted(_stroke.Falloff, fromTopLeft, toTopLeft, document.CanvasSize);
-        foreach (var (point, weight) in reached)
-        {
-            var now = layer.GetCell(point);
-            if (!_stroke.Reached.TryGetValue(point, out var before))
-                before = new ReachedCell(now, 0);
-
-            if (weight <= before.Weight)
-                continue;
-
-            _stroke.Reached[point] = before with { Weight = weight };
-            var painted = Blend(before.Cell, weight);
-            if (painted != now)
-                cells.Set(point, painted);
-        }
-
-        if (cells.Build(UndoStepNames.Paint) is not { } command)
-            return;
-
-        _session.History.Execute(command, _stroke.Undo);
-        _stroke.UndoCountAfterLastEdit = _session.History.UndoCount;
-    }
-
-    // The cell as it was before the stroke, moved towards the brush's intensity by weight.
-    private Cell Blend(Cell before, double weight)
-    {
-        var stroke = _stroke!;
-        var ramp = stroke.Ramp;
-        var levelBefore = LevelOf(before);
-        var darknessBefore = ramp.IntensityOf(levelBefore);
-        var level = ramp.LevelAt(darknessBefore + (stroke.Intensity - darknessBefore) * weight);
-
-        // The brush paints glyphs, so it leaves the background of a cell it doesn't give one.
         if (level == levelBefore && !before.HasGlyph)
             return before;
 
-        // A glyph it doesn't move a whole level keeps its character, even one the ramp doesn't hold.
         var glyph = level == levelBefore ? before.Glyph : ramp.GlyphOf(level);
         if (glyph is not { } shown)
             return before.WithoutGlyph();
 
-        var background = stroke.Background.IsUnset ? before.Background : stroke.Background;
-        return Cell.FromGlyph(shown, stroke.Foreground, background);
-    }
-
-    private int LevelOf(Cell cell)
-    {
-        if (!cell.HasGlyph)
-            return 0;
-
-        var stroke = _stroke!;
-        if (!stroke.Levels.TryGetValue(cell.Glyph, out var level))
-        {
-            level = stroke.Ramp.NearestLevel(cell.Glyph, _densities());
-            stroke.Levels.Add(cell.Glyph, level);
-        }
-
-        return level;
-    }
-
-    // A cell a stroke has reached: as it was before the stroke, and the greatest weight that has reached it.
-    private readonly record struct ReachedCell(Cell Cell, double Weight);
-
-    // A stroke's settings, taken when it starts, so it paints one ramp with one tip and one strength throughout.
-    private sealed class Stroke(Ramp ramp, double intensity, BrushFalloff falloff, CellColor foreground,
-        CellColor background)
-    {
-        public Ramp Ramp { get; } = ramp;
-
-        public double Intensity { get; } = intensity;
-
-        public BrushFalloff Falloff { get; } = falloff;
-
-        public CellColor Foreground { get; } = foreground;
-
-        public CellColor Background { get; } = background;
-
-        public CoalescingGroup Undo { get; } = new();
-
-        public Dictionary<CellPoint, ReachedCell> Reached { get; } = [];
-
-        // Each glyph's level, measured once per stroke.
-        public Dictionary<Rune, int> Levels { get; } = [];
-
-        public CellPoint LastTopLeft { get; set; }
-
-        // Where the history stood after this stroke's last edit, or null before its first. Esc only takes back the
-        // newest step if it's still this stroke's.
-        public int? UndoCountAfterLastEdit { get; set; }
+        return Cell.FromGlyph(shown, foreground, background.IsUnset ? before.Background : background);
     }
 }

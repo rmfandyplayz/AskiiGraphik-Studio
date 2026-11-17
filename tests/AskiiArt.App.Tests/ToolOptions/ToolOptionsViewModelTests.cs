@@ -12,6 +12,7 @@ using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.RampStrokes;
 using Avalonia.Headless.XUnit;
 
 namespace AskiiArt.App.Tests.ToolOptions;
@@ -189,8 +190,8 @@ public sealed class ToolOptionsViewModelTests : IDisposable
 
         ramp.SelectedChoice = ramp.Choices[^1];
 
-        var settings = _canvas.ToolSettings.For(RampBrushOptions.Group);
-        Assert.Equal(BuiltInRamps.All[^1].Id, settings.Get(RampBrushOptions.Ramp));
+        var settings = _canvas.ToolSettings.For(RampOptions.Group);
+        Assert.Equal(BuiltInRamps.All[^1].Id, settings.Get(RampOptions.Ramp));
         Assert.Same(ramp.Choices[^1], ramp.SelectedChoice);
     }
 
@@ -230,7 +231,7 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));
         Assert.False(_viewModel.HasWarning);
 
-        _canvas.ToolSettings.For(RampBrushOptions.Group).Set(RampBrushOptions.Ramp, BuiltInRamps.Blocks.Id);
+        _canvas.ToolSettings.For(RampOptions.Group).Set(RampOptions.Ramp, BuiltInRamps.Blocks.Id);
         Assert.Equal(Strings.ToolWarningRampDoesNotFit, _viewModel.Warning);
 
         _canvas.ViewModel.SelectTool(ColorBrushTool.ForegroundId);
@@ -245,7 +246,7 @@ public sealed class ToolOptionsViewModelTests : IDisposable
     public void ANewDocument_IsWarnedAboutToo()
     {
         _canvas.ViewModel.SelectTool(BrushTool.Id);
-        _canvas.ToolSettings.For(RampBrushOptions.Group).Set(RampBrushOptions.Ramp, BuiltInRamps.Blocks.Id);
+        _canvas.ToolSettings.For(RampOptions.Group).Set(RampOptions.Ramp, BuiltInRamps.Blocks.Id);
         Assert.False(_viewModel.HasWarning);
 
         _canvas.ActiveDocument.Replace(new AskiiArt.Core.Editing.EditingSession(
@@ -253,6 +254,50 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         Assert.True(_viewModel.HasWarning);
 
         _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Unicode));
+        Assert.False(_viewModel.HasWarning);
+    }
+
+    [AvaloniaFact]
+    public void TheSoftEraser_ShowsTheErasersTip_TheRamp_ThenItsStrengthAndSoftness()
+    {
+        _canvas.ViewModel.SelectTool(SoftEraserTool.Id);
+
+        Assert.Equal(["Size", "Shape", "Proportions", "Ramp", "Strength", "Softness"],
+            _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(["100%", "50%"], _viewModel.Items.OfType<NumberToolOptionItem>().Skip(1)
+            .Select(item => item.ValueText));
+    }
+
+    [AvaloniaFact]
+    public void TheErasers_ShareTheirTip_AndTheSoftEraserSharesTheBrushsRamp()
+    {
+        _canvas.ViewModel.SelectTool(EraserTool.Id);
+        Size.Value = 7;
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        Choice("Ramp").SelectedChoice = Choice("Ramp").Choices[^1];
+
+        _canvas.ViewModel.SelectTool(SoftEraserTool.Id);
+        Assert.Equal(7, Size.Value);
+        Assert.Same(Choice("Ramp").Choices[^1], Choice("Ramp").SelectedChoice);
+
+        _canvas.ViewModel.SelectTool(EraserTool.BackgroundId);
+        Assert.Equal(["Size", "Shape", "Proportions"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(7, Size.Value);
+    }
+
+    [AvaloniaFact]
+    public void TheBgEraser_IsWarnedAbout_InADocumentWithoutColors()
+    {
+        _canvas.ViewModel.SelectTool(EraserTool.BackgroundId);
+        Assert.Equal(Strings.ToolWarningNoBackgrounds, _viewModel.Warning);
+
+        _canvas.Session.History.Execute(new SetColorModeCommand(ColorMode.Ansi));
+        Assert.False(_viewModel.HasWarning);
+
+        _canvas.Session.History.Undo();
+        Assert.True(_viewModel.HasWarning);
+
+        _canvas.ViewModel.SelectTool(EraserTool.Id);
         Assert.False(_viewModel.HasWarning);
     }
 

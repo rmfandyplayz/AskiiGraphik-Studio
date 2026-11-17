@@ -11,6 +11,7 @@ using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -145,7 +146,7 @@ public sealed class ToolOptionsToolbarTests : IDisposable
         Assert.DoesNotContain(VisibleTexts(), text => text == Strings.ToolWarningRampDoesNotFit);
 
         _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));
-        _canvas.ToolSettings.For(RampBrushOptions.Group).Set(RampBrushOptions.Ramp, BuiltInRamps.Blocks.Id);
+        _canvas.ToolSettings.For(RampOptions.Group).Set(RampOptions.Ramp, BuiltInRamps.Blocks.Id);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Contains(VisibleTexts(), text => text == Strings.ToolWarningRampDoesNotFit);

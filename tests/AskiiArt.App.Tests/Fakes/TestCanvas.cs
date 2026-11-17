@@ -46,7 +46,9 @@ internal sealed class TestCanvas : IDisposable
                 BrushTool.Definition,
                 ColorBrushTool.ForegroundDefinition,
                 ColorBrushTool.BackgroundDefinition,
-                EraserTool.Definition
+                EraserTool.Definition,
+                SoftEraserTool.Definition,
+                EraserTool.BackgroundDefinition
             ],
             BuiltInToolGroups.All);
         ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases, Densities);

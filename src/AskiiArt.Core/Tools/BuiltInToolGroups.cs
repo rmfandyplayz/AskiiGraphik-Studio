@@ -24,9 +24,9 @@ public static class BuiltInToolGroups
     public static ToolGroup Brush { get; } = new("askiiart.group.brush", "ToolGroupBrush", "tool.brush", 'B',
         [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId]);
 
-    /// <summary>The Eraser, on E.</summary>
-    public static ToolGroup Eraser { get; } =
-        new("askiiart.group.eraser", "ToolEraser", "tool.eraser", 'E', [EraserTool.Id]);
+    /// <summary>The Eraser, then the Soft Eraser and the BG Eraser, on E (ADR 0050).</summary>
+    public static ToolGroup Eraser { get; } = new("askiiart.group.eraser", "ToolGroupEraser", "tool.eraser", 'E',
+        [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId]);
 
     /// <summary>Every built-in group, in the order the Tools toolbar shows them.</summary>
     public static IReadOnlyList<ToolGroup> All { get; } = [Hand, Text, Brush, Eraser];

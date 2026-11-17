@@ -17,6 +17,25 @@ internal static class TestTools
     public static IGlyphDensityProvider NoInk { get; } = new FakeGlyphDensities(new Dictionary<char, double>());
 
     /// <summary>
+    /// A font in which each glyph of the Standard ramp is a step darker than the last, 'A' is about as dark as '*'
+    /// (level 6), and 'W' is darker than '@'.
+    /// </summary>
+    public static IGlyphDensityProvider RampSteps { get; } = new FakeGlyphDensities(new Dictionary<char, double>
+    {
+        ['.'] = 0.1,
+        [':'] = 0.2,
+        ['-'] = 0.3,
+        ['='] = 0.4,
+        ['+'] = 0.5,
+        ['*'] = 0.6,
+        ['#'] = 0.7,
+        ['%'] = 0.8,
+        ['@'] = 0.9,
+        ['A'] = 0.62,
+        ['W'] = 0.95
+    });
+
+    /// <summary>
     /// A context with fresh colours and settings, in a font with square cells in which every glyph measures as no ink,
     /// unless told otherwise.
     /// </summary>

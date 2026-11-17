@@ -5,11 +5,11 @@ using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Ramps;
-using AskiiArt.Core.Tests.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 
 namespace AskiiArt.Core.Tests.Tools;
 
@@ -20,25 +20,12 @@ public sealed class BrushToolTests
     private static readonly CellColor _blue = TestCells.Ansi(AnsiColor.Blue);
     private static readonly CellColor _green = TestCells.Ansi(AnsiColor.Green);
 
-    // Each ramp glyph a step darker than the last, and 'A' about as dark as '*', level 6.
-    private static readonly FakeGlyphDensities _densities = new(new Dictionary<char, double>
-    {
-        ['.'] = 0.1,
-        [':'] = 0.2,
-        ['-'] = 0.3,
-        ['='] = 0.4,
-        ['+'] = 0.5,
-        ['*'] = 0.6,
-        ['#'] = 0.7,
-        ['%'] = 0.8,
-        ['@'] = 0.9,
-        ['A'] = 0.62,
-        ['W'] = 0.95
-    });
+    private static readonly IGlyphDensityProvider _densities = TestTools.RampSteps;
 
     private readonly EditingSession _session;
     private readonly PaintColors _colors = new();
     private readonly ToolOptionValues _tip = new(BrushTool.TipOptions);
+    private readonly ToolOptionValues _ramp = new(RampOptions.Group);
     private readonly ToolOptionValues _options = new(RampBrushOptions.Group);
     private readonly BrushTool _tool;
 
@@ -55,10 +42,11 @@ public sealed class BrushToolTests
     private CommandHistory History => _session.History;
 
     [Fact]
-    public void ItsOptions_AreTheGroupsTip_ThenItsOwn()
+    public void ItsOptions_AreTheGroupsTip_TheRamp_ThenItsOwn()
     {
-        Assert.Equal([BrushTool.TipOptions, RampBrushOptions.Group], BrushTool.Definition.OptionGroups);
-        Assert.Equal(BuiltInRamps.Standard.Id, _options.Get(RampBrushOptions.Ramp));
+        Assert.Equal([BrushTool.TipOptions, RampOptions.Group, RampBrushOptions.Group],
+            BrushTool.Definition.OptionGroups);
+        Assert.Equal(BuiltInRamps.Standard.Id, _ramp.Get(RampOptions.Ramp));
         Assert.Equal(100, _options.Get(RampBrushOptions.Intensity));
         Assert.Equal(50, _options.Get(RampBrushOptions.Softness));
         Assert.Equal(RampBrushOptions.BlendModeBlend, _options.Get(RampBrushOptions.BlendMode));
@@ -70,17 +58,6 @@ public sealed class BrushToolTests
         Assert.Throws<ArgumentException>(() => _options.Set(RampBrushOptions.BlendMode, "replace"));
         Assert.Throws<ArgumentException>(() => _options.Set(RampBrushOptions.BlendMode, "darken"));
         Assert.Equal(3, RampBrushOptions.BlendMode.Choices.Count);
-    }
-
-    [Fact]
-    public void TheRampChoices_ShowEachRampsCharacters()
-    {
-        var standard = RampBrushOptions.Ramp.Choices[0];
-
-        Assert.Equal(
-            BuiltInRamps.All.Select(ramp => ramp.Id),
-            RampBrushOptions.Ramp.Choices.Select(choice => choice.Value));
-        Assert.Equal(".:-=+*#%@", standard.Detail);
     }
 
     [Fact]
@@ -253,20 +230,20 @@ public sealed class BrushToolTests
             () => _densities));
         Assert.Null(BrushTool.Definition.WarningFor!(settings, document));
 
-        settings.For(RampBrushOptions.Group).Set(RampBrushOptions.Ramp, BuiltInRamps.Blocks.Id);
+        settings.For(RampOptions.Group).Set(RampOptions.Ramp, BuiltInRamps.Blocks.Id);
         tool.PointerPressed(PointerAt(0, 0));
         tool.PointerReleased(PointerAt(0, 0));
 
         Assert.True(document.ActiveFrame.Layers[0].GetCell(new CellPoint(0, 0)).IsEmpty);
         Assert.Equal(0, session.History.UndoCount);
-        Assert.Equal(RampBrushOptions.RampDoesNotFitWarningKey, BrushTool.Definition.WarningFor!(settings, document));
+        Assert.Equal(RampOptions.RampDoesNotFitWarningKey, BrushTool.Definition.WarningFor!(settings, document));
     }
 
     [Fact]
     public void AMonochromeDocument_GetsGlyphsWithoutColors()
     {
         var session = new EditingSession(TestCells.CreateDocument(2, 1));
-        var tool = new BrushTool(session, _colors, TestTools.Tip(_tip), _options, () => _densities);
+        var tool = new BrushTool(session, _colors, TestTools.Tip(_tip), _ramp, _options, () => _densities);
 
         tool.PointerPressed(PointerAt(0, 0));
         tool.PointerReleased(PointerAt(0, 0));
@@ -376,7 +353,7 @@ public sealed class BrushToolTests
     }
 
     private BrushTool CreateTool() =>
-        new(_session, _colors, TestTools.Tip(_tip), _options, () => _densities);
+        new(_session, _colors, TestTools.Tip(_tip), _ramp, _options, () => _densities);
 
     private void SetTip(int size, int softness)
     {

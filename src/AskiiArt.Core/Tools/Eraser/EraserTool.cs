@@ -10,29 +10,42 @@ using AskiiArt.Core.Tools.Options;
 namespace AskiiArt.Core.Tools.Eraser;
 
 /// <summary>
-/// The hard eraser (ARCHITECTURE §8.3): dragging empties the cells under its tip on the active layer. The tip's size
-/// and shape are the Eraser group's options (ADR 0047), and [ and ] change its size. The erasing shows as it happens,
-/// so each move is its own command, and the moves of one stroke coalesce into one undo step, as a burst of typing
-/// does (ADR 0033).
+/// The hard erasers (ARCHITECTURE §8.3, ADR 0050): the Eraser, which empties the cells under its tip on the active
+/// layer, and the BG Eraser, which takes their backgrounds away and leaves their glyphs. The tip is the Eraser group's
+/// (ADR 0047), and [ and ] change its size. The erasing shows as it happens, so each move is its own command, and the
+/// moves of one stroke coalesce into one undo step, as a burst of typing does (ADR 0033).
 /// </summary>
 public sealed class EraserTool : ITool
 {
-    /// <summary>The tool's id.</summary>
+    /// <summary>The Eraser's id.</summary>
     public const string Id = "askiiart.eraser";
 
-    /// <summary>The eraser's identity. The name key is the App's resource key.</summary>
+    /// <summary>The BG Eraser's id.</summary>
+    public const string BackgroundId = "askiiart.eraser.background";
+
+    /// <summary>The App's resource key for the warning the BG Eraser shows in a document without colours.</summary>
+    public const string NoBackgroundsWarningKey = "ToolWarningNoBackgrounds";
+
+    /// <summary>The Eraser's identity. The name key is the App's resource key.</summary>
     public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolEraser", "tool.eraser", "paint");
 
-    /// <summary>The Eraser group's options: the tip's size, shape and proportions.</summary>
+    /// <summary>The BG Eraser's identity. The name key is the App's resource key.</summary>
+    public static ToolDescriptor BackgroundDescriptor { get; } =
+        new(BackgroundId, "ToolBackgroundEraser", "tool.eraser.background", "paint");
+
+    /// <summary>The Eraser group's tip: its size, shape and proportions, which the Soft Eraser shares.</summary>
     public static ToolOptionGroup OptionGroup { get; } = BrushTipOptions.CreateGroup(Id);
 
-    /// <summary>Registers the eraser, as DI does.</summary>
-    public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new EraserTool(context.Session,
-        new BrushTipSource(context.Settings.For(OptionGroup), context.CellWidthToHeight)))
+    /// <summary>Registers the Eraser, as DI does.</summary>
+    public static ToolDefinition Definition { get; } = CreateDefinition(EraserTarget.Everything);
+
+    /// <summary>Registers the BG Eraser, as DI does.</summary>
+    public static ToolDefinition BackgroundDefinition { get; } = CreateDefinition(EraserTarget.Background) with
     {
-        OptionGroups = [OptionGroup]
+        WarningFor = BackgroundWarningFor
     };
 
+    private readonly EraserTarget _target;
     private readonly EditingSession _session;
     private readonly BrushTipSource _tip;
     private ToolOverlay _overlay = ToolOverlay.None;
@@ -47,14 +60,19 @@ public sealed class EraserTool : ITool
     private int? _undoCountAfterLastEdit;
 
     /// <summary>
-    /// Creates an eraser for <paramref name="session"/> that erases with <paramref name="tip"/>'s footprint. Call
-    /// <see cref="Deactivate"/> when done with it, so it stops following the tip's settings.
+    /// Creates an eraser for <paramref name="session"/> that erases the <paramref name="target"/> part of cells with
+    /// <paramref name="tip"/>'s footprint. Call <see cref="Deactivate"/> when done with it, so it stops following the
+    /// tip's settings.
     /// </summary>
-    public EraserTool(EditingSession session, BrushTipSource tip)
+    public EraserTool(EraserTarget target, EditingSession session, BrushTipSource tip)
     {
+        if (!Enum.IsDefined(target))
+            throw new ArgumentOutOfRangeException(nameof(target), target, null);
+
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tip);
 
+        _target = target;
         _session = session;
         _tip = tip;
         _tip.Values.Changed += OnTipChanged;
@@ -64,7 +82,7 @@ public sealed class EraserTool : ITool
     public event EventHandler? OverlayChanged;
 
     /// <inheritdoc/>
-    public ToolDescriptor Descriptor => ToolDescriptor;
+    public ToolDescriptor Descriptor => _target == EraserTarget.Everything ? ToolDescriptor : BackgroundDescriptor;
 
     /// <summary>True: Space + drag pans.</summary>
     public bool AllowsSpacePanning => true;
@@ -144,6 +162,28 @@ public sealed class EraserTool : ITool
         _tip.Values.Changed -= OnTipChanged;
     }
 
+    // What erasing leaves of a cell.
+    private Cell Erased(Cell cell) => _target switch
+    {
+        EraserTarget.Everything => Cell.Empty,
+        _ => cell.WithBackground(CellColor.Unset)
+    };
+
+    private static ToolDefinition CreateDefinition(EraserTarget target) => new(
+        target == EraserTarget.Everything ? ToolDescriptor : BackgroundDescriptor,
+        context => new EraserTool(target, context.Session,
+            new BrushTipSource(context.Settings.For(OptionGroup), context.CellWidthToHeight)))
+    {
+        OptionGroups = [OptionGroup]
+    };
+
+    // A monochrome document's cells have no backgrounds, so the BG Eraser has nothing to erase there.
+    private static string? BackgroundWarningFor(ToolSettings settings, Document document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        return document.ColorMode == ColorMode.Monochrome ? NoBackgroundsWarningKey : null;
+    }
+
     private void OnTipChanged(object? sender, EventArgs e) => OverlayChanged?.Invoke(this, EventArgs.Empty);
 
     private void EndStroke()
@@ -164,9 +204,10 @@ public sealed class EraserTool : ITool
             return;
 
         var document = _session.Document;
-        var cells = new CellEditBuilder(document, _session.ActiveLayer.Id);
+        var layer = _session.ActiveLayer;
+        var cells = new CellEditBuilder(document, layer.Id);
         foreach (var point in FootprintSweep.Cover(_strokeFootprint, fromTopLeft, toTopLeft, document.CanvasSize))
-            cells.Set(point, Cell.Empty);
+            cells.Set(point, Erased(layer.GetCell(point)));
 
         if (cells.Build(UndoStepNames.Erase) is not { } command)
             return;

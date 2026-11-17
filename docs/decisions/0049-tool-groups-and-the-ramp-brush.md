@@ -63,3 +63,5 @@ Step 3.3 makes the Brush paint ramps (ADR 0045). It also replaces the one-off Br
 - The soft Eraser (§8.3) can reuse the falloff and the blend.
 
 Updated 2026-11-17: the Brush colours every glyph it reaches, not only the ones whose glyph changes. The owner asked for this after testing step 3.3: someone who changes the colour expects the new stroke to show it. It may change again, or become an option, once others have tried it.
+
+Updated 2026-11-17: the Ramp option is its own group, `RampOptions.Group`, which the Soft Eraser shares, so the Brush's own group holds Intensity, Softness and Blend mode. The stroke is `RampStroke`, which the Soft Eraser reuses (ADR 0050).

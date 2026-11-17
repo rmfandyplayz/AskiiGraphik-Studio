@@ -34,3 +34,5 @@ Step 3.2 gives the colour Brush and the hard Eraser a size and a shape, and adds
 - A saved layout keeps its old places; Window → Reset Layout gives the new default. The old Brush Options toolbar's place isn't carried over, so Colors starts at its default.
 
 Updated 2026-11-16: a tool's definition has a list of option groups (`OptionGroups`), not one, and may give a warning (`WarningFor`). A choice can have a detail and can be unavailable, and a number can be a percentage. A choice with more than two values shows as a dropdown. The Brush, FG Brush and BG Brush share one tip group, and the Eraser keeps its own (ADR 0049).
+
+Updated 2026-11-17: the Eraser's tip group is shared by the Eraser, the Soft Eraser and the BG Eraser (ADR 0050).

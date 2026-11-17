@@ -168,6 +168,19 @@
   </data>
   <data name="ToolEraser" xml:space="preserve">
     <value>Eraser</value>
+    <comment>The Eraser group's sub-toolbar and the Tools menu: empties cells, backgrounds included. Key 1 chooses it while an eraser is chosen.</comment>
+  </data>
+  <data name="ToolSoftEraser" xml:space="preserve">
+    <value>Soft Eraser</value>
+    <comment>The Eraser group's sub-toolbar and the Tools menu: lightens characters along the ramp. Key 2 chooses it while an eraser is chosen.</comment>
+  </data>
+  <data name="ToolBackgroundEraser" xml:space="preserve">
+    <value>BG Eraser</value>
+    <comment>The Eraser group's sub-toolbar and the Tools menu: erases backgrounds and leaves characters. Key 3 chooses it while an eraser is chosen.</comment>
+  </data>
+  <data name="ToolGroupEraser" xml:space="preserve">
+    <value>Eraser</value>
+    <comment>Tools toolbar: the Eraser group's button, which chooses the eraser used last. E chooses it too.</comment>
   </data>
   <data name="ToolBrush" xml:space="preserve">
     <value>Brush</value>
@@ -895,7 +908,11 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="ToolOptionSoftness" xml:space="preserve">
     <value>Softness</value>
-    <comment>Tool Options toolbar: how much of the Brush's radius fades towards its edge, as a percentage.</comment>
+    <comment>Tool Options toolbar: how much of the Brush's or Soft Eraser's radius fades towards its edge, as a percentage.</comment>
+  </data>
+  <data name="ToolOptionStrength" xml:space="preserve">
+    <value>Strength</value>
+    <comment>Tool Options toolbar: how far the Soft Eraser lightens the middle of its tip in one stroke, as a percentage. At 100% the middle empties.</comment>
   </data>
   <data name="ToolOptionBlendMode" xml:space="preserve">
     <value>Blend mode</value>
@@ -915,6 +932,10 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="ToolWarningRampDoesNotFit" xml:space="preserve">
     <value>This ramp needs a Unicode document</value>
-    <comment>Tool Options toolbar: the chosen ramp has characters an ASCII document can't hold, so the Brush won't paint.</comment>
+    <comment>Tool Options toolbar: the chosen ramp has characters an ASCII document can't hold, so the Brush won't paint and the Soft Eraser won't erase.</comment>
+  </data>
+  <data name="ToolWarningNoBackgrounds" xml:space="preserve">
+    <value>This document has no background colours</value>
+    <comment>Tool Options toolbar: the BG Eraser is chosen in a monochrome document, so there's nothing for it to erase.</comment>
   </data>
 </root>
