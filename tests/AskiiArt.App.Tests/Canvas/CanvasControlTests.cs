@@ -149,7 +149,7 @@ public sealed class CanvasControlTests : IDisposable
     public void ABrush_OutlinesItsTipUnderThePointer_AndFollowsItsSize()
     {
         Show();
-        var values = _canvas.ToolSettings.For(BrushTool.OptionGroup);
+        var values = _canvas.ToolSettings.For(BrushTool.TipOptions);
         values.Set(BrushTipOptions.Proportions, "mathematical");
         _canvas.ViewModel.SelectTool(BrushTool.Id);
         _control.Tool = _canvas.ViewModel.ActiveTool;

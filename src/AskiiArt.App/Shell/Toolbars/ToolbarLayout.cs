@@ -5,8 +5,8 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
-using AskiiArt.App.Painting;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.Core.Tools;
 
 namespace AskiiArt.App.Shell.Toolbars;
 
@@ -24,20 +24,24 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
         new ActionMenuEntry(DocumentActionIds.Save)
     ]);
 
+    /// <summary>One button per tool group (ADR 0049).</summary>
     public static ToolbarLayout CreateTools() => new(
     [
-        new ActionMenuEntry(ToolActionIds.Hand),
-        new ActionMenuEntry(ToolActionIds.Text),
-        new ActionMenuEntry(ToolActionIds.Brush),
-        new ActionMenuEntry(ToolActionIds.Eraser)
+        new ActionMenuEntry(ToolGroupActionIds.Hand),
+        new ActionMenuEntry(ToolGroupActionIds.Text),
+        new ActionMenuEntry(ToolGroupActionIds.Brush),
+        new ActionMenuEntry(ToolGroupActionIds.Eraser)
     ]);
 
-    /// <summary>The Brush's sub-toolbar, beside the Tools toolbar while the Brush is the active tool.</summary>
-    public static ToolbarLayout CreateBrushSubToolbar() => new(
-    [
-        new ActionMenuEntry(BrushActionIds.ForegroundBrush),
-        new ActionMenuEntry(BrushActionIds.BackgroundBrush)
-    ]);
+    /// <summary>
+    /// A tool group's sub-toolbar, beside the Tools toolbar while one of its tools is the active one: a button per
+    /// tool, in the group's order, which is also the order of their number keys.
+    /// </summary>
+    public static ToolbarLayout CreateToolGroupSubToolbar(ToolGroup group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        return new([.. group.ToolIds.Select(toolId => new ActionMenuEntry(ToolActionIds.For(toolId)))]);
+    }
 
     public static ToolbarLayout CreateEdit() => new(
     [

@@ -53,7 +53,7 @@ public sealed class BrushTipOptionsTests
     public void TheBrushAndTheEraser_KeepSeparateSizes()
     {
         var settings = new ToolSettings();
-        var brush = settings.For(AskiiArt.Core.Tools.Brush.BrushTool.OptionGroup);
+        var brush = settings.For(AskiiArt.Core.Tools.Brush.BrushTool.TipOptions);
         var eraser = settings.For(AskiiArt.Core.Tools.Eraser.EraserTool.OptionGroup);
 
         brush.Set(BrushTipOptions.Size, 9);

@@ -21,7 +21,7 @@ public sealed class EraserTool : ITool
     public const string Id = "askiiart.eraser";
 
     /// <summary>The eraser's identity. The name key is the App's resource key.</summary>
-    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolEraser", "tool.eraser", "paint", 'E');
+    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolEraser", "tool.eraser", "paint");
 
     /// <summary>The Eraser group's options: the tip's size, shape and proportions.</summary>
     public static ToolOptionGroup OptionGroup { get; } = BrushTipOptions.CreateGroup(Id);
@@ -30,7 +30,7 @@ public sealed class EraserTool : ITool
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new EraserTool(context.Session,
         new BrushTipSource(context.Settings.For(OptionGroup), context.CellWidthToHeight)))
     {
-        Options = OptionGroup
+        OptionGroups = [OptionGroup]
     };
 
     private readonly EditingSession _session;

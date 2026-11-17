@@ -14,8 +14,8 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Choice | Where | Step |
 |---|---|---|
 | Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
-| Four toolbars of plain text buttons: File (New, Open, Save), Tools (Hand, Text, Brush, Eraser, toggles), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
-| A Tools menu between Layer and View: Hand, Text, Brush and Eraser, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b |
+| Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
+| A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush and Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3 |
 | A Window menu between View and Help: Layers, History, Color, Swatches, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
@@ -41,7 +41,6 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | The owner asked for all existing toolbars to disappear during a drag. I took that to include floating toolbars and other toolbars' sub-toolbars, though neither holds a strip or a square. A zone overlapped by a pushed-back copy dims to 40%. After a drag the zones, the outline and the pushed-back copy fade out, and the other toolbars fade in, over the 120 ms a toolbar takes to slide. A cancel does the same | `Shell/Docking/DockingHost.cs`, `AppDropZoneDimmedOpacity`, `AppDockingMotionMilliseconds` | 2.5d |
 | The preview's look: a pushed-back copy of the toolbar is 60% opaque. The outline is 1.5 thick, in the accent blue, with dashes of about 6 and gaps of about 4.5, stretched slightly so a whole number fit around it. Its dashes run clockwise at 24 a second. Over a zone, the zone's blue fades away altogether, and the dragged toolbar and its sub-toolbar are 35% opaque, fading over 120 ms | `Shell/Docking/ToolbarLandingPreview.cs`, `Shell/Docking/MarchingAnts.cs`, `AppLanding*`, `AppToolbarAnchoringOpacity` | 2.5c |
 | Sub-toolbars: the same look as a toolbar, with no grips and no right-click menu. One appears at once, with no animation of its own, while whatever it pushes slides. A floating toolbar's doesn't push anchored toolbars. During a drag it stays centred on the held toolbar, even if it would land aligned to a corner. Over a zone there's no outline for where it would land, only the zone's | `AskiiArt.Docking/Solving/ToolbarSolver.SubToolbar.cs`, `Shell/Docking/DockingHost.cs` | 2.5d |
-| Debug → Sub-Toolbar on File, Tools, Edit and View put a sample on that toolbar, with 3 buttons that do nothing. Long Sub-Toolbar makes it 16. They go when tool groups arrive in M3 | `Shell/Docking/SubToolbarSampleActions.cs` | 2.5d |
 | A dragged toolbar turns as soon as it's over an edge middle's zone, to show what a drop would do, and turns back when it leaves. The pointer keeps its place along the toolbar | `Shell/Docking/DockingHost.cs` | 2.5c |
 | Anything the user does slides toolbars to their new places over 120 ms, slowing at the end. Resizing the app window snaps them | `Shell/Docking/LayoutMotions.cs`, `AppDockingMotionMilliseconds` | 2.5c |
 | A toolbar's right-click menu works anywhere on it, buttons included: Horizontal and Vertical with a dot on the current one (greyed out on an edge middle), a line, then Hide | `Shell/Docking/ToolbarMenu.cs` | 2.5c |
@@ -163,16 +162,14 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | In an RGB document an ANSI swatch stays an ANSI colour, shows as its hex code on the Colors toolbar, and is typed as that RGB value | `Painting/PaintColorsViewModel.cs` | 2b.3a |
 | The colour mode is three check-mark items in the Document menu after ASCII Only (the roadmap first said an Edit → Color menu). Switching asks first when it would convert or remove colours | `Documents/ColorModeActions.cs`, `ColorModeConfirm*` strings | 2b.3a |
 | The New dialog's colour choice is three radio buttons under "Colors", Monochrome first and chosen | `Documents/NewDocumentWindow.axaml` | 2b.3a |
-| The Brush sits between Text and Eraser on the Tools toolbar and in the Tools menu | `Shell/Toolbars/ToolbarLayout.cs`, `MenuLayout.cs` | 2b.3b |
-| The Brush's sub-toolbar: two plain text toggle buttons, "FG Brush" and "BG Brush", beside the Tools toolbar while the Brush is chosen | `Painting/BrushSubToolbar.cs`, `Painting/BrushActions.cs` | 2b.3b |
-| Clicking a swatch on the Colors toolbar while the Brush is chosen switches between the FG and BG brushes too, since it's one choice | `Core/Tools/PaintColors.cs` | 2b.3b |
-| The FG brush leaves cells without a glyph alone, and a colour of None takes the cell's text colour or background away | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Clicking a swatch on the Colors toolbar while the FG or BG Brush is chosen switches between those two brushes too, since it's one choice. With any other tool, the ramp Brush included, it only chooses the colour | `Painting/ColorBrushTargetSync.cs` | 2b.3b, 3.3 |
+| The FG brush leaves cells without a glyph alone, and a colour of None takes the cell's text colour or background away | `Core/Tools/Brush/ColorBrushTool.cs` | 2b.3b |
 | A Brush stroke is one undo step named "Paint" | `Strings.resx` (`UndoStepPaint`) | 2b.3b |
-| Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before. On Windows, Alt+Esc is the system's (it sends the window to the back), so Alt is let go first, with the mouse button still held | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
-| Dragging with Alt held keeps picking colours from the cells under the pointer | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
-| Alt+click in a monochrome document does nothing, so the chosen colour isn't lost; painting there does nothing either | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Esc during a Brush stroke takes the stroke back; Esc while picking with Alt gives back the colour from before. On Windows, Alt+Esc is the system's (it sends the window to the back), so Alt is let go first, with the mouse button still held | `Core/Tools/Brush/ColorBrushTool.cs`, `BrushTool.cs` | 2b.3b |
+| Dragging with Alt held keeps picking colours from the cells under the pointer | `Core/Tools/Brush/ColorBrushTool.cs`, `BrushTool.cs` | 2b.3b |
+| Alt+click in a monochrome document does nothing, so the chosen colour isn't lost; painting there does nothing either | `Core/Tools/Brush/ColorBrushTool.cs`, `BrushTool.cs` | 2b.3b |
 | No eyedropper pointer while Alt is held: the normal pointer stays | `Canvas/CanvasControl.cs` | 2b.3b |
-| Colours are picked with Alt+click on the Brush, not with a separate eyedropper tool (ARCHITECTURE §8.4). The owner OK'd it on 2026-11-15 but may change it for UX later; the picking lives in the Brush, so a separate tool could share it | `Core/Tools/Brush/BrushTool.cs` | 2b.3b |
+| Colours are picked with Alt+click on the Brush, not with a separate eyedropper tool (ARCHITECTURE §8.4). The owner OK'd it on 2026-11-15 but may change it for UX later; the picking lives in the Brush, so a separate tool could share it | `Core/Tools/Brush/ColorBrushTool.cs`, `BrushTool.cs` | 2b.3b |
 
 ### Brush sizes (step 3.2, ADR 0047)
 
@@ -183,10 +180,29 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | An even size, which has no middle cell, leans towards the half of the cell the pointer is in | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
 | Circles take the cells whose centres fall inside a slightly shrunk ellipse, so size 3 is a plus and sizes 4 and 5 have their corners cut | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
 | A perceptual brush is `size` cells wide and as many cells tall as looks the same on screen (about half as many in most fonts), rounded and at least 1 | `Core/Tools/Footprints/BrushFootprint.cs` | 3.2 |
-| A size changed with `[` or `]` in the middle of a stroke takes effect on the next stroke | `Core/Tools/Brush/BrushTool.cs`, `Eraser/EraserTool.cs` | 3.2 |
+| A size changed with `[` or `]` in the middle of a stroke takes effect on the next stroke | `Core/Tools/Brush/BrushTool.cs`, `ColorBrushTool.cs`, `Eraser/EraserTool.cs` | 3.2 |
 | Defaults the owner agreed: size 1, from 1 to 100, Circle, Perceptual; `[` and `]` change the size by 1. The Brush and the Eraser each have their own size and shape, and they aren't remembered between runs until 3.5 | `Core/Tools/Footprints/BrushTipOptions.cs` | 3.2 |
 | The Window menu lists "Tool O_ptions Toolbar" and "C_olors Toolbar" after the other toolbars' items | `Strings.resx`, `Shell/Menus/MenuLayout.cs` | 3.2 |
 | **Below a window about 1,750 px wide,** the default bottom row (View, Tools, Edit) doesn't fit beside the widgets, so View and Edit shrink and scroll. The owner will decide what to change | `Shell/Docking/ShellDefaultLayout.cs` | 3.2 |
+
+### Tool groups and the ramp Brush (step 3.3, ADR 0049)
+
+| Choice | Where | Step |
+|---|---|---|
+| The Tools toolbar has one plain text toggle per tool group, labelled with the group's name. The Brush group's button and the ramp Brush are both called "Brush" | `Shell/Toolbars/ToolbarLayout.cs`, `Strings.resx` (`ToolGroupBrush`, `ToolBrush`) | 3.3 |
+| A group with more than one tool shows a sub-toolbar of plain text toggles, one per tool in the group's order, which is also the order of keys 1–9. A group with one tool has none, and in it key 1 chooses the tool it already has | `Canvas/ToolGroupSubToolbar.cs`, `Canvas/CanvasViewModel.cs` | 3.3 |
+| Choosing a group brings back its last tool, until the app closes; at first it's the group's first tool | `Canvas/CanvasViewModel.cs` | 3.3 |
+| Tool Options: a choice with more than two values is a dropdown, not a row of buttons. Each item in the open list shows its name, then any detail in grey, such as a ramp's characters; the closed box shows only the name, since the Fine ramp's 70 characters would make the toolbar very wide. A value that can't be chosen yet is greyed out. Neither the dropdown nor its items take the keyboard, so the arrow keys can't move through an open list | `ToolOptions/ToolOptionItems.cs`, `ToolOptionsToolbar.axaml` | 3.3 |
+| Tool Options: a percentage shows as "50%", and the value beside a slider has room for "100%" (`AppToolOptionsValueWidth` is 36) | `ToolOptions/ToolOptionItems.cs`, `Theme/Tokens.axaml` | 3.3 |
+| Tool Options: when the tool can't work, a warning in orange text follows the options. For a ramp an ASCII document can't hold it reads "This ramp needs a Unicode document", and the ramp stays listed | `ToolOptionsToolbar.axaml`, `Strings.resx` (`ToolWarningRampDoesNotFit`) | 3.3 |
+| The Fluent dropdown's minimum height is turned off, and its padding is the buttons', so Tool Options stays as short as the other toolbars | `ToolOptionsToolbar.axaml` | 3.3 |
+| The ramp Brush's defaults: the Standard ramp, Intensity 100%, Softness 50%, Blend. The three brushes share one size and shape; the Eraser has its own | `Core/Tools/Brush/RampBrushOptions.cs`, `BrushTool.cs` | 3.3 |
+| Blend mode lists Blend, then Replace and Darken greyed out, as the owner asked for a proof of concept | `Core/Tools/Brush/RampBrushOptions.cs` | 3.3 |
+| The soft edge fades along an S-shaped curve (smoothstep), so there's no visible step where the fade starts | `Core/Tools/Footprints/BrushFalloff.cs` | 3.3 |
+| In one stroke a cell blends once, with the strongest weight the brush gave it, so scrubbing doesn't keep darkening it. A second stroke pushes it further | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
+| A cell whose level doesn't change is left as it was, glyph and colours included, so a letter that isn't in the ramp survives a light pass | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
+| A glyph that measures exactly halfway between two levels counts as the lighter one | `Core/Ramps/Ramp.cs` | 3.3 |
+| Esc during a ramp Brush stroke takes the stroke back, and Alt+click with the ramp Brush picks both colours; in a monochrome document it picks nothing | `Core/Tools/Brush/BrushTool.cs` | 3.3 |
 
 ## Ideas to revisit
 

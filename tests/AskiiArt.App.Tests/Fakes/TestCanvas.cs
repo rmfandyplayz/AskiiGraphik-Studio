@@ -40,8 +40,16 @@ internal sealed class TestCanvas : IDisposable
             new EditingSession(Document.Create(size ?? new CanvasSize(40, 20), "Layer", characterSet,
                 colorMode: colorMode)));
         var tools = new ToolRegistry(
-            [HandTool.Definition, TextTool.Definition, BrushTool.Definition, EraserTool.Definition]);
-        ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases);
+            [
+                HandTool.Definition,
+                TextTool.Definition,
+                BrushTool.Definition,
+                ColorBrushTool.ForegroundDefinition,
+                ColorBrushTool.BackgroundDefinition,
+                EraserTool.Definition
+            ],
+            BuiltInToolGroups.All);
+        ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases, Densities);
     }
 
     /// <summary>The FG and BG colours the canvas's tools paint with.</summary>

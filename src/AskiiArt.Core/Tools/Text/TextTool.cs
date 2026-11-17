@@ -33,7 +33,7 @@ public sealed class TextTool : ITool
     public const int LongJump = 10;
 
     /// <summary>The text tool's identity. The name key is the App's resource key.</summary>
-    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text", 'T');
+    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolText", "tool.text", "text");
 
     /// <summary>Registers the text tool, as DI does.</summary>
     public static ToolDefinition Definition { get; } =

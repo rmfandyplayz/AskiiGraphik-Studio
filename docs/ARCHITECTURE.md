@@ -168,7 +168,7 @@ One mechanism powers brushes, soft erase and image conversion.
 - A **ramp** is an ordered, user-editable mapping from intensity bands to glyphs, for example `" .:-=+*#%@"`. Ramps are first-class objects: they're named, stored in user settings, and can be exported and imported as small files so users can share them. Whether intensity 0 maps to an empty cell or to a space is part of each ramp's definition.
 - **Glyph density** is how much ink a glyph actually puts on screen in a given font, measured by rasterizing it (Imaging, §11). It's used to auto-generate a ramp from a font, to sort a user's characters by darkness, for soft erase (glyph → intensity → lighter glyph), and for image conversion.
 
-Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included.
+Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included. *Decided in 3.3 (ADR 0049):* a glyph that isn't in the ramp counts as the level whose measured density is nearest, so the Brush can blend over any text.
 
 ## 8. Tools
 
@@ -176,15 +176,16 @@ Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging imple
 
 Tools are **Core** classes with no UI dependencies. Each tool has:
 
-- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key, a category and a shortcut letter. The letter works while the canvas has focus and the active tool isn't taking text (ADR 0033).
-- **Options:** data, not controls. A tool's definition may carry a `ToolOptionGroup` (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool and can be exported. The Tool Options toolbar is drawn from the chosen tool's group, so the tool doesn't know what draws its options (ADR 0047).
+- **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key and a category.
+- **A group:** every tool belongs to one `ToolGroup`, which has the shortcut letter and its tools in order. The Tools toolbar has a button per group, which brings back the group's last tool, and a group with several tools shows them on a sub-toolbar, where keys 1–9 choose them. The letter and number keys work while the canvas has focus and the active tool isn't taking text (ADRs 0033, 0049).
+- **Options:** data, not controls. A tool's definition may carry `ToolOptionGroup`s (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool, tools can share them, and they can be exported. The Tool Options toolbar is drawn from the chosen tool's groups, so the tool doesn't know what draws its options. A definition can also give a warning for the toolbar to show when the tool can't work in the document (ADRs 0047, 0049).
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
 - **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
 - **Space:** each tool says whether Space + drag pans the canvas while it's active. Text mode doesn't, so Space types a space (ADR 0017). The Hand tool also pans with a plain left-drag.
 - **Esc:** a tool uses Esc only to cancel what it's doing. Any other Esc on the canvas switches to the Hand tool, so a tool is always chosen (ADR 0041).
 
-Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools are registered through DI in a `ToolRegistry` and created per session from a `ToolContext`: the session, the FG and BG colours, which every document shares (ADR 0042), the tool settings, and the shape of the document's cells, which a brush that looks round needs (ADR 0047). Built-in tools register exactly the way a future plugin would (§18).
+Tools edit through an **editing session**: the document, its undo history and the active layer. New replaces the window's session, and everything that edits the document follows the active one (ADR 0020). Tools and their groups are registered through DI in a `ToolRegistry`, and tools are created per session from a `ToolContext`: the session, the FG and BG colours, which every document shares (ADR 0042), the tool settings, the shape of the document's cells, which a brush that looks round needs (ADR 0047), and the glyph densities in the document's font, which a ramp needs (ADR 0049). Built-in tools register exactly the way a future plugin would (§18).
 
 ### 8.2 Planned tools
 
@@ -199,9 +200,12 @@ The eraser has two modes. Hard mode arrived with layers (step 2.4), and has size
 
 If alpha ever becomes real, a third mode could lower alpha instead. That mode is reserved; don't build it.
 
-### 8.4 Colour brush
+### 8.4 Brushes
 
-The Brush (step 2b.3b) paints colour onto cells that are already there, with a size and shape since 3.2 (ADR 0047). It's an FG brush, which colours text, or a BG brush, which colours backgrounds, and that choice is the same one the colour windows change (ADR 0043). Alt+click (Option+click) picks the colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
+The Brush group (ADR 0049) has three brushes, which share one size and shape (ADR 0047). Alt+click (Option+click) picks colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
+
+- **Brush** paints a ramp's characters (§7, ADR 0045). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on the cells it changes, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
+- **FG Brush and BG Brush** (step 2b.3b) paint colour onto cells that are already there: text colour or background. Choosing one chooses the colour the colour windows change, and choosing the other colour while one of them is active switches to the other brush (ADRs 0042, 0043).
 
 ## 9. Commands and undo
 

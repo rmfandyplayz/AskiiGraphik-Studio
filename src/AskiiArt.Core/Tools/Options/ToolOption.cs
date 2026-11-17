@@ -11,6 +11,16 @@ namespace AskiiArt.Core.Tools.Options;
 /// <param name="NameKey">The App's resource key for the option's localized name.</param>
 public abstract record ToolOption(string Id, string NameKey);
 
+/// <summary>What a <see cref="NumberToolOption"/> counts, which says how its value is shown.</summary>
+public enum ToolOptionUnit
+{
+    /// <summary>A plain number, such as a size in cells.</summary>
+    None,
+
+    /// <summary>A percentage, from 0 to 100.</summary>
+    Percent
+}
+
 /// <summary>A whole number between <see cref="Minimum"/> and <see cref="Maximum"/>, inclusive.</summary>
 public sealed record NumberToolOption : ToolOption
 {
@@ -37,6 +47,9 @@ public sealed record NumberToolOption : ToolOption
     /// <summary>The value until the user changes it.</summary>
     public int DefaultValue { get; }
 
+    /// <summary>What the value counts, which says how it's shown.</summary>
+    public ToolOptionUnit Unit { get; init; }
+
     /// <summary><paramref name="value"/>, moved into the range if it's outside.</summary>
     public int Clamp(int value) => Math.Clamp(value, Minimum, Maximum);
 }
@@ -44,14 +57,23 @@ public sealed record NumberToolOption : ToolOption
 /// <summary>One of the choices of a <see cref="ChoiceToolOption"/>.</summary>
 /// <param name="Value">A stable value, for example "circle". Never shown to the user.</param>
 /// <param name="NameKey">The App's resource key for the choice's localized name.</param>
-public sealed record ToolOptionChoice(string Value, string NameKey);
+public sealed record ToolOptionChoice(string Value, string NameKey)
+{
+    /// <summary>Text shown after the name exactly as it is, never translated, such as a ramp's characters.</summary>
+    public string? Detail { get; init; }
+
+    /// <summary>
+    /// Whether it can be chosen. One that can't is shown, but greyed out, as a choice that's coming (ADR 0049).
+    /// </summary>
+    public bool IsAvailable { get; init; } = true;
+}
 
 /// <summary>A choice of one of <see cref="Choices"/>.</summary>
 public sealed record ChoiceToolOption : ToolOption
 {
     /// <summary>Creates a choice option.</summary>
     /// <exception cref="ArgumentException">
-    /// There are no choices, two share a value, or the default isn't one of them.
+    /// There are no choices, two share a value, or the default isn't one of them that can be chosen.
     /// </exception>
     public ChoiceToolOption(string id, string nameKey, IReadOnlyList<ToolOptionChoice> choices, string defaultValue)
         : base(id, nameKey)
@@ -63,10 +85,10 @@ public sealed record ChoiceToolOption : ToolOption
         if (choices.Select(choice => choice.Value).Distinct(StringComparer.Ordinal).Count() != choices.Count)
             throw new ArgumentException("Two choices share a value.", nameof(choices));
 
-        if (choices.All(choice => choice.Value != defaultValue))
-            throw new ArgumentException($"'{defaultValue}' isn't one of the choices.", nameof(defaultValue));
-
         Choices = choices;
+        if (!Allows(defaultValue))
+            throw new ArgumentException($"'{defaultValue}' isn't a choice that can be chosen.", nameof(defaultValue));
+
         DefaultValue = defaultValue;
     }
 
@@ -76,13 +98,13 @@ public sealed record ChoiceToolOption : ToolOption
     /// <summary>The chosen value until the user changes it.</summary>
     public string DefaultValue { get; }
 
-    /// <summary>Whether <paramref name="value"/> is one of the choices.</summary>
-    public bool Allows(string value) => Choices.Any(choice => choice.Value == value);
+    /// <summary>Whether <paramref name="value"/> is one of the choices, and one that can be chosen.</summary>
+    public bool Allows(string value) => Choices.Any(choice => choice.Value == value && choice.IsAvailable);
 }
 
 /// <summary>
-/// The options that tools share one set of values for. A tool group's tools share one, so switching between them keeps
-/// their settings (ADR 0047).
+/// Options that tools share one set of values for. The tools of a tool group share some, so switching between them
+/// keeps those settings (ADR 0047), and a tool can have options of its own besides (ADR 0049).
 /// </summary>
 /// <param name="Id">A stable id, for example "askiiart.brush". Never shown to the user.</param>
 /// <param name="Options">The options, in the order the Tool Options toolbar shows them.</param>

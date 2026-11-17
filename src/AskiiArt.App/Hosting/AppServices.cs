@@ -67,12 +67,8 @@ internal static class AppServices
         services.AddSingleton<IActionProvider>(provider => new WindowSampleActions(
             provider.GetRequiredService<ShellDocking>(),
             includeDebugActions: BuildInfo.IsDebugBuild));
-        services.AddSingleton<IActionProvider>(provider => new SubToolbarSampleActions(
-            provider.GetRequiredService<ShellDocking>(),
-            includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, LayerActions>();
         services.AddSingleton<IActionProvider, ColorModeActions>();
-        services.AddSingleton<IActionProvider, BrushActions>();
         services.AddSingleton<IActionProvider>(provider => new DocumentActions(
             provider.GetRequiredService<ActiveDocument>(),
             provider.GetRequiredService<DocumentFiles>(),
@@ -91,7 +87,13 @@ internal static class AppServices
         services.AddSingleton(HandTool.Definition);
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton(BrushTool.Definition);
+        services.AddSingleton(ColorBrushTool.ForegroundDefinition);
+        services.AddSingleton(ColorBrushTool.BackgroundDefinition);
         services.AddSingleton(EraserTool.Definition);
+        services.AddSingleton(BuiltInToolGroups.Hand);
+        services.AddSingleton(BuiltInToolGroups.Text);
+        services.AddSingleton(BuiltInToolGroups.Brush);
+        services.AddSingleton(BuiltInToolGroups.Eraser);
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<PaintColors>();
         services.AddSingleton<PaintColorsViewModel>();

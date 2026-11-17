@@ -114,11 +114,6 @@ public sealed class MenuLayoutTests
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
                 CanvasActionIds.ShowFrameRate,
-                SubToolbarSampleActionIds.OnFile,
-                SubToolbarSampleActionIds.OnTools,
-                SubToolbarSampleActionIds.OnEdit,
-                SubToolbarSampleActionIds.OnView,
-                SubToolbarSampleActionIds.Long,
                 WindowSampleActionIds.First,
                 WindowSampleActionIds.Second,
                 WindowSampleActionIds.Third,
@@ -198,7 +193,15 @@ public sealed class MenuLayoutTests
     private static void AssertIsToolsMenu(MenuDefinition menu)
     {
         Assert.Equal(nameof(Strings.MenuTools), menu.LabelKey);
-        Assert.Equal([ToolActionIds.Hand, ToolActionIds.Text, ToolActionIds.Brush, ToolActionIds.Eraser],
+        Assert.Equal(
+            [
+                ToolActionIds.Hand,
+                ToolActionIds.Text,
+                ToolActionIds.Brush,
+                ToolActionIds.ForegroundBrush,
+                ToolActionIds.BackgroundBrush,
+                ToolActionIds.Eraser
+            ],
             ActionIdsIn(menu.Entries));
     }
 

@@ -57,6 +57,16 @@ internal sealed partial class CanvasView : UserControl
             e.Handled = canvas.TryUseShortcutLetter(letter[0]);
     }
 
+    // Typed text rather than keys, so a number key works on keyboards where the digit needs Shift. It runs only for
+    // text the canvas's tool didn't take, so typing a number with the Text tool types it.
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        base.OnTextInput(e);
+
+        if (!e.Handled && e.Text is { } text && DataContext is CanvasViewModel canvas)
+            e.Handled = canvas.TryUseNumberKey(text);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);

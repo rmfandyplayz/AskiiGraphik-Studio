@@ -1,9 +1,11 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
-<!-- Placeholder Tool Options toolbar (step 3.2): each option of the chosen tool, built from the tool's options as data
-     (ADR 0047). A number is a slider with its value beside it, and a choice is a row of buttons. The root is a
-     StackPanel so that a vertical toolbar can turn it, and the options follow it. Nothing here takes the keyboard,
-     so the canvas keeps it and [ and ] still work after a click. -->
+<!-- Edited with Claude Code (Anthropic). -->
+<!-- Placeholder Tool Options toolbar (steps 3.2 and 3.3): each option of the chosen tool, built from the tool's options
+     as data (ADR 0047), then a warning when the tool can't be used. A number is a slider with its value beside it,
+     and a choice is a row of buttons, or a dropdown when it has more than two. The root is a StackPanel so that a
+     vertical toolbar can turn it, and the options follow it. Nothing here takes the keyboard, so the canvas keeps it
+     and [ and ] still work after a click. -->
 <StackPanel xmlns="https://github.com/avaloniaui"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:options="using:AskiiArt.App.ToolOptions"
@@ -20,6 +22,8 @@
     <GridLength x:Key="SliderPostContentMargin">0</GridLength>
     <x:Double x:Key="SliderHorizontalHeight">0</x:Double>
     <x:Double x:Key="SliderVerticalWidth">0</x:Double>
+    <!-- The Fluent dropdown is taller than a button, for touch, which made this toolbar taller than the others. -->
+    <x:Double x:Key="ComboBoxMinHeight">0</x:Double>
   </StackPanel.Resources>
   <StackPanel.Styles>
     <Style Selector="TextBlock">
@@ -31,6 +35,11 @@
       <Setter Property="Width" Value="{StaticResource AppToolOptionsSliderWidth}" />
     </Style>
     <Style Selector="RadioButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Padding" Value="{StaticResource AppToolOptionsChoicePadding}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ComboBox">
       <Setter Property="Focusable" Value="False" />
       <Setter Property="Padding" Value="{StaticResource AppToolOptionsChoicePadding}" />
       <Setter Property="VerticalAlignment" Value="Center" />
@@ -47,13 +56,13 @@
                 LargeChange="10"
                 TickFrequency="1"
                 IsSnapToTickEnabled="True" />
-        <TextBlock Text="{Binding Value}" MinWidth="{StaticResource AppToolOptionsValueWidth}" />
+        <TextBlock Text="{Binding ValueText}" MinWidth="{StaticResource AppToolOptionsValueWidth}" />
       </StackPanel>
     </DataTemplate>
     <DataTemplate DataType="options:ChoiceToolOptionItem">
       <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">
         <TextBlock Text="{Binding Name}" />
-        <ItemsControl ItemsSource="{Binding Choices}">
+        <ItemsControl ItemsSource="{Binding Choices}" IsVisible="{Binding !IsDropDown}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Orientation="Horizontal" />
@@ -65,10 +74,39 @@
             <DataTemplate DataType="options:ToolOptionChoiceItem">
               <RadioButton Theme="{StaticResource {x:Type ToggleButton}}"
                            Content="{Binding Name}"
-                           IsChecked="{Binding IsChosen, Mode=TwoWay}" />
+                           IsChecked="{Binding IsChosen, Mode=TwoWay}"
+                           IsEnabled="{Binding IsAvailable}" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+        <!-- The open list shows each choice's detail, such as a ramp's characters, and the closed box only its name,
+             since a detail can be long. A choice that can't be chosen yet is greyed out. The items don't take the
+             keyboard either, so opening the dropdown doesn't take it from the canvas. -->
+        <ComboBox ItemsSource="{Binding Choices}"
+                  SelectedItem="{Binding SelectedChoice, Mode=TwoWay}"
+                  IsVisible="{Binding IsDropDown}">
+          <ComboBox.Styles>
+            <Style Selector="ComboBoxItem" x:DataType="options:ToolOptionChoiceItem">
+              <Setter Property="Focusable" Value="False" />
+              <Setter Property="IsEnabled" Value="{Binding IsAvailable}" />
+            </Style>
+          </ComboBox.Styles>
+          <ComboBox.ItemTemplate>
+            <DataTemplate DataType="options:ToolOptionChoiceItem">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">
+                <TextBlock Text="{Binding Name}" />
+                <TextBlock Text="{Binding Detail}"
+                           Foreground="{DynamicResource AppSecondaryTextBrush}"
+                           IsVisible="{Binding HasDetail}" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+          <ComboBox.SelectionBoxItemTemplate>
+            <DataTemplate DataType="options:ToolOptionChoiceItem">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.SelectionBoxItemTemplate>
+        </ComboBox>
       </StackPanel>
     </DataTemplate>
   </StackPanel.DataTemplates>
@@ -83,4 +121,7 @@
       </ItemsPanelTemplate>
     </ItemsControl.ItemsPanel>
   </ItemsControl>
+  <TextBlock Text="{Binding Warning}"
+             Foreground="{DynamicResource AppWarningTextBrush}"
+             IsVisible="{Binding HasWarning}" />
 </StackPanel>

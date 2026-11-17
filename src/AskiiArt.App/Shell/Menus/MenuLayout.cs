@@ -97,6 +97,8 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(ToolActionIds.Hand),
             new ActionMenuEntry(ToolActionIds.Text),
             new ActionMenuEntry(ToolActionIds.Brush),
+            new ActionMenuEntry(ToolActionIds.ForegroundBrush),
+            new ActionMenuEntry(ToolActionIds.BackgroundBrush),
             new ActionMenuEntry(ToolActionIds.Eraser)
         ]);
 
@@ -176,12 +178,6 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
                 new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
                 new ActionMenuEntry(CanvasActionIds.ShowFrameRate),
-                new SeparatorMenuEntry(),
-                new ActionMenuEntry(SubToolbarSampleActionIds.OnFile),
-                new ActionMenuEntry(SubToolbarSampleActionIds.OnTools),
-                new ActionMenuEntry(SubToolbarSampleActionIds.OnEdit),
-                new ActionMenuEntry(SubToolbarSampleActionIds.OnView),
-                new ActionMenuEntry(SubToolbarSampleActionIds.Long),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(WindowSampleActionIds.First),
                 new ActionMenuEntry(WindowSampleActionIds.Second),

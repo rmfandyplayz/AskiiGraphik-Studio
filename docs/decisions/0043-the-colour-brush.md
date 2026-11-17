@@ -3,7 +3,9 @@
 
 # 0043: The colour brush
 
-Status: Accepted
+Status: Superseded by 0049
+
+> Superseded by [0049](0049-tool-groups-and-the-ramp-brush.md): the colour brush is now two tools, the FG Brush and the BG Brush, in the Brush group with the ramp Brush. Their keys and sub-toolbar belong to the group. Picking and painting colour work as described here.
 
 ## Context
 

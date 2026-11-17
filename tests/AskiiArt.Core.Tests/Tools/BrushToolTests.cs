@@ -4,6 +4,8 @@
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Ramps;
+using AskiiArt.Core.Tests.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Footprints;
@@ -11,22 +13,39 @@ using AskiiArt.Core.Tools.Options;
 
 namespace AskiiArt.Core.Tests.Tools;
 
+// The Standard ramp's levels are 1 '.', 2 ':', 3 '-', 4 '=', 5 '+', 6 '*', 7 '#', 8 '%' and 9 '@'.
 public sealed class BrushToolTests
 {
     private static readonly CellColor _red = TestCells.Ansi(AnsiColor.Red);
     private static readonly CellColor _blue = TestCells.Ansi(AnsiColor.Blue);
     private static readonly CellColor _green = TestCells.Ansi(AnsiColor.Green);
 
+    // Each ramp glyph a step darker than the last, and 'A' about as dark as '*', level 6.
+    private static readonly FakeGlyphDensities _densities = new(new Dictionary<char, double>
+    {
+        ['.'] = 0.1,
+        [':'] = 0.2,
+        ['-'] = 0.3,
+        ['='] = 0.4,
+        ['+'] = 0.5,
+        ['*'] = 0.6,
+        ['#'] = 0.7,
+        ['%'] = 0.8,
+        ['@'] = 0.9,
+        ['A'] = 0.62,
+        ['W'] = 0.95
+    });
+
     private readonly EditingSession _session;
     private readonly PaintColors _colors = new();
-    private readonly ToolOptionValues _tipValues = new(BrushTool.OptionGroup);
+    private readonly ToolOptionValues _tip = new(BrushTool.TipOptions);
+    private readonly ToolOptionValues _options = new(RampBrushOptions.Group);
     private readonly BrushTool _tool;
 
     public BrushToolTests()
     {
         _session = new EditingSession(TestCells.CreateDocument(6, 3, ColorMode.Ansi));
-        TestCells.Paint(Layer, "abc···", "ghi···", "mno···");
-        _tool = new BrushTool(_session, _colors, TestTools.Tip(_tipValues));
+        _tool = CreateTool();
         _colors.Foreground = _red;
         _colors.Background = _blue;
     }
@@ -36,115 +55,188 @@ public sealed class BrushToolTests
     private CommandHistory History => _session.History;
 
     [Fact]
-    public void TheFGBrush_ColorsTheTextOfCellsWithAGlyph_AndSkipsEmptyCells()
+    public void ItsOptions_AreTheGroupsTip_ThenItsOwn()
     {
-        Press(0, 0);
-        Move(5, 0);
-        Release(5, 0);
-
-        Assert.Equal(TestCells.Glyph('a', _red, CellColor.Unset), CellAt(0, 0));
-        Assert.Equal(TestCells.Glyph('c', _red, CellColor.Unset), CellAt(2, 0));
-        Assert.True(CellAt(3, 0).IsEmpty);
-        Assert.Equal(["abc···", "ghi···", "mno···"], TestCells.Read(Layer));
+        Assert.Equal([BrushTool.TipOptions, RampBrushOptions.Group], BrushTool.Definition.OptionGroups);
+        Assert.Equal(BuiltInRamps.Standard.Id, _options.Get(RampBrushOptions.Ramp));
+        Assert.Equal(100, _options.Get(RampBrushOptions.Intensity));
+        Assert.Equal(50, _options.Get(RampBrushOptions.Softness));
+        Assert.Equal(RampBrushOptions.BlendModeBlend, _options.Get(RampBrushOptions.BlendMode));
     }
 
     [Fact]
-    public void TheBGBrush_ColorsTheBackground_OfAnyCell()
+    public void OnlyBlend_CanBeChosen_AsTheBlendMode()
     {
-        _colors.Target = PaintColorTarget.Background;
-
-        Press(2, 1);
-        Move(3, 1);
-        Release(3, 1);
-
-        Assert.Equal(TestCells.Glyph('i', CellColor.Unset, _blue), CellAt(2, 1));
-        Assert.Equal(Cell.FromBackground(_blue), CellAt(3, 1));
+        Assert.Throws<ArgumentException>(() => _options.Set(RampBrushOptions.BlendMode, "replace"));
+        Assert.Throws<ArgumentException>(() => _options.Set(RampBrushOptions.BlendMode, "darken"));
+        Assert.Equal(3, RampBrushOptions.BlendMode.Choices.Count);
     }
 
     [Fact]
-    public void ColorsOfNone_TakeTheColorsAway()
+    public void TheRampChoices_ShowEachRampsCharacters()
     {
-        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _red, _blue));
-        Layer.SetCell(new CellPoint(3, 0), Cell.FromBackground(_blue));
-        _colors.Reset();
+        var standard = RampBrushOptions.Ramp.Choices[0];
 
-        Press(0, 0);
-        Release(0, 0);
-        _colors.Target = PaintColorTarget.Background;
-        Press(0, 0);
-        Move(3, 0);
-        Release(3, 0);
-
-        Assert.Equal(TestCells.Glyph('a'), CellAt(0, 0));
-        Assert.True(CellAt(3, 0).IsEmpty);
+        Assert.Equal(
+            BuiltInRamps.All.Select(ramp => ramp.Id),
+            RampBrushOptions.Ramp.Choices.Select(choice => choice.Value));
+        Assert.Equal(".:-=+*#%@", standard.Detail);
     }
 
     [Fact]
-    public void TheColor_IsConvertedToTheDocumentsColorMode()
+    public void AClickAtFullIntensity_PaintsTheDarkestGlyph_InTheCurrentColors()
     {
-        _colors.Foreground = TestCells.Rgb(250, 10, 10);
+        Click(1, 1);
 
-        Press(0, 0);
-        Release(0, 0);
+        Assert.Equal(TestCells.Glyph('@', _red, _blue), CellAt(1, 1));
+        Assert.Equal(["······", "·@····", "······"], TestCells.Read(Layer));
+    }
 
-        var nearest = CellColor.FromAnsi(AnsiPalette.Vga.FindNearest(new RgbColor(250, 10, 10)));
-        Assert.Equal(nearest, CellAt(0, 0).Foreground);
+    [Theory]
+    [InlineData(50, '+')]
+    [InlineData(20, ':')]
+    [InlineData(5, '·')]
+    public void TheIntensity_ChoosesTheLevel(int intensity, char expected)
+    {
+        _options.Set(RampBrushOptions.Intensity, intensity);
+
+        Click(0, 0);
+
+        Assert.Equal(expected.ToString(), TestCells.Read(Layer)[0][..1]);
     }
 
     [Fact]
-    public void AStroke_KeepsItsColor_WhenTheChoiceChangesDuringIt()
+    public void AHardTip_PaintsEveryCellFully()
     {
-        Press(0, 0);
-        _colors.Foreground = _green;
-        _tool.TextEntered(BrushTool.BackgroundBrushKey);
-        Move(2, 0);
-        Release(2, 0);
+        SetTip(3, softness: 0);
 
-        Assert.Equal(_red, CellAt(2, 0).Foreground);
-        Assert.False(CellAt(2, 0).HasBackground);
+        Click(1, 1);
+
+        Assert.Equal(["@@@···", "@@@···", "@@@···"], TestCells.Read(Layer));
+    }
+
+    // At full softness the edge ring of a 3-cell square gets about a quarter of the weight, which takes an empty cell
+    // to level 2.
+    [Fact]
+    public void ASoftTip_PaintsLighterTowardsItsEdge()
+    {
+        SetTip(3, softness: 100);
+
+        Click(1, 1);
+
+        Assert.Equal([":::···", ":@:···", ":::···"], TestCells.Read(Layer));
     }
 
     [Fact]
-    public void OneStroke_IsOneUndoStep_NamedPaint()
+    public void GoingOverACellAgainInOneStroke_AddsNothing()
     {
-        Press(0, 0);
-        Move(2, 0);
-        Move(2, 2);
-        Release(2, 2);
+        SetTip(3, softness: 100);
 
-        Assert.Equal(1, History.UndoCount);
-        Assert.Equal(UndoStepNames.Paint, History.GetStepNameKey(0));
+        Press(1, 1);
+        Move(4, 1);
+        Move(1, 1);
+        Release(1, 1);
 
-        History.Undo();
-        Assert.True(CellAt(1, 0).Foreground.IsUnset);
-        Assert.True(CellAt(2, 2).Foreground.IsUnset);
-
-        History.Redo();
-        Assert.Equal(_red, CellAt(2, 1).Foreground);
+        Assert.Equal(':', TestCells.Read(Layer)[0][0]);
     }
 
     [Fact]
-    public void AStrokeThatChangesNothing_LeavesNoStep()
+    public void ASecondStroke_PushesFurther()
     {
-        Press(4, 0);
-        Move(5, 2);
-        Release(5, 2);
+        SetTip(3, softness: 100);
 
-        Assert.False(History.CanUndo);
+        Click(1, 1);
+        Click(1, 1);
+
+        Assert.Equal('=', TestCells.Read(Layer)[0][0]);
+        Assert.Equal(2, History.UndoCount);
     }
 
     [Fact]
-    public void AMonochromeDocument_IsLeftAlone()
+    public void ALowIntensity_LightensDarkerCells()
     {
-        History.Execute(new SetColorModeCommand(ColorMode.Monochrome));
-        var stepsBefore = History.UndoCount;
-        _colors.Target = PaintColorTarget.Background;
+        TestCells.Paint(Layer, "@");
+        _options.Set(RampBrushOptions.Intensity, 50);
 
-        Press(0, 0);
-        Move(3, 0);
-        Release(3, 0);
+        Click(0, 0);
 
-        Assert.Equal(stepsBefore, History.UndoCount);
+        Assert.Equal('+', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void LighteningToNothing_TakesTheGlyphAway_AndKeepsTheBackground()
+    {
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('#', _green, _green));
+        _options.Set(RampBrushOptions.Intensity, 0);
+
+        Click(0, 0);
+
+        Assert.Equal(Cell.FromBackground(_green), CellAt(0, 0));
+    }
+
+    [Fact]
+    public void AGlyphTheRampDoesntHold_CountsAsTheLevelThatMeasuresNearest()
+    {
+        SetTip(3, softness: 100);
+        TestCells.Paint(Layer, "A");
+
+        Click(1, 1);
+
+        // From level 6, a quarter of the way to 9.
+        Assert.Equal('#', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void AGlyphTheBrushDoesntMoveAWholeLevel_IsLeftAlone_ColorsAndAll()
+    {
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('W', _green, _green));
+
+        Click(0, 0);
+
+        Assert.Equal(TestCells.Glyph('W', _green, _green), CellAt(0, 0));
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void ABackgroundOfNone_KeepsTheCellsBackground_AsTypingDoes()
+    {
+        Layer.SetCell(new CellPoint(0, 0), Cell.FromBackground(_green));
+        _colors.Background = CellColor.Unset;
+
+        Click(0, 0);
+
+        Assert.Equal(TestCells.Glyph('@', _red, _green), CellAt(0, 0));
+    }
+
+    [Fact]
+    public void ARampTheCharacterSetCantHold_PaintsNothing_AndWarns()
+    {
+        var document = Document.Create(new CanvasSize(6, 3), "Layer", CharacterSet.Ascii, colorMode: ColorMode.Ansi);
+        var settings = new ToolSettings();
+        var session = new EditingSession(document);
+        var tool = (BrushTool)BrushTool.Definition.Create(new ToolContext(session, _colors, settings, () => 1,
+            () => _densities));
+        Assert.Null(BrushTool.Definition.WarningFor!(settings, document));
+
+        settings.For(RampBrushOptions.Group).Set(RampBrushOptions.Ramp, BuiltInRamps.Blocks.Id);
+        tool.PointerPressed(PointerAt(0, 0));
+        tool.PointerReleased(PointerAt(0, 0));
+
+        Assert.True(document.ActiveFrame.Layers[0].GetCell(new CellPoint(0, 0)).IsEmpty);
+        Assert.Equal(0, session.History.UndoCount);
+        Assert.Equal(RampBrushOptions.RampDoesNotFitWarningKey, BrushTool.Definition.WarningFor!(settings, document));
+    }
+
+    [Fact]
+    public void AMonochromeDocument_GetsGlyphsWithoutColors()
+    {
+        var session = new EditingSession(TestCells.CreateDocument(2, 1));
+        var tool = new BrushTool(session, _colors, TestTools.Tip(_tip), _options, () => _densities);
+
+        tool.PointerPressed(PointerAt(0, 0));
+        tool.PointerReleased(PointerAt(0, 0));
+
+        Assert.Equal(TestCells.Glyph('@'), session.Document.ActiveFrame.Layers[0].GetCell(new CellPoint(0, 0)));
     }
 
     [Theory]
@@ -159,12 +251,25 @@ public sealed class BrushToolTests
         }));
         var stepsBefore = History.UndoCount;
 
+        Click(0, 0);
+
+        Assert.True(CellAt(0, 0).IsEmpty);
+        Assert.Equal(stepsBefore, History.UndoCount);
+    }
+
+    [Fact]
+    public void OneStroke_IsOneUndoStep_NamedPaint()
+    {
         Press(0, 0);
         Move(2, 0);
-        Release(2, 0);
+        Move(2, 2);
+        Release(2, 2);
 
-        Assert.True(CellAt(0, 0).Foreground.IsUnset);
-        Assert.Equal(stepsBefore, History.UndoCount);
+        Assert.Equal(1, History.UndoCount);
+        Assert.Equal(UndoStepNames.Paint, History.GetStepNameKey(0));
+
+        History.Undo();
+        Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
     }
 
     [Fact]
@@ -175,242 +280,90 @@ public sealed class BrushToolTests
 
         Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
 
-        Assert.True(CellAt(0, 0).Foreground.IsUnset);
+        Assert.True(CellAt(0, 0).IsEmpty);
         Assert.Equal(0, History.StepCount);
-
-        Move(2, 2);
-        Release(2, 2);
-        Assert.Equal(0, History.StepCount);
-    }
-
-    [Fact]
-    public void Esc_WithNoStroke_IsntUsed()
-    {
         Assert.False(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
     }
 
     [Fact]
-    public void Keys1And2_ChooseTheFGAndBGBrushes()
+    public void AStroke_KeepsItsSettings_WhenTheyChangeDuringIt()
     {
-        Assert.True(_tool.TextEntered(BrushTool.BackgroundBrushKey));
-        Assert.Equal(PaintColorTarget.Background, _colors.Target);
-
-        Assert.True(_tool.TextEntered(BrushTool.ForegroundBrushKey));
-        Assert.Equal(PaintColorTarget.Foreground, _colors.Target);
-
-        Assert.False(_tool.TextEntered("3"));
-        Assert.False(_tool.TextEntered("b"));
-    }
-
-    [Fact]
-    public void AltClick_PicksTheTextColorShown_FromTheTopmostVisibleLayer()
-    {
-        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, _blue));
-        var top = TestCells.AddLayer(_session.Document);
-        top.SetCell(new CellPoint(1, 0), TestCells.Glyph('x', _blue, CellColor.Unset));
-
-        Press(0, 0, ToolModifiers.Alt);
-        Release(0, 0);
-        Assert.Equal(_green, _colors.Foreground);
-
-        Press(1, 0, ToolModifiers.Alt);
-        Release(1, 0);
-        Assert.Equal(_blue, _colors.Foreground);
-        Assert.Equal(_blue, _colors.Background);
-        Assert.False(History.CanUndo);
-    }
-
-    [Fact]
-    public void AltClick_WithTheBGBrush_PicksTheBackgroundShown()
-    {
-        Layer.SetCell(new CellPoint(4, 0), Cell.FromBackground(_green));
-        _colors.Target = PaintColorTarget.Background;
-
-        Press(4, 0, ToolModifiers.Alt);
-        Release(4, 0);
-
-        Assert.Equal(_green, _colors.Background);
-        Assert.Equal(_red, _colors.Foreground);
-    }
-
-    [Fact]
-    public void AltClick_OnACellShowingNoColor_PicksNone()
-    {
-        Press(4, 0, ToolModifiers.Alt);
-        Release(4, 0);
-        Assert.True(_colors.Foreground.IsUnset);
-
-        _colors.Foreground = _red;
-        Press(0, 0, ToolModifiers.Alt);
-        Release(0, 0);
-        Assert.True(_colors.Foreground.IsUnset);
-    }
-
-    [Fact]
-    public void AltClick_IgnoresHiddenLayers_AndWorksOnALockedOne()
-    {
-        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, CellColor.Unset));
-        var hidden = TestCells.AddLayer(_session.Document);
-        hidden.SetCell(new CellPoint(0, 0), TestCells.Glyph('x', _blue, CellColor.Unset));
-        History.Execute(new SetLayerPropertiesCommand(hidden.Id, hidden.Properties with { IsVisible = false }));
-        History.Execute(new SetLayerPropertiesCommand(Layer.Id, Layer.Properties with { IsLocked = true }));
-
-        Press(0, 0, ToolModifiers.Alt);
-        Release(0, 0);
-
-        Assert.Equal(_green, _colors.Foreground);
-    }
-
-    [Fact]
-    public void AltDrag_KeepsPicking_AndPaintsNothing()
-    {
-        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, CellColor.Unset));
-        Layer.SetCell(new CellPoint(2, 0), TestCells.Glyph('c', _blue, CellColor.Unset));
-
-        Press(0, 0, ToolModifiers.Alt);
-        Assert.Equal(_green, _colors.Foreground);
+        Press(0, 0);
+        _options.Set(RampBrushOptions.Intensity, 0);
+        _colors.Foreground = _green;
         Move(2, 0);
         Release(2, 0);
 
-        Assert.Equal(_blue, _colors.Foreground);
-        Assert.False(History.CanUndo);
+        Assert.Equal(TestCells.Glyph('@', _red, _blue), CellAt(2, 0));
     }
 
     [Fact]
-    public void AltClick_OutsideTheCanvas_PicksNothing()
+    public void AltClick_PicksBothColorsShown()
     {
-        Press(9, 9, ToolModifiers.Alt);
-        Release(9, 9);
-
-        Assert.Equal(_red, _colors.Foreground);
-    }
-
-    [Fact]
-    public void AltClick_InAMonochromeDocument_KeepsTheChosenColor()
-    {
-        History.Execute(new SetColorModeCommand(ColorMode.Monochrome));
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, _red));
 
         Press(0, 0, ToolModifiers.Alt);
         Release(0, 0);
 
-        Assert.Equal(_red, _colors.Foreground);
-        Assert.False(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+        Assert.Equal(_green, _colors.Foreground);
+        Assert.Equal(_red, _colors.Background);
+        Assert.True(CellAt(0, 0).HasGlyph);
+        Assert.Equal(0, History.UndoCount);
     }
 
     [Fact]
-    public void Esc_WhilePicking_GivesTheColorBack()
+    public void Esc_WhilePicking_GivesBothColorsBack()
     {
-        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, CellColor.Unset));
+        Layer.SetCell(new CellPoint(0, 0), TestCells.Glyph('a', _green, _green));
 
         Press(0, 0, ToolModifiers.Alt);
         Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
 
         Assert.Equal(_red, _colors.Foreground);
+        Assert.Equal(_blue, _colors.Background);
     }
 
     [Fact]
-    public void ASizedTip_PaintsItsFootprint_CentredOnThePointer()
-    {
-        _colors.Target = PaintColorTarget.Background;
-        TestTools.SetTip(_tipValues, 3);
-
-        Press(1, 1);
-        Release(1, 1);
-
-        Assert.Equal(_blue, CellAt(0, 0).Background);
-        Assert.Equal(_blue, CellAt(2, 2).Background);
-        Assert.True(CellAt(3, 1).Background.IsUnset);
-        Assert.Equal(1, History.UndoCount);
-    }
-
-    [Fact]
-    public void ADragWithASizedTip_PaintsEverythingItSweeps()
-    {
-        _colors.Target = PaintColorTarget.Background;
-        TestTools.SetTip(_tipValues, 2);
-
-        Press(0, 0);
-        Move(4, 0);
-        Release(4, 0);
-
-        Assert.Equal(_blue, CellAt(5, 1).Background);
-        Assert.True(CellAt(0, 2).Background.IsUnset);
-        Assert.Equal(1, History.UndoCount);
-    }
-
-    [Fact]
-    public void TheBracketKeys_ChangeTheSize_AndKeys1And2StillChooseTheBrush()
+    public void TheBracketKeys_ChangeTheSharedTipsSize_AndNumberKeysArentTheBrushs()
     {
         Assert.True(_tool.TextEntered("]"));
-        Assert.True(_tool.TextEntered("2"));
-        Assert.False(_tool.TextEntered("a"));
+        Assert.False(_tool.TextEntered("2"));
 
-        Assert.Equal(2, _tipValues.Get(BrushTipOptions.Size));
-        Assert.Equal(PaintColorTarget.Background, _colors.Target);
+        Assert.Equal(2, _tip.Get(BrushTipOptions.Size));
     }
 
     [Fact]
-    public void AltClick_PicksFromThePointersCell_WhateverTheSize()
+    public void TheOverlay_IsTheTipsFootprint()
     {
-        TestTools.SetTip(_tipValues, 3);
-        Layer.SetCell(new CellPoint(1, 1), TestCells.Glyph('h', _green, CellColor.Unset));
+        SetTip(3, softness: 50);
 
-        Press(1, 1, ToolModifiers.Alt);
-        Release(1, 1);
-
-        Assert.Equal(_green, _colors.Foreground);
-        Assert.Equal(0, History.UndoCount);
+        Assert.Equal(3, _tool.Overlay.Footprint!.Width);
     }
 
-    [Fact]
-    public void TheOverlay_IsTheTipsFootprint_AndStopsFollowingItOnceDeactivated()
+    private BrushTool CreateTool() =>
+        new(_session, _colors, TestTools.Tip(_tip), _options, () => _densities);
+
+    private void SetTip(int size, int softness)
     {
-        var changes = 0;
-        _tool.OverlayChanged += (_, _) => changes++;
-
-        _tipValues.Set(BrushTipOptions.Size, 4);
-        Assert.Equal(1, changes);
-        Assert.Equal(4, _tool.Overlay.Footprint?.Width);
-
-        _tool.Deactivate();
-        _tipValues.Set(BrushTipOptions.Size, 5);
-        Assert.Equal(1, changes);
-    }
-
-    [Fact]
-    public void AStroke_KeepsItsTip_WhenTheSizeChangesDuringIt()
-    {
-        _colors.Target = PaintColorTarget.Background;
-        Press(0, 0);
-        _tool.TextEntered("]");
-
-        Move(2, 0);
-        Release(2, 0);
-
-        Assert.Equal(_blue, CellAt(2, 0).Background);
-        Assert.True(CellAt(2, 1).Background.IsUnset);
-    }
-
-    [Fact]
-    public void BeingDeactivated_KeepsWhatWasPainted_AndEndsTheStroke()
-    {
-        Press(0, 0);
-        _tool.Deactivate();
-        Move(2, 0);
-
-        Assert.Equal(_red, CellAt(0, 0).Foreground);
-        Assert.True(CellAt(2, 0).Foreground.IsUnset);
-        Assert.Equal(1, History.UndoCount);
+        TestTools.SetTip(_tip, size);
+        _options.Set(RampBrushOptions.Softness, softness);
     }
 
     private Cell CellAt(int x, int y) => Layer.GetCell(new CellPoint(x, y));
 
+    private void Click(int x, int y)
+    {
+        Press(x, y);
+        Release(x, y);
+    }
+
+    private static ToolPointerInput PointerAt(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
+        new(new CellPoint(x, y), 0.5, 0.5, modifiers);
+
     private void Press(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
-        _tool.PointerPressed(new ToolPointerInput(new CellPoint(x, y), 0.5, 0.5, modifiers));
+        _tool.PointerPressed(PointerAt(x, y, modifiers));
 
-    private void Move(int x, int y) =>
-        _tool.PointerMoved(new ToolPointerInput(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None));
+    private void Move(int x, int y) => _tool.PointerMoved(PointerAt(x, y));
 
-    private void Release(int x, int y) =>
-        _tool.PointerReleased(new ToolPointerInput(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None));
+    private void Release(int x, int y) => _tool.PointerReleased(PointerAt(x, y));
 }

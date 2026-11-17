@@ -10,7 +10,7 @@ namespace AskiiArt.Core.Tools;
 /// backgrounds. They're shared by every open document, so each is kept as chosen and converted to a
 /// document's colour mode only when used. An unset colour means none: text in the canvas's own ink,
 /// and no new background. One of the two is chosen (<see cref="Target"/>): it's the one the Color and Swatches
-/// windows change, and the one the Brush paints with (ADR 0043).
+/// windows change (ADR 0049).
 /// </summary>
 /// <remarks>Used on the UI thread only, like the tools.</remarks>
 public sealed class PaintColors
@@ -40,9 +40,9 @@ public sealed class PaintColors
     }
 
     /// <summary>
-    /// Which colour is chosen: the one the Color and Swatches windows change, and the one the Brush paints with.
-    /// It's one choice for both for now, at the owner's request. To part them, the Brush would get a choice of
-    /// its own here, because tools are made afresh each time one is chosen (ADR 0043).
+    /// Which colour is chosen: the one the Color and Swatches windows change. Choosing the FG Brush or the BG Brush
+    /// chooses its colour, and choosing the other colour while one of them is active switches to the other brush
+    /// (ADR 0049).
     /// </summary>
     public PaintColorTarget Target
     {
@@ -69,6 +69,9 @@ public sealed class PaintColors
                 Background = value;
         }
     }
+
+    /// <summary>Sets both colours at once, raising <see cref="Changed"/> once.</summary>
+    public void Set(CellColor foreground, CellColor background) => SetColors(foreground, background);
 
     /// <summary>Swaps the FG and BG colours.</summary>
     public void Swap() => SetColors(_background, _foreground);

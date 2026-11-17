@@ -14,7 +14,7 @@ public sealed class HandTool : ITool
     public const string Id = "askiiart.hand";
 
     /// <summary>The Hand tool's identity. The name key is the App's resource key.</summary>
-    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolHand", "tool.hand", "view", 'V');
+    public static ToolDescriptor ToolDescriptor { get; } = new(Id, "ToolHand", "tool.hand", "view");
 
     /// <summary>Registers the Hand tool, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, _ => new HandTool());

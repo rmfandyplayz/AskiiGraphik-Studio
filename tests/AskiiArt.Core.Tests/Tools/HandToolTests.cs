@@ -40,11 +40,11 @@ public sealed class HandToolTests
     [Fact]
     public void ItsShortcutIsV_AndTheRegistryCreatesOne()
     {
-        var registry = new ToolRegistry([HandTool.Definition]);
+        var registry = new ToolRegistry([HandTool.Definition], [BuiltInToolGroups.Hand]);
 
         var tool = registry.Get(HandTool.Id).Create(TestTools.Context(_session));
 
         Assert.IsType<HandTool>(tool);
-        Assert.Equal('V', HandTool.ToolDescriptor.ShortcutLetter);
+        Assert.Equal('V', registry.GroupOf(HandTool.Id).ShortcutLetter);
     }
 }

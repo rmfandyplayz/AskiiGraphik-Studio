@@ -8,6 +8,20 @@ namespace AskiiArt.Core.Tests.Tools;
 
 public sealed class PaintColorsTests
 {
+    [Fact]
+    public void Set_ChangesBothColors_WithOneChange()
+    {
+        var colors = new PaintColors();
+        var changes = 0;
+        colors.Changed += (_, _) => changes++;
+
+        colors.Set(CellColor.FromAnsi(AnsiColor.Red), CellColor.FromAnsi(AnsiColor.Blue));
+
+        Assert.Equal(CellColor.FromAnsi(AnsiColor.Red), colors.Foreground);
+        Assert.Equal(CellColor.FromAnsi(AnsiColor.Blue), colors.Background);
+        Assert.Equal(1, changes);
+    }
+
     private static readonly CellColor _red = TestCells.Ansi(AnsiColor.Red);
     private static readonly CellColor _orange = TestCells.Rgb(255, 136, 0);
 

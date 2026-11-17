@@ -32,3 +32,5 @@ Step 3.2 gives the colour Brush and the hard Eraser a size and a shape, and adds
 - Settings aren't remembered between runs until 3.5 exports them.
 - **Below a window about 1,750 px wide,** the default bottom row (View, Tools, Edit) doesn't fit beside the widgets, so View and Edit shrink and scroll. The smallest window is 1,280 px. The owner will decide whether to change the layout, the toolbars or the minimum.
 - A saved layout keeps its old places; Window → Reset Layout gives the new default. The old Brush Options toolbar's place isn't carried over, so Colors starts at its default.
+
+Updated 2026-11-16: a tool's definition has a list of option groups (`OptionGroups`), not one, and may give a warning (`WarningFor`). A choice can have a detail and can be unavailable, and a number can be a percentage. A choice with more than two values shows as a dropdown. The Brush, FG Brush and BG Brush share one tip group, and the Eraser keeps its own (ADR 0049).

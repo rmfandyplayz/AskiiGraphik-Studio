@@ -49,9 +49,10 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0040](0040-debug-frame-rate-readout.md) | The Debug frame-rate readout | Accepted |
 | [0041](0041-the-hand-tool-and-esc.md) | The Hand tool and Esc | Accepted |
 | [0042](0042-the-current-colours.md) | The current colours | Accepted |
-| [0043](0043-the-colour-brush.md) | The colour brush | Accepted |
+| [0043](0043-the-colour-brush.md) | The colour brush | Superseded by 0049 |
 | [0044](0044-ansi-export.md) | ANSI export | Accepted |
 | [0045](0045-ramps-and-glyph-density.md) | Ramps and glyph density | Accepted |
 | [0046](0046-ui-pass-and-renumbered-milestones.md) | The UI Pass, with plugins and ship-readiness renumbered | Accepted |
 | [0047](0047-tool-options-and-brush-sizes.md) | Tool options and brush sizes | Accepted |
 | [0048](0048-floating-toolbars-keep-their-nearest-corner.md) | Floating toolbars keep their nearest corner | Accepted |
+| [0049](0049-tool-groups-and-the-ramp-brush.md) | Tool groups and the ramp Brush | Accepted |

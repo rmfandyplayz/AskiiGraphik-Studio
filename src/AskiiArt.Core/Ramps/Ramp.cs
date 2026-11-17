@@ -115,6 +115,37 @@ public sealed class Ramp : IEquatable<Ramp>
     }
 
     /// <summary>
+    /// How dark <paramref name="glyph"/> counts as, as a level of this ramp (ADR 0049): its own level if the ramp holds
+    /// it, 0 for a space, and otherwise the level whose glyph measures nearest it in <paramref name="densities"/>,
+    /// with level 0 measuring as no ink. A glyph halfway between two levels counts as the lighter.
+    /// </summary>
+    public int NearestLevel(Rune glyph, IGlyphDensityProvider densities)
+    {
+        ArgumentNullException.ThrowIfNull(densities);
+
+        if (glyph == _space)
+            return 0;
+
+        if (LevelOf(glyph) is { } level)
+            return level;
+
+        var density = densities.GetDensity(glyph);
+        var nearest = 0;
+        var nearestGap = density;
+        for (var candidate = 1; candidate <= TopLevel; candidate++)
+        {
+            var gap = Math.Abs(densities.GetDensity(_glyphs[candidate - 1]) - density);
+            if (gap < nearestGap)
+            {
+                nearest = candidate;
+                nearestGap = gap;
+            }
+        }
+
+        return nearest;
+    }
+
+    /// <summary>
     /// Whether a document using <paramref name="characterSet"/> can hold every glyph this ramp paints.
     /// </summary>
     public bool FitsIn(CharacterSet characterSet) => _glyphs.All(glyph => characterSet.Allows(glyph));

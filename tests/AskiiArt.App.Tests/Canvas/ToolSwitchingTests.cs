@@ -7,6 +7,8 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
@@ -68,6 +70,55 @@ public sealed class ToolSwitchingTests : IDisposable
         Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
         Assert.False(text.CheckedState!.IsChecked);
         Assert.True(eraser.CheckedState!.IsChecked);
+    }
+
+    [AvaloniaFact]
+    public void EachToolGroup_HasAnAction_CheckedWhileOneOfItsToolsIsActive()
+    {
+        var actions = new ToolActions(Canvas).CreateActions().ToDictionary(action => action.Id);
+        var brushGroup = actions[ToolGroupActionIds.Brush];
+        var brushGroupChanges = 0;
+        brushGroup.CheckedState!.Changed += (_, _) => brushGroupChanges++;
+
+        Canvas.SelectTool(ColorBrushTool.BackgroundId);
+        Assert.True(brushGroup.CheckedState.IsChecked);
+        Assert.Equal(1, brushGroupChanges);
+
+        actions[ToolGroupActionIds.Hand].Command.Execute(null);
+        Assert.False(brushGroup.CheckedState.IsChecked);
+
+        brushGroup.Command.Execute(null);
+        Assert.Equal(ColorBrushTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
+        Assert.Equal(
+            [ToolGroupActionIds.Hand, ToolGroupActionIds.Text, ToolGroupActionIds.Brush, ToolGroupActionIds.Eraser],
+            actions.Keys.Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal)));
+    }
+
+    [AvaloniaFact]
+    public void ChoosingAGroup_ChoosesItsFirstTool_UntilAnotherIsChosen()
+    {
+        Canvas.SelectToolGroup(BuiltInToolGroups.Brush.Id);
+        Assert.Equal(BrushTool.Id, Canvas.ActiveTool.Descriptor.Id);
+        Assert.Same(BuiltInToolGroups.Brush, Canvas.SelectedGroup);
+
+        Canvas.SelectTool(ColorBrushTool.ForegroundId);
+        Canvas.SelectTool(HandTool.Id);
+        Canvas.SelectToolGroup(BuiltInToolGroups.Brush.Id);
+
+        Assert.Equal(ColorBrushTool.ForegroundId, Canvas.ActiveTool.Descriptor.Id);
+    }
+
+    [AvaloniaFact]
+    public void ChoosingAnotherToolOfTheGroup_DoesntSayTheGroupChanged()
+    {
+        Canvas.SelectTool(BrushTool.Id);
+        var changes = new List<string?>();
+        Canvas.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+
+        Canvas.SelectTool(ColorBrushTool.ForegroundId);
+
+        Assert.DoesNotContain(nameof(CanvasViewModel.SelectedGroup), changes);
+        Assert.Contains(nameof(CanvasViewModel.ActiveTool), changes);
     }
 
     [AvaloniaFact]

@@ -9,6 +9,34 @@ namespace AskiiArt.Core.Tests.Ramps;
 
 public sealed class RampTests
 {
+    private static readonly FakeGlyphDensities _densities = new(new Dictionary<char, double>
+    {
+        // Powers of two, so halfway is exactly halfway.
+        ['.'] = 0.125,
+        [':'] = 0.25,
+        ['#'] = 0.75,
+        ['a'] = 0.3,
+        ['b'] = 0.5,
+        ['c'] = 0.03,
+    });
+
+    [Theory]
+    [InlineData('.', 1)]
+    [InlineData('#', 3)]
+    [InlineData(' ', 0)]
+    [InlineData('a', 2)]
+    [InlineData('c', 0)]
+    public void NearestLevel_IsAGlyphsOwnLevel_OrTheOneThatMeasuresNearest(char glyph, int level)
+    {
+        Assert.Equal(level, Ramp.FromText(".:#").NearestLevel(new Rune(glyph), _densities));
+    }
+
+    [Fact]
+    public void NearestLevel_HalfwayBetweenTwo_IsTheLighter()
+    {
+        Assert.Equal(2, Ramp.FromText(".:#").NearestLevel(new Rune('b'), _densities));
+    }
+
     private static readonly Rune _space = new(' ');
 
     [Fact]

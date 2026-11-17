@@ -33,6 +33,29 @@ public sealed class ToolOptionTests
     }
 
     [Fact]
+    public void AChoiceThatCantBeChosenYet_IsShown_ButCantBeTheDefaultOrBeSet()
+    {
+        ToolOptionChoice[] choices = [new("a", "A"), new("b", "B") { IsAvailable = false }];
+        var option = new ChoiceToolOption("pick", "Pick", choices, "a");
+        var values = new ToolOptionValues(new ToolOptionGroup("group", [option]));
+
+        Assert.Equal(2, option.Choices.Count);
+        Assert.False(option.Allows("b"));
+        Assert.Throws<ArgumentException>(() => values.Set(option, "b"));
+        Assert.Throws<ArgumentException>(() => new ChoiceToolOption("pick", "Pick", choices, "b"));
+    }
+
+    [Fact]
+    public void ANumber_IsPlainUnlessToldOtherwise()
+    {
+        var plain = new NumberToolOption("size", "Size", 1, 10, 1);
+        var percent = new NumberToolOption("strength", "Strength", 0, 100, 50) { Unit = ToolOptionUnit.Percent };
+
+        Assert.Equal(ToolOptionUnit.None, plain.Unit);
+        Assert.Equal(ToolOptionUnit.Percent, percent.Unit);
+    }
+
+    [Fact]
     public void Values_StartAtTheDefaults()
     {
         var values = new ToolOptionValues(_group);

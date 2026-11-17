@@ -42,11 +42,15 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     private readonly ActiveDocument _activeDocument;
     private readonly ToolRegistry _tools;
     private readonly FontCatalog _fonts;
+    private readonly GlyphDensityCache _densities;
+
+    // Each group's tool that was chosen last, by group id, so choosing the group brings it back (ADR 0049).
+    private readonly Dictionary<string, string> _lastToolOfGroup = [];
     private string _selectedToolId = TextTool.Id;
     private double _cellWidthToHeight;
 
     public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, PaintColors colors,
-        ToolSettings toolSettings, FontCatalog fonts, GlyphAtlasCache atlases)
+        ToolSettings toolSettings, FontCatalog fonts, GlyphAtlasCache atlases, GlyphDensityCache densities)
     {
         ArgumentNullException.ThrowIfNull(activeDocument);
         ArgumentNullException.ThrowIfNull(tools);
@@ -54,6 +58,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         ArgumentNullException.ThrowIfNull(toolSettings);
         ArgumentNullException.ThrowIfNull(fonts);
         ArgumentNullException.ThrowIfNull(atlases);
+        ArgumentNullException.ThrowIfNull(densities);
 
         _activeDocument = activeDocument;
         _tools = tools;
@@ -61,6 +66,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         ToolSettings = toolSettings;
         _fonts = fonts;
         Atlases = atlases;
+        _densities = densities;
 
         Attach(activeDocument.Session);
         activeDocument.SessionChanged += OnSessionChanged;
@@ -75,6 +81,12 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     /// <summary>The chosen tool's definition, which says what options it has.</summary>
     public ToolDefinition SelectedTool => _tools.Get(_selectedToolId);
+
+    /// <summary>The groups the tools are chosen in, in the order the Tools toolbar shows them (ADR 0049).</summary>
+    public IReadOnlyList<ToolGroup> ToolGroups => _tools.Groups;
+
+    /// <summary>The chosen tool's group.</summary>
+    public ToolGroup SelectedGroup => _tools.GroupOf(_selectedToolId);
 
     /// <summary>The FG and BG colours the tools paint with, shared by every document.</summary>
     public PaintColors Colors { get; }
@@ -177,17 +189,30 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
             return;
 
         var definition = _tools.Get(toolId);
+        var group = _tools.GroupOf(toolId);
+        var isOtherGroup = group.Id != SelectedGroup.Id;
         ActiveTool.Deactivate();
         _selectedToolId = toolId;
+        _lastToolOfGroup[group.Id] = toolId;
         ActiveTool = definition.Create(CreateToolContext(Session));
         OnPropertyChanged(nameof(SelectedTool));
+        if (isOtherGroup)
+            OnPropertyChanged(nameof(SelectedGroup));
         OnPropertyChanged(nameof(ActiveTool));
     }
 
+    /// <summary>Chooses the group's tool that was chosen last, or its first tool if none has been (ADR 0049).</summary>
+    public void SelectToolGroup(string groupId)
+    {
+        var group = _tools.GetGroup(groupId);
+        SelectTool(_lastToolOfGroup.GetValueOrDefault(group.Id, group.ToolIds[0]));
+    }
+
     /// <summary>
-    /// Uses a single-letter shortcut (ADR 0033): a tool's letter picks that tool, <see cref="SwapColorsLetter"/>
-    /// swaps the colours and <see cref="ResetColorsLetter"/> sets both to none. Returns false when the letter
-    /// isn't a shortcut, or when the active tool is taking text, which is what the letter is for then.
+    /// Uses a single-letter shortcut (ADR 0033): a tool group's letter chooses that group,
+    /// <see cref="SwapColorsLetter"/> swaps the colours and <see cref="ResetColorsLetter"/> sets both to none.
+    /// Returns false when the letter isn't a shortcut, or when the active tool is taking text, which is what the
+    /// letter is for then.
     /// </summary>
     public bool TryUseShortcutLetter(char letter)
     {
@@ -195,9 +220,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
             return false;
 
         var wanted = char.ToUpperInvariant(letter);
-        if (Tools.FirstOrDefault(tool => tool.Descriptor.ShortcutLetter == wanted) is { } definition)
+        if (ToolGroups.FirstOrDefault(group => group.ShortcutLetter == wanted) is { } group)
         {
-            SelectTool(definition.Descriptor.Id);
+            SelectToolGroup(group.Id);
             return true;
         }
 
@@ -212,6 +237,26 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// Uses a number key typed on the canvas (ADR 0049): 1 chooses the first tool of the chosen tool's group, 2 the
+    /// second and so on. Returns false when the group has no tool with that number, or when the active tool is
+    /// taking text, which is what the key is for then.
+    /// </summary>
+    public bool TryUseNumberKey(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (ActiveTool.IsTakingText || text is not [>= '1' and <= '9' and var digit])
+            return false;
+
+        var toolIds = SelectedGroup.ToolIds;
+        var index = digit - '1';
+        if (index >= toolIds.Count)
+            return false;
+
+        SelectTool(toolIds[index]);
+        return true;
     }
 
     /// <summary>
@@ -246,9 +291,10 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         ActiveTool = _tools.Get(_selectedToolId).Create(CreateToolContext(session));
     }
 
-    // The tool asks for the cell shape each time it needs it, because the font can change while it's in use.
+    // The tool asks for the cell shape and the glyph densities each time it needs them, because the font can change
+    // while it's in use.
     private ToolContext CreateToolContext(EditingSession session) =>
-        new(session, Colors, ToolSettings, () => _cellWidthToHeight);
+        new(session, Colors, ToolSettings, () => _cellWidthToHeight, () => _densities.GetMeter(Font));
 
     private static double CellWidthToHeightOf(LoadedFont font)
     {

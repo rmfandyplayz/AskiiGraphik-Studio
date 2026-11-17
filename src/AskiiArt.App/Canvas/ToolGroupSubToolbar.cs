@@ -3,26 +3,25 @@
 
 using System.ComponentModel;
 using AskiiArt.App.Actions;
-using AskiiArt.App.Canvas;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Toolbars;
-using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools;
 using Avalonia.Controls;
 
-namespace AskiiArt.App.Painting;
+namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// Shows the Brush's sub-toolbar beside the Tools toolbar while the Brush is the active tool, and takes it away when
-/// another tool is chosen (ADR 0043). One lives as long as its main window does.
+/// Shows the chosen tool's group as a sub-toolbar beside the Tools toolbar, while that group has more than one tool,
+/// and takes it away when a tool of another group is chosen (ADR 0049). One lives as long as its main window does.
 /// </summary>
-internal sealed class BrushSubToolbar : IDisposable
+internal sealed class ToolGroupSubToolbar : IDisposable
 {
     private readonly CanvasViewModel _canvas;
     private readonly ShellDocking _docking;
     private readonly ToolbarBuilder _bars;
-    private bool _isShowing;
+    private string? _shownGroupId;
 
-    public BrushSubToolbar(CanvasViewModel canvas, ShellDocking docking, ActionRegistry actions)
+    public ToolGroupSubToolbar(CanvasViewModel canvas, ShellDocking docking, ActionRegistry actions)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(docking);
@@ -42,33 +41,34 @@ internal sealed class BrushSubToolbar : IDisposable
         _docking.SubToolbarChanged -= OnSubToolbarChanged;
     }
 
-    // Replacing the document makes a new tool of the same kind, which leaves the sub-toolbar as it is.
+    // Choosing another tool of the same group, or replacing the document, leaves the sub-toolbar as it is.
     private void Update()
     {
-        var isWanted = _canvas.ActiveTool.Descriptor.Id == BrushTool.Id;
-        if (isWanted == _isShowing)
+        var group = _canvas.SelectedGroup;
+        var wantedId = group.ToolIds.Count > 1 ? group.Id : null;
+        if (wantedId == _shownGroupId)
             return;
 
-        if (isWanted)
-            _docking.ShowSubToolbar(ShellDockingIds.ToolsToolbar, CreateView);
-        else
+        if (wantedId is null)
             _docking.HideSubToolbar();
+        else
+            _docking.ShowSubToolbar(ShellDockingIds.ToolsToolbar, () => CreateView(group));
 
-        _isShowing = isWanted && _docking.SubToolbarParent == ShellDockingIds.ToolsToolbar;
+        _shownGroupId = _docking.SubToolbarParent == ShellDockingIds.ToolsToolbar ? wantedId : null;
     }
 
-    private Control CreateView() => _bars.Build(ToolbarLayout.CreateBrushSubToolbar());
+    private Control CreateView(ToolGroup group) => _bars.Build(ToolbarLayout.CreateToolGroupSubToolbar(group));
 
     private void OnCanvasChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CanvasViewModel.ActiveTool))
+        if (e.PropertyName == nameof(CanvasViewModel.SelectedGroup))
             Update();
     }
 
-    // Something else can take the sub-toolbar's place, such as the debug sample, or the window closing.
+    // The window closing takes the sub-toolbar away.
     private void OnSubToolbarChanged(object? sender, EventArgs e)
     {
         if (_docking.SubToolbarParent is null)
-            _isShowing = false;
+            _shownGroupId = null;
     }
 }

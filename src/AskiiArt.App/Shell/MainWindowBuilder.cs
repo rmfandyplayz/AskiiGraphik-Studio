@@ -97,11 +97,13 @@ internal sealed class MainWindowBuilder(
         ]);
 
         docking.Attach(window.Panels, catalog, metrics);
-        var brushSubToolbar = new BrushSubToolbar(canvas, docking, actions);
+        var toolGroupSubToolbar = new ToolGroupSubToolbar(canvas, docking, actions);
+        var colorBrushTargetSync = new ColorBrushTargetSync(canvas);
         window.Closed += (_, _) =>
         {
             docking.SaveAndDetach();
-            brushSubToolbar.Dispose();
+            toolGroupSubToolbar.Dispose();
+            colorBrushTargetSync.Dispose();
         };
     }
 

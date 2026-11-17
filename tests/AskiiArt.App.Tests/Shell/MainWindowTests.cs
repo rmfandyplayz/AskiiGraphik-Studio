@@ -19,6 +19,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -376,7 +377,7 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void ChoosingTheBrush_ShowsItsSubToolbar_AndChoosingAnotherToolHidesIt()
+    public void ChoosingABrush_ShowsTheBrushGroupsSubToolbar_AndChoosingAnotherToolHidesIt()
     {
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
         var window = ShowWindow(docking);
@@ -386,13 +387,15 @@ public sealed class MainWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
-        var (foreground, background) = BrushButtons(window);
-        Assert.True(foreground.IsChecked);
-        Assert.False(background.IsChecked);
+        var buttons = BrushSubToolbarButtons(window);
+        Assert.Equal([Strings.ToolBrush, Strings.ToolForegroundBrush, Strings.ToolBackgroundBrush],
+            buttons.Select(button => button.Content));
+        Assert.Equal([true, false, false], buttons.Select(button => button.IsChecked));
 
-        _canvas.Colors.Target = PaintColorTarget.Background;
-        Assert.False(foreground.IsChecked);
-        Assert.True(background.IsChecked);
+        _canvas.ViewModel.SelectTool(ColorBrushTool.BackgroundId);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(buttons, BrushSubToolbarButtons(window));
+        Assert.Equal([false, false, true], buttons.Select(button => button.IsChecked));
 
         _canvas.ViewModel.SelectTool(TextTool.Id);
         Dispatcher.UIThread.RunJobs();
@@ -400,9 +403,36 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AWindowOpenedWhileTheBrushIsChosen_ShowsItsSubToolbar()
+    public void AToolGroupWithOneTool_HasNoSubToolbar()
     {
-        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        ShowWindow(docking);
+
+        _canvas.ViewModel.SelectTool(EraserTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(docking.SubToolbarParent);
+    }
+
+    [AvaloniaFact]
+    public void TheToolsToolbar_HasAButtonPerGroup_AndTheBrushesFollowTheChosenColor()
+    {
+        var window = ShowWindow(new ShellDocking(_settings, NullLogger<ShellDocking>.Instance));
+        _canvas.ViewModel.SelectTool(ColorBrushTool.ForegroundId);
+        Dispatcher.UIThread.RunJobs();
+        var brushGroup = window.GetVisualDescendants().OfType<ToggleButton>()
+            .Single(button => Equals(button.Content, Strings.ToolGroupBrush) && button.IsChecked == true);
+
+        _canvas.Colors.Target = PaintColorTarget.Background;
+
+        Assert.Equal(ColorBrushTool.BackgroundId, _canvas.ViewModel.ActiveTool.Descriptor.Id);
+        Assert.True(brushGroup.IsChecked);
+    }
+
+    [AvaloniaFact]
+    public void AWindowOpenedWhileABrushIsChosen_ShowsItsSubToolbar()
+    {
+        _canvas.ViewModel.SelectTool(ColorBrushTool.ForegroundId);
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
 
         ShowWindow(docking);
@@ -502,11 +532,14 @@ public sealed class MainWindowTests : IDisposable
         return canvas.TranslatePoint(new Rect(canvas.Bounds.Size).Center, window)!.Value;
     }
 
-    private static (ToggleButton Foreground, ToggleButton Background) BrushButtons(MainWindow window)
+    // The buttons of the toolbar the FG Brush's button is on, which is the Brush group's sub-toolbar.
+    private static ToggleButton[] BrushSubToolbarButtons(MainWindow window)
     {
-        var buttons = window.GetVisualDescendants().OfType<ToggleButton>().ToArray();
-        return (buttons.Single(button => Equals(button.Content, Strings.ActionForegroundBrush)),
-            buttons.Single(button => Equals(button.Content, Strings.ActionBackgroundBrush)));
+        var foreground = window.GetVisualDescendants().OfType<ToggleButton>()
+            .Single(button => Equals(button.Content, Strings.ToolForegroundBrush));
+        var bar = foreground.GetVisualAncestors().OfType<StackPanel>()
+            .First(panel => panel.Name == ToolbarBuilder.ControlName);
+        return [.. bar.GetVisualDescendants().OfType<ToggleButton>()];
     }
 
     private MainWindow ShowWindowWithUnsavedChanges()

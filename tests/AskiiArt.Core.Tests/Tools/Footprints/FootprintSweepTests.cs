@@ -62,6 +62,42 @@ public sealed class FootprintSweepTests
         Assert.Equal([new(1, 0), new(0, 1), new(1, 1), new(2, 1), new(1, 2)], cells);
     }
 
+    [Fact]
+    public void AWeightedStamp_GivesEachCellItsWeight()
+    {
+        var falloff = BrushFalloff.Create(Square(3), softness: 1);
+
+        var cells = FootprintSweep.CoverWeighted(falloff, new CellPoint(0, 0), new CellPoint(0, 0), _canvas);
+
+        Assert.Equal(9, cells.Count);
+        Assert.Equal(1, cells.Single(cell => cell.Point == new CellPoint(1, 1)).Weight);
+        Assert.Equal(falloff.WeightAt(0, 0), cells.Single(cell => cell.Point == new CellPoint(0, 0)).Weight);
+    }
+
+    [Fact]
+    public void AWeightedSweep_KeepsEachCellsGreatestWeight()
+    {
+        var falloff = BrushFalloff.Create(Square(3), softness: 1);
+
+        var cells = FootprintSweep.CoverWeighted(falloff, new CellPoint(0, 0), new CellPoint(2, 0), _canvas);
+
+        // The middle of the first stamp and the middle of the last.
+        Assert.Equal(1, cells.Single(cell => cell.Point == new CellPoint(1, 1)).Weight);
+        Assert.Equal(1, cells.Single(cell => cell.Point == new CellPoint(3, 1)).Weight);
+        Assert.Equal(cells.Count, cells.Select(cell => cell.Point).Distinct().Count());
+        Assert.Equal(15, cells.Count);
+    }
+
+    [Fact]
+    public void AWeightedStampPartlyOffTheCanvas_KeepsOnlyTheCellsOnIt()
+    {
+        var falloff = BrushFalloff.Create(Square(3), softness: 0);
+
+        var cells = FootprintSweep.CoverWeighted(falloff, new CellPoint(-1, -1), new CellPoint(-1, -1), _canvas);
+
+        Assert.Equal([new(0, 0), new(1, 0), new(0, 1), new(1, 1)], cells.Select(cell => cell.Point));
+    }
+
     private static BrushFootprint Square(int size) =>
         BrushFootprint.Create(new BrushTip(size, BrushShape.Square, BrushProportions.Mathematical), 1);
 }

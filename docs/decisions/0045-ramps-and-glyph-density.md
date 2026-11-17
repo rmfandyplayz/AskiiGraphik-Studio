@@ -29,3 +29,5 @@ Step 3.1 starts M3 with the two things its brushes, soft eraser and ramp editor 
 - No bundled font has braille, so the Braille ramp is drawn from a fallback font, and its cells are flagged as missing glyphs.
 - Text characters top out at about a quarter of the cell (`@` is 25% in JetBrains Mono), while blocks reach 100%, so mixing the two in one ramp needs care.
 - In every bundled font `-` measures lighter than `:`, so Standard's classic order is slightly off. It's kept as agreed.
+
+Updated 2026-11-16: `Ramp.NearestLevel` gives any glyph's level: its own if it's in the ramp, otherwise the level with the nearest measured density, for the Brush (ADR 0049).

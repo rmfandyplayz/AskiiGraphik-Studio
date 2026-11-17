@@ -8,6 +8,7 @@ using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -18,7 +19,7 @@ using Avalonia.Threading;
 
 namespace AskiiArt.App.Tests.Canvas;
 
-/// <summary>The Brush through the real canvas view: its letter, its keys, painting and picking.</summary>
+/// <summary>The Brush group through the real canvas view: its letter, its number keys, painting and picking.</summary>
 public sealed class BrushCanvasTests : IDisposable
 {
     private static readonly CellColor _red = CellColor.FromAnsi(AnsiColor.Red);
@@ -53,23 +54,41 @@ public sealed class BrushCanvasTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheBKey_ChoosesTheBrush()
+    public void TheBKey_ChoosesTheBrush_AndLaterTheBrushUsedLast()
     {
         PressKey(Key.B, PhysicalKey.B, "b");
-
         Assert.IsType<BrushTool>(Canvas.ActiveTool);
+
+        Canvas.SelectTool(ColorBrushTool.BackgroundId);
+        PressKey(Key.E, PhysicalKey.E, "e");
+        PressKey(Key.B, PhysicalKey.B, "b");
+
+        Assert.Equal(ColorBrushTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
     }
 
     [AvaloniaFact]
-    public void Keys1And2_ChooseTheBrushes_WhileTheBrushIsChosen()
+    public void Keys1To3_ChooseTheBrushes_WhileABrushIsChosen()
     {
         ChooseTheBrush();
 
+        PressKey(Key.D3, PhysicalKey.Digit3, "3");
+        Assert.Equal(ColorBrushTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
+
         PressKey(Key.D2, PhysicalKey.Digit2, "2");
-        Assert.Equal(PaintColorTarget.Background, Colors.Target);
+        Assert.Equal(ColorBrushTool.ForegroundId, Canvas.ActiveTool.Descriptor.Id);
 
         PressKey(Key.D1, PhysicalKey.Digit1, "1");
-        Assert.Equal(PaintColorTarget.Foreground, Colors.Target);
+        Assert.Equal(BrushTool.Id, Canvas.ActiveTool.Descriptor.Id);
+    }
+
+    [AvaloniaFact]
+    public void ANumberKey_ChoosesNothing_InAGroupWithoutThatManyTools()
+    {
+        Canvas.SelectTool(EraserTool.Id);
+
+        PressKey(Key.D2, PhysicalKey.Digit2, "2");
+
+        Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
     }
 
     [AvaloniaFact]
@@ -80,15 +99,31 @@ public sealed class BrushCanvasTests : IDisposable
         PressKey(Key.D2, PhysicalKey.Digit2, "2");
 
         Assert.IsType<TextTool>(Canvas.ActiveTool);
-        Assert.Equal(PaintColorTarget.Foreground, Colors.Target);
         Assert.Equal(new Rune('2'), Layer.GetCell(new CellPoint(2, 1)).Glyph);
+    }
+
+    [AvaloniaFact]
+    public void DraggingWithTheBrush_PaintsTheRampThroughTheCanvas_AsOneStep()
+    {
+        Put(new CellPoint(2, 1), Cell.FromGlyph(new Rune(',')));
+        ChooseTheBrush();
+
+        _window.MouseDown(CentreOf(new CellPoint(0, 1)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(3, 1)));
+        _window.MouseUp(CentreOf(new CellPoint(3, 1)), MouseButton.Left);
+
+        // A comma isn't in the ramp, so it's measured in the document's font, and it's far lighter than full.
+        for (var x = 0; x < 4; x++)
+            Assert.Equal(new Rune('@'), Layer.GetCell(new CellPoint(x, 1)).Glyph);
+
+        Assert.True(Layer.GetCell(new CellPoint(4, 1)).IsEmpty);
+        Assert.Equal(2, _canvas.Session.History.UndoCount);
     }
 
     [AvaloniaFact]
     public void DraggingWithTheBGBrush_PaintsBackgroundsThroughTheCanvas_AsOneStep()
     {
-        ChooseTheBrush();
-        Colors.Target = PaintColorTarget.Background;
+        Canvas.SelectTool(ColorBrushTool.BackgroundId);
         Colors.Background = _blue;
 
         _window.MouseDown(CentreOf(new CellPoint(0, 1)), MouseButton.Left);
@@ -106,7 +141,7 @@ public sealed class BrushCanvasTests : IDisposable
     public void AnAltClick_PicksTheColorUp_AndPaintsNothing()
     {
         Put(new CellPoint(5, 2), Cell.FromGlyph(new Rune('x'), _red, CellColor.Unset));
-        ChooseTheBrush();
+        Canvas.SelectTool(ColorBrushTool.ForegroundId);
 
         _window.MouseDown(CentreOf(new CellPoint(5, 2)), MouseButton.Left, RawInputModifiers.Alt);
         _window.MouseUp(CentreOf(new CellPoint(5, 2)), MouseButton.Left, RawInputModifiers.Alt);
@@ -119,7 +154,7 @@ public sealed class BrushCanvasTests : IDisposable
     public void ARightClick_PaintsNothing()
     {
         Put(new CellPoint(1, 1), Cell.FromGlyph(new Rune('x')));
-        ChooseTheBrush();
+        Canvas.SelectTool(ColorBrushTool.ForegroundId);
         Colors.Foreground = _red;
 
         _window.MouseDown(CentreOf(new CellPoint(1, 1)), MouseButton.Right);

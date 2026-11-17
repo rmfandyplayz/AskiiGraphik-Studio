@@ -37,3 +37,5 @@ Updated 2026-11-14: Brush Options is a toolbar, as the owner meant: "FG: [swatch
 Updated 2026-11-14: which colour the windows change moved from `PaintColorsViewModel` into `PaintColors.Target`, because the Brush paints with the same choice (ADR 0043).
 
 Updated 2026-11-16: the Brush Options toolbar is now the Colors toolbar (ADR 0047).
+
+Updated 2026-11-16: choosing the FG Brush or the BG Brush chooses its colour. Choosing a colour switches between those two only while one of them is active; with any other tool, it only chooses the colour (ADR 0049).

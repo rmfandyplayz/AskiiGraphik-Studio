@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Ramps;
 
 using AskiiArt.Core.Tools.Options;
 
@@ -17,8 +18,12 @@ namespace AskiiArt.Core.Tools;
 /// <param name="CellWidthToHeight">
 /// A cell's width divided by its height in the document's font, now. The font can change while the tool is in use.
 /// </param>
+/// <param name="Densities">
+/// How dark each glyph looks in the document's font, now (ADR 0045). Ask each time, as the font can change.
+/// </param>
 public sealed record ToolContext(
     EditingSession Session,
     PaintColors Colors,
     ToolSettings Settings,
-    Func<double> CellWidthToHeight);
+    Func<double> CellWidthToHeight,
+    Func<IGlyphDensityProvider> Densities);

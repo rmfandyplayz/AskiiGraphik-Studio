@@ -177,7 +177,7 @@ Below the smallest size, toolbars hide until there's room again, corners first.
 - At most its parent's length if the parent is fighting for space, otherwise at most 50% longer. It scrolls if that's not enough.
 - It pushes the toolbars of the neighbouring edges out of the way, with a short animation. A floating toolbar's pushes nothing, as a floating toolbar pushes nothing. With no room to push anything into, it's left out until there is.
 - It can't be dragged, but it goes with its parent. During a drag it follows the toolbar, turned and see-through to match, on the side it would land on. During another toolbar's drag it's out of sight, as its parent is. It never moves the canvas (section 8).
-- 2.5d tests it with a sample in the Debug menu. Tool groups arrive in M3.
+- Tool groups use it: it shows the active group's tools while the group has more than one (ADR 0049).
 
 ## 5. Dragging
 
@@ -345,3 +345,5 @@ Updated 2026-11-12: §5 and §5.2 follow the owner's 2.5g mockups. A window drag
 Updated 2026-11-16: the default layout is the owner's new one from step 3.2, with the Tool Options and Colors toolbars (ADR 0047).
 
 Updated 2026-11-16: §4.1, a floating toolbar keeps the corner nearest it in place, from the owner's 3.2 testing notes (ADR 0048).
+
+Updated 2026-11-16: §4.4, tool groups replace the Debug menu's sample sub-toolbar (ADR 0049).

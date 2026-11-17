@@ -548,14 +548,15 @@ public sealed class TextToolTests
     [Fact]
     public void Registry_CreatesATextToolPerSession()
     {
-        var registry = new ToolRegistry([TextTool.Definition]);
+        var registry = new ToolRegistry([TextTool.Definition], [BuiltInToolGroups.Text]);
 
         var context = TestTools.Context(_session);
         var tool = registry.Get(TextTool.Id).Create(context);
 
         Assert.IsType<TextTool>(tool);
         Assert.NotSame(tool, registry.Get(TextTool.Id).Create(context));
-        Assert.Throws<ArgumentException>(() => new ToolRegistry([TextTool.Definition, TextTool.Definition]));
+        Assert.Throws<ArgumentException>(
+            () => new ToolRegistry([TextTool.Definition, TextTool.Definition], [BuiltInToolGroups.Text]));
     }
 
     private static ToolPointerInput PointerAt(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);

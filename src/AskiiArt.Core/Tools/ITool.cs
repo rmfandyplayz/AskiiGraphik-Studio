@@ -10,8 +10,8 @@ namespace AskiiArt.Core.Tools;
 /// <param name="NameKey">The App's resource key for the tool's localized name.</param>
 /// <param name="IconKey">The tool's icon key in the icon lookup (§14.5).</param>
 /// <param name="Category">Groups tools in the tool palette, for example "text" or "paint".</param>
-/// <param name="ShortcutLetter">The capital letter that picks this tool, if any (ADR 0033).</param>
-public sealed record ToolDescriptor(string Id, string NameKey, string IconKey, string Category, char? ShortcutLetter = null);
+/// <remarks>A tool's letter key belongs to its <see cref="ToolGroup"/> (ADR 0049).</remarks>
+public sealed record ToolDescriptor(string Id, string NameKey, string IconKey, string Category);
 
 /// <summary>
 /// A canvas tool (ARCHITECTURE §8.1). One instance edits one <see cref="Editing.EditingSession"/>,

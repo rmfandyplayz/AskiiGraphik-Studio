@@ -80,7 +80,8 @@ public sealed class ToolOptionValues
 
     /// <summary>Chooses <paramref name="value"/> for <paramref name="option"/>.</summary>
     /// <exception cref="ArgumentException">
-    /// <paramref name="option"/> isn't one of the group's, or <paramref name="value"/> isn't one of its choices.
+    /// <paramref name="option"/> isn't one of the group's, or <paramref name="value"/> isn't one of its choices that
+    /// can be chosen.
     /// </exception>
     public void Set(ChoiceToolOption option, string value)
     {

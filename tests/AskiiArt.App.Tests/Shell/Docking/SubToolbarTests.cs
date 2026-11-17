@@ -357,55 +357,15 @@ public sealed class SubToolbarTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheSampleActions_ShowAndHideIt_WithCheckMarks()
+    public void ShowingAnotherOnTheSameToolbar_ReplacesItAtOnce()
     {
         ShowWindow();
-        var registry = new ActionRegistry([new SubToolbarSampleActions(_docking, includeDebugActions: true)]);
-        var onFile = registry.Get(SubToolbarSampleActionIds.OnFile);
-        var onTools = registry.Get(SubToolbarSampleActionIds.OnTools);
+        ShowSubToolbar(File, width: 80);
 
-        onFile.Command.Execute(null);
-        Pump();
-        Assert.Equal(File, _docking.SubToolbarParent);
-        Assert.True(onFile.CheckedState!.IsChecked);
+        ShowSubToolbar(File, width: 160);
 
-        onTools.Command.Execute(null);
-        Pump();
-        Assert.Equal(Tools, _docking.SubToolbarParent);
-        Assert.False(onFile.CheckedState!.IsChecked);
-        Assert.True(onTools.CheckedState!.IsChecked);
-
-        onTools.Command.Execute(null);
-        Pump();
-        Assert.Null(_docking.SubToolbarParent);
-    }
-
-    [AvaloniaFact]
-    public void TheLongSample_IsLongerAndTakesEffectAtOnce()
-    {
-        ShowWindow();
-        var registry = new ActionRegistry([new SubToolbarSampleActions(_docking, includeDebugActions: true)]);
-
-        registry.Get(SubToolbarSampleActionIds.OnFile).Command.Execute(null);
-        Pump();
-        var bar = () =>
-            _host.Children.OfType<ToolbarFrame>().Single(frame => frame.Bar?.Name != File && frame.Bar is StackPanel);
-        var shortButtons = ((StackPanel)bar().Bar!).Children.Count;
-
-        registry.Get(SubToolbarSampleActionIds.Long).Command.Execute(null);
-        Pump();
-
-        Assert.True(registry.Get(SubToolbarSampleActionIds.Long).CheckedState!.IsChecked);
-        Assert.True(((StackPanel)bar().Bar!).Children.Count > shortButtons);
-    }
-
-    [AvaloniaFact]
-    public void TheSampleActions_ExistOnlyInDebugBuilds()
-    {
-        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
-
-        Assert.Empty(new SubToolbarSampleActions(docking, includeDebugActions: false).CreateActions());
-        Assert.NotEmpty(new SubToolbarSampleActions(docking, includeDebugActions: true).CreateActions());
+        Assert.Single(_host.Children.OfType<ToolbarFrame>(), frame => frame.Bar?.Name == Sub);
+        Assert.Equal(160, SubFrame.Bar!.Bounds.Width);
     }
 
     private ToolbarFrame SubFrame => _host.Children.OfType<ToolbarFrame>().Single(frame => frame.Bar?.Name == Sub);
