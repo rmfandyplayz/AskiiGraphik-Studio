@@ -211,6 +211,59 @@ public sealed class ToolOptionsToolbarTests : IDisposable
         Assert.Equal(Orientation.Vertical, Assert.IsType<StackPanel>(options.ItemsPanelRoot).Orientation);
     }
 
+    // Reported after testing 3.5: every other edit to the chosen ramp left the dropdown showing nothing.
+    [AvaloniaFact]
+    public void TheRampDropdown_KeepsShowingTheChosenRamp_AsItsEdited()
+    {
+        ChooseTheBrush();
+        var ramps = _canvas.ToolSettings.Ramps;
+        var mine = ramps.Add("Mine", Ramp.FromText("ab"));
+        _canvas.ToolSettings.For(RampOptions.Group).Set(RampOptions.Ramp, mine.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        foreach (var name in new[] { "Mi", "Min", "Mine 2", "Mine 23" })
+        {
+            ramps.Rename(mine.Id, name);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal((name, "ab"), ShownRamp());
+        }
+
+        foreach (var characters in new[] { "x", "xy", "xyz" })
+        {
+            ramps.Change(mine.Id, Ramp.FromText(characters));
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(("Mine 23", characters), ShownRamp());
+        }
+
+        ramps.Add("Another", Ramp.FromText("cd"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(("Mine 23", "xyz"), ShownRamp());
+    }
+
+    // Reported after testing 3.5: deleting the chosen ramp left the dropdown showing nothing, not Standard.
+    [AvaloniaFact]
+    public void DeletingTheChosenRamp_ShowsStandardInTheDropdown()
+    {
+        ChooseTheBrush();
+        var ramps = _canvas.ToolSettings.Ramps;
+        var mine = ramps.Add("Mine", Ramp.FromText("ab"));
+        _canvas.ToolSettings.For(RampOptions.Group).Set(RampOptions.Ramp, mine.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        ramps.Delete(mine.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal((Strings.RampStandard, BuiltInRamps.Standard.Ramp.ToString()), ShownRamp());
+    }
+
+    // What the Ramp dropdown shows as chosen, while it's closed.
+    private (string? Name, string? Detail) ShownRamp()
+    {
+        var ramp = Visible<ComboBox>().First();
+        var shown = ramp.SelectionBoxItem as ToolOptionChoiceItem;
+        return (shown?.Name, shown?.Detail);
+    }
+
     private void ChooseTheBrush()
     {
         _canvas.ViewModel.SelectTool(BrushTool.Id);

@@ -69,17 +69,17 @@ Checks that New adds an editable ramp and that edits show at once in the list an
 
 ### T3: What can't be used
 
-Checks that a name or characters that can't be used say why in orange, and don't change the ramp.
+Checks that a name or characters that can't be used say why in orange, and don't change the ramp. Edits apply as you type, so typing a letter at a time applies each step that can be used, such as `a` on the way to `a b`; pasting the whole text shows the results below exactly.
 
 **Also on macOS:** No
 
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | With **Dots** chosen, select all of **Characters** and press **Delete** | The box is empty, and below it in orange: "Type at least one character." The list still shows `.oO@` for Dots |
-| 2 | Type `a b` | Orange: "A space can't be a step. To paint spaces where there's no ink, choose Space as the lightest level." The list still shows `.oO@` |
-| 3 | Select all and type `abca` | Orange: "a is in the ramp more than once." The list still shows `.oO@` |
+| 2 | Paste `a b` | Orange: "A space can't be a step. To paint spaces where there's no ink, choose Space as the lightest level." The list still shows `.oO@` |
+| 3 | Select all and paste `abca` | Orange: "a is in the ramp more than once." The list still shows `.oO@` |
 | 4 | Select all and type `.oO@` | The orange message goes |
-| 5 | Select all of **Name** and type `standard` | Orange: "Another ramp already has this name." The list still says **Dots** |
+| 5 | Select all of **Name** and paste `standard` | Orange: "Another ramp already has this name." The list still says **Dots** |
 | 6 | Select all of **Name** and press **Delete** | Orange: "Give the ramp a name." The list still says **Dots** |
 | 7 | Type `Dots` | The orange message goes |
 | 8 | Type `abca` into **Characters** again, then click **Standard** in the list, then **Dots** | The editor shows Dots' good characters `.oO@`, with no orange message: what couldn't be used is dropped |
@@ -125,15 +125,15 @@ Checks that Sort by Darkness reorders the characters by how dark they look in th
 
 ### T7: Generate
 
-Checks that Generate picks evenly spread characters in the document's font and adds them as a new ramp.
+Checks that Generate picks evenly spread characters in the document's font and adds them as a new ramp. Darkness is measured as each system draws the font, so the exact picks can differ a little between Windows and macOS (changed after testing: the picks below are from Windows).
 
 **Also on macOS:** No
 
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | Scroll down the Ramps window to **Generate a ramp** | **Pick from these characters** holds `!"#$%&'()*+,-./0123456789:;<=>?@`… up to `~` (every printable ASCII character but the space). **How many to pick** says 10 |
-| 2 | Click **Generate** | **Generated ramp** is added and chosen, with `._!rcCE8$@` |
-| 3 | Replace **Pick from these characters** with `abcdefghijklmnopqrstuvwxyz`, set **How many to pick** to 5 and click **Generate** | **Generated ramp 2** is added, with `rvleg` |
+| 2 | Click **Generate** | **Generated ramp** is added and chosen: 10 characters from light to dark, ending with `@`. On Windows, `._!rcCE8$@`; on macOS, `.:^|*oE0$@` |
+| 3 | Replace **Pick from these characters** with `abcdefghijklmnopqrstuvwxyz`, set **How many to pick** to 5 and click **Generate** | **Generated ramp 2** is added, ending with `g`. On Windows, `rvleg`; on macOS, `rlveg` |
 | 4 | Click the down arrow on **How many to pick** until it stops, then the up arrow a few times | It stops at 1. Typing `500` and clicking elsewhere gives 100, the most |
 | 5 | Replace **Pick from these characters** with a few spaces and click **Generate** | Orange: "None of these characters shows any ink in this font." No ramp is added |
 
@@ -178,7 +178,8 @@ Checks that your ramps, Tool Options values, each group's last tool and the colo
 | 1 | Press **B** then **1**. Set **Size 5**, **Ramp: Generated ramp**, **Intensity 40%** | The Brush's options show those values |
 | 2 | Press **E** then **2** for the Soft Eraser. Open **Window → Swatches** and choose a red text colour and a blue background | Tool Options shows the Soft Eraser. The colour squares show red and blue |
 | 3 | Close the app with its own close button (on a Mac, **Cmd+Q**). Choose **Don't Save** if it asks | The app closes |
-| 4 | Run the app again | The **Text** tool is chosen. The colour squares still show red and blue |
+| 4 | Run the app again | The **Text** tool is chosen. The colour squares are empty, because the app starts with a monochrome document (changed after testing: this row expected red and blue) |
+| 4a | Choose **File → New**, choose **ANSI (the 16 standard colors)** under **Colors**, and click **OK** | The colour squares show red and blue: they were remembered |
 | 5 | Open **Window → Ramps** | Your ramps are there, in the same order, with their names and characters |
 | 6 | Press **B** | The **Brush** comes back (not the FG or BG Brush), with **Size 5**, **Generated ramp** and **Intensity 40%** |
 | 7 | Press **E** | The **Soft Eraser** comes back, the eraser you used last |

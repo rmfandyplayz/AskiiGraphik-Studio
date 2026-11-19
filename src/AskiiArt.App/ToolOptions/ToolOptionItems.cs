@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Collections.ObjectModel;
 using System.Globalization;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Tools.Options;
@@ -77,18 +78,22 @@ internal sealed class ChoiceToolOptionItem : ToolOptionItem
 
     private readonly ChoiceToolOption _option;
     private readonly ToolOptionValues _values;
-    private IReadOnlyList<ToolOptionChoice> _shownChoices;
+    private readonly ObservableCollection<ToolOptionChoiceItem> _choices;
 
     public ChoiceToolOptionItem(ChoiceToolOption option, ToolOptionValues values)
         : base(option)
     {
         _option = option;
         _values = values;
-        _shownChoices = values.ChoicesOf(option);
-        Choices = CreateChoiceItems();
+        _choices = [.. values.ChoicesOf(option).Select(CreateChoiceItem)];
+        Choices = new ReadOnlyObservableCollection<ToolOptionChoiceItem>(_choices);
     }
 
-    public IReadOnlyList<ToolOptionChoiceItem> Choices { get; private set; }
+    /// <summary>
+    /// The choices, in order. When they change, the items are updated, added and removed in place rather than
+    /// replaced, since a dropdown whose items are all replaced loses its selection.
+    /// </summary>
+    public ReadOnlyObservableCollection<ToolOptionChoiceItem> Choices { get; }
 
     /// <summary>Whether the toolbar shows the choices as a dropdown rather than as a row of buttons.</summary>
     public bool IsDropDown => Choices.Count > MostChoicesAsButtons;
@@ -112,40 +117,94 @@ internal sealed class ChoiceToolOptionItem : ToolOptionItem
     public override void Refresh()
     {
         var choices = _values.ChoicesOf(_option);
-        if (!choices.SequenceEqual(_shownChoices))
-        {
-            _shownChoices = choices;
-            Choices = CreateChoiceItems();
-            OnPropertyChanged(nameof(Choices));
-            OnPropertyChanged(nameof(IsDropDown));
-        }
+        var wasDropDown = IsDropDown;
+        UpdateAndAddChoices(choices);
 
-        foreach (var choice in Choices)
+        foreach (var choice in _choices)
             choice.Refresh();
 
+        // The dropdown moves to the chosen item before a gone one is removed, so it never has nothing to show.
         OnPropertyChanged(nameof(SelectedChoice));
+        RemoveGoneChoices(choices);
+
+        if (IsDropDown != wasDropDown)
+            OnPropertyChanged(nameof(IsDropDown));
     }
 
-    private ToolOptionChoiceItem[] CreateChoiceItems() =>
-        [.. _shownChoices.Select(choice => new ToolOptionChoiceItem(_option, choice, _values))];
+    private ToolOptionChoiceItem CreateChoiceItem(ToolOptionChoice choice) => new(_option, choice, _values);
+
+    // Each choice that's still there keeps its item, updated, and a new one gets an item after the choice before it.
+    private void UpdateAndAddChoices(IReadOnlyList<ToolOptionChoice> choices)
+    {
+        var index = 0;
+        foreach (var choice in choices)
+        {
+            var existing = IndexOfChoice(choice.Value);
+            if (existing < 0)
+            {
+                _choices.Insert(index, CreateChoiceItem(choice));
+                index++;
+                continue;
+            }
+
+            _choices[existing].Update(choice);
+            index = Math.Max(index, existing + 1);
+        }
+    }
+
+    private void RemoveGoneChoices(IReadOnlyList<ToolOptionChoice> choices)
+    {
+        for (var index = _choices.Count - 1; index >= 0; index--)
+        {
+            if (!choices.Any(choice => choice.Value == _choices[index].Value))
+                _choices.RemoveAt(index);
+        }
+
+        // Sources keep their order, so this only moves anything if one reorders its choices.
+        for (var index = 0; index < choices.Count; index++)
+        {
+            var current = IndexOfChoice(choices[index].Value);
+            if (current != index)
+                _choices.Move(current, index);
+        }
+    }
+
+    private int IndexOfChoice(string value)
+    {
+        for (var index = 0; index < _choices.Count; index++)
+        {
+            if (_choices[index].Value == value)
+                return index;
+        }
+
+        return -1;
+    }
 }
 
-/// <summary>One of a choice option's buttons, or one of its dropdown's items.</summary>
+/// <summary>
+/// One of a choice option's buttons, or one of its dropdown's items. Its name and detail can change while it's shown,
+/// as a user ramp's do.
+/// </summary>
 internal sealed class ToolOptionChoiceItem(ChoiceToolOption option, ToolOptionChoice choice, ToolOptionValues values)
     : ObservableObject
 {
-    public string Name { get; } = choice.Name ?? UiText.Get(choice.NameKey);
+    private ToolOptionChoice _choice = choice;
+
+    /// <summary>The value this item chooses, which never changes.</summary>
+    public string Value => _choice.Value;
+
+    public string Name => _choice.Name ?? UiText.Get(_choice.NameKey);
 
     /// <summary>
     /// More about the choice, shown after its name, such as a ramp's characters. Null when there's none.
     /// </summary>
-    public string? Detail => choice.Detail;
+    public string? Detail => _choice.Detail;
 
     /// <summary>Whether there's a <see cref="Detail"/>.</summary>
     public bool HasDetail => Detail is not null;
 
     /// <summary>Whether it can be chosen. One that can't yet is shown greyed out.</summary>
-    public bool IsAvailable => choice.IsAvailable;
+    public bool IsAvailable => _choice.IsAvailable;
 
     /// <summary>
     /// Whether this is the choice. Setting it chooses it. A button can't be unchosen by itself, only by choosing
@@ -153,15 +212,28 @@ internal sealed class ToolOptionChoiceItem(ChoiceToolOption option, ToolOptionCh
     /// </summary>
     public bool IsChosen
     {
-        get => values.Get(option) == choice.Value;
+        get => values.Get(option) == Value;
         set
         {
             if (value)
-                values.Set(option, choice.Value);
+                values.Set(option, Value);
             else
                 OnPropertyChanged();
         }
     }
 
     public void Refresh() => OnPropertyChanged(nameof(IsChosen));
+
+    /// <summary>Shows <paramref name="updated"/>, the same choice with a new name, detail or availability.</summary>
+    public void Update(ToolOptionChoice updated)
+    {
+        if (updated == _choice)
+            return;
+
+        _choice = updated;
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Detail));
+        OnPropertyChanged(nameof(HasDetail));
+        OnPropertyChanged(nameof(IsAvailable));
+    }
 }
