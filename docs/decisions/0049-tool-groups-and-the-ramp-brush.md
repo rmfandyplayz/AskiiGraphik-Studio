@@ -67,3 +67,5 @@ Updated 2026-11-17: the Brush colours every glyph it reaches, not only the ones 
 Updated 2026-11-17: the Ramp option is its own group, `RampOptions.Group`, which the Soft Eraser shares, so the Brush's own group holds Intensity, Softness and Blend mode. The stroke is `RampStroke`, which the Soft Eraser reuses (ADR 0050).
 
 Updated 2026-11-18: each group's last tool is remembered between runs, though the app still starts on the Text tool. The Ramp option lists the user's ramps after the built-in ones, and tools read the chosen ramp through `RampSource` (ADR 0052).
+
+Updated 2026-11-19: the Character Brush joined the group on key 4 (ADR 0053). The FG and BG Brushes' stroke is `FootprintStroke`, which the Character Brush shares.

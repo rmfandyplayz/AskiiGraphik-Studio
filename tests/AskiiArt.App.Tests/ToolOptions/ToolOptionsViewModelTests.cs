@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using System.ComponentModel;
+using System.Text;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.App.ToolOptions;
@@ -323,6 +324,63 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         var choices = Choice(Strings.ToolOptionRamp).Choices;
         Assert.Equal(BuiltInRamps.All.Count, choices.Count);
         Assert.True(choices.Single(choice => choice.Name == Strings.RampStandard).IsChosen);
+    }
+
+    [AvaloniaFact]
+    public void TheCharacterBrush_ShowsTheBrushesTip_ThenItsCharacter()
+    {
+        _canvas.ViewModel.SelectTool(CharacterBrushTool.Id);
+
+        Assert.Equal(["Size", "Shape", "Proportions", Strings.ToolOptionCharacter],
+            _viewModel.Items.Select(item => item.Name));
+        var character = Assert.IsType<GlyphToolOptionItem>(_viewModel.Items[3]);
+        Assert.Equal("#", character.GlyphText);
+        Assert.Contains("0023", character.Tooltip, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public void TheCharacterBox_ShowsTheCharacter_WhenItChanges()
+    {
+        _canvas.ViewModel.SelectTool(CharacterBrushTool.Id);
+        var character = Assert.IsType<GlyphToolOptionItem>(_viewModel.Items[3]);
+        var changed = new List<string?>();
+        character.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        _canvas.ToolSettings.For(CharacterBrushOptions.Group)
+            .Set(CharacterBrushOptions.Character, new Rune('@'));
+
+        Assert.Equal("@", character.GlyphText);
+        Assert.Contains(nameof(GlyphToolOptionItem.GlyphText), changed);
+    }
+
+    [AvaloniaFact]
+    public void ClickingTheCharacterBox_ShowsTheCharactersWindow()
+    {
+        var shown = 0;
+        using var viewModel = new ToolOptionsViewModel(_canvas.ViewModel, () => shown++);
+        _canvas.ViewModel.SelectTool(CharacterBrushTool.Id);
+        var character = Assert.IsType<GlyphToolOptionItem>(viewModel.Items[3]);
+
+        character.ShowPickerCommand.Execute(null);
+
+        Assert.Equal(1, shown);
+        Assert.False(Assert.IsType<GlyphToolOptionItem>(_viewModel.Items[3]).ShowPickerCommand.CanExecute(null));
+    }
+
+    [AvaloniaFact]
+    public void ACharacterAnAsciiDocumentCantHold_IsWarnedAbout()
+    {
+        _canvas.ViewModel.SelectTool(CharacterBrushTool.Id);
+        _canvas.ToolSettings.For(CharacterBrushOptions.Group)
+            .Set(CharacterBrushOptions.Character, new Rune(0x2588));
+        Assert.False(_viewModel.HasWarning);
+
+        _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));
+        Assert.Equal(Strings.ToolWarningCharacterDoesNotFit, _viewModel.Warning);
+
+        _canvas.ToolSettings.For(CharacterBrushOptions.Group)
+            .Set(CharacterBrushOptions.Character, new Rune('#'));
+        Assert.False(_viewModel.HasWarning);
     }
 
     private NumberToolOptionItem Size => (NumberToolOptionItem)_viewModel.Items[0];

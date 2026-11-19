@@ -18,14 +18,21 @@ namespace AskiiArt.App.ToolOptions;
 internal sealed class ToolOptionsViewModel : ObservableObject, IDisposable
 {
     private readonly CanvasViewModel _canvas;
+    private readonly Action? _showGlyphPicker;
     private IReadOnlyList<ToolOptionValues> _values = [];
     private Document? _document;
 
-    public ToolOptionsViewModel(CanvasViewModel canvas)
+    /// <summary>Creates what the toolbar shows for <paramref name="canvas"/>'s chosen tool.</summary>
+    /// <param name="canvas">The canvas, whose chosen tool and document the toolbar follows.</param>
+    /// <param name="showGlyphPicker">
+    /// Shows where a character option's character is chosen, the Characters window (ADR 0053), or null if nowhere.
+    /// </param>
+    public ToolOptionsViewModel(CanvasViewModel canvas, Action? showGlyphPicker = null)
     {
         ArgumentNullException.ThrowIfNull(canvas);
 
         _canvas = canvas;
+        _showGlyphPicker = showGlyphPicker;
         canvas.PropertyChanged += OnCanvasChanged;
         FollowDocument(canvas.Session.Document);
         Update();
@@ -69,8 +76,8 @@ internal sealed class ToolOptionsViewModel : ObservableObject, IDisposable
         UpdateWarning();
     }
 
-    private static IEnumerable<ToolOptionItem> CreateItems(ToolOptionValues values) =>
-        values.Group.Options.Select(option => ToolOptionItem.Create(option, values));
+    private IEnumerable<ToolOptionItem> CreateItems(ToolOptionValues values) =>
+        values.Group.Options.Select(option => ToolOptionItem.Create(option, values, _showGlyphPicker));
 
     private void UpdateWarning()
     {

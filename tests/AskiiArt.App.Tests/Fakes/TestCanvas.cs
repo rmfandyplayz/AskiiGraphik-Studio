@@ -3,6 +3,7 @@
 
 using System.Text;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Painting;
@@ -12,6 +13,7 @@ using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
+using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
@@ -47,6 +49,7 @@ internal sealed class TestCanvas : IDisposable
                 BrushTool.Definition,
                 ColorBrushTool.ForegroundDefinition,
                 ColorBrushTool.BackgroundDefinition,
+                CharacterBrushTool.Definition,
                 EraserTool.Definition,
                 SoftEraserTool.Definition,
                 EraserTool.BackgroundDefinition
@@ -59,10 +62,14 @@ internal sealed class TestCanvas : IDisposable
     public PaintColors Colors { get; } = new();
 
     /// <summary>
-    /// The canvas's tools' option values, such as the brush size, and the ramps, made as the app makes them but with
-    /// nothing saved.
+    /// The canvas's tools' option values, such as the brush size, the ramps and the recent characters, made as the app
+    /// makes them but with nothing saved.
     /// </summary>
-    public ToolSettings ToolSettings { get; } = new(RememberedRamps.CreateLibrary(new FakeAppSettings()));
+    public ToolSettings ToolSettings { get; } =
+        new(RememberedRamps.CreateLibrary(new FakeAppSettings()), new RecentGlyphs());
+
+    /// <summary>The user's character sets, made as the app makes them but with nothing saved.</summary>
+    public GlyphSetLibrary GlyphSets { get; } = RememberedCharacters.CreateLibrary(new FakeAppSettings());
 
     public ActiveDocument ActiveDocument { get; }
 
@@ -96,6 +103,14 @@ internal sealed class TestCanvas : IDisposable
     public RampsPanelViewModel CreateRampsPanelViewModel(IAppShell shell, IRampFileDialogs? dialogs = null) =>
         new(ToolSettings.Ramps, shell, dialogs ?? new FakeRampFileDialogs(),
             () => Densities.GetMeter(Fonts.Resolve(Document.Font)));
+
+    /// <summary>
+    /// What the Characters window shows, for this canvas's character sets. Unless <paramref name="canDraw"/> says
+    /// otherwise, a font can draw every character, so tests don't depend on the fonts.
+    /// </summary>
+    public CharactersPanelViewModel CreateCharactersPanelViewModel(IAppShell shell,
+        IGlyphSetFileDialogs? dialogs = null, Func<Rune, bool>? canDraw = null) =>
+        new(ViewModel, GlyphSets, shell, dialogs ?? new FakeGlyphSetFileDialogs(), canDraw ?? (_ => true));
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>

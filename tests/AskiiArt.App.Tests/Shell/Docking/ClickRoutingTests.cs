@@ -49,14 +49,15 @@ public sealed class ClickRoutingTests : IDisposable
     {
         var layers = new LayersPanelViewModel(_canvas.ActiveDocument);
         var ramps = _canvas.CreateRampsPanelViewModel(_shell);
-        var actions = new ActionRegistry(
-            TestActions.CreateProviders(_canvas, _shell, _dialogs, layers: layers, ramps: ramps));
+        var characters = _canvas.CreateCharactersPanelViewModel(_shell);
+        var actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, layers: layers,
+            ramps: ramps, characters: characters));
         var settings = new FakeAppSettings();
         var builder = new MainWindowBuilder(actions, MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false),
             ShellToolbars.CreateDefault(), _canvas.ViewModel, new WindowTitle(_canvas.ActiveDocument),
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell, _docking, settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), layers, _canvas.CreatePaintColorsViewModel(),
-            _canvas.CreateToolOptionsViewModel(), ramps, new RememberedToolState(settings));
+            _canvas.CreateToolOptionsViewModel(), ramps, characters, new RememberedToolState(settings));
 
         _window = builder.Build(KeyModifiers.Control);
         // Wide enough for the default layout's bottom row, which doesn't fit the smallest window.

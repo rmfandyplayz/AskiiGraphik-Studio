@@ -203,10 +203,11 @@ What a soft background eraser does is still open (§23). If alpha ever becomes r
 
 ### 8.4 Brushes
 
-The Brush group (ADR 0049) has three brushes, which share one size and shape (ADR 0047). Alt+click (Option+click) picks colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
+The Brush group (ADR 0049) has four brushes, which share one size and shape (ADR 0047). Alt+click (Option+click) picks colour up from what the canvas shows, so there's no separate eyedropper tool for colour.
 
 - **Brush** paints a ramp's characters (§7, ADR 0045), along the ramp it shares with the Soft Eraser (§8.3). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. It writes the FG and BG colours on every glyph it reaches, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
 - **FG Brush and BG Brush** (step 2b.3b) paint colour onto cells that are already there: text colour or background. Choosing one chooses the colour the colour windows change, and choosing the other colour while one of them is active switches to the other brush (ADRs 0042, 0043).
+- **Character Brush** (step 3.6, ADR 0053) puts one chosen character in every cell under the tip, hard-edged, in the FG and BG colours as typing gives them. Alt+click picks the character and both colours. The character is chosen in the Characters window, which lists Recent (the 16 characters painted with last), the user's character sets and built-in Unicode blocks. User sets are made from typed characters, edited live, and imported and exported as `.asciicharset` files, as ramps are (§7). A character the document's character set can't hold paints nothing.
 
 ## 9. Commands and undo
 
@@ -310,7 +311,7 @@ Claude Code may build any temporary UI it needs to exercise a feature. Keep it p
 ## 15. Settings and user data
 
 - Settings are stored as versioned JSON in the platform's app-data folder (`%APPDATA%` on Windows, `~/Library/Application Support` on macOS, `$XDG_CONFIG_HOME` or `~/.config` on Linux). Resolve the folder with `Environment.GetFolderPath`; never hardcode paths (ADR 0026).
-- Settings hold preferences, ramps and brush presets, the dock layout, shortcut bindings, recent files and the user font list. *Since 3.5 (ADR 0052):* the user's ramps are saved whenever they change. The tool options, each tool group's last tool and the FG and BG colours are saved when the window closes, as the layout is, and anything saved that no longer applies is ignored.
+- Settings hold preferences, ramps and brush presets, the dock layout, shortcut bindings, recent files and the user font list. *Since 3.5 (ADR 0052):* the user's ramps are saved whenever they change, as are the user's character sets and the recent characters since 3.6 (ADR 0053). The tool options, each tool group's last tool and the FG and BG colours are saved when the window closes, as the layout is, and anything saved that no longer applies is ignored.
 - Corrupt settings never stop the app from starting. Back up the bad file, load defaults, and tell the user.
 
 ## 16. Import and export
@@ -329,7 +330,7 @@ Importers and exporters implement the `IImporter` and `IExporter` interfaces, wh
 
 Text export always flattens the visible layers and writes `\n` line endings by default, with an option for `\r\n` and an option to trim trailing spaces.
 
-Ramps are imported and exported from the Ramps window as `.asciiramp` files, versioned JSON holding one ramp each (ADR 0052).
+Ramps are imported and exported from the Ramps window as `.asciiramp` files, versioned JSON holding one ramp each (ADR 0052). Character sets are imported and exported from the Characters window as `.asciicharset` files, holding one set each in the same way (ADR 0053).
 
 ## 17. Image → ASCII (advanced)
 

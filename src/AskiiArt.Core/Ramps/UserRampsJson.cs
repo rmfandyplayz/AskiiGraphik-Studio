@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AskiiArt.Core.Libraries;
 
 namespace AskiiArt.Core.Ramps;
 
@@ -27,7 +28,7 @@ public static class UserRampsJson
             json.Add(entry);
         }
 
-        return json.ToJsonString(RampJson.WriteOptions);
+        return json.ToJsonString(LibraryJson.WriteOptions);
     }
 
     /// <summary>
@@ -54,7 +55,7 @@ public static class UserRampsJson
         var ramps = new List<UserRamp>();
         foreach (var entry in json.OfType<JsonObject>())
         {
-            if (RampJson.ReadString(entry, IdKey) is { } id && RampJson.TryRead(entry, out var ramp))
+            if (LibraryJson.ReadString(entry, IdKey) is { } id && RampJson.TryRead(entry, out var ramp))
                 ramps.Add(new UserRamp(id, ramp.Name, ramp.Ramp));
         }
 

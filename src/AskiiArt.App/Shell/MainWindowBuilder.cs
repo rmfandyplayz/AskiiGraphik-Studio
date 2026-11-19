@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
@@ -43,6 +44,7 @@ internal sealed class MainWindowBuilder(
     PaintColorsViewModel paintColors,
     ToolOptionsViewModel toolOptions,
     RampsPanelViewModel ramps,
+    CharactersPanelViewModel characters,
     RememberedToolState rememberedTools)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
@@ -91,6 +93,12 @@ internal sealed class MainWindowBuilder(
                 {
                     DataContext = ramps,
                     Buttons = bars.BuildWrapping(ToolbarLayout.CreateRampsPanel()),
+                }),
+            Window(ShellDockingIds.CharactersPanel, Strings.PanelCharacters,
+                () => new CharactersPanelView
+                {
+                    DataContext = characters,
+                    Buttons = bars.BuildWrapping(ToolbarLayout.CreateCharactersPanel()),
                 }),
             .. SampleWindows(Window),
         ],

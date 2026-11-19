@@ -16,7 +16,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
 | Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
 | A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4 |
-| A Window menu between View and Help: Layers, History, Color, Swatches, Ramps, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a, 3.5 |
+| A Window menu between View and Help: Layers, History, Color, Swatches, Ramps, Characters, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a, 3.5, 3.6 |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
 | The window can't go below 1280 × 720, or below what its screen has room for when that's less | `Shell/WindowMinimumSize.cs`, `AppWindowMinWidth`, `AppWindowMinHeight` | 2.1 |
@@ -232,6 +232,23 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Import lists every file it couldn't read in one message, with the reason. Export suggests the ramp's name as the file name | `Ramps/RampsPanelViewModel.cs`, `Ramps/AvaloniaRampFileDialogs.cs` | 3.5 |
 | Tool Options' Ramp dropdown lists the user's ramps after the built-in ones, each with its characters | `Core/Tools/RampStrokes/UserRampChoices.cs` | 3.5 |
 | Ramps are saved as soon as they change. Tool options, each group's last tool and the colours are saved when the window closes, so stopping the app from the IDE forgets that run's changes | `Ramps/RememberedRamps.cs`, `Canvas/RememberedToolState.cs` | 3.5 |
+
+### Character Brush and Characters window (step 3.6, ADR 0053)
+
+| Choice | Where | Step |
+|---|---|---|
+| The Characters window starts closed and opens from Window → Characters, or by clicking the character box in Tool Options. It's one column that scrolls: buttons Duplicate, Delete, Import…, Export…; the set dropdown; a note; the grid of characters; the editor (Name, Characters) for a user set; then "New set from these characters" with a text box and Add | `Characters/CharactersPanelView.axaml`, `Shell/Toolbars/ToolbarLayout.cs`, `AppCharactersPanelPadding` | 3.6 |
+| There's no New button: Add is how a set is made, from the characters typed next to it. The new set is called "New set" (" 2", " 3" when taken) and chosen, and the box empties | `Characters/CharactersPanelViewModel.cs` | 3.6 |
+| The dropdown lists Recent, then the user's sets (oldest first), then the built-in sets. The window opens on Recent when it has characters, and on Basic Latin otherwise | `Characters/CharactersPanelViewModel.cs` | 3.6 |
+| Recent is the 16 characters the Character Brush painted with last, newest first. Choosing a character without painting doesn't add it | `Core/GlyphSets/RecentGlyphs.cs` | 3.6 |
+| In typed characters, spaces and line breaks only separate them, and a repeat counts once. The Characters box keeps what was typed while the set gets the cleaned-up characters | `Core/GlyphSets/GlyphSet.cs`, `Characters/CharactersPanelViewModel.cs` | 3.6 |
+| The grid shows characters as 32 × 32 buttons in the ramp font (`AppRampTextFontFamily`), not the document's font. The chosen character is highlighted blue. Hovering shows its code point, such as "U+0041" | `AppCharacterButtonSize`, `AppChosenCharacterBrush`, `Strings.resx` (`CharacterTooltipFormat`) | 3.6 |
+| In an ASCII document, the characters it can't hold are greyed out and can't be clicked, with a note saying why | `Characters/CharactersPanelView.axaml`, `Strings.resx` (`CharacterSetUnavailableNote`) | 3.6 |
+| A built-in set hides the characters no font on the computer can draw. If none can be drawn, a note says so | `Hosting/AppServices.cs`, `Strings.resx` (`CharacterSetNoneDrawable`) | 3.6 |
+| Recent and built-in sets show read-only, with a note that they can be duplicated. Duplicate and Export copy what the set shows, so a built-in set's copy leaves out the hidden characters. A copy is called "<name> copy" | `Characters/CharactersPanelViewModel.cs`, `Strings.resx` | 3.6 |
+| Delete asks first, then chooses the set that took its place. Import lists every file it couldn't read in one message; Export suggests the set's name as the file name | `Characters/CharactersPanelViewModel.cs` | 3.6 |
+| Tool Options shows the Character Brush's character in a small button after the tip options; clicking it shows the Characters window | `ToolOptions/ToolOptionsToolbar.axaml` | 3.6 |
+| The Character Brush's History step is "Paint", like the other brushes' | `Core/Tools/Brush/CharacterBrushTool.cs` | 3.6 |
 
 ## Ideas to revisit
 

@@ -7,6 +7,7 @@ using System.Text;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.Core.Formats;
+using AskiiArt.Core.Libraries;
 using AskiiArt.Core.Ramps;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -299,7 +300,7 @@ internal sealed class RampsPanelViewModel : ObservableObject
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                failures.Add(Failure(path, Strings.RampFileCouldNotRead));
+                failures.Add(Failure(path, Strings.LibraryFileCouldNotRead));
                 continue;
             }
 
@@ -314,7 +315,7 @@ internal sealed class RampsPanelViewModel : ObservableObject
 
         if (failures.Count > 0)
         {
-            var message = string.Format(CultureInfo.CurrentCulture, Strings.ImportRampsFailedMessageFormat,
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.ImportFailedMessageFormat,
                 string.Join("\n", failures));
             await _shell.ShowMessageAsync(Strings.ImportRampsFailedTitle, message);
         }
@@ -385,8 +386,8 @@ internal sealed class RampsPanelViewModel : ObservableObject
 
         NameProblem = _ramps.CheckName(_name, row.Id) switch
         {
-            RampNameProblem.Blank => Strings.RampNameBlank,
-            RampNameProblem.Taken => Strings.RampNameTaken,
+            LibraryNameProblem.Blank => Strings.RampNameBlank,
+            LibraryNameProblem.Taken => Strings.RampNameTaken,
             _ => null
         };
 
@@ -459,15 +460,15 @@ internal sealed class RampsPanelViewModel : ObservableObject
             check.Glyph.Value.ToString("X4", CultureInfo.InvariantCulture))
     };
 
-    private static string ReasonFor(RampFileProblem problem) => problem switch
+    private static string ReasonFor(LibraryFileProblem problem) => problem switch
     {
-        RampFileProblem.NewerVersion => Strings.RampFileNewerVersion,
-        RampFileProblem.Damaged => Strings.RampFileDamaged,
+        LibraryFileProblem.NewerVersion => Strings.LibraryFileNewerVersion,
+        LibraryFileProblem.Damaged => Strings.LibraryFileDamaged,
         _ => Strings.RampFileNotARampFile
     };
 
     private static string Failure(string path, string reason) =>
-        string.Format(CultureInfo.CurrentCulture, Strings.ImportRampsFailureFormat, Path.GetFileName(path), reason);
+        string.Format(CultureInfo.CurrentCulture, Strings.ImportFailureFormat, Path.GetFileName(path), reason);
 
     // Rows follow the library: renamed or changed ramps update in place, so the list keeps its place while the user
     // types, and added or deleted ones are added or taken away.

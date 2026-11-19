@@ -4,6 +4,7 @@
 using System.Globalization;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
@@ -44,13 +45,15 @@ public sealed class MainWindowTests : IDisposable
     private readonly List<Window> _windows = [];
     private readonly ActionRegistry _actions;
     private readonly RampsPanelViewModel _ramps;
+    private readonly CharactersPanelViewModel _characters;
 
     public MainWindowTests()
     {
         // With the macOS-only actions too, so the macOS menu layout can be built as well.
         _ramps = _canvas.CreateRampsPanelViewModel(_shell);
+        _characters = _canvas.CreateCharactersPanelViewModel(_shell);
         _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true,
-            ramps: _ramps));
+            ramps: _ramps, characters: _characters));
     }
 
     public void Dispose()
@@ -429,14 +432,15 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.Equal(ShellDockingIds.ToolsToolbar, docking.SubToolbarParent);
         var buttons = SubToolbarButtons(window, Strings.ToolForegroundBrush);
-        Assert.Equal([Strings.ToolBrush, Strings.ToolForegroundBrush, Strings.ToolBackgroundBrush],
+        Assert.Equal(
+            [Strings.ToolBrush, Strings.ToolForegroundBrush, Strings.ToolBackgroundBrush, Strings.ToolCharacterBrush],
             buttons.Select(button => button.Content));
-        Assert.Equal([true, false, false], buttons.Select(button => button.IsChecked));
+        Assert.Equal([true, false, false, false], buttons.Select(button => button.IsChecked));
 
         _canvas.ViewModel.SelectTool(ColorBrushTool.BackgroundId);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(buttons, SubToolbarButtons(window, Strings.ToolForegroundBrush));
-        Assert.Equal([false, false, true], buttons.Select(button => button.IsChecked));
+        Assert.Equal([false, false, true, false], buttons.Select(button => button.IsChecked));
 
         _canvas.ViewModel.SelectTool(TextTool.Id);
         Dispatcher.UIThread.RunJobs();
@@ -636,5 +640,5 @@ public sealed class MainWindowTests : IDisposable
             docking ?? new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
             _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel(), _ramps,
-            new RememberedToolState(_settings));
+            _characters, new RememberedToolState(_settings));
 }

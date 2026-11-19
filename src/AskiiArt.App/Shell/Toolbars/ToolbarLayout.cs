@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
@@ -82,6 +83,15 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
         new ActionMenuEntry(RampActionIds.SortByDarkness),
         new ActionMenuEntry(RampActionIds.Import),
         new ActionMenuEntry(RampActionIds.Export)
+    ]);
+
+    /// <summary>The buttons above the Characters window's dropdown (ADR 0053).</summary>
+    public static ToolbarLayout CreateCharactersPanel() => new(
+    [
+        new ActionMenuEntry(CharacterActionIds.Duplicate),
+        new ActionMenuEntry(CharacterActionIds.Delete),
+        new ActionMenuEntry(CharacterActionIds.Import),
+        new ActionMenuEntry(CharacterActionIds.Export)
     ]);
 
     /// <summary>Every action id on this toolbar.</summary>

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Text;
+using AskiiArt.Core.GlyphSets;
+
 namespace AskiiArt.Core.Tools.Options;
 
 /// <summary>
@@ -120,6 +123,30 @@ public sealed record ChoiceToolOption : ToolOption
     /// <see cref="MoreChoicesFrom"/>'s: <see cref="ToolOptionValues.Allows"/> does.
     /// </summary>
     public bool Allows(string value) => Choices.Any(choice => choice.Value == value && choice.IsAvailable);
+}
+
+/// <summary>
+/// A character, such as the one the Character Brush paints (ADR 0053): one that fills a cell and shows ink
+/// (<see cref="GlyphSet.CanHold"/>). The Tool Options toolbar shows it in a box that opens the Characters window.
+/// </summary>
+public sealed record GlyphToolOption : ToolOption
+{
+    /// <summary>Creates a character option.</summary>
+    /// <exception cref="ArgumentException">The default can't be chosen.</exception>
+    public GlyphToolOption(string id, string nameKey, Rune defaultValue)
+        : base(id, nameKey)
+    {
+        if (!Allows(defaultValue))
+            throw new ArgumentException($"U+{defaultValue.Value:X4} can't be chosen.", nameof(defaultValue));
+
+        DefaultValue = defaultValue;
+    }
+
+    /// <summary>The character until the user changes it.</summary>
+    public Rune DefaultValue { get; }
+
+    /// <summary>Whether <paramref name="value"/> can be chosen.</summary>
+    public static bool Allows(Rune value) => GlyphSet.CanHold(value);
 }
 
 /// <summary>

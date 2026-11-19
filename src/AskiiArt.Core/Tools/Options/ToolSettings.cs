@@ -3,14 +3,16 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools.RampStrokes;
 
 namespace AskiiArt.Core.Tools.Options;
 
 /// <summary>
-/// Every tool group's option values, shared by every document as the colours are (ADR 0047), and the ramps the Ramp
-/// option chooses among (ADR 0052). A group's values are made the first time the group is asked for.
+/// Every tool group's option values, shared by every document as the colours are (ADR 0047), the ramps the Ramp
+/// option chooses among (ADR 0052), and the characters the Character Brush painted with last (ADR 0053). A group's
+/// values are made the first time the group is asked for.
 /// </summary>
 public sealed class ToolSettings
 {
@@ -26,18 +28,33 @@ public sealed class ToolSettings
     {
     }
 
-    /// <summary>Creates settings whose Ramp option chooses among <paramref name="ramps"/>.</summary>
+    /// <summary>Creates settings whose Ramp option chooses among <paramref name="ramps"/>, with no recent characters.
+    /// </summary>
     public ToolSettings(RampLibrary ramps)
+        : this(ramps, new RecentGlyphs())
+    {
+    }
+
+    /// <summary>
+    /// Creates settings whose Ramp option chooses among <paramref name="ramps"/>, and whose Character Brush adds the
+    /// characters it paints with to <paramref name="recentGlyphs"/>.
+    /// </summary>
+    public ToolSettings(RampLibrary ramps, RecentGlyphs recentGlyphs)
     {
         ArgumentNullException.ThrowIfNull(ramps);
+        ArgumentNullException.ThrowIfNull(recentGlyphs);
 
         Ramps = ramps;
+        RecentGlyphs = recentGlyphs;
         var userRamps = new UserRampChoices(ramps);
         _choiceSources.Add(userRamps.Id, userRamps);
     }
 
     /// <summary>The built-in ramps and the user's, which the Ramp option chooses among.</summary>
     public RampLibrary Ramps { get; }
+
+    /// <summary>The characters the Character Brush painted with most recently.</summary>
+    public RecentGlyphs RecentGlyphs { get; }
 
     /// <summary>The values of <paramref name="group"/>.</summary>
     /// <exception cref="ArgumentException">Another group with the same id was asked for before.</exception>

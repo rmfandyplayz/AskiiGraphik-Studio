@@ -59,7 +59,9 @@ public sealed class AppTests : IDisposable
         var shell = new FakeAppShell();
         var dialogs = new FakeDocumentDialogs();
         var ramps = _canvas.CreateRampsPanelViewModel(shell);
-        foreach (var provider in TestActions.CreateProviders(_canvas, shell, dialogs, ramps: ramps))
+        var characters = _canvas.CreateCharactersPanelViewModel(shell);
+        var providers = TestActions.CreateProviders(_canvas, shell, dialogs, ramps: ramps, characters: characters);
+        foreach (var provider in providers)
             services.AddSingleton(provider);
 
         services.AddSingleton(_canvas.ViewModel);
@@ -74,6 +76,7 @@ public sealed class AppTests : IDisposable
         services.AddSingleton(_canvas.CreatePaintColorsViewModel());
         services.AddSingleton(_canvas.CreateToolOptionsViewModel());
         services.AddSingleton(ramps);
+        services.AddSingleton(characters);
         services.AddSingleton<RememberedToolState>();
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);

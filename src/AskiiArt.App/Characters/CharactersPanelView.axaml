@@ -1,0 +1,115 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Characters window (ADR 0053): buttons above a dropdown of character sets, the chosen set's characters
+     as a grid of buttons, an editor for a user's set, then a box that makes a new set from what's typed in it.
+     Everything is one column that scrolls. The owner plans to rework this window. The character buttons don't take
+     the keyboard, so the canvas keeps it after a click. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:characters="using:AskiiArt.App.Characters"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Characters.CharactersPanelView"
+             x:DataType="characters:CharactersPanelViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.note">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.problem">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppWarningTextBrush}" />
+    </Style>
+    <Style Selector="TextBox.characters">
+      <Setter Property="FontFamily" Value="{StaticResource AppRampTextFontFamily}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Button.glyph">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Width" Value="{StaticResource AppCharacterButtonSize}" />
+      <Setter Property="Height" Value="{StaticResource AppCharacterButtonSize}" />
+      <Setter Property="Margin" Value="{StaticResource AppCharacterButtonMargin}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontFamily" Value="{StaticResource AppRampTextFontFamily}" />
+      <Setter Property="FontSize" Value="{StaticResource AppCharacterButtonFontSize}" />
+      <Setter Property="ToolTip.ShowOnDisabled" Value="True" />
+    </Style>
+    <Style Selector="Button.glyph.chosen">
+      <Setter Property="Background" Value="{DynamicResource AppChosenCharacterBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{StaticResource AppCharactersPanelPadding}" Spacing="{StaticResource AppSpacingSmall}">
+      <ContentControl x:Name="ButtonsHost" />
+      <ComboBox HorizontalAlignment="Stretch"
+                ItemsSource="{Binding Sets}"
+                SelectedItem="{Binding SelectedSet, Mode=TwoWay}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="characters:GlyphSetRow">
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsRecentSelected}"
+                 Text="{x:Static res:Strings.CharacterSetRecentNote}" />
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsBuiltInSelected}"
+                 Text="{x:Static res:Strings.CharacterSetBuiltInNote}" />
+      <TextBlock Classes="note"
+                 IsVisible="{Binding HasUnavailable}"
+                 Text="{x:Static res:Strings.CharacterSetUnavailableNote}" />
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsRecentEmpty}"
+                 Text="{x:Static res:Strings.CharacterSetRecentEmpty}" />
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsNothingDrawable}"
+                 Text="{x:Static res:Strings.CharacterSetNoneDrawable}" />
+
+      <ItemsControl ItemsSource="{Binding Glyphs}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="characters:GlyphItem">
+            <Button Classes="glyph"
+                    Classes.chosen="{Binding IsChosen}"
+                    Content="{Binding Text}"
+                    Command="{Binding ChooseCommand}"
+                    IsEnabled="{Binding IsAvailable}"
+                    ToolTip.Tip="{Binding Tooltip}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <StackPanel IsVisible="{Binding IsEditable}" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Text="{x:Static res:Strings.CharacterSetNameLabel}" />
+        <TextBox Text="{Binding Name}" />
+        <TextBlock Classes="problem" IsVisible="{Binding HasNameProblem}" Text="{Binding NameProblem}" />
+
+        <TextBlock Text="{x:Static res:Strings.CharacterSetCharactersLabel}" />
+        <TextBox Classes="characters" Text="{Binding Characters}" />
+        <TextBlock Classes="problem"
+                   IsVisible="{Binding HasCharactersProblem}"
+                   Text="{Binding CharactersProblem}" />
+      </StackPanel>
+
+      <Separator />
+      <TextBlock Text="{x:Static res:Strings.CharacterSetNewLabel}" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource AppSpacingSmall}">
+        <TextBox Grid.Column="0" Classes="characters" Text="{Binding NewCharacters}" />
+        <Button Grid.Column="1"
+                VerticalAlignment="Top"
+                Command="{Binding AddCommand}"
+                Content="{x:Static res:Strings.CharacterSetAddButton}" />
+      </Grid>
+      <TextBlock Classes="problem"
+                 IsVisible="{Binding HasNewCharactersProblem}"
+                 Text="{Binding NewCharactersProblem}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -170,6 +170,15 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
             Show(selected, animate: false);
     }
 
+    /// <summary>Opens the window if it's closed, and shows its tab in its group if it's a dock tab.</summary>
+    public void ShowWindow(string windowId)
+    {
+        if (IsWindowOpen(windowId))
+            SelectTab(windowId);
+        else
+            ToggleWindow(windowId);
+    }
+
     /// <summary>Closes the window if it's open, and opens it otherwise.</summary>
     public void ToggleWindow(string windowId)
     {

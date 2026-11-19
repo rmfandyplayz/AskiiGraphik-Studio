@@ -76,6 +76,23 @@ public sealed class DockTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void ShowingAWindow_ShowsItsTab_OrOpensIt_ButNeverClosesIt()
+    {
+        ShowWindow(Dock(Column(Tabs(Layers, History))));
+
+        _docking.ShowWindow(History);
+        _docking.ShowWindow(History);
+        Pump();
+        Assert.True(Frame(History).IsVisible);
+        Assert.Equal(History, _docking.Layout!.GroupHolding(History)!.Selected);
+
+        _docking.ShowWindow(Sample);
+        _docking.ShowWindow(Sample);
+        Pump();
+        Assert.True(_docking.Layout!.IsWindowOpen(Sample));
+    }
+
+    [AvaloniaFact]
     public void DraggingATabThatIsntShowing_FloatsJustThatWindow()
     {
         ShowWindow(Dock(Column(Tabs(Layers, History))));
@@ -242,7 +259,10 @@ public sealed class DockTests : IDisposable
         var items = OpenMenu(Layers);
 
         Assert.Equal(
-            [Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowTurnIntoWidget), Label(Strings.ActionWindowClose)],
+            [
+                Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowTurnIntoWidget),
+                Label(Strings.ActionWindowClose)
+            ],
             items.Select(item => item.Header));
         Assert.True(items[1].Command!.CanExecute(items[1].CommandParameter));
         Frame(Layers).TitleMenu!.Close();
@@ -256,7 +276,8 @@ public sealed class DockTests : IDisposable
 
         var items = OpenMenu(Layers);
 
-        Assert.Equal([Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowClose)], items.Select(item => item.Header));
+        Assert.Equal([Label(Strings.ActionWindowFloat), Label(Strings.ActionWindowClose)],
+            items.Select(item => item.Header));
         Frame(Layers).TitleMenu!.Close();
         Pump();
     }
@@ -325,7 +346,8 @@ public sealed class DockTests : IDisposable
         var rightEdge = new Point(_host.Bounds.Width - 3, 350);
 
         StartDrag(TitleRowOf(Layers), rightEdge);
-        Assert.Contains(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Right == _host.Bounds.Width && view.IsOutlined);
+        Assert.Contains(_host.Children.OfType<DropZoneView>(),
+            view => view.Bounds.Right == _host.Bounds.Width && view.IsOutlined);
         _window.MouseUp(rightEdge, MouseButton.Left);
         Pump();
 
@@ -341,7 +363,8 @@ public sealed class DockTests : IDisposable
 
         StartDrag(TabOf(Layers), rightEdge);
 
-        var strip = Assert.Single(_host.Children.OfType<DropZoneView>(), view => view.Bounds.Left > _host.Bounds.Width / 2);
+        var strip = Assert.Single(_host.Children.OfType<DropZoneView>(),
+            view => view.Bounds.Left > _host.Bounds.Width / 2);
         Assert.Equal(_host.Bounds.Width, strip.Bounds.Right);
         Assert.True(strip.IsOutlined);
         _window.MouseUp(rightEdge, MouseButton.Left);
@@ -504,6 +527,7 @@ public sealed class DockTests : IDisposable
         _windows.Add(_window);
 
         _metrics = ShellLayoutMetrics.FromResources(Application.Current!) with { MotionDuration = TimeSpan.Zero };
+
         ShellWindowEntry Panel(string id) => new(id, TitleOf(id), _metrics.WindowMinHeight, () => new Border(),
             () => WindowMenu.Create(id, _actions, _docking), _actions.Get(WindowFrameActionIds.Close).Command);
 

@@ -1081,12 +1081,12 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>Import Ramps</value>
     <comment>Title of the message saying some ramp files couldn't be imported.</comment>
   </data>
-  <data name="ImportRampsFailedMessageFormat" xml:space="preserve">
+  <data name="ImportFailedMessageFormat" xml:space="preserve">
     <value>These files couldn't be imported:
 {0}</value>
     <comment>{0} is a list of files, one per line, each with the reason.</comment>
   </data>
-  <data name="ImportRampsFailureFormat" xml:space="preserve">
+  <data name="ImportFailureFormat" xml:space="preserve">
     <value>{0}: {1}</value>
     <comment>One line of the list of files that couldn't be imported. {0} is the file's name, {1} the reason.</comment>
   </data>
@@ -1094,15 +1094,15 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>it isn't a ramp file</value>
     <comment>Why a file couldn't be imported.</comment>
   </data>
-  <data name="RampFileNewerVersion" xml:space="preserve">
+  <data name="LibraryFileNewerVersion" xml:space="preserve">
     <value>it's from a newer version of the app</value>
     <comment>Why a file couldn't be imported.</comment>
   </data>
-  <data name="RampFileDamaged" xml:space="preserve">
+  <data name="LibraryFileDamaged" xml:space="preserve">
     <value>it's damaged</value>
     <comment>Why a file couldn't be imported.</comment>
   </data>
-  <data name="RampFileCouldNotRead" xml:space="preserve">
+  <data name="LibraryFileCouldNotRead" xml:space="preserve">
     <value>it couldn't be read</value>
     <comment>Why a file couldn't be imported.</comment>
   </data>
@@ -1113,5 +1113,221 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   <data name="ExportRampFailedMessageFormat" xml:space="preserve">
     <value>The ramp couldn't be saved as {0}. Check that the folder can be written to.</value>
     <comment>{0} is the file's name.</comment>
+  </data>
+  <data name="ToolCharacterBrush" xml:space="preserve">
+    <value>Character Brush</value>
+    <comment>The Brush group's sub-toolbar and the Tools menu: paints one chosen character. Key 4 chooses it while a brush is chosen.</comment>
+  </data>
+  <data name="ToolOptionCharacter" xml:space="preserve">
+    <value>Character</value>
+    <comment>Tool Options toolbar: the character the Character Brush paints. Clicking it opens the Characters window.</comment>
+  </data>
+  <data name="ToolWarningCharacterDoesNotFit" xml:space="preserve">
+    <value>This character needs a Unicode document</value>
+    <comment>Tool Options toolbar: the chosen character can't go in an ASCII document, so the Character Brush won't paint.</comment>
+  </data>
+  <data name="ActionToggleCharacters" xml:space="preserve">
+    <value>_Characters</value>
+    <comment>Window menu: shows or hides the Characters window, where the Character Brush's character is chosen.</comment>
+  </data>
+  <data name="PanelCharacters" xml:space="preserve">
+    <value>Characters</value>
+    <comment>Title of the window where the Character Brush's character is chosen from sets of characters.</comment>
+  </data>
+  <data name="ActionCharacterSetDuplicate" xml:space="preserve">
+    <value>_Duplicate</value>
+    <comment>Characters window: adds a copy of the chosen character set.</comment>
+  </data>
+  <data name="ActionCharacterSetDelete" xml:space="preserve">
+    <value>De_lete</value>
+    <comment>Characters window: deletes the chosen character set, after asking.</comment>
+  </data>
+  <data name="ActionCharacterSetImport" xml:space="preserve">
+    <value>_Import…</value>
+    <comment>Characters window: adds character sets from character set files.</comment>
+  </data>
+  <data name="ActionCharacterSetExport" xml:space="preserve">
+    <value>_Export…</value>
+    <comment>Characters window: saves the chosen character set to a file, to share it.</comment>
+  </data>
+  <data name="CharacterSetRecent" xml:space="preserve">
+    <value>Recent</value>
+    <comment>Characters window: the set of the characters the Character Brush painted with last, newest first.</comment>
+  </data>
+  <data name="CharacterSetRecentEmpty" xml:space="preserve">
+    <value>The characters you paint with show here.</value>
+    <comment>Characters window: shown while Recent is chosen and empty.</comment>
+  </data>
+  <data name="CharacterSetRecentNote" xml:space="preserve">
+    <value>Recent can't be changed. Duplicate it to keep these characters as a set.</value>
+    <comment>Characters window: shown while Recent is chosen.</comment>
+  </data>
+  <data name="CharacterSetBuiltInNote" xml:space="preserve">
+    <value>Built-in sets can't be changed. Duplicate one to edit a copy.</value>
+    <comment>Characters window: shown while a built-in set is chosen.</comment>
+  </data>
+  <data name="CharacterSetUnavailableNote" xml:space="preserve">
+    <value>Greyed-out characters can't go in this document, which is ASCII only.</value>
+    <comment>Characters window: shown while some of the set's characters can't be painted in the document.</comment>
+  </data>
+  <data name="CharacterSetNameLabel" xml:space="preserve">
+    <value>Name</value>
+    <comment>Characters window: label of the chosen set's name.</comment>
+  </data>
+  <data name="CharacterSetCharactersLabel" xml:space="preserve">
+    <value>Characters</value>
+    <comment>Characters window: label of the chosen set's characters, which can be typed or pasted.</comment>
+  </data>
+  <data name="CharacterSetNameBlank" xml:space="preserve">
+    <value>Give the set a name.</value>
+    <comment>Characters window: the name being typed is empty, so the set keeps its old one.</comment>
+  </data>
+  <data name="CharacterSetNameTaken" xml:space="preserve">
+    <value>Another set already has this name.</value>
+    <comment>Characters window: the name being typed is taken, so the set keeps its old one.</comment>
+  </data>
+  <data name="CharacterSetCharactersEmpty" xml:space="preserve">
+    <value>Type at least one character.</value>
+    <comment>Characters window: there are no characters, so the set keeps its old ones, or Add can't make one.</comment>
+  </data>
+  <data name="CharacterSetCharactersUnusableFormat" xml:space="preserve">
+    <value>U+{0} can't be in a set.</value>
+    <comment>Characters window: the characters being typed hold one that can't be painted, such as a tab. {0} is its code in hexadecimal.</comment>
+  </data>
+  <data name="CharacterSetNewLabel" xml:space="preserve">
+    <value>New set from these characters</value>
+    <comment>Characters window: label of the box where characters are typed or pasted to make a new set with Add.</comment>
+  </data>
+  <data name="CharacterSetAddButton" xml:space="preserve">
+    <value>Add</value>
+    <comment>Characters window: makes a new set of the characters typed in the box beside it, and chooses it.</comment>
+  </data>
+  <data name="CharacterSetNewName" xml:space="preserve">
+    <value>New set</value>
+    <comment>Characters window: the name a new set starts with. A number follows it when it's taken.</comment>
+  </data>
+  <data name="CharacterSetCopyNameFormat" xml:space="preserve">
+    <value>{0} copy</value>
+    <comment>Characters window: the name of a duplicated set. {0} is the original's name.</comment>
+  </data>
+  <data name="CharacterTooltipFormat" xml:space="preserve">
+    <value>U+{0}</value>
+    <comment>Characters window: the tooltip of a character. {0} is its code in hexadecimal.</comment>
+  </data>
+  <data name="DeleteCharacterSetTitle" xml:space="preserve">
+    <value>Delete Character Set</value>
+    <comment>Title of the dialog that asks before deleting a character set.</comment>
+  </data>
+  <data name="DeleteCharacterSetMessageFormat" xml:space="preserve">
+    <value>Delete the set “{0}”? This can't be undone.</value>
+    <comment>Asks before deleting a character set. {0} is its name.</comment>
+  </data>
+  <data name="DeleteCharacterSetConfirm" xml:space="preserve">
+    <value>Delete</value>
+    <comment>The button that deletes the character set.</comment>
+  </data>
+  <data name="CharacterSetFileTypeName" xml:space="preserve">
+    <value>Character set files</value>
+    <comment>File picker: the kind of file a character set is shared in.</comment>
+  </data>
+  <data name="ImportCharacterSetsFilePickerTitle" xml:space="preserve">
+    <value>Import Character Sets</value>
+    <comment>Title of the file picker for importing character sets.</comment>
+  </data>
+  <data name="ExportCharacterSetFilePickerTitle" xml:space="preserve">
+    <value>Export Character Set</value>
+    <comment>Title of the file picker for exporting a character set.</comment>
+  </data>
+  <data name="ImportCharacterSetsFailedTitle" xml:space="preserve">
+    <value>Import Character Sets</value>
+    <comment>Title of the message saying some character set files couldn't be imported.</comment>
+  </data>
+  <data name="CharacterSetFileWrongKind" xml:space="preserve">
+    <value>it isn't a character set file</value>
+    <comment>Why a file couldn't be imported.</comment>
+  </data>
+  <data name="ExportCharacterSetFailedTitle" xml:space="preserve">
+    <value>Export Character Set</value>
+    <comment>Title of the message saying a character set couldn't be exported.</comment>
+  </data>
+  <data name="ExportCharacterSetFailedMessageFormat" xml:space="preserve">
+    <value>The set couldn't be saved as {0}. Check that the folder can be written to.</value>
+    <comment>{0} is the file's name.</comment>
+  </data>
+  <data name="CharacterSetBasicLatin" xml:space="preserve">
+    <value>Basic Latin</value>
+    <comment>Characters window: a built-in set, the ASCII letters, digits and punctuation.</comment>
+  </data>
+  <data name="CharacterSetLatin1" xml:space="preserve">
+    <value>Latin-1 Supplement</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetLatinExtendedA" xml:space="preserve">
+    <value>Latin Extended-A</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetGreek" xml:space="preserve">
+    <value>Greek</value>
+    <comment>Characters window: a built-in set, the Greek and Coptic Unicode block.</comment>
+  </data>
+  <data name="CharacterSetCyrillic" xml:space="preserve">
+    <value>Cyrillic</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetPunctuation" xml:space="preserve">
+    <value>Punctuation</value>
+    <comment>Characters window: a built-in set, the General Punctuation Unicode block.</comment>
+  </data>
+  <data name="CharacterSetCurrency" xml:space="preserve">
+    <value>Currency</value>
+    <comment>Characters window: a built-in set, the Currency Symbols Unicode block.</comment>
+  </data>
+  <data name="CharacterSetLetterlike" xml:space="preserve">
+    <value>Letterlike Symbols</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetNumberForms" xml:space="preserve">
+    <value>Number Forms</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetArrows" xml:space="preserve">
+    <value>Arrows</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetMath" xml:space="preserve">
+    <value>Math Operators</value>
+    <comment>Characters window: a built-in set, the Mathematical Operators Unicode block.</comment>
+  </data>
+  <data name="CharacterSetBoxDrawing" xml:space="preserve">
+    <value>Box Drawing</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetBlocks" xml:space="preserve">
+    <value>Blocks and Shades</value>
+    <comment>Characters window: a built-in set, the Block Elements Unicode block.</comment>
+  </data>
+  <data name="CharacterSetGeometric" xml:space="preserve">
+    <value>Geometric Shapes</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetSymbols" xml:space="preserve">
+    <value>Symbols</value>
+    <comment>Characters window: a built-in set, the Miscellaneous Symbols Unicode block.</comment>
+  </data>
+  <data name="CharacterSetDingbats" xml:space="preserve">
+    <value>Dingbats</value>
+    <comment>Characters window: a built-in set, the Unicode block of that name.</comment>
+  </data>
+  <data name="CharacterSetBraille" xml:space="preserve">
+    <value>Braille</value>
+    <comment>Characters window: a built-in set, the Braille Patterns Unicode block.</comment>
+  </data>
+  <data name="CharacterSetLegacyComputing" xml:space="preserve">
+    <value>Legacy Computing</value>
+    <comment>Characters window: a built-in set, the Symbols for Legacy Computing Unicode block.</comment>
+  </data>
+  <data name="CharacterSetNoneDrawable" xml:space="preserve">
+    <value>No font on this computer can draw these characters.</value>
+    <comment>Characters window: shown while a built-in set is chosen of which no installed font has any character.</comment>
   </data>
 </root>

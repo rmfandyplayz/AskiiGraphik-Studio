@@ -11,6 +11,7 @@ internal static class WindowMenuActionIds
     public const string ToggleColor = "window.toggleColor";
     public const string ToggleSwatches = "window.toggleSwatches";
     public const string ToggleRamps = "window.toggleRamps";
+    public const string ToggleCharacters = "window.toggleCharacters";
     public const string ToggleFileToolbar = "window.toggleFileToolbar";
     public const string ToggleToolsToolbar = "window.toggleToolsToolbar";
     public const string ToggleEditToolbar = "window.toggleEditToolbar";

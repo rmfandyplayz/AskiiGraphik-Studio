@@ -1,20 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Libraries;
+
 namespace AskiiArt.Core.Ramps;
-
-/// <summary>Why a name can't be a ramp's (<see cref="RampLibrary.CheckName"/>).</summary>
-public enum RampNameProblem
-{
-    /// <summary>Nothing: the name can be used.</summary>
-    None,
-
-    /// <summary>The name is empty or only spaces.</summary>
-    Blank,
-
-    /// <summary>Another ramp has the name, or one that differs only in case.</summary>
-    Taken
-}
 
 /// <summary>
 /// The ramps the app knows (ADR 0052): the built-in ones, which can't change, then the user's, which they add,
@@ -26,8 +15,7 @@ public sealed class RampLibrary
     /// <summary>What every user ramp's id starts with, so it can't be mistaken for a built-in one.</summary>
     public const string UserRampIdPrefix = "user.";
 
-    private readonly List<UserRamp> _userRamps = [];
-    private readonly HashSet<string> _builtInNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly UserItemList<UserRamp> _userRamps;
 
     /// <summary>Creates a library with no user ramps, whose built-in ramps have no names to keep apart from.</summary>
     public RampLibrary()
@@ -44,24 +32,18 @@ public sealed class RampLibrary
     /// <exception cref="ArgumentException">A user ramp's name is blank.</exception>
     public RampLibrary(IEnumerable<string> builtInNames, IEnumerable<UserRamp> userRamps)
     {
-        ArgumentNullException.ThrowIfNull(builtInNames);
         ArgumentNullException.ThrowIfNull(userRamps);
 
-        foreach (var name in builtInNames)
-            _builtInNames.Add(name.Trim());
-
+        _userRamps = new UserItemList<UserRamp>(UserRampIdPrefix, builtInNames);
         foreach (var ramp in userRamps)
-        {
-            var id = IsFreeUserRampId(ramp.Id) ? ramp.Id : NewId();
-            _userRamps.Add(new UserRamp(id, UniqueName(ThrowIfBlank(ramp.Name)), ramp.Ramp));
-        }
+            _userRamps.Add(new UserRamp(_userRamps.IdFor(ramp.Id), _userRamps.UniqueName(ramp.Name), ramp.Ramp));
     }
 
     /// <summary>Raised after a user ramp is added, renamed, changed or deleted.</summary>
     public event EventHandler? Changed;
 
     /// <summary>The user's ramps, oldest first.</summary>
-    public IReadOnlyList<UserRamp> UserRamps => _userRamps;
+    public IReadOnlyList<UserRamp> UserRamps => _userRamps.Items;
 
     /// <summary>Whether <paramref name="id"/> is a built-in ramp's.</summary>
     public static bool IsBuiltIn(string id) => BuiltInRamps.All.Any(ramp => ramp.Id == id);
@@ -71,46 +53,20 @@ public sealed class RampLibrary
         BuiltInRamps.All.FirstOrDefault(ramp => ramp.Id == id)?.Ramp ?? FindUserRamp(id)?.Ramp;
 
     /// <summary>The user ramp with <paramref name="id"/>, or null when there's none.</summary>
-    public UserRamp? FindUserRamp(string id) => _userRamps.Find(ramp => ramp.Id == id);
+    public UserRamp? FindUserRamp(string id) => _userRamps.Find(id);
 
     /// <summary>
     /// Whether <paramref name="name"/> can be a ramp's. Pass the ramp's own <paramref name="id"/> when renaming it,
     /// so its own name doesn't count as taken.
     /// </summary>
-    public RampNameProblem CheckName(string name, string? id = null)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-
-        var trimmed = name.Trim();
-        if (trimmed.Length == 0)
-            return RampNameProblem.Blank;
-
-        if (_builtInNames.Contains(trimmed))
-            return RampNameProblem.Taken;
-
-        var taken = _userRamps.Any(ramp =>
-            ramp.Id != id && string.Equals(ramp.Name, trimmed, StringComparison.OrdinalIgnoreCase));
-        return taken ? RampNameProblem.Taken : RampNameProblem.None;
-    }
+    public LibraryNameProblem CheckName(string name, string? id = null) => _userRamps.CheckName(name, id);
 
     /// <summary>
     /// <paramref name="name"/> without the spaces around it, if no ramp has it, or else with the first number from 2
     /// up after it that makes it unique, such as "Fine 2".
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="name"/> is blank.</exception>
-    public string UniqueName(string name)
-    {
-        var trimmed = ThrowIfBlank(name);
-        if (CheckName(trimmed) == RampNameProblem.None)
-            return trimmed;
-
-        for (var number = 2; ; number++)
-        {
-            var numbered = $"{trimmed} {number}";
-            if (CheckName(numbered) == RampNameProblem.None)
-                return numbered;
-        }
-    }
+    public string UniqueName(string name) => _userRamps.UniqueName(name);
 
     /// <summary>
     /// Adds <paramref name="ramp"/> as the newest user ramp, named <paramref name="name"/>, or the
@@ -121,7 +77,7 @@ public sealed class RampLibrary
     {
         ArgumentNullException.ThrowIfNull(ramp);
 
-        var added = new UserRamp(NewId(), UniqueName(name), ramp);
+        var added = new UserRamp(_userRamps.NewId(), UniqueName(name), ramp);
         _userRamps.Add(added);
         Changed?.Invoke(this, EventArgs.Empty);
         return added;
@@ -134,9 +90,8 @@ public sealed class RampLibrary
     /// </exception>
     public void Rename(string id, string name)
     {
-        var index = IndexOf(id);
-        if (CheckName(name, id) is not RampNameProblem.None and var problem)
-            throw new ArgumentException($"'{name}' can't be a ramp's name: {problem}.", nameof(name));
+        var index = _userRamps.IndexOf(id);
+        _userRamps.ThrowIfCantBeNamed(id, name);
 
         var trimmed = name.Trim();
         if (_userRamps[index].Name == trimmed)
@@ -152,7 +107,7 @@ public sealed class RampLibrary
     {
         ArgumentNullException.ThrowIfNull(ramp);
 
-        var index = IndexOf(id);
+        var index = _userRamps.IndexOf(id);
         if (_userRamps[index].Ramp.Equals(ramp))
             return;
 
@@ -164,35 +119,7 @@ public sealed class RampLibrary
     /// <exception cref="ArgumentException">There's no user ramp with <paramref name="id"/>.</exception>
     public void Delete(string id)
     {
-        _userRamps.RemoveAt(IndexOf(id));
+        _userRamps.RemoveAt(_userRamps.IndexOf(id));
         Changed?.Invoke(this, EventArgs.Empty);
-    }
-
-    private int IndexOf(string id)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-
-        var index = _userRamps.FindIndex(ramp => ramp.Id == id);
-        if (index < 0)
-            throw new ArgumentException($"There's no user ramp '{id}'.", nameof(id));
-
-        return index;
-    }
-
-    private bool IsFreeUserRampId(string id) =>
-        id.Length > UserRampIdPrefix.Length && id.StartsWith(UserRampIdPrefix, StringComparison.Ordinal)
-        && FindUserRamp(id) is null;
-
-    private static string NewId() => UserRampIdPrefix + Guid.NewGuid().ToString("N");
-
-    private static string ThrowIfBlank(string name)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-
-        var trimmed = name.Trim();
-        if (trimmed.Length == 0)
-            throw new ArgumentException("A ramp's name can't be blank.", nameof(name));
-
-        return trimmed;
     }
 }

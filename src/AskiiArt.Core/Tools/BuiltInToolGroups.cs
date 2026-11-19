@@ -20,9 +20,11 @@ public static class BuiltInToolGroups
     /// <summary>The Text tool, on T.</summary>
     public static ToolGroup Text { get; } = new("askiiart.group.text", "ToolText", "tool.text", 'T', [TextTool.Id]);
 
-    /// <summary>The Brush, which paints ramps, then the FG Brush and the BG Brush, on B.</summary>
+    /// <summary>
+    /// The Brush, which paints ramps, then the FG Brush, the BG Brush and the Character Brush (ADR 0053), on B.
+    /// </summary>
     public static ToolGroup Brush { get; } = new("askiiart.group.brush", "ToolGroupBrush", "tool.brush", 'B',
-        [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId]);
+        [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId, CharacterBrushTool.Id]);
 
     /// <summary>The Eraser, then the Soft Eraser and the BG Eraser, on E (ADR 0050).</summary>
     public static ToolGroup Eraser { get; } = new("askiiart.group.eraser", "ToolGroupEraser", "tool.eraser", 'E',

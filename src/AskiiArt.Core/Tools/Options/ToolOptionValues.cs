@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace AskiiArt.Core.Tools.Options;
@@ -13,6 +14,7 @@ public sealed class ToolOptionValues
 {
     private readonly Dictionary<string, int> _numbers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _choices = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Rune> _glyphs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IToolOptionChoiceSource> _moreChoices = new(StringComparer.Ordinal);
 
     /// <summary>Creates values for <paramref name="group"/>, each at its default, with only the options' own choices.
@@ -53,6 +55,9 @@ public sealed class ToolOptionValues
                         _moreChoices.Add(choice.Id, source);
 
                     break;
+                case GlyphToolOption glyph:
+                    _glyphs.Add(glyph.Id, glyph.DefaultValue);
+                    break;
                 default:
                     throw new ArgumentException($"'{option.Id}' is an unknown kind of option.", nameof(group));
             }
@@ -89,6 +94,32 @@ public sealed class ToolOptionValues
     {
         ThrowIfNotInGroup(option);
         return _choices[option.Id];
+    }
+
+    /// <summary>The value of <paramref name="option"/>.</summary>
+    /// <exception cref="ArgumentException"><paramref name="option"/> isn't one of the group's.</exception>
+    public Rune Get(GlyphToolOption option)
+    {
+        ThrowIfNotInGroup(option);
+        return _glyphs[option.Id];
+    }
+
+    /// <summary>Sets <paramref name="option"/> to <paramref name="value"/>.</summary>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="option"/> isn't one of the group's, or <paramref name="value"/> can't be chosen
+    /// (<see cref="GlyphToolOption.Allows"/>).
+    /// </exception>
+    public void Set(GlyphToolOption option, Rune value)
+    {
+        ThrowIfNotInGroup(option);
+        if (!GlyphToolOption.Allows(value))
+            throw new ArgumentException($"U+{value.Value:X4} can't be chosen for '{option.Id}'.", nameof(value));
+
+        if (_glyphs[option.Id] == value)
+            return;
+
+        _glyphs[option.Id] = value;
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -154,7 +185,7 @@ public sealed class ToolOptionValues
 
     /// <summary>
     /// The values as JSON, an object with a property for each option: a number for a number, and a string for a
-    /// choice. <see cref="ToolSettings"/> saves these.
+    /// choice or a character. <see cref="ToolSettings"/> saves these.
     /// </summary>
     internal JsonObject ToJson()
     {
@@ -165,6 +196,7 @@ public sealed class ToolOptionValues
             {
                 NumberToolOption number => JsonValue.Create(_numbers[number.Id]),
                 ChoiceToolOption choice => JsonValue.Create(_choices[choice.Id]),
+                GlyphToolOption glyph => JsonValue.Create(_glyphs[glyph.Id].ToString()),
                 _ => null
             };
         }
@@ -192,8 +224,24 @@ public sealed class ToolOptionValues
                 case ChoiceToolOption choice when saved.TryGetValue(out string? value) && Allows(choice, value):
                     Set(choice, value);
                     break;
+                case GlyphToolOption glyph when saved.TryGetValue(out string? text) && OnlyGlyph(text) is { } value
+                    && GlyphToolOption.Allows(value):
+                    Set(glyph, value);
+                    break;
             }
         }
+    }
+
+    // The one character in text, or null when there's more or less than one.
+    private static Rune? OnlyGlyph(string? text)
+    {
+        if (string.IsNullOrEmpty(text) || Rune.DecodeFromUtf16(text, out var glyph, out var length) != 0
+            || length != text.Length)
+        {
+            return null;
+        }
+
+        return glyph;
     }
 
     // A choice that's gone is no use to anyone, so its option goes back to its default.

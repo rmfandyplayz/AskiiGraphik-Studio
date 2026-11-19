@@ -342,7 +342,7 @@ public sealed class RampsPanelViewModelTests : IDisposable
         Assert.Contains("notes.txt", message, StringComparison.Ordinal);
         Assert.Contains(Strings.RampFileNotARampFile, message, StringComparison.Ordinal);
         Assert.Contains("missing" + RampFile.Extension, message, StringComparison.Ordinal);
-        Assert.Contains(Strings.RampFileCouldNotRead, message, StringComparison.Ordinal);
+        Assert.Contains(Strings.LibraryFileCouldNotRead, message, StringComparison.Ordinal);
     }
 
     [Fact]

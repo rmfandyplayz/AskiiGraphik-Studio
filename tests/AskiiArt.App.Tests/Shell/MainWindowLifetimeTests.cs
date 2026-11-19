@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
@@ -31,12 +32,14 @@ public sealed class MainWindowLifetimeTests : IDisposable
     private readonly List<MainWindowLifetime> _lifetimes = [];
     private readonly ActionRegistry _actions;
     private readonly RampsPanelViewModel _ramps;
+    private readonly CharactersPanelViewModel _characters;
 
     public MainWindowLifetimeTests()
     {
         _ramps = _canvas.CreateRampsPanelViewModel(_shell);
+        _characters = _canvas.CreateCharactersPanelViewModel(_shell);
         _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true,
-            ramps: _ramps));
+            ramps: _ramps, characters: _characters));
     }
 
     public void Dispose()
@@ -124,7 +127,7 @@ public sealed class MainWindowLifetimeTests : IDisposable
             new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
             _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel(), _ramps,
-            new RememberedToolState(_settings));
+            _characters, new RememberedToolState(_settings));
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);
         _lifetimes.Add(lifetime);

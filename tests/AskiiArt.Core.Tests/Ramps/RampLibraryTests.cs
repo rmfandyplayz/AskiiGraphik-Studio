@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Libraries;
 using AskiiArt.Core.Ramps;
 
 namespace AskiiArt.Core.Tests.Ramps;
@@ -72,12 +73,12 @@ public sealed class RampLibraryTests
     }
 
     [Theory]
-    [InlineData("", RampNameProblem.Blank)]
-    [InlineData("STANDARD", RampNameProblem.Taken)]
-    [InlineData("Other", RampNameProblem.Taken)]
-    [InlineData("Mine", RampNameProblem.None)]
-    [InlineData(" Renamed ", RampNameProblem.None)]
-    public void CheckName_SaysWhyANameCantBeTheRamps(string name, RampNameProblem expected)
+    [InlineData("", LibraryNameProblem.Blank)]
+    [InlineData("STANDARD", LibraryNameProblem.Taken)]
+    [InlineData("Other", LibraryNameProblem.Taken)]
+    [InlineData("Mine", LibraryNameProblem.None)]
+    [InlineData(" Renamed ", LibraryNameProblem.None)]
+    public void CheckName_SaysWhyANameCantBeTheRamps(string name, LibraryNameProblem expected)
     {
         var mine = _library.Add("Mine", _dots);
         _library.Add("Other", _hashes);

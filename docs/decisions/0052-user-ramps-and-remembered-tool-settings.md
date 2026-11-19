@@ -30,3 +30,5 @@ Step 3.5 adds the Ramps window: view, edit, preview, sort, generate, add, duplic
 - Tool state is only saved when the app closes normally. Stopping it from Rider skips that.
 - The ramp chosen for the Brush and Soft Eraser survives renames and edits, and falls back to Standard when deleted.
 - `CellColorText` now holds the colour names for documents and settings alike.
+
+Updated 2026-11-19: the id and name rules and the file header now live in the shared `UserItemList` and `LibraryJson`, and `RampNameProblem` and `RampFileProblem` became `LibraryNameProblem` and `LibraryFileProblem`, which character sets use too (ADR 0053).

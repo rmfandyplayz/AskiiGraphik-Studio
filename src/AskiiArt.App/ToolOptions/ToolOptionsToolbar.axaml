@@ -3,7 +3,8 @@
 <!-- Edited with Claude Code (Anthropic). -->
 <!-- Placeholder Tool Options toolbar (steps 3.2 and 3.3): each option of the chosen tool, built from the tool's options
      as data (ADR 0047), then a warning when the tool can't be used. A number is a slider with its value beside it,
-     and a choice is a row of buttons, or a dropdown when it has more than two. The root is a StackPanel so that a
+     a choice is a row of buttons, or a dropdown when it has more than two, and a character is a button showing it,
+     which opens the Characters window (ADR 0053). The root is a StackPanel so that a
      vertical toolbar can turn it, and the options follow it. Nothing here takes the keyboard, so the canvas keeps it
      and [ and ] still work after a click. -->
 <StackPanel xmlns="https://github.com/avaloniaui"
@@ -57,6 +58,17 @@
                 TickFrequency="1"
                 IsSnapToTickEnabled="True" />
         <TextBlock Text="{Binding ValueText}" MinWidth="{StaticResource AppToolOptionsValueWidth}" />
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate DataType="options:GlyphToolOptionItem">
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">
+        <TextBlock Text="{Binding Name}" />
+        <Button Focusable="False"
+                VerticalAlignment="Center"
+                FontFamily="{StaticResource AppRampTextFontFamily}"
+                Content="{Binding GlyphText}"
+                Command="{Binding ShowPickerCommand}"
+                ToolTip.Tip="{Binding Tooltip}" />
       </StackPanel>
     </DataTemplate>
     <DataTemplate DataType="options:ChoiceToolOptionItem">

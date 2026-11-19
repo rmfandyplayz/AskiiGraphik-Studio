@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Text;
 using AskiiArt.Core.Tools.Options;
 
 namespace AskiiArt.Core.Tests.Tools.Options;
@@ -20,8 +21,8 @@ public sealed class ToolOptionTests
     [InlineData(1, 10, 11)]
     public void ANumberOption_NeedsARange_ThatHoldsItsDefault(int minimum, int maximum, int defaultValue)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(
-            () => new NumberToolOption("n", "Name", minimum, maximum, defaultValue));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new NumberToolOption("n", "Name", minimum, maximum, defaultValue));
     }
 
     [Fact]
@@ -246,6 +247,63 @@ public sealed class ToolOptionTests
         settings.Restore("{\"test.group\": {\"size\": 99}}");
 
         Assert.Equal(10, settings.For(_group).Get(_size));
+    }
+
+    [Fact]
+    public void ACharacterOption_NeedsADefaultASetCanHold()
+    {
+        Assert.Throws<ArgumentException>(() => new GlyphToolOption("glyph", "Glyph", new Rune(' ')));
+        Assert.Throws<ArgumentException>(() => new GlyphToolOption("glyph", "Glyph", new Rune(0x0007)));
+    }
+
+    [Fact]
+    public void ACharacter_StartsAtItsDefault_AndTakesOnlyOnesASetCanHold()
+    {
+        var glyph = new GlyphToolOption("glyph", "Glyph", new Rune('#'));
+        var values = new ToolOptionValues(new ToolOptionGroup("test.glyphs", [glyph]));
+        var changes = 0;
+        values.Changed += (_, _) => changes++;
+
+        Assert.Equal(new Rune('#'), values.Get(glyph));
+        values.Set(glyph, new Rune(0x2588));
+        values.Set(glyph, new Rune(0x2588));
+        Assert.Throws<ArgumentException>(() => values.Set(glyph, new Rune(' ')));
+
+        Assert.Equal(new Rune(0x2588), values.Get(glyph));
+        Assert.Equal(1, changes);
+    }
+
+    // The saved value is JSON text, so "\\u2588" is the escape the JSON holds.
+    [Theory]
+    [InlineData("\\u2588", 0x2588)]
+    [InlineData("\\ud83d\\ude42", 0x1F642)]
+    [InlineData("ab", '#')]
+    [InlineData(" ", '#')]
+    [InlineData("", '#')]
+    [InlineData("5", '5')]
+    public void ASavedCharacter_IsRestored_OnlyIfItsOneASetCanHold(string saved, int expected)
+    {
+        var glyph = new GlyphToolOption("glyph", "Glyph", new Rune('#'));
+        var group = new ToolOptionGroup("test.glyphs", [glyph]);
+        var settings = new ToolSettings();
+
+        settings.Restore("{\"test.glyphs\": {\"glyph\": \"" + saved + "\"}}");
+
+        Assert.Equal(new Rune(expected), settings.For(group).Get(glyph));
+    }
+
+    [Fact]
+    public void ACharacter_IsSavedAndRestored()
+    {
+        var glyph = new GlyphToolOption("glyph", "Glyph", new Rune('#'));
+        var group = new ToolOptionGroup("test.glyphs", [glyph]);
+        var saved = new ToolSettings();
+        saved.For(group).Set(glyph, new Rune(0x1F642));
+
+        var restored = new ToolSettings();
+        restored.Restore(saved.ToJson());
+
+        Assert.Equal(new Rune(0x1F642), restored.For(group).Get(glyph));
     }
 
     private static (ToolOptionValues Values, ChoiceToolOption Option, FakeChoiceSource Source) ValuesWithASource()

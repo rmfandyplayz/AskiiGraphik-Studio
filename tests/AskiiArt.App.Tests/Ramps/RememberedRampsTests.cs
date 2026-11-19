@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Ramps;
 using AskiiArt.App.Tests.Fakes;
+using AskiiArt.Core.Libraries;
 using AskiiArt.Core.Ramps;
 
 namespace AskiiArt.App.Tests.Ramps;
@@ -30,7 +31,7 @@ public sealed class RememberedRampsTests
     {
         var library = RememberedRamps.CreateLibrary(_settings);
 
-        Assert.Equal(RampNameProblem.Taken, library.CheckName("Standard"));
+        Assert.Equal(LibraryNameProblem.Taken, library.CheckName("Standard"));
         Assert.Equal("Standard 2", library.Add("Standard", Ramp.FromText("ab")).Name);
     }
 

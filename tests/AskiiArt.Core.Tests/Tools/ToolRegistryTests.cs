@@ -18,6 +18,7 @@ public sealed class ToolRegistryTests
         BrushTool.Definition,
         ColorBrushTool.ForegroundDefinition,
         ColorBrushTool.BackgroundDefinition,
+        CharacterBrushTool.Definition,
         EraserTool.Definition,
         SoftEraserTool.Definition,
         EraserTool.BackgroundDefinition,
@@ -30,7 +31,7 @@ public sealed class ToolRegistryTests
 
         Assert.Equal(["V", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
         Assert.Equal(
-            [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId],
+            [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId, CharacterBrushTool.Id],
             registry.GroupOf(ColorBrushTool.BackgroundId).ToolIds);
         Assert.Equal(
             [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId],

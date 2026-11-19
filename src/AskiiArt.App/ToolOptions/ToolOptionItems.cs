@@ -6,6 +6,7 @@ using System.Globalization;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Tools.Options;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.ToolOptions;
 
@@ -21,13 +22,18 @@ internal abstract class ToolOptionItem : ObservableObject
     public string Name { get; }
 
     /// <summary>Makes an item for <paramref name="option"/>, which changes <paramref name="values"/>.</summary>
-    public static ToolOptionItem Create(ToolOption option, ToolOptionValues values) => option switch
-    {
-        NumberToolOption number => new NumberToolOptionItem(number, values),
-        ChoiceToolOption choice => new ChoiceToolOptionItem(choice, values),
-        _ => throw new ArgumentException($"The toolbar can't show '{option.Id}', an unknown kind of option.",
-            nameof(option))
-    };
+    /// <param name="option">The option.</param>
+    /// <param name="values">Its group's values.</param>
+    /// <param name="showGlyphPicker">Shows where a character option's character is chosen, or null if nowhere.</param>
+    public static ToolOptionItem Create(ToolOption option, ToolOptionValues values, Action? showGlyphPicker) =>
+        option switch
+        {
+            NumberToolOption number => new NumberToolOptionItem(number, values),
+            ChoiceToolOption choice => new ChoiceToolOptionItem(choice, values),
+            GlyphToolOption glyph => new GlyphToolOptionItem(glyph, values, showGlyphPicker),
+            _ => throw new ArgumentException($"The toolbar can't show '{option.Id}', an unknown kind of option.",
+                nameof(option))
+        };
 
     /// <summary>Says that the value may have changed.</summary>
     public abstract void Refresh();
@@ -64,6 +70,31 @@ internal sealed class NumberToolOptionItem(NumberToolOption option, ToolOptionVa
     {
         OnPropertyChanged(nameof(Value));
         OnPropertyChanged(nameof(ValueText));
+    }
+}
+
+/// <summary>
+/// A character, such as the Character Brush's (ADR 0053), shown in a box. Clicking the box shows where it's chosen: the
+/// Characters window.
+/// </summary>
+internal sealed class GlyphToolOptionItem(GlyphToolOption option, ToolOptionValues values, Action? showPicker)
+    : ToolOptionItem(option)
+{
+    /// <summary>The character.</summary>
+    public string GlyphText => values.Get(option).ToString();
+
+    /// <summary>The character's code point, such as "U+0041".</summary>
+    public string Tooltip => string.Format(CultureInfo.CurrentCulture, Strings.CharacterTooltipFormat,
+        values.Get(option).Value.ToString("X4", CultureInfo.InvariantCulture));
+
+    /// <summary>Shows where the character is chosen. It can't run when there's nowhere.</summary>
+    public IRelayCommand ShowPickerCommand { get; } =
+        new RelayCommand(() => showPicker?.Invoke(), () => showPicker is not null);
+
+    public override void Refresh()
+    {
+        OnPropertyChanged(nameof(GlyphText));
+        OnPropertyChanged(nameof(Tooltip));
     }
 }
 

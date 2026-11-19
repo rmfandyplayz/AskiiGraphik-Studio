@@ -51,15 +51,8 @@ public sealed class ColorBrushTool : ITool
     // The cell a pick last read.
     private CellPoint _lastPickedCell;
 
-    // A stroke's settings, taken when it starts, so the stroke paints one colour with one tip throughout.
-    private CoalescingGroup? _stroke;
-    private CellColor _strokeColor;
-    private BrushFootprint? _strokeFootprint;
-    private CellPoint _lastTopLeft;
-
-    // Where the history stood after this stroke's last edit, or null before its first. Esc only takes
-    // back the newest step if it's still this stroke's.
-    private int? _undoCountAfterLastEdit;
+    // The stroke keeps the colour and tip it starts with.
+    private FootprintStroke? _stroke;
 
     // The colour a pick replaces, which Esc gives back.
     private CellColor _colorBeforePick;
@@ -113,7 +106,7 @@ public sealed class ColorBrushTool : ITool
     {
         get
         {
-            var footprint = _strokeFootprint ?? _tip.Footprint;
+            var footprint = _stroke?.Footprint ?? _tip.Footprint;
             if (_overlay.Footprint != footprint)
                 _overlay = new ToolOverlay(Caret: null, footprint);
 
@@ -138,14 +131,11 @@ public sealed class ColorBrushTool : ITool
             return;
 
         _gesture = Gesture.Painting;
-        _stroke = new CoalescingGroup();
-        _strokeColor = _target == PaintColorTarget.Foreground
+        var color = _target == PaintColorTarget.Foreground
             ? _colors.ForegroundIn(colorMode)
             : _colors.BackgroundIn(colorMode);
-        _strokeFootprint = _tip.Footprint;
-        _undoCountAfterLastEdit = null;
-        _lastTopLeft = _strokeFootprint.TopLeftAt(input);
-        Paint(_lastTopLeft, _lastTopLeft);
+        _stroke = new FootprintStroke(_session, _tip.Footprint, cell => Paint(cell, color), UndoStepNames.Paint,
+            input);
     }
 
     /// <summary>
@@ -158,14 +148,9 @@ public sealed class ColorBrushTool : ITool
         {
             Pick(input.Cell);
         }
-        else if (_gesture == Gesture.Painting && _strokeFootprint is not null)
+        else if (_gesture == Gesture.Painting)
         {
-            var topLeft = _strokeFootprint.TopLeftAt(input);
-            if (topLeft == _lastTopLeft)
-                return;
-
-            Paint(_lastTopLeft, topLeft);
-            _lastTopLeft = topLeft;
+            _stroke?.MoveTo(input);
         }
     }
 
@@ -181,8 +166,8 @@ public sealed class ColorBrushTool : ITool
         if (key != ToolKey.Escape || _gesture == Gesture.None)
             return false;
 
-        if (_gesture == Gesture.Painting && _undoCountAfterLastEdit == _session.History.UndoCount)
-            _session.History.CancelNewestStep();
+        if (_gesture == Gesture.Painting)
+            _stroke?.Cancel();
         else if (_gesture == Gesture.Picking)
             SetColor(_colorBeforePick);
 
@@ -217,10 +202,9 @@ public sealed class ColorBrushTool : ITool
 
     private void EndGesture()
     {
-        var hadStroke = _strokeFootprint is not null;
+        var hadStroke = _stroke is not null;
         _gesture = Gesture.None;
         _stroke = null;
-        _strokeFootprint = null;
 
         // A size changed during the stroke shows only now.
         if (hadStroke && _overlay.Footprint != _tip.Footprint)
@@ -259,28 +243,11 @@ public sealed class ColorBrushTool : ITool
             _colors.Background = color;
     }
 
-    private void Paint(CellPoint fromTopLeft, CellPoint toTopLeft)
+    private Cell Paint(Cell cell, CellColor color)
     {
-        // Undoing during a stroke can take away the layer it started on, or lock it.
-        if (!_session.CanEditActiveLayer || _strokeFootprint is null)
-            return;
+        if (_target == PaintColorTarget.Background)
+            return cell.WithBackground(color);
 
-        var document = _session.Document;
-        var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(document, layer.Id);
-        foreach (var point in FootprintSweep.Cover(_strokeFootprint, fromTopLeft, toTopLeft, document.CanvasSize))
-        {
-            var cell = layer.GetCell(point);
-            if (_target == PaintColorTarget.Background)
-                cells.Set(point, cell.WithBackground(_strokeColor));
-            else if (cell.HasGlyph)
-                cells.Set(point, cell.WithForeground(_strokeColor));
-        }
-
-        if (cells.Build(UndoStepNames.Paint) is not { } command)
-            return;
-
-        _session.History.Execute(command, _stroke);
-        _undoCountAfterLastEdit = _session.History.UndoCount;
+        return cell.HasGlyph ? cell.WithForeground(color) : cell;
     }
 }

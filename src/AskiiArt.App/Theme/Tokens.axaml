@@ -32,6 +32,7 @@
       <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FFDCDCDC" />
       <SolidColorBrush x:Key="AppColorSwatchBorderBrush" Color="#FF808080" />
       <SolidColorBrush x:Key="AppColorNoneSlashBrush" Color="#FFD32F2F" />
+      <SolidColorBrush x:Key="AppChosenCharacterBrush" Color="#400078D7" />
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <SolidColorBrush x:Key="AppSecondaryTextBrush" Color="#FFB4B4B4" />
@@ -59,6 +60,7 @@
       <SolidColorBrush x:Key="AppDockSelectedTabBrush" Color="#FF3C3C3C" />
       <SolidColorBrush x:Key="AppColorSwatchBorderBrush" Color="#FF8C8C8C" />
       <SolidColorBrush x:Key="AppColorNoneSlashBrush" Color="#FFFF6B6B" />
+      <SolidColorBrush x:Key="AppChosenCharacterBrush" Color="#504C9EEB" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -193,6 +195,13 @@
   <Thickness x:Key="AppRampsPanelPadding">8</Thickness>
   <x:Double x:Key="AppRampsListMaxHeight">200</x:Double>
   <FontFamily x:Key="AppRampTextFontFamily">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono</FontFamily>
+
+  <!-- Characters window (ADR 0053). Its characters, and the Character Brush's on the Tool Options toolbar, are shown in
+       the Ramps window's font, not the document's. -->
+  <Thickness x:Key="AppCharactersPanelPadding">8</Thickness>
+  <x:Double x:Key="AppCharacterButtonSize">32</x:Double>
+  <x:Double x:Key="AppCharacterButtonFontSize">18</x:Double>
+  <Thickness x:Key="AppCharacterButtonMargin">1</Thickness>
 
   <!-- The main window's smallest size, unless the screen has less room (WindowMinimumSize). -->
   <x:Double x:Key="AppMainWindowMinWidth">1280</x:Double>

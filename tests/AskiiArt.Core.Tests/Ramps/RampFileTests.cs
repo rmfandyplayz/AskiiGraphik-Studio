@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Libraries;
 using AskiiArt.Core.Ramps;
 
 namespace AskiiArt.Core.Tests.Ramps;
@@ -15,7 +16,7 @@ public sealed class RampFileTests
         var read = RampFile.TryRead(RampFile.Write("  Shades ", ramp), out var named, out var problem);
 
         Assert.True(read);
-        Assert.Equal(RampFileProblem.None, problem);
+        Assert.Equal(LibraryFileProblem.None, problem);
         Assert.Equal(new NamedRamp("Shades", ramp), named);
     }
 
@@ -37,7 +38,7 @@ public sealed class RampFileTests
     public void SomethingElse_IsNotARampFile(string text)
     {
         Assert.False(RampFile.TryRead(text, out _, out var problem));
-        Assert.Equal(RampFileProblem.NotARampFile, problem);
+        Assert.Equal(LibraryFileProblem.WrongKind, problem);
     }
 
     [Fact]
@@ -47,7 +48,7 @@ public sealed class RampFileTests
             + "\"characters\": \"ab\"}";
 
         Assert.False(RampFile.TryRead(text, out _, out var problem));
-        Assert.Equal(RampFileProblem.NewerVersion, problem);
+        Assert.Equal(LibraryFileProblem.NewerVersion, problem);
     }
 
     [Theory]
@@ -62,6 +63,6 @@ public sealed class RampFileTests
         var text = "{\"format\": \"askiiart.ramp\", " + properties + "}";
 
         Assert.False(RampFile.TryRead(text, out _, out var problem));
-        Assert.Equal(RampFileProblem.Damaged, problem);
+        Assert.Equal(LibraryFileProblem.Damaged, problem);
     }
 }

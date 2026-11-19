@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Hosting;
@@ -19,7 +20,8 @@ internal static class TestActions
 {
     public static IActionProvider[] CreateProviders(TestCanvas canvas, FakeAppShell shell,
         FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false, bool isMacOS = false,
-        LayersPanelViewModel? layers = null, RampsPanelViewModel? ramps = null) =>
+        LayersPanelViewModel? layers = null, RampsPanelViewModel? ramps = null,
+        CharactersPanelViewModel? characters = null) =>
     [
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel, includeDebugActions),
@@ -35,6 +37,7 @@ internal static class TestActions
         new RampActions(ramps ?? canvas.CreateRampsPanelViewModel(shell), canvas.ActiveDocument,
             canvas.CreateDocumentFiles(dialogs ?? new FakeDocumentDialogs(), shell), canvas.Fonts, canvas.Densities,
             includeDebugActions),
+        new CharacterActions(characters ?? canvas.CreateCharactersPanelViewModel(shell)),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

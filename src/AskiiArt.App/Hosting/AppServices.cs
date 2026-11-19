@@ -3,6 +3,7 @@
 
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Characters;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Errors;
@@ -19,6 +20,7 @@ using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
+using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
@@ -83,6 +85,7 @@ internal static class AppServices
             provider.GetRequiredService<FontCatalog>(),
             provider.GetRequiredService<GlyphDensityCache>(),
             includeDebugActions: BuildInfo.IsDebugBuild));
+        services.AddSingleton<IActionProvider, CharacterActions>();
         services.AddSingleton<ActionRegistry>();
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
@@ -91,6 +94,7 @@ internal static class AppServices
         services.AddSingleton(BrushTool.Definition);
         services.AddSingleton(ColorBrushTool.ForegroundDefinition);
         services.AddSingleton(ColorBrushTool.BackgroundDefinition);
+        services.AddSingleton(CharacterBrushTool.Definition);
         services.AddSingleton(EraserTool.Definition);
         services.AddSingleton(SoftEraserTool.Definition);
         services.AddSingleton(EraserTool.BackgroundDefinition);
@@ -102,8 +106,18 @@ internal static class AppServices
         services.AddSingleton<PaintColors>();
         services.AddSingleton<PaintColorsViewModel>();
         services.AddSingleton(provider => RememberedRamps.CreateLibrary(provider.GetRequiredService<IAppSettings>()));
-        services.AddSingleton(provider => new ToolSettings(provider.GetRequiredService<RampLibrary>()));
-        services.AddSingleton<ToolOptionsViewModel>();
+        services.AddSingleton(provider =>
+            RememberedCharacters.CreateLibrary(provider.GetRequiredService<IAppSettings>()));
+        services.AddSingleton(provider =>
+            RememberedCharacters.CreateRecent(provider.GetRequiredService<IAppSettings>()));
+        services.AddSingleton(provider => new ToolSettings(provider.GetRequiredService<RampLibrary>(),
+            provider.GetRequiredService<RecentGlyphs>()));
+        services.AddSingleton(provider =>
+        {
+            var docking = provider.GetRequiredService<ShellDocking>();
+            return new ToolOptionsViewModel(provider.GetRequiredService<CanvasViewModel>(),
+                () => docking.ShowWindow(ShellDockingIds.CharactersPanel));
+        });
         services.AddSingleton<RememberedToolState>();
         services.AddSingleton<IRampFileDialogs, AvaloniaRampFileDialogs>();
         services.AddSingleton(provider =>
@@ -114,6 +128,16 @@ internal static class AppServices
             return new RampsPanelViewModel(provider.GetRequiredService<RampLibrary>(),
                 provider.GetRequiredService<IAppShell>(), provider.GetRequiredService<IRampFileDialogs>(),
                 () => densities.GetMeter(fonts.Resolve(activeDocument.Session.Document.Font)));
+        });
+
+        services.AddSingleton<IGlyphSetFileDialogs, AvaloniaGlyphSetFileDialogs>();
+        services.AddSingleton(provider =>
+        {
+            var canvas = provider.GetRequiredService<CanvasViewModel>();
+            var densities = provider.GetRequiredService<GlyphDensityCache>();
+            return new CharactersPanelViewModel(canvas, provider.GetRequiredService<GlyphSetLibrary>(),
+                provider.GetRequiredService<IAppShell>(), provider.GetRequiredService<IGlyphSetFileDialogs>(),
+                glyph => densities.GetMeter(canvas.Font).GetSource(glyph) != GlyphSource.Placeholder);
         });
 
         // The document being edited. The app starts with an empty one, as New would make it.
