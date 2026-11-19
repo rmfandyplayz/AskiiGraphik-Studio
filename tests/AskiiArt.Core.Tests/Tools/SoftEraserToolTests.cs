@@ -53,10 +53,11 @@ public sealed class SoftEraserToolTests
         Assert.Equal(["@@@@@@", "@·@@@@", "@@@@@@"], TestCells.Read(Layer));
     }
 
+    // 5% would round back to '@', so it takes the one level a stroke always moves.
     [Theory]
     [InlineData(40, '+')]
     [InlineData(20, '#')]
-    [InlineData(5, '@')]
+    [InlineData(5, '%')]
     public void TheStrength_ChoosesHowFarTheMiddleLightens(int strength, char expected)
     {
         _options.Set(SoftEraserOptions.Strength, strength);
@@ -64,6 +65,33 @@ public sealed class SoftEraserToolTests
         Click(0, 0);
 
         Assert.Equal(expected, TestCells.Read(Layer)[0][0]);
+    }
+
+    // The owner chose this after testing step 3.4: rounding to the nearest level left '.' for ever at 40%.
+    [Fact]
+    public void EveryStroke_LightensAtLeastOneLevel_SoALowStrengthStillClears()
+    {
+        _options.Set(SoftEraserOptions.Strength, 40);
+        var seen = new List<char>();
+
+        for (var stroke = 0; stroke < 5; stroke++)
+        {
+            Click(0, 0);
+            seen.Add(TestCells.Read(Layer)[0][0]);
+        }
+
+        Assert.Equal(['+', '-', ':', '.', '·'], seen);
+    }
+
+    [Fact]
+    public void AStrengthOf0_LightensNothing()
+    {
+        _options.Set(SoftEraserOptions.Strength, 0);
+
+        Click(0, 0);
+
+        Assert.Equal('@', TestCells.Read(Layer)[0][0]);
+        Assert.Equal(0, History.UndoCount);
     }
 
     [Fact]
@@ -136,19 +164,19 @@ public sealed class SoftEraserToolTests
     }
 
     [Fact]
-    public void AGlyphTheRampDoesntHold_StaysUntilItMovesAWholeLevel()
+    public void AGlyphTheRampDoesntHold_LightensFromTheLevelThatMeasuresNearest()
     {
         TestCells.Paint(Layer, "AA");
-        _options.Set(SoftEraserOptions.Strength, 5);
-
-        Click(0, 0);
-        Assert.Equal('A', TestCells.Read(Layer)[0][0]);
-        Assert.Equal(0, History.UndoCount);
 
         // From level 6, 40% of the way to nothing.
         _options.Set(SoftEraserOptions.Strength, 40);
+        Click(0, 0);
+        Assert.Equal('=', TestCells.Read(Layer)[0][0]);
+
+        // From level 6, a level at least.
+        _options.Set(SoftEraserOptions.Strength, 5);
         Click(1, 0);
-        Assert.Equal('=', TestCells.Read(Layer)[0][1]);
+        Assert.Equal('+', TestCells.Read(Layer)[0][1]);
     }
 
     [Fact]

@@ -19,7 +19,7 @@ ARCHITECTURE §3 picks xUnit, Verify, a property-based library and Avalonia.Head
 - **CsCheck 4.9.1** for property-based tests (approved by the owner; pinned when first used, in step 1.2).
 - **Avalonia.Headless.XUnit** at the same version as every other Avalonia package.
 - **Tests run on Microsoft.Testing.Platform (MTP),** set in `global.json`. xUnit v3 test projects are self-hosting executables (`OutputType` Exe, set in `tests/Directory.Build.props`), and `Microsoft.NET.Test.Sdk` isn't needed.
-- **`global.json` pins the SDK to 10.0.403** with `rollForward: latestFeature`, so any newer .NET 10 SDK also works.
+- **`global.json` pins the SDK to 11.0.100** with `rollForward: latestFeature`, so any newer .NET 11 SDK also works. The projects still target .NET 10.
 
 ## Alternatives
 
@@ -34,3 +34,5 @@ ARCHITECTURE §3 picks xUnit, Verify, a property-based library and Avalonia.Head
 - **Revisit** when an Avalonia.Headless.XUnit release supports xUnit v3 4.x. Moving to Verify 33+ then needs the owner to choose between a sponsorship, a renewable exemption, or staying on Verify 32.
 
 Updated 2026-10-30: CsCheck pinned at 4.9.1 in step 1.2. 5.0.0 had been out for only six days and is a new major version, so it waits until it has settled.
+
+Updated 2026-11-18: the SDK pin moved from 10.0.403 to 11.0.100, after an IDE update replaced the owner's .NET 10 SDK. The .NET 11 SDK builds the .NET 10 targets; the runtime stays .NET 10 (ARCHITECTURE §3), and CI installs it beside the SDK (ADR 0005).

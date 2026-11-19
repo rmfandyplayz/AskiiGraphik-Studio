@@ -196,7 +196,7 @@ Planned tools, built over several milestones: text, brush, eraser, fill, pickup 
 The Eraser group (ADR 0050) has three erasers, which share one size and shape (ADR 0047), separate from the brushes'.
 
 - **Eraser** (step 2.4): everything inside the footprint becomes empty, and everything outside it is untouched.
-- **Soft Eraser** (step 3.4): lightens text along the ramp it shares with the Brush (§8.4). Each glyph moves lighter by the strength times the tip's weight there, once per stroke, and one lightened to nothing goes. Glyphs keep their colours, and backgrounds stay. A glyph that isn't in the ramp counts as the level that measures nearest.
+- **Soft Eraser** (step 3.4): lightens text along the ramp it shares with the Brush (§8.4). Each glyph moves lighter by the strength times the tip's weight there, and at least one level, once per stroke. One lightened to nothing goes. Glyphs keep their colours, and backgrounds stay. A glyph that isn't in the ramp counts as the level that measures nearest.
 - **BG Eraser** (step 3.4): takes backgrounds away, and leaves glyphs and their colours. In a monochrome document it erases nothing, and Tool Options says so.
 
 What a soft background eraser does is still open (§23). If alpha ever becomes real, an eraser could lower alpha instead. That one is reserved; don't build it.

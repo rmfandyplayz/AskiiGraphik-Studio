@@ -34,7 +34,6 @@ Repaint the block this way whenever a test runs out of `@`.
 
 ## Known limitations (not bugs)
 
-- **At a low Strength, a light character can stop lightening.** Each stroke rounds to the nearest step of the ramp, so a stroke that moves a character less than half a step leaves it as it is. At 40%, for example, a `.` never clears however many times you go over it. Use a higher Strength, or the Eraser, to clear it. Tell me if you'd rather it always moved at least one step.
 - The Eraser group's button and the first eraser are both called "Eraser", as with the Brush group. The text buttons are placeholders until they become icon squares.
 - Each group's last-used tool, and every option, is forgotten when the app closes. Saving settings comes in step 3.5.
 - There's no soft BG Eraser. What one would do is decided in M5.
@@ -132,7 +131,7 @@ Checks that a lower Strength lightens a step at a time, and that a second stroke
 | 1 | With the Soft Eraser, set **Size 1** and **Strength 40%** | The outline is one cell |
 | 2 | Click one `@` | It becomes `+`, still red on blue |
 | 3 | Click the same cell again | It becomes `-` |
-| 4 | Click it three more times | It becomes `:`, then `.`, then stays `.` (see Known limitations) |
+| 4 | Click it three more times | It becomes `:`, then `.`, then empties (changed after testing: it used to stay `.`) |
 | 5 | Drag back and forth across a row of `@` several times without letting go, then let go | Every cell you crossed is `+`. Going over a cell again in the same stroke doesn't lighten it again |
 | 6 | Drag across the same row again | They become `-` |
 
@@ -171,7 +170,7 @@ Checks that the Soft Eraser treats letters as the ramp step whose darkness they'
 |---|---|---|
 | 1 | Press **T**, click an empty cell and type **HELLO WORLD**, then press **Esc** | The text is there, and the caret goes |
 | 2 | Press **E** then **2**. With **Size 1**, **Softness 0%** and **Strength 100%**, drag across **HELLO** | Each letter goes, leaving empty cells |
-| 3 | Set **Strength 30%** and drag once across **WORLD** | Each letter either stays as it is, or turns into a ramp character such as `+`, `=` or `-`. None becomes darker. Any that stayed are close to a step that 30% doesn't reach |
+| 3 | Set **Strength 30%** and drag once across **WORLD** | Each letter turns into a lighter ramp character, such as `+`, `=` or `-` (changed after testing: a letter used to stay when 30% didn't reach a whole step) |
 
 ### T11: The BG Eraser
 
@@ -262,3 +261,5 @@ Checks that each stroke is one undo step, that Esc takes a stroke back, and that
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | Start a Soft Eraser stroke, and while holding the mouse button press **3** | Whatever the stroke erased so far stays, and the BG Eraser is chosen |
+
+Updated 2026-11-18: after testing, every Soft Eraser stroke lightens at least one level. T7 row 4 and T10 row 3 describe the new behaviour, and step 3.5's test doc retests them.

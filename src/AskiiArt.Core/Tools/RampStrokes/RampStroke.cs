@@ -21,7 +21,9 @@ internal delegate Cell RampCellPaint(Cell before, int levelBefore, int level);
 /// under the tip moves from its darkness before the stroke towards <c>target</c>, by the tip's weight there times
 /// <c>strength</c>. A cell's darkness is its level in the ramp (<see cref="Ramp.NearestLevel"/>), and an empty cell's
 /// is 0. A cell moves once, by the greatest weight that has reached it, so going over it again adds nothing, and the
-/// next stroke takes it further. Its edits show as it goes and coalesce into one undo step.
+/// next stroke takes it further. The new level is the nearest one, unless the stroke moves at least a level: then any
+/// move short of a level still takes the cell one level towards the target. Its edits show as it goes and coalesce
+/// into one undo step.
 /// </summary>
 internal sealed class RampStroke
 {
@@ -29,6 +31,8 @@ internal sealed class RampStroke
     private readonly Ramp _ramp;
     private readonly double _target;
     private readonly double _strength;
+    private readonly bool _movesAtLeastOneLevel;
+    private readonly int _targetLevel;
     private readonly Func<IGlyphDensityProvider> _densities;
     private readonly RampCellPaint _paint;
     private readonly string _stepNameKey;
@@ -50,18 +54,24 @@ internal sealed class RampStroke
     /// <param name="falloff">The tip, and how strongly it reaches each of its cells.</param>
     /// <param name="target">The darkness cells move towards, from 0 to 1.</param>
     /// <param name="strength">How far, from 0 to 1, the full weight moves a cell to <paramref name="target"/>.</param>
+    /// <param name="movesAtLeastOneLevel">
+    /// Whether a cell the stroke moves at all, by less than a level, moves one level, rather than to the nearest.
+    /// </param>
     /// <param name="densities">How dark glyphs look in the document's font, for glyphs the ramp doesn't hold.</param>
     /// <param name="paint">Gives each cell that moved.</param>
     /// <param name="stepNameKey">Names the undo step: a key from <see cref="UndoStepNames"/>.</param>
     /// <param name="start">Where the pointer was pressed.</param>
     public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, double target, double strength,
-        Func<IGlyphDensityProvider> densities, RampCellPaint paint, string stepNameKey, ToolPointerInput start)
+        bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities, RampCellPaint paint, string stepNameKey,
+        ToolPointerInput start)
     {
         _session = session;
         _ramp = ramp;
         Falloff = falloff;
         _target = target;
         _strength = strength;
+        _movesAtLeastOneLevel = movesAtLeastOneLevel;
+        _targetLevel = ramp.LevelAt(target);
         _densities = densities;
         _paint = paint;
         _stepNameKey = stepNameKey;
@@ -130,7 +140,13 @@ internal sealed class RampStroke
     {
         var levelBefore = LevelOf(before);
         var darknessBefore = _ramp.IntensityOf(levelBefore);
-        var level = _ramp.LevelAt(darknessBefore + (_target - darknessBefore) * weight * _strength);
+        var change = (_target - darknessBefore) * weight * _strength;
+        var level = _ramp.LevelAt(darknessBefore + change);
+
+        // A cell short of the target's level is always on the target's side of it, so one level can't overshoot.
+        if (_movesAtLeastOneLevel && level == levelBefore && level != _targetLevel && change != 0)
+            level += Math.Sign(change);
+
         return _paint(before, levelBefore, level);
     }
 

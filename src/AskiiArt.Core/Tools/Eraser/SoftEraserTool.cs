@@ -13,10 +13,11 @@ namespace AskiiArt.Core.Tools.Eraser;
 
 /// <summary>
 /// The Soft Eraser (ARCHITECTURE §8.3, ADR 0050), which lightens text along the ramp it shares with the Brush. Each
-/// glyph under the tip moves lighter by the strength times the tip's weight there, once per stroke
-/// (<see cref="RampStroke"/>), and one lightened to nothing goes. A glyph keeps its own colours, and backgrounds stay.
-/// It doesn't erase while the ramp has characters the document's character set can't hold. The tip is the Eraser
-/// group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo step.
+/// glyph under the tip moves lighter by the strength times the tip's weight there, and at least one level, once per
+/// stroke (<see cref="RampStroke"/>), and one lightened to nothing goes. A glyph keeps its own colours, and
+/// backgrounds stay. It doesn't erase while the ramp has characters the document's character set can't hold. The tip
+/// is the Eraser group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo
+/// step.
 /// </summary>
 public sealed class SoftEraserTool : ITool
 {
@@ -116,7 +117,8 @@ public sealed class SoftEraserTool : ITool
         var ramp = RampOptions.ReadRamp(_ramp).Ramp;
         _stroke = new RampStroke(_session, ramp,
             BrushFalloff.Create(_tip.Footprint, _options.Get(SoftEraserOptions.Softness) / 100.0),
-            target: 0, strength: _options.Get(SoftEraserOptions.Strength) / 100.0, _densities,
+            target: 0, strength: _options.Get(SoftEraserOptions.Strength) / 100.0, movesAtLeastOneLevel: true,
+            _densities,
             (before, levelBefore, level) => Lighten(ramp, before, levelBefore, level),
             UndoStepNames.Erase, input);
     }
@@ -151,8 +153,8 @@ public sealed class SoftEraserTool : ITool
         _tip.Values.Changed -= OnTipChanged;
     }
 
-    // A glyph it doesn't move a whole level stays, even one the ramp doesn't hold. One it moves keeps its colours,
-    // and one it empties keeps the cell's background.
+    // A glyph it moves keeps its colours, and one it empties keeps the cell's background. One it doesn't move, which
+    // only a strength of 0 leaves, stays as it was, even one the ramp doesn't hold.
     private static Cell Lighten(Ramp ramp, Cell before, int levelBefore, int level)
     {
         if (level == levelBefore)

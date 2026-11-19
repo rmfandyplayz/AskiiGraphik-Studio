@@ -37,3 +37,5 @@ One workflow, `.github/workflows/ci.yml`, with one job run on a matrix of `windo
 - The badge URL contains the GitHub repo name, so it needs updating if the repo is renamed.
 
 Updated 2026-10-31: added the font-sheet upload (step 1.3).
+
+Updated 2026-11-18: CI also installs .NET 10 beside the SDK from `global.json`, since the .NET 11 SDK doesn't include the runtime the app and tests target (ADR 0002).

@@ -40,9 +40,12 @@ jobs:
       - name: Check out
         uses: actions/checkout@v7
 
-      - name: Set up .NET (version from global.json)
+      # global.json picks the SDK that builds. The app and the tests run on .NET 10, which that
+      # SDK doesn't include, so install .NET 10 too rather than count on the runner having it.
+      - name: Set up .NET (SDK from global.json, plus .NET 10 to run on)
         uses: actions/setup-dotnet@v6
         with:
+          dotnet-version: 10.0.x
           global-json-file: global.json
 
       - name: Cache NuGet packages

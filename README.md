@@ -11,7 +11,7 @@ A cross-platform (Windows, macOS, Linux) editor for text art, with layers, selec
 
 ## Building
 
-You need the .NET 10 SDK (the exact version is pinned in `global.json`).
+You need the .NET 11 SDK (the exact version is pinned in `global.json`) and the .NET 10 runtime, since the app targets .NET 10.
 
 ```
 dotnet build

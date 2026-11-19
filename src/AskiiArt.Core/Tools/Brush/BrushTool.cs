@@ -151,7 +151,8 @@ public sealed class BrushTool : ITool
         _gesture = Gesture.Painting;
         _stroke = new RampStroke(_session, ramp,
             BrushFalloff.Create(_tip.Footprint, _options.Get(RampBrushOptions.Softness) / 100.0),
-            target: _options.Get(RampBrushOptions.Intensity) / 100.0, strength: 1, _densities,
+            target: _options.Get(RampBrushOptions.Intensity) / 100.0, strength: 1, movesAtLeastOneLevel: false,
+            _densities,
             (before, levelBefore, level) => Paint(ramp, foreground, background, before, levelBefore, level),
             UndoStepNames.Paint, input);
     }
