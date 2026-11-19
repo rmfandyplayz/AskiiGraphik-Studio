@@ -8,6 +8,7 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Painting;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
@@ -40,10 +41,13 @@ internal sealed class MainWindowBuilder(
     HistoryPanelViewModel history,
     LayersPanelViewModel layers,
     PaintColorsViewModel paintColors,
-    ToolOptionsViewModel toolOptions)
+    ToolOptionsViewModel toolOptions,
+    RampsPanelViewModel ramps,
+    RememberedToolState rememberedTools)
 {
     public MainWindow Build(KeyModifiers platformCommandModifiers)
     {
+        rememberedTools.Restore(canvas);
         var window = new MainWindow { DataContext = canvas, Title = title.Text };
         var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
 
@@ -82,6 +86,12 @@ internal sealed class MainWindowBuilder(
                 () => new ColorPanelView { DataContext = paintColors }),
             Window(ShellDockingIds.SwatchesPanel, Strings.PanelSwatches,
                 () => new SwatchesView { DataContext = paintColors }),
+            Window(ShellDockingIds.RampsPanel, Strings.PanelRamps,
+                () => new RampsPanelView
+                {
+                    DataContext = ramps,
+                    Buttons = bars.BuildWrapping(ToolbarLayout.CreateRampsPanel()),
+                }),
             .. SampleWindows(Window),
         ],
         [
@@ -102,6 +112,7 @@ internal sealed class MainWindowBuilder(
         window.Closed += (_, _) =>
         {
             docking.SaveAndDetach();
+            rememberedTools.Save(canvas);
             toolGroupSubToolbar.Dispose();
             colorBrushTargetSync.Dispose();
         };

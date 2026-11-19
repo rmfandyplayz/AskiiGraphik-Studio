@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.Core.Tools;
 
@@ -70,6 +71,17 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
         new ActionMenuEntry(LayerActionIds.MoveUp),
         new ActionMenuEntry(LayerActionIds.MoveDown),
         new ActionMenuEntry(LayerActionIds.MergeDown)
+    ]);
+
+    /// <summary>The buttons below the Ramps window's list (ADR 0052).</summary>
+    public static ToolbarLayout CreateRampsPanel() => new(
+    [
+        new ActionMenuEntry(RampActionIds.New),
+        new ActionMenuEntry(RampActionIds.Duplicate),
+        new ActionMenuEntry(RampActionIds.Delete),
+        new ActionMenuEntry(RampActionIds.SortByDarkness),
+        new ActionMenuEntry(RampActionIds.Import),
+        new ActionMenuEntry(RampActionIds.Export)
     ]);
 
     /// <summary>Every action id on this toolbar.</summary>

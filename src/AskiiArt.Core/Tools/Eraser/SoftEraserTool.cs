@@ -30,7 +30,7 @@ public sealed class SoftEraserTool : ITool
     /// <summary>Registers the Soft Eraser, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new SoftEraserTool(
         context.Session, new BrushTipSource(context.Settings.For(EraserTool.OptionGroup), context.CellWidthToHeight),
-        context.Settings.For(RampOptions.Group), context.Settings.For(SoftEraserOptions.Group), context.Densities))
+        RampOptions.SourceIn(context.Settings), context.Settings.For(SoftEraserOptions.Group), context.Densities))
     {
         OptionGroups = [EraserTool.OptionGroup, RampOptions.Group, SoftEraserOptions.Group],
         WarningFor = RampOptions.WarningFor
@@ -38,7 +38,7 @@ public sealed class SoftEraserTool : ITool
 
     private readonly EditingSession _session;
     private readonly BrushTipSource _tip;
-    private readonly ToolOptionValues _ramp;
+    private readonly RampSource _ramp;
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
     private ToolOverlay _overlay = ToolOverlay.None;
@@ -51,10 +51,10 @@ public sealed class SoftEraserTool : ITool
     /// </summary>
     /// <param name="session">The editing session the eraser changes.</param>
     /// <param name="tip">The Eraser group's tip.</param>
-    /// <param name="ramp">The values of <see cref="RampOptions.Group"/>.</param>
+    /// <param name="ramp">The ramp the Ramp option chooses.</param>
     /// <param name="options">The values of <see cref="SoftEraserOptions.Group"/>.</param>
     /// <param name="densities">How dark glyphs look in the document's font, now.</param>
-    public SoftEraserTool(EditingSession session, BrushTipSource tip, ToolOptionValues ramp, ToolOptionValues options,
+    public SoftEraserTool(EditingSession session, BrushTipSource tip, RampSource ramp, ToolOptionValues options,
         Func<IGlyphDensityProvider> densities)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -62,9 +62,6 @@ public sealed class SoftEraserTool : ITool
         ArgumentNullException.ThrowIfNull(ramp);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(densities);
-        if (ramp.Group != RampOptions.Group)
-            throw new ArgumentException("These aren't the ramp's options.", nameof(ramp));
-
         if (options.Group != SoftEraserOptions.Group)
             throw new ArgumentException("These aren't the Soft Eraser's own options.", nameof(options));
 
@@ -110,11 +107,11 @@ public sealed class SoftEraserTool : ITool
     /// </summary>
     public void PointerPressed(ToolPointerInput input)
     {
-        if (!_session.CanEditActiveLayer || !RampOptions.FitsIn(_ramp, _session.Document))
+        if (!_session.CanEditActiveLayer || !_ramp.FitsIn(_session.Document))
             return;
 
         // The stroke keeps the settings it starts with, so it erases along one ramp with one tip and one strength.
-        var ramp = RampOptions.ReadRamp(_ramp).Ramp;
+        var ramp = _ramp.Ramp;
         _stroke = new RampStroke(_session, ramp,
             BrushFalloff.Create(_tip.Footprint, _options.Get(SoftEraserOptions.Softness) / 100.0),
             target: 0, strength: _options.Get(SoftEraserOptions.Strength) / 100.0, movesAtLeastOneLevel: true,

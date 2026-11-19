@@ -35,7 +35,7 @@ public sealed class BrushTool : ITool
     /// <summary>Registers the brush, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new BrushTool(context.Session,
         context.Colors, new BrushTipSource(context.Settings.For(TipOptions), context.CellWidthToHeight),
-        context.Settings.For(RampOptions.Group), context.Settings.For(RampBrushOptions.Group), context.Densities))
+        RampOptions.SourceIn(context.Settings), context.Settings.For(RampBrushOptions.Group), context.Densities))
     {
         OptionGroups = [TipOptions, RampOptions.Group, RampBrushOptions.Group],
         WarningFor = RampOptions.WarningFor
@@ -44,7 +44,7 @@ public sealed class BrushTool : ITool
     private readonly EditingSession _session;
     private readonly PaintColors _colors;
     private readonly BrushTipSource _tip;
-    private readonly ToolOptionValues _ramp;
+    private readonly RampSource _ramp;
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
     private ToolOverlay _overlay = ToolOverlay.None;
@@ -66,10 +66,10 @@ public sealed class BrushTool : ITool
     /// <param name="session">The editing session the brush changes.</param>
     /// <param name="colors">The current colours, which painted cells get.</param>
     /// <param name="tip">The Brush group's tip.</param>
-    /// <param name="ramp">The values of <see cref="RampOptions.Group"/>.</param>
+    /// <param name="ramp">The ramp the Ramp option chooses.</param>
     /// <param name="options">The values of <see cref="RampBrushOptions.Group"/>.</param>
     /// <param name="densities">How dark glyphs look in the document's font, now.</param>
-    public BrushTool(EditingSession session, PaintColors colors, BrushTipSource tip, ToolOptionValues ramp,
+    public BrushTool(EditingSession session, PaintColors colors, BrushTipSource tip, RampSource ramp,
         ToolOptionValues options, Func<IGlyphDensityProvider> densities)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -78,9 +78,6 @@ public sealed class BrushTool : ITool
         ArgumentNullException.ThrowIfNull(ramp);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(densities);
-        if (ramp.Group != RampOptions.Group)
-            throw new ArgumentException("These aren't the ramp's options.", nameof(ramp));
-
         if (options.Group != RampBrushOptions.Group)
             throw new ArgumentException("These aren't the Brush's own options.", nameof(options));
 
@@ -141,11 +138,11 @@ public sealed class BrushTool : ITool
         }
 
         var document = _session.Document;
-        if (!_session.CanEditActiveLayer || !RampOptions.FitsIn(_ramp, document))
+        if (!_session.CanEditActiveLayer || !_ramp.FitsIn(document))
             return;
 
         // The stroke keeps the settings it starts with, so it paints one ramp with one tip and one strength.
-        var ramp = RampOptions.ReadRamp(_ramp).Ramp;
+        var ramp = _ramp.Ramp;
         var foreground = _colors.ForegroundIn(document.ColorMode);
         var background = _colors.BackgroundIn(document.ColorMode);
         _gesture = Gesture.Painting;

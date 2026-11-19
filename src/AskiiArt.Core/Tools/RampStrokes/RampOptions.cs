@@ -17,43 +17,37 @@ public static class RampOptions
     /// <summary>The App's resource key for the warning shown while the ramp can't be used in the document.</summary>
     public const string RampDoesNotFitWarningKey = "ToolWarningRampDoesNotFit";
 
-    /// <summary>The ramp, one of the built-in ones (ADR 0045), with its characters shown beside its name.</summary>
+    /// <summary>The id of the user's ramps as a source of choices (<see cref="ToolSettings"/>).</summary>
+    public const string UserRampsSourceId = "askiiart.userRamps";
+
+    /// <summary>
+    /// The ramp: one of the built-in ones (ADR 0045), then one of the user's (ADR 0052), with its characters shown
+    /// beside its name.
+    /// </summary>
     public static ChoiceToolOption Ramp { get; } = new("ramp", "ToolOptionRamp",
         [
             .. BuiltInRamps.All.Select(ramp =>
                 new ToolOptionChoice(ramp.Id, ramp.NameKey) { Detail = ramp.Ramp.ToString() })
         ],
-        BuiltInRamps.Default.Id);
+        BuiltInRamps.Default.Id)
+    {
+        MoreChoicesFrom = UserRampsSourceId
+    };
 
     /// <summary>The group holding just the ramp.</summary>
     public static ToolOptionGroup Group { get; } = new("askiiart.ramp", [Ramp]);
 
-    /// <summary>The ramp <paramref name="values"/> choose.</summary>
-    public static BuiltInRamp ReadRamp(ToolOptionValues values)
+    /// <summary>The chosen ramp, as <paramref name="settings"/> hold it.</summary>
+    public static RampSource SourceIn(ToolSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(values);
-
-        var id = values.Get(Ramp);
-        return BuiltInRamps.All.First(ramp => ramp.Id == id);
-    }
-
-    /// <summary>
-    /// Whether the ramp <paramref name="values"/> choose can be used in <paramref name="document"/>: whether its
-    /// character set holds every character of the ramp.
-    /// </summary>
-    public static bool FitsIn(ToolOptionValues values, Document document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        return ReadRamp(values).Ramp.FitsIn(document.CharacterSet);
+        ArgumentNullException.ThrowIfNull(settings);
+        return new RampSource(settings.For(Group), settings.Ramps);
     }
 
     /// <summary>
     /// The warning the Tool Options toolbar shows for <paramref name="document"/>, or null when the ramp can be used
     /// in it.
     /// </summary>
-    public static string? WarningFor(ToolSettings settings, Document document)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        return FitsIn(settings.For(Group), document) ? null : RampDoesNotFitWarningKey;
-    }
+    public static string? WarningFor(ToolSettings settings, Document document) =>
+        SourceIn(settings).FitsIn(document) ? null : RampDoesNotFitWarningKey;
 }

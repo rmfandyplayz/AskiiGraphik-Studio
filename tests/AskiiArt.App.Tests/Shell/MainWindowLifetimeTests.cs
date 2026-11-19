@@ -2,9 +2,11 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -28,10 +30,13 @@ public sealed class MainWindowLifetimeTests : IDisposable
     private readonly TestCanvas _canvas = new();
     private readonly List<MainWindowLifetime> _lifetimes = [];
     private readonly ActionRegistry _actions;
+    private readonly RampsPanelViewModel _ramps;
 
     public MainWindowLifetimeTests()
     {
-        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true));
+        _ramps = _canvas.CreateRampsPanelViewModel(_shell);
+        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true,
+            ramps: _ramps));
     }
 
     public void Dispose()
@@ -118,7 +123,8 @@ public sealed class MainWindowLifetimeTests : IDisposable
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
             new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
-            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel());
+            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel(), _ramps,
+            new RememberedToolState(_settings));
         var lifetime = new MainWindowLifetime(builder, _canvas.ActiveDocument, KeyModifiers.Meta,
             keepsRunningWithoutWindow);
         _lifetimes.Add(lifetime);

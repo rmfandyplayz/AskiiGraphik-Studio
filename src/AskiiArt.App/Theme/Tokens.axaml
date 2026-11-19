@@ -189,6 +189,11 @@
   <Thickness x:Key="AppLayerRowPadding">4,0</Thickness>
   <x:Double x:Key="AppLayerCheckBoxWidth">28</x:Double>
 
+  <!-- Ramps window. Its characters are shown in a common monospaced font, not the document's. -->
+  <Thickness x:Key="AppRampsPanelPadding">8</Thickness>
+  <x:Double x:Key="AppRampsListMaxHeight">200</x:Double>
+  <FontFamily x:Key="AppRampTextFontFamily">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono</FontFamily>
+
   <!-- The main window's smallest size, unless the screen has less room (WindowMinimumSize). -->
   <x:Double x:Key="AppMainWindowMinWidth">1280</x:Double>
   <x:Double x:Key="AppMainWindowMinHeight">720</x:Double>

@@ -4,7 +4,9 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
+    <!-- The newest C# that .NET 10 supports. The SDK is newer than the target (ADR 0051), so "latest"
+         would pick a language version .NET 10 doesn't support. -->
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

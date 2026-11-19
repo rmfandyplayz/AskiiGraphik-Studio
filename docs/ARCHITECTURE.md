@@ -32,7 +32,7 @@ A modern, cross-platform (Windows, macOS, Linux) editor for text art. It's inspi
 
 | Area | Choice | Notes |
 |---|---|---|
-| Runtime | .NET 10 (LTS, supported to Nov 2028) | Latest C#, nullable enabled |
+| Runtime | .NET 10 (LTS, supported to Nov 2028), built with the .NET 11 SDK | C# 14, the newest that .NET 10 supports, nullable enabled (ADR 0051) |
 | UI | Avalonia 12.x, latest stable, with Avalonia.Controls.ColorPicker for the RGB picker | Avalonia has no LTS label; 12.x is the current stable line. The picker may give way to our own (ADR 0042) |
 | MVVM | CommunityToolkit.Mvvm | Source-generated and minimal |
 | DI | Microsoft.Extensions.DependencyInjection | Holds the registries for tools, importers, exporters and actions |
@@ -168,7 +168,7 @@ One mechanism powers brushes, soft erase and image conversion.
 - A **ramp** is an ordered, user-editable mapping from intensity bands to glyphs, for example `" .:-=+*#%@"`. Ramps are first-class objects: they're named, stored in user settings, and can be exported and imported as small files so users can share them. Whether intensity 0 maps to an empty cell or to a space is part of each ramp's definition.
 - **Glyph density** is how much ink a glyph actually puts on screen in a given font, measured by rasterizing it (Imaging, §11). It's used to auto-generate a ramp from a font, to sort a user's characters by darkness, for soft erase (glyph → intensity → lighter glyph), and for image conversion.
 
-Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included. *Decided in 3.3 (ADR 0049):* a glyph that isn't in the ramp counts as the level whose measured density is nearest, so the Brush can blend over any text.
+Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included. *Decided in 3.3 (ADR 0049):* a glyph that isn't in the ramp counts as the level whose measured density is nearest, so the Brush can blend over any text. *Decided in 3.5 (ADR 0052):* the user's ramps live in a `RampLibrary` with stable ids and unique names; built-in ramps are read-only and are copied to be edited. The Ramps window edits a ramp live, sorts it and generates one in the active document's font, and imports and exports `.asciiramp` files of one ramp each.
 
 ## 8. Tools
 
@@ -178,7 +178,7 @@ Tools are **Core** classes with no UI dependencies. Each tool has:
 
 - **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key and a category.
 - **A group:** every tool belongs to one `ToolGroup`, which has the shortcut letter and its tools in order. The Tools toolbar has a button per group, which brings back the group's last tool, and a group with several tools shows them on a sub-toolbar, where keys 1–9 choose them. The letter and number keys work while the canvas has focus and the active tool isn't taking text (ADRs 0033, 0049).
-- **Options:** data, not controls. A tool's definition may carry `ToolOptionGroup`s (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool, tools can share them, and they can be exported. The Tool Options toolbar is drawn from the chosen tool's groups, so the tool doesn't know what draws its options. A definition can also give a warning for the toolbar to show when the tool can't work in the document (ADRs 0047, 0049).
+- **Options:** data, not controls. A tool's definition may carry `ToolOptionGroup`s (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool, tools can share them, and they can be exported. The Tool Options toolbar is drawn from the chosen tool's groups, so the tool doesn't know what draws its options. A definition can also give a warning for the toolbar to show when the tool can't work in the document. A choice can take more choices from a source that `ToolSettings` registers, which is how the Ramp option lists the user's ramps (ADRs 0047, 0049, 0052).
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (reserved for drawing tablets), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017).
 - **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
 - **Constraints:** every tool respects the active selection (§10) and the active layer's lock.
@@ -310,7 +310,7 @@ Claude Code may build any temporary UI it needs to exercise a feature. Keep it p
 ## 15. Settings and user data
 
 - Settings are stored as versioned JSON in the platform's app-data folder (`%APPDATA%` on Windows, `~/Library/Application Support` on macOS, `$XDG_CONFIG_HOME` or `~/.config` on Linux). Resolve the folder with `Environment.GetFolderPath`; never hardcode paths (ADR 0026).
-- Settings hold preferences, ramps and brush presets, the dock layout, shortcut bindings, recent files and the user font list.
+- Settings hold preferences, ramps and brush presets, the dock layout, shortcut bindings, recent files and the user font list. *Since 3.5 (ADR 0052):* the user's ramps are saved whenever they change. The tool options, each tool group's last tool and the FG and BG colours are saved when the window closes, as the layout is, and anything saved that no longer applies is ignored.
 - Corrupt settings never stop the app from starting. Back up the bad file, load defaults, and tell the user.
 
 ## 16. Import and export
@@ -328,6 +328,8 @@ Importers and exporters implement the `IImporter` and `IExporter` interfaces, wh
 | ANSI (`.ans`, clipboard) | both | export in M2b, import in M7 |
 
 Text export always flattens the visible layers and writes `\n` line endings by default, with an option for `\r\n` and an option to trim trailing spaces.
+
+Ramps are imported and exported from the Ramps window as `.asciiramp` files, versioned JSON holding one ramp each (ADR 0052).
 
 ## 17. Image → ASCII (advanced)
 

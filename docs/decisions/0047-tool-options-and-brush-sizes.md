@@ -36,3 +36,5 @@ Step 3.2 gives the colour Brush and the hard Eraser a size and a shape, and adds
 Updated 2026-11-16: a tool's definition has a list of option groups (`OptionGroups`), not one, and may give a warning (`WarningFor`). A choice can have a detail and can be unavailable, and a number can be a percentage. A choice with more than two values shows as a dropdown. The Brush, FG Brush and BG Brush share one tip group, and the Eraser keeps its own (ADR 0049).
 
 Updated 2026-11-17: the Eraser's tip group is shared by the Eraser, the Soft Eraser and the BG Eraser (ADR 0050).
+
+Updated 2026-11-18: tool settings are remembered between runs, saved when the window closes (ADR 0052). A choice option can take more choices from a source, which is how the Ramp option lists the user's ramps.

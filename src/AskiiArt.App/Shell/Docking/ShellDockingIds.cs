@@ -13,6 +13,7 @@ internal static class ShellDockingIds
     public const string HistoryPanel = "panel.history";
     public const string ColorPanel = "panel.color";
     public const string SwatchesPanel = "panel.swatches";
+    public const string RampsPanel = "panel.ramps";
 
     // Debug builds only.
     public const string SampleWindow1 = "panel.sample1";

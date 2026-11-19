@@ -19,7 +19,7 @@ internal static class TestActions
 {
     public static IActionProvider[] CreateProviders(TestCanvas canvas, FakeAppShell shell,
         FakeDocumentDialogs? dialogs = null, bool includeDebugActions = false, bool isMacOS = false,
-        LayersPanelViewModel? layers = null) =>
+        LayersPanelViewModel? layers = null, RampsPanelViewModel? ramps = null) =>
     [
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel, includeDebugActions),
@@ -32,8 +32,9 @@ internal static class TestActions
             includeDebugActions),
         new LayerActions(layers ?? new LayersPanelViewModel(canvas.ActiveDocument)),
         new ColorModeActions(canvas.ActiveDocument, shell),
-        new RampActions(canvas.ActiveDocument, canvas.CreateDocumentFiles(dialogs ?? new FakeDocumentDialogs(), shell),
-            canvas.Fonts, canvas.Densities, includeDebugActions),
+        new RampActions(ramps ?? canvas.CreateRampsPanelViewModel(shell), canvas.ActiveDocument,
+            canvas.CreateDocumentFiles(dialogs ?? new FakeDocumentDialogs(), shell), canvas.Fonts, canvas.Densities,
+            includeDebugActions),
         CreateDocumentActions(canvas, shell, dialogs ?? new FakeDocumentDialogs(), includeDebugActions)
     ];
 

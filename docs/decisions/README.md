@@ -57,3 +57,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0048](0048-floating-toolbars-keep-their-nearest-corner.md) | Floating toolbars keep their nearest corner | Accepted |
 | [0049](0049-tool-groups-and-the-ramp-brush.md) | Tool groups and the ramp Brush | Accepted |
 | [0050](0050-the-erasers.md) | The erasers | Accepted |
+| [0051](0051-built-with-the-net-11-sdk.md) | Built with the .NET 11 SDK | Accepted |
+| [0052](0052-user-ramps-and-remembered-tool-settings.md) | User ramps and remembered tool settings | Accepted |

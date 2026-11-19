@@ -77,7 +77,7 @@ ADRs and ARCHITECTURE.md must always describe how the code works **now**. A stal
 
 ## Code style
 
-- Use the latest C#, with nullable reference types and warnings as errors. Use file-scoped namespaces. Make classes `sealed` by default, prefer immutability, and avoid mutable static state.
+- Use C# 14, the newest that .NET 10 supports (ADR 0051), with nullable reference types and warnings as errors. Use file-scoped namespaces. Make classes `sealed` by default, prefer immutability, and avoid mutable static state.
 - **A braceless single-statement body always goes on its own line:**
   ```csharp
   if (cell.IsEmpty)

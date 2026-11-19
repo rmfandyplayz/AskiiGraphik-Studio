@@ -29,7 +29,8 @@ public sealed class SoftEraserToolTests
     {
         _session = new EditingSession(TestCells.CreateDocument(6, 3, ColorMode.Ansi));
         TestCells.Paint(Layer, "@@@@@@", "@@@@@@", "@@@@@@");
-        _tool = new SoftEraserTool(_session, TestTools.Tip(_tip), _ramp, _options, () => TestTools.RampSteps);
+        _tool = new SoftEraserTool(_session, TestTools.Tip(_tip), TestTools.Ramp(_ramp), _options,
+            () => TestTools.RampSteps);
     }
 
     private Layer Layer => _session.Document.ActiveFrame.Layers[0];

@@ -7,6 +7,7 @@ using AskiiArt.Core.Tests.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 
 namespace AskiiArt.Core.Tests.Tools;
 
@@ -48,6 +49,11 @@ internal static class TestTools
     /// </summary>
     public static BrushTipSource Tip(ToolOptionValues values, double cellWidthToHeight = 1) =>
         new(values, () => cellWidthToHeight);
+
+    /// <summary>The ramp <paramref name="values"/> choose, among the built-in ramps and <paramref name="ramps"/>.
+    /// </summary>
+    public static RampSource Ramp(ToolOptionValues values, RampLibrary? ramps = null) =>
+        new(values, ramps ?? new RampLibrary());
 
     /// <summary>Sets <paramref name="values"/> to a mathematical tip of <paramref name="size"/> and shape.</summary>
     public static void SetTip(ToolOptionValues values, int size, string shape = "square")

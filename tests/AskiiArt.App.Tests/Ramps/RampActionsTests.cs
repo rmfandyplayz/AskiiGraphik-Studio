@@ -20,7 +20,8 @@ public sealed class RampActionsTests : IDisposable
     [Fact]
     public void TheDensitySample_IsOnlyThereInDebugBuilds()
     {
-        Assert.Empty(CreateActions(includeDebugActions: false));
+        Assert.DoesNotContain(CreateActions(includeDebugActions: false),
+            action => action.Id == RampActionIds.OpenDensitySample);
         Assert.Contains(CreateActions(includeDebugActions: true),
             action => action.Id == RampActionIds.OpenDensitySample);
     }
@@ -33,7 +34,8 @@ public sealed class RampActionsTests : IDisposable
             Document.Create(new CanvasSize(2, 2), "Layer", CharacterSet.Ascii, firaCode)));
         var before = _canvas.Document;
 
-        var action = CreateActions(includeDebugActions: true).Single();
+        var action = CreateActions(includeDebugActions: true)
+            .Single(candidate => candidate.Id == RampActionIds.OpenDensitySample);
         await ((IAsyncRelayCommand)action.Command).ExecuteAsync(null);
 
         Assert.NotSame(before, _canvas.Document);
@@ -42,6 +44,7 @@ public sealed class RampActionsTests : IDisposable
     }
 
     private List<AppAction> CreateActions(bool includeDebugActions) =>
-        new RampActions(_canvas.ActiveDocument, _canvas.CreateDocumentFiles(new FakeDocumentDialogs(), _shell),
-            _canvas.Fonts, _canvas.Densities, includeDebugActions).CreateActions().ToList();
+        new RampActions(_canvas.CreateRampsPanelViewModel(_shell), _canvas.ActiveDocument,
+            _canvas.CreateDocumentFiles(new FakeDocumentDialogs(), _shell), _canvas.Fonts, _canvas.Densities,
+            includeDebugActions).CreateActions().ToList();
 }

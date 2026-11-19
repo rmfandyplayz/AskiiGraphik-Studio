@@ -174,4 +174,19 @@ public sealed class RampTests
         Assert.NotEqual(ramp, Ramp.FromText(".#:"));
         Assert.NotEqual(ramp, Ramp.FromText(".:#", RampZeroLevel.Space));
     }
+
+    [Theory]
+    [InlineData(".:#", RampTextProblem.None, 0)]
+    [InlineData("", RampTextProblem.Empty, 0)]
+    [InlineData(". #", RampTextProblem.Space, ' ')]
+    [InlineData(".\t#", RampTextProblem.Unusable, '\t')]
+    [InlineData(".:.#", RampTextProblem.Repeated, '.')]
+    public void Check_SaysWhatsWrongFirst_AndWithWhichCharacter(string glyphs, RampTextProblem problem, int glyph)
+    {
+        var check = Ramp.Check(glyphs);
+
+        Assert.Equal(problem, check.Problem);
+        Assert.Equal(glyph, check.Glyph.Value);
+        Assert.Equal(problem == RampTextProblem.None, check.IsValid);
+    }
 }

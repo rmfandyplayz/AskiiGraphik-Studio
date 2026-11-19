@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Resources;
@@ -57,7 +58,8 @@ public sealed class AppTests : IDisposable
         var services = new ServiceCollection();
         var shell = new FakeAppShell();
         var dialogs = new FakeDocumentDialogs();
-        foreach (var provider in TestActions.CreateProviders(_canvas, shell, dialogs))
+        var ramps = _canvas.CreateRampsPanelViewModel(shell);
+        foreach (var provider in TestActions.CreateProviders(_canvas, shell, dialogs, ramps: ramps))
             services.AddSingleton(provider);
 
         services.AddSingleton(_canvas.ViewModel);
@@ -71,6 +73,8 @@ public sealed class AppTests : IDisposable
         services.AddSingleton(new LayersPanelViewModel(_canvas.ActiveDocument));
         services.AddSingleton(_canvas.CreatePaintColorsViewModel());
         services.AddSingleton(_canvas.CreateToolOptionsViewModel());
+        services.AddSingleton(ramps);
+        services.AddSingleton<RememberedToolState>();
         services.AddSingleton<ActionRegistry>();
         services.AddSingleton(layout);
         services.AddSingleton(ShellToolbars.CreateDefault());

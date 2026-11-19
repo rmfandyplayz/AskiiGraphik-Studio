@@ -56,9 +56,17 @@ public sealed record NumberToolOption : ToolOption
 
 /// <summary>One of the choices of a <see cref="ChoiceToolOption"/>.</summary>
 /// <param name="Value">A stable value, for example "circle". Never shown to the user.</param>
-/// <param name="NameKey">The App's resource key for the choice's localized name.</param>
+/// <param name="NameKey">
+/// The App's resource key for the choice's localized name. Empty for a choice with a <see cref="Name"/>.
+/// </param>
 public sealed record ToolOptionChoice(string Value, string NameKey)
 {
+    /// <summary>
+    /// A name shown exactly as it is, never translated, such as the name the user gave a ramp. When it's set, it's
+    /// shown instead of <see cref="NameKey"/>'s.
+    /// </summary>
+    public string? Name { get; init; }
+
     /// <summary>Text shown after the name exactly as it is, never translated, such as a ramp's characters.</summary>
     public string? Detail { get; init; }
 
@@ -92,13 +100,25 @@ public sealed record ChoiceToolOption : ToolOption
         DefaultValue = defaultValue;
     }
 
-    /// <summary>The choices, in the order they're shown.</summary>
+    /// <summary>
+    /// The choices that are always there, in the order they're shown. <see cref="MoreChoicesFrom"/> can add more.
+    /// </summary>
     public IReadOnlyList<ToolOptionChoice> Choices { get; }
+
+    /// <summary>
+    /// The id of an <see cref="IToolOptionChoiceSource"/> whose choices follow <see cref="Choices"/>, such as the
+    /// user's ramps, or null when there's none. <see cref="ToolSettings"/> knows the sources; values made without
+    /// them offer only <see cref="Choices"/>.
+    /// </summary>
+    public string? MoreChoicesFrom { get; init; }
 
     /// <summary>The chosen value until the user changes it.</summary>
     public string DefaultValue { get; }
 
-    /// <summary>Whether <paramref name="value"/> is one of the choices, and one that can be chosen.</summary>
+    /// <summary>
+    /// Whether <paramref name="value"/> is one of <see cref="Choices"/>, and one that can be chosen. It doesn't look at
+    /// <see cref="MoreChoicesFrom"/>'s: <see cref="ToolOptionValues.Allows"/> does.
+    /// </summary>
     public bool Allows(string value) => Choices.Any(choice => choice.Value == value && choice.IsAvailable);
 }
 

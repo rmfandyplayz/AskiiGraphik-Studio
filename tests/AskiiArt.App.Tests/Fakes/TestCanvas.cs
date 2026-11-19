@@ -6,6 +6,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Fonts;
 using AskiiArt.App.Painting;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Shell;
 using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
@@ -57,8 +58,11 @@ internal sealed class TestCanvas : IDisposable
     /// <summary>The FG and BG colours the canvas's tools paint with.</summary>
     public PaintColors Colors { get; } = new();
 
-    /// <summary>The canvas's tools' option values, such as the brush size.</summary>
-    public ToolSettings ToolSettings { get; } = new();
+    /// <summary>
+    /// The canvas's tools' option values, such as the brush size, and the ramps, made as the app makes them but with
+    /// nothing saved.
+    /// </summary>
+    public ToolSettings ToolSettings { get; } = new(RememberedRamps.CreateLibrary(new FakeAppSettings()));
 
     public ActiveDocument ActiveDocument { get; }
 
@@ -85,6 +89,13 @@ internal sealed class TestCanvas : IDisposable
 
     /// <summary>What the Tool Options toolbar shows, for this canvas's chosen tool.</summary>
     public ToolOptionsViewModel CreateToolOptionsViewModel() => new(ViewModel);
+
+    /// <summary>
+    /// What the Ramps window shows, for this canvas's ramps, measuring glyphs in its document's font as the app does.
+    /// </summary>
+    public RampsPanelViewModel CreateRampsPanelViewModel(IAppShell shell, IRampFileDialogs? dialogs = null) =>
+        new(ToolSettings.Ramps, shell, dialogs ?? new FakeRampFileDialogs(),
+            () => Densities.GetMeter(Fonts.Resolve(Document.Font)));
 
     /// <summary>Saving and opening for this canvas's document, asking through fakes.</summary>
     public DocumentFiles CreateDocumentFiles(IDocumentDialogs dialogs, IAppShell shell) =>

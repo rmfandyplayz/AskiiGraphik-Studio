@@ -87,11 +87,17 @@ internal sealed class ToolOptionsViewModel : ObservableObject, IDisposable
     private void FollowValues(IReadOnlyList<ToolOptionValues> values)
     {
         foreach (var followed in _values)
+        {
             followed.Changed -= OnValuesChanged;
+            followed.ChoicesChanged -= OnValuesChanged;
+        }
 
         _values = values;
         foreach (var followed in _values)
+        {
             followed.Changed += OnValuesChanged;
+            followed.ChoicesChanged += OnValuesChanged;
+        }
     }
 
     private void FollowDocument(Document? document)
@@ -117,7 +123,8 @@ internal sealed class ToolOptionsViewModel : ObservableObject, IDisposable
         }
     }
 
-    // A value can change from elsewhere too, such as the [ and ] keys on the canvas.
+    // A value can change from elsewhere too, such as the [ and ] keys on the canvas, and so can the choices, such as
+    // the user's ramps in the Ramps window. A ramp's characters decide whether it fits.
     private void OnValuesChanged(object? sender, EventArgs e)
     {
         foreach (var item in Items)

@@ -16,7 +16,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
 | Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
 | A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4 |
-| A Window menu between View and Help: Layers, History, Color, Swatches, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a |
+| A Window menu between View and Help: Layers, History, Color, Swatches, Ramps, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a, 3.5 |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
 | The window can't go below 1280 × 720, or below what its screen has room for when that's less | `Shell/WindowMinimumSize.cs`, `AppWindowMinWidth`, `AppWindowMinHeight` | 2.1 |
@@ -216,6 +216,22 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | With a ramp the document can't hold, the Soft Eraser erases nothing and shows the Brush's warning | `Core/Tools/RampStrokes/RampOptions.cs` | 3.4 |
 | The BG Eraser has only Size, Shape and Proportions. In a monochrome document it stays listed, erases nothing, and Tool Options says "This document has no background colours" in orange | `Core/Tools/Eraser/EraserTool.cs`, `Strings.resx` (`ToolWarningNoBackgrounds`) | 3.4 |
 | All three erasers name their History step "Erase", and Esc during a stroke takes it back | `Core/Tools/Eraser/` | 3.4 |
+
+### Ramps window and remembered settings (step 3.5, ADR 0052)
+
+| Choice | Where | Step |
+|---|---|---|
+| The Ramps window starts closed and opens from Window → Ramps. It's one column that scrolls: the list of ramps (at most 200 tall), each with its name and characters; buttons New, Duplicate, Delete, Sort by Darkness, Import…, Export…; the editor (Name, Characters, Lightest level, Preview); then Generate | `Ramps/RampsPanelView.axaml`, `Shell/Toolbars/ToolbarLayout.cs`, `AppRampsListMaxHeight`, `AppRampsPanelPadding` | 3.5 |
+| Ramp characters show in a common monospaced font (Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono), not the document's font | `AppRampTextFontFamily` | 3.5 |
+| The preview is the ramp painted from no ink to full, 48 characters wide on 3 rows. An empty lightest level shows as a space | `Ramps/RampsPanelViewModel.cs` | 3.5 |
+| A built-in ramp shows read-only, with a note that it can be duplicated. Delete and Sort by Darkness are greyed out for it | `Ramps/RampsPanelView.axaml`, `Strings.resx` (`RampBuiltInNote`) | 3.5 |
+| New starts with the Standard ramp's characters and is called "New ramp". A duplicate is called "<name> copy", and a generated ramp "Generated ramp". A taken name gets " 2", " 3" and so on. New, Duplicate, Import and Generate choose the ramp they add | `Ramps/RampsPanelViewModel.cs`, `Strings.resx` | 3.5 |
+| Names are unique ignoring case and spaces around them, and the built-in names are taken. A name or characters that can't be used stay in the box with the reason below in orange, and the ramp keeps its last good version | `Ramps/RampsPanelViewModel.cs`, `Core/Ramps/RampLibrary.cs` | 3.5 |
+| Deleting a ramp chooses the one that took its place in the list, or the one before when it was last | `Ramps/RampsPanelViewModel.cs` | 3.5 |
+| Generate starts with the printable ASCII characters, without the space, and picks 10, from 1 to 100 | `Ramps/RampsPanelViewModel.cs`, `Core/Ramps/RampGenerator.cs` | 3.5 |
+| Import lists every file it couldn't read in one message, with the reason. Export suggests the ramp's name as the file name | `Ramps/RampsPanelViewModel.cs`, `Ramps/AvaloniaRampFileDialogs.cs` | 3.5 |
+| Tool Options' Ramp dropdown lists the user's ramps after the built-in ones, each with its characters | `Core/Tools/RampStrokes/UserRampChoices.cs` | 3.5 |
+| Ramps are saved as soon as they change. Tool options, each group's last tool and the colours are saved when the window closes, so stopping the app from the IDE forgets that run's changes | `Ramps/RememberedRamps.cs`, `Canvas/RememberedToolState.cs` | 3.5 |
 
 ## Ideas to revisit
 

@@ -201,6 +201,26 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ActiveTool));
     }
 
+    /// <summary>Each group's tool that was chosen last, by group id. A group whose tool hasn't been chosen isn't there.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> LastToolOfGroup => _lastToolOfGroup;
+
+    /// <summary>
+    /// Sets the tool each group brings back when it's chosen, such as the ones saved last time, without choosing any.
+    /// A group or tool that doesn't exist, or a tool that isn't in its group, is ignored.
+    /// </summary>
+    public void RestoreLastTools(IReadOnlyDictionary<string, string> lastToolOfGroup)
+    {
+        ArgumentNullException.ThrowIfNull(lastToolOfGroup);
+
+        foreach (var (groupId, toolId) in lastToolOfGroup)
+        {
+            var group = _tools.Groups.FirstOrDefault(group => group.Id == groupId);
+            if (group is not null && group.ToolIds.Contains(toolId))
+                _lastToolOfGroup[groupId] = toolId;
+        }
+    }
+
     /// <summary>Chooses the group's tool that was chosen last, or its first tool if none has been (ADR 0049).</summary>
     public void SelectToolGroup(string groupId)
     {

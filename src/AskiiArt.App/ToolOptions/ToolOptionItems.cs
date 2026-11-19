@@ -66,19 +66,29 @@ internal sealed class NumberToolOptionItem(NumberToolOption option, ToolOptionVa
     }
 }
 
-/// <summary>A choice, shown as a row of buttons of which one is down, or as a dropdown when there are many.</summary>
+/// <summary>
+/// A choice, shown as a row of buttons of which one is down, or as a dropdown when there are many. Its choices can
+/// change while it's shown, as the user's ramps do (ADR 0052).
+/// </summary>
 internal sealed class ChoiceToolOptionItem : ToolOptionItem
 {
     // More choices than this make a dropdown. A placeholder rule (docs/TEMPORARY-UI.md).
     private const int MostChoicesAsButtons = 2;
 
+    private readonly ChoiceToolOption _option;
+    private readonly ToolOptionValues _values;
+    private IReadOnlyList<ToolOptionChoice> _shownChoices;
+
     public ChoiceToolOptionItem(ChoiceToolOption option, ToolOptionValues values)
         : base(option)
     {
-        Choices = [.. option.Choices.Select(choice => new ToolOptionChoiceItem(option, choice, values))];
+        _option = option;
+        _values = values;
+        _shownChoices = values.ChoicesOf(option);
+        Choices = CreateChoiceItems();
     }
 
-    public IReadOnlyList<ToolOptionChoiceItem> Choices { get; }
+    public IReadOnlyList<ToolOptionChoiceItem> Choices { get; private set; }
 
     /// <summary>Whether the toolbar shows the choices as a dropdown rather than as a row of buttons.</summary>
     public bool IsDropDown => Choices.Count > MostChoicesAsButtons;
@@ -101,18 +111,30 @@ internal sealed class ChoiceToolOptionItem : ToolOptionItem
 
     public override void Refresh()
     {
+        var choices = _values.ChoicesOf(_option);
+        if (!choices.SequenceEqual(_shownChoices))
+        {
+            _shownChoices = choices;
+            Choices = CreateChoiceItems();
+            OnPropertyChanged(nameof(Choices));
+            OnPropertyChanged(nameof(IsDropDown));
+        }
+
         foreach (var choice in Choices)
             choice.Refresh();
 
         OnPropertyChanged(nameof(SelectedChoice));
     }
+
+    private ToolOptionChoiceItem[] CreateChoiceItems() =>
+        [.. _shownChoices.Select(choice => new ToolOptionChoiceItem(_option, choice, _values))];
 }
 
 /// <summary>One of a choice option's buttons, or one of its dropdown's items.</summary>
 internal sealed class ToolOptionChoiceItem(ChoiceToolOption option, ToolOptionChoice choice, ToolOptionValues values)
     : ObservableObject
 {
-    public string Name { get; } = UiText.Get(choice.NameKey);
+    public string Name { get; } = choice.Name ?? UiText.Get(choice.NameKey);
 
     /// <summary>
     /// More about the choice, shown after its name, such as a ramp's characters. Null when there's none.

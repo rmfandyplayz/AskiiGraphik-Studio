@@ -119,6 +119,7 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(WindowMenuActionIds.ToggleHistory),
             new ActionMenuEntry(WindowMenuActionIds.ToggleColor),
             new ActionMenuEntry(WindowMenuActionIds.ToggleSwatches),
+            new ActionMenuEntry(WindowMenuActionIds.ToggleRamps),
             new SeparatorMenuEntry(),
             new ActionMenuEntry(WindowMenuActionIds.ToggleFileToolbar),
             new ActionMenuEntry(WindowMenuActionIds.ToggleToolsToolbar),

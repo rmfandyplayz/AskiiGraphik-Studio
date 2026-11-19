@@ -301,6 +301,30 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         Assert.False(_viewModel.HasWarning);
     }
 
+    [AvaloniaFact]
+    public void TheRampDropdown_FollowsTheUsersRamps()
+    {
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var mine = _canvas.ToolSettings.Ramps.Add("Mine", Ramp.FromText("ab"));
+
+        var last = Choice(Strings.ToolOptionRamp).Choices[^1];
+        Assert.Equal(("Mine", "ab"), (last.Name, last.Detail));
+        Assert.Equal(BuiltInRamps.All.Count + 1, Choice(Strings.ToolOptionRamp).Choices.Count);
+
+        _canvas.ToolSettings.Ramps.Rename(mine.Id, "Renamed");
+        _canvas.ToolSettings.Ramps.Change(mine.Id, Ramp.FromText("xyz"));
+        last = Choice(Strings.ToolOptionRamp).Choices[^1];
+        Assert.Equal(("Renamed", "xyz"), (last.Name, last.Detail));
+
+        last.IsChosen = true;
+        Assert.Equal(mine.Id, _canvas.ToolSettings.For(RampOptions.Group).Get(RampOptions.Ramp));
+
+        _canvas.ToolSettings.Ramps.Delete(mine.Id);
+        var choices = Choice(Strings.ToolOptionRamp).Choices;
+        Assert.Equal(BuiltInRamps.All.Count, choices.Count);
+        Assert.True(choices.Single(choice => choice.Name == Strings.RampStandard).IsChosen);
+    }
+
     private NumberToolOptionItem Size => (NumberToolOptionItem)_viewModel.Items[0];
 
     private ChoiceToolOptionItem Choice(string name) =>

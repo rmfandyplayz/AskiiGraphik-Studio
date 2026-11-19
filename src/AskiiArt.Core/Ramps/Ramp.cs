@@ -30,17 +30,18 @@ public sealed class Ramp : IEquatable<Ramp>
             throw new ArgumentOutOfRangeException(nameof(zeroLevel), zeroLevel, null);
 
         _glyphs = [.. glyphs];
-        if (_glyphs.Length == 0)
-            throw new ArgumentException("A ramp needs at least one glyph.", nameof(glyphs));
-
-        var seen = new HashSet<Rune>();
-        foreach (var glyph in _glyphs)
+        var check = CheckGlyphs(_glyphs);
+        switch (check.Problem)
         {
-            if (glyph == _space || !CharacterSet.Unicode.Allows(glyph))
-                throw new ArgumentException($"A ramp can't hold U+{glyph.Value:X4}.", nameof(glyphs));
-
-            if (!seen.Add(glyph))
-                throw new ArgumentException($"U+{glyph.Value:X4} is in the ramp more than once.", nameof(glyphs));
+            case RampTextProblem.None:
+                break;
+            case RampTextProblem.Empty:
+                throw new ArgumentException("A ramp needs at least one glyph.", nameof(glyphs));
+            case RampTextProblem.Repeated:
+                throw new ArgumentException($"U+{check.Glyph.Value:X4} is in the ramp more than once.",
+                    nameof(glyphs));
+            default:
+                throw new ArgumentException($"A ramp can't hold U+{check.Glyph.Value:X4}.", nameof(glyphs));
         }
 
         ZeroLevel = zeroLevel;
@@ -63,6 +64,37 @@ public sealed class Ramp : IEquatable<Ramp>
     {
         ArgumentNullException.ThrowIfNull(glyphs);
         return new Ramp(glyphs.EnumerateRunes(), zeroLevel);
+    }
+
+    /// <summary>
+    /// Whether the characters in <paramref name="glyphs"/> can make a ramp, and if not, the first thing wrong, so
+    /// the ramp editor can say why (ADR 0052).
+    /// </summary>
+    public static RampTextCheck Check(string glyphs)
+    {
+        ArgumentNullException.ThrowIfNull(glyphs);
+        return CheckGlyphs([.. glyphs.EnumerateRunes()]);
+    }
+
+    private static RampTextCheck CheckGlyphs(Rune[] glyphs)
+    {
+        if (glyphs.Length == 0)
+            return new RampTextCheck(RampTextProblem.Empty, default);
+
+        var seen = new HashSet<Rune>();
+        foreach (var glyph in glyphs)
+        {
+            if (glyph == _space)
+                return new RampTextCheck(RampTextProblem.Space, glyph);
+
+            if (!CharacterSet.Unicode.Allows(glyph))
+                return new RampTextCheck(RampTextProblem.Unusable, glyph);
+
+            if (!seen.Add(glyph))
+                return new RampTextCheck(RampTextProblem.Repeated, glyph);
+        }
+
+        return new RampTextCheck(RampTextProblem.None, default);
     }
 
     /// <summary>

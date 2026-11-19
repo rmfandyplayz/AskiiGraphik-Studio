@@ -19,7 +19,7 @@ ARCHITECTURE §3 picks xUnit, Verify, a property-based library and Avalonia.Head
 - **CsCheck 4.9.1** for property-based tests (approved by the owner; pinned when first used, in step 1.2).
 - **Avalonia.Headless.XUnit** at the same version as every other Avalonia package.
 - **Tests run on Microsoft.Testing.Platform (MTP),** set in `global.json`. xUnit v3 test projects are self-hosting executables (`OutputType` Exe, set in `tests/Directory.Build.props`), and `Microsoft.NET.Test.Sdk` isn't needed.
-- **`global.json` pins the SDK to 11.0.100** with `rollForward: latestFeature`, so any newer .NET 11 SDK also works. The projects still target .NET 10.
+- **`global.json` pins the SDK to 11.0.100** with `rollForward: latestFeature`, so any newer .NET 11 SDK also works. The projects still target .NET 10 (ADR 0051).
 
 ## Alternatives
 

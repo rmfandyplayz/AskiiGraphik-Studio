@@ -243,7 +243,8 @@ public sealed class BrushToolTests
     public void AMonochromeDocument_GetsGlyphsWithoutColors()
     {
         var session = new EditingSession(TestCells.CreateDocument(2, 1));
-        var tool = new BrushTool(session, _colors, TestTools.Tip(_tip), _ramp, _options, () => _densities);
+        var tool = new BrushTool(session, _colors, TestTools.Tip(_tip), TestTools.Ramp(_ramp), _options,
+            () => _densities);
 
         tool.PointerPressed(PointerAt(0, 0));
         tool.PointerReleased(PointerAt(0, 0));
@@ -353,7 +354,7 @@ public sealed class BrushToolTests
     }
 
     private BrushTool CreateTool() =>
-        new(_session, _colors, TestTools.Tip(_tip), _ramp, _options, () => _densities);
+        new(_session, _colors, TestTools.Tip(_tip), TestTools.Ramp(_ramp), _options, () => _densities);
 
     private void SetTip(int size, int softness)
     {

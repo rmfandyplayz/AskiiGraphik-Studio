@@ -19,6 +19,7 @@ using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
+using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
@@ -76,6 +77,7 @@ internal static class AppServices
             provider.GetRequiredService<IAppShell>(),
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider>(provider => new RampActions(
+            provider.GetRequiredService<RampsPanelViewModel>(),
             provider.GetRequiredService<ActiveDocument>(),
             provider.GetRequiredService<DocumentFiles>(),
             provider.GetRequiredService<FontCatalog>(),
@@ -99,8 +101,20 @@ internal static class AppServices
         services.AddSingleton<ToolRegistry>();
         services.AddSingleton<PaintColors>();
         services.AddSingleton<PaintColorsViewModel>();
-        services.AddSingleton<ToolSettings>();
+        services.AddSingleton(provider => RememberedRamps.CreateLibrary(provider.GetRequiredService<IAppSettings>()));
+        services.AddSingleton(provider => new ToolSettings(provider.GetRequiredService<RampLibrary>()));
         services.AddSingleton<ToolOptionsViewModel>();
+        services.AddSingleton<RememberedToolState>();
+        services.AddSingleton<IRampFileDialogs, AvaloniaRampFileDialogs>();
+        services.AddSingleton(provider =>
+        {
+            var activeDocument = provider.GetRequiredService<ActiveDocument>();
+            var fonts = provider.GetRequiredService<FontCatalog>();
+            var densities = provider.GetRequiredService<GlyphDensityCache>();
+            return new RampsPanelViewModel(provider.GetRequiredService<RampLibrary>(),
+                provider.GetRequiredService<IAppShell>(), provider.GetRequiredService<IRampFileDialogs>(),
+                () => densities.GetMeter(fonts.Resolve(activeDocument.Session.Document.Font)));
+        });
 
         // The document being edited. The app starts with an empty one, as New would make it.
         services.AddSingleton(_ =>

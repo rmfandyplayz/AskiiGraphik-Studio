@@ -1,0 +1,93 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Written with Claude Code (Anthropic). -->
+<!-- Placeholder Ramps window (ADR 0052): the ramps, built-in ones first, with buttons below, then an editor for the
+     chosen one with a preview, then a section that generates a ramp. Everything is one column that scrolls. -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ramps="using:AskiiArt.App.Ramps"
+             xmlns:res="using:AskiiArt.App.Resources"
+             x:Class="AskiiArt.App.Ramps.RampsPanelView"
+             x:DataType="ramps:RampsPanelViewModel">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.note">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppSecondaryTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.problem">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource AppWarningTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.heading">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBox.ramp">
+      <Setter Property="FontFamily" Value="{StaticResource AppRampTextFontFamily}" />
+    </Style>
+    <Style Selector="TextBlock.ramp">
+      <Setter Property="FontFamily" Value="{StaticResource AppRampTextFontFamily}" />
+    </Style>
+  </UserControl.Styles>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{StaticResource AppRampsPanelPadding}" Spacing="{StaticResource AppSpacingSmall}">
+      <ListBox x:Name="Rows"
+               Background="{x:Null}"
+               MaxHeight="{StaticResource AppRampsListMaxHeight}"
+               ItemsSource="{Binding Rows}"
+               SelectedItem="{Binding SelectedRow, Mode=TwoWay}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="ramps:RampRow">
+            <StackPanel>
+              <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Classes="note ramp" Text="{Binding Characters}" TextTrimming="CharacterEllipsis"
+                         TextWrapping="NoWrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <ContentControl x:Name="ButtonsHost" />
+
+      <TextBlock Classes="note"
+                 IsVisible="{Binding IsBuiltInSelected}"
+                 Text="{x:Static res:Strings.RampBuiltInNote}" />
+
+      <TextBlock Text="{x:Static res:Strings.RampNameLabel}" />
+      <TextBox Text="{Binding Name}" IsReadOnly="{Binding !IsEditable}" />
+      <TextBlock Classes="problem" IsVisible="{Binding HasNameProblem}" Text="{Binding NameProblem}" />
+
+      <TextBlock Text="{x:Static res:Strings.RampCharactersLabel}" />
+      <TextBox Classes="ramp" Text="{Binding Characters}" IsReadOnly="{Binding !IsEditable}" />
+      <TextBlock Classes="problem" IsVisible="{Binding HasCharactersProblem}" Text="{Binding CharactersProblem}" />
+
+      <TextBlock Text="{x:Static res:Strings.RampLightestLabel}" />
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingMedium}">
+        <RadioButton IsChecked="{Binding IsLightestEmpty}"
+                     IsEnabled="{Binding IsEditable}"
+                     Content="{x:Static res:Strings.RampLightestEmpty}" />
+        <RadioButton IsChecked="{Binding IsLightestSpace}"
+                     IsEnabled="{Binding IsEditable}"
+                     Content="{x:Static res:Strings.RampLightestSpace}" />
+      </StackPanel>
+
+      <TextBlock Text="{x:Static res:Strings.RampPreviewLabel}" />
+      <TextBlock Classes="ramp" Text="{Binding Preview}" />
+
+      <Separator />
+      <TextBlock Classes="heading" Text="{x:Static res:Strings.GenerateRampLabel}" />
+      <TextBlock Text="{x:Static res:Strings.GenerateRampCandidatesLabel}" />
+      <TextBox Classes="ramp" Text="{Binding GenerateCandidates}" TextWrapping="Wrap" />
+      <TextBlock Text="{x:Static res:Strings.GenerateRampCountLabel}" />
+      <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingMedium}">
+        <NumericUpDown Value="{Binding GenerateCount, Mode=TwoWay}"
+                       Minimum="1"
+                       Maximum="{x:Static ramps:RampsPanelViewModel.MostGeneratedCount}"
+                       Increment="1"
+                       FormatString="0"
+                       ParsingNumberStyle="Integer"
+                       ClipValueToMinMax="True"
+                       Width="{StaticResource AppNumberBoxWidth}" />
+        <Button Command="{Binding GenerateCommand}" Content="{x:Static res:Strings.GenerateRampButton}" />
+      </StackPanel>
+      <TextBlock Classes="problem" IsVisible="{Binding HasGenerateProblem}" Text="{Binding GenerateProblem}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

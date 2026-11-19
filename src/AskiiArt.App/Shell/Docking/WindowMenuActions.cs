@@ -18,6 +18,8 @@ internal sealed class WindowMenuActions(ShellDocking docking) : IActionProvider
             ShellDockingIds.ColorPanel);
         yield return CreateWindowToggle(WindowMenuActionIds.ToggleSwatches, nameof(Strings.ActionToggleSwatches),
             ShellDockingIds.SwatchesPanel);
+        yield return CreateWindowToggle(WindowMenuActionIds.ToggleRamps, nameof(Strings.ActionToggleRamps),
+            ShellDockingIds.RampsPanel);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleFileToolbar, nameof(Strings.ActionToggleFileToolbar), ShellDockingIds.FileToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleToolsToolbar, nameof(Strings.ActionToggleToolsToolbar), ShellDockingIds.ToolsToolbar);
         yield return CreateToolbarToggle(WindowMenuActionIds.ToggleEditToolbar, nameof(Strings.ActionToggleEditToolbar), ShellDockingIds.EditToolbar);

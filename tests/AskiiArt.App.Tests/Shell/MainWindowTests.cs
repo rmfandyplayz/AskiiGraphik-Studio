@@ -8,6 +8,7 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Painting;
+using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -17,6 +18,7 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
+using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
@@ -41,11 +43,14 @@ public sealed class MainWindowTests : IDisposable
     private readonly TestCanvas _canvas = new();
     private readonly List<Window> _windows = [];
     private readonly ActionRegistry _actions;
+    private readonly RampsPanelViewModel _ramps;
 
     public MainWindowTests()
     {
         // With the macOS-only actions too, so the macOS menu layout can be built as well.
-        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true));
+        _ramps = _canvas.CreateRampsPanelViewModel(_shell);
+        _actions = new ActionRegistry(TestActions.CreateProviders(_canvas, _shell, _dialogs, isMacOS: true,
+            ramps: _ramps));
     }
 
     public void Dispose()
@@ -336,7 +341,8 @@ public sealed class MainWindowTests : IDisposable
     [AvaloniaTheory]
     [InlineData(ShellDockingIds.ColorPanel, typeof(ColorPanelView))]
     [InlineData(ShellDockingIds.SwatchesPanel, typeof(SwatchesView))]
-    public void TheColorWindows_StartClosed_AndOpenWithTheirViews(string windowId, Type viewType)
+    [InlineData(ShellDockingIds.RampsPanel, typeof(RampsPanelView))]
+    public void TheColorAndRampsWindows_StartClosed_AndOpenWithTheirViews(string windowId, Type viewType)
     {
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
         var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
@@ -353,6 +359,41 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.True(docking.IsWindowOpen(windowId));
         Assert.Contains(window.GetVisualDescendants(), visual => visual.GetType() == viewType);
+    }
+
+    [AvaloniaFact]
+    public void TheRampsWindow_ListsTheRamps_WithItsButtonsBelow()
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
+            .Build(KeyModifiers.Control);
+        _windows.Add(window);
+        window.Show();
+        docking.ToggleWindow(ShellDockingIds.RampsPanel);
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+
+        var view = window.GetVisualDescendants().OfType<RampsPanelView>().Single();
+        Assert.Equal(BuiltInRamps.All.Count, view.GetVisualDescendants().OfType<ListBox>().Single().ItemCount);
+        var buttons = view.Buttons!.GetVisualDescendants().OfType<Button>().ToList();
+        Assert.Equal(ToolbarLayout.CreateRampsPanel().ActionIds().Count(), buttons.Count);
+    }
+
+    [AvaloniaFact]
+    public void TheToolState_IsRestoredWhenTheWindowIsBuilt_AndSavedWhenItCloses()
+    {
+        _settings.SetText(RememberedToolState.ColorsKey, """{ "foreground": "red", "background": null }""");
+        var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
+        Assert.Equal(CellColor.FromAnsi(AnsiColor.Red), _canvas.Colors.Foreground);
+
+        _canvas.Colors.Set(CellColor.FromAnsi(AnsiColor.Blue), CellColor.Unset);
+        window.Show();
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains("blue", _settings.GetText(RememberedToolState.ColorsKey), StringComparison.Ordinal);
+        Assert.NotNull(_settings.GetText(RememberedToolState.ToolOptionsKey));
     }
 
     [AvaloniaTheory]
@@ -594,5 +635,6 @@ public sealed class MainWindowTests : IDisposable
             _canvas.CreateDocumentFiles(_dialogs, _shell), _shell,
             docking ?? new ShellDocking(_settings, NullLogger<ShellDocking>.Instance), _settings,
             new HistoryPanelViewModel(_canvas.ActiveDocument), new LayersPanelViewModel(_canvas.ActiveDocument),
-            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel());
+            _canvas.CreatePaintColorsViewModel(), _canvas.CreateToolOptionsViewModel(), _ramps,
+            new RememberedToolState(_settings));
 }

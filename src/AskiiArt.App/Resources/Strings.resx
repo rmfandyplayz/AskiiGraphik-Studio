@@ -938,4 +938,180 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>This document has no background colours</value>
     <comment>Tool Options toolbar: the BG Eraser is chosen in a monochrome document, so there's nothing for it to erase.</comment>
   </data>
+  <data name="ActionToggleRamps" xml:space="preserve">
+    <value>_Ramps</value>
+    <comment>Window menu: shows or hides the Ramps window, where ramps are viewed, edited, made and shared.</comment>
+  </data>
+  <data name="PanelRamps" xml:space="preserve">
+    <value>Ramps</value>
+  </data>
+  <data name="ActionRampNew" xml:space="preserve">
+    <value>_New</value>
+    <comment>Ramps window: adds a new ramp, a copy of Standard to start from.</comment>
+  </data>
+  <data name="ActionRampDuplicate" xml:space="preserve">
+    <value>_Duplicate</value>
+    <comment>Ramps window: adds a copy of the chosen ramp.</comment>
+  </data>
+  <data name="ActionRampDelete" xml:space="preserve">
+    <value>De_lete</value>
+    <comment>Ramps window: deletes the chosen ramp, after asking.</comment>
+  </data>
+  <data name="ActionRampSortByDarkness" xml:space="preserve">
+    <value>_Sort by Darkness</value>
+    <comment>Ramps window: puts the chosen ramp's characters in order from lightest to darkest, as measured in the document's font.</comment>
+  </data>
+  <data name="ActionRampImport" xml:space="preserve">
+    <value>_Import…</value>
+    <comment>Ramps window: adds ramps from ramp files.</comment>
+  </data>
+  <data name="ActionRampExport" xml:space="preserve">
+    <value>_Export…</value>
+    <comment>Ramps window: saves the chosen ramp to a ramp file, to share it.</comment>
+  </data>
+  <data name="RampNewName" xml:space="preserve">
+    <value>New ramp</value>
+    <comment>Ramps window: the name a new ramp starts with. A number follows it when it's taken.</comment>
+  </data>
+  <data name="RampCopyNameFormat" xml:space="preserve">
+    <value>{0} copy</value>
+    <comment>Ramps window: the name of a duplicated ramp. {0} is the original's name.</comment>
+  </data>
+  <data name="RampGeneratedName" xml:space="preserve">
+    <value>Generated ramp</value>
+    <comment>Ramps window: the name a generated ramp gets. A number follows it when it's taken.</comment>
+  </data>
+  <data name="RampNameLabel" xml:space="preserve">
+    <value>Name</value>
+    <comment>Ramps window: label of the chosen ramp's name.</comment>
+  </data>
+  <data name="RampCharactersLabel" xml:space="preserve">
+    <value>Characters, lightest first</value>
+    <comment>Ramps window: label of the chosen ramp's characters.</comment>
+  </data>
+  <data name="RampLightestLabel" xml:space="preserve">
+    <value>Lightest level</value>
+    <comment>Ramps window: label of what the ramp paints where there's no ink.</comment>
+  </data>
+  <data name="RampLightestEmpty" xml:space="preserve">
+    <value>Empty cell</value>
+    <comment>Ramps window: the lightest level is an empty cell, which shows the layers below.</comment>
+  </data>
+  <data name="RampLightestSpace" xml:space="preserve">
+    <value>Space</value>
+    <comment>Ramps window: the lightest level is a space, which covers the layers below.</comment>
+  </data>
+  <data name="RampPreviewLabel" xml:space="preserve">
+    <value>Preview</value>
+    <comment>Ramps window: label of the chosen ramp painting from light to dark.</comment>
+  </data>
+  <data name="RampBuiltInNote" xml:space="preserve">
+    <value>Built-in ramps can't be changed. Duplicate one to edit a copy.</value>
+    <comment>Ramps window: shown while a built-in ramp is chosen.</comment>
+  </data>
+  <data name="RampNameBlank" xml:space="preserve">
+    <value>Give the ramp a name.</value>
+    <comment>Ramps window: the name being typed is empty, so the ramp keeps its old one.</comment>
+  </data>
+  <data name="RampNameTaken" xml:space="preserve">
+    <value>Another ramp already has this name.</value>
+    <comment>Ramps window: the name being typed is taken, so the ramp keeps its old one.</comment>
+  </data>
+  <data name="RampCharactersEmpty" xml:space="preserve">
+    <value>Type at least one character.</value>
+    <comment>Ramps window: the characters being typed are empty, so the ramp keeps its old ones.</comment>
+  </data>
+  <data name="RampCharactersSpace" xml:space="preserve">
+    <value>A space can't be a step. To paint spaces where there's no ink, choose Space as the lightest level.</value>
+    <comment>Ramps window: the characters being typed hold a space, so the ramp keeps its old ones.</comment>
+  </data>
+  <data name="RampCharactersRepeatedFormat" xml:space="preserve">
+    <value>{0} is in the ramp more than once.</value>
+    <comment>Ramps window: the characters being typed repeat one, so the ramp keeps its old ones. {0} is the character.</comment>
+  </data>
+  <data name="RampCharactersUnusableFormat" xml:space="preserve">
+    <value>U+{0} can't be in a ramp.</value>
+    <comment>Ramps window: the characters being typed hold one that can't fill a cell, such as a tab. {0} is its code in hexadecimal.</comment>
+  </data>
+  <data name="GenerateRampLabel" xml:space="preserve">
+    <value>Generate a ramp</value>
+    <comment>Ramps window: heading of the section that makes a ramp from candidate characters.</comment>
+  </data>
+  <data name="GenerateRampCandidatesLabel" xml:space="preserve">
+    <value>Pick from these characters</value>
+    <comment>Ramps window: label of the characters Generate picks from.</comment>
+  </data>
+  <data name="GenerateRampCountLabel" xml:space="preserve">
+    <value>How many to pick</value>
+    <comment>Ramps window: label of how many characters Generate picks.</comment>
+  </data>
+  <data name="GenerateRampButton" xml:space="preserve">
+    <value>Generate</value>
+    <comment>Ramps window: makes a ramp of the candidate characters whose darkness is most evenly spread in the document's font, and adds it.</comment>
+  </data>
+  <data name="GenerateRampNothingToPick" xml:space="preserve">
+    <value>None of these characters shows any ink in this font.</value>
+    <comment>Ramps window: Generate had nothing to pick from.</comment>
+  </data>
+  <data name="DeleteRampTitle" xml:space="preserve">
+    <value>Delete Ramp</value>
+    <comment>Title of the dialog that asks before deleting a ramp.</comment>
+  </data>
+  <data name="DeleteRampMessageFormat" xml:space="preserve">
+    <value>Delete the ramp “{0}”? This can't be undone. Tools using it will switch to Standard.</value>
+    <comment>Asks before deleting a ramp. {0} is its name.</comment>
+  </data>
+  <data name="DeleteRampConfirm" xml:space="preserve">
+    <value>Delete</value>
+    <comment>The button that deletes the ramp.</comment>
+  </data>
+  <data name="RampFileTypeName" xml:space="preserve">
+    <value>Ramp files</value>
+    <comment>File picker: the kind of file a ramp is shared in.</comment>
+  </data>
+  <data name="ImportRampsFilePickerTitle" xml:space="preserve">
+    <value>Import Ramps</value>
+    <comment>Title of the file picker for importing ramps.</comment>
+  </data>
+  <data name="ExportRampFilePickerTitle" xml:space="preserve">
+    <value>Export Ramp</value>
+    <comment>Title of the file picker for exporting a ramp.</comment>
+  </data>
+  <data name="ImportRampsFailedTitle" xml:space="preserve">
+    <value>Import Ramps</value>
+    <comment>Title of the message saying some ramp files couldn't be imported.</comment>
+  </data>
+  <data name="ImportRampsFailedMessageFormat" xml:space="preserve">
+    <value>These files couldn't be imported:
+{0}</value>
+    <comment>{0} is a list of files, one per line, each with the reason.</comment>
+  </data>
+  <data name="ImportRampsFailureFormat" xml:space="preserve">
+    <value>{0}: {1}</value>
+    <comment>One line of the list of files that couldn't be imported. {0} is the file's name, {1} the reason.</comment>
+  </data>
+  <data name="RampFileNotARampFile" xml:space="preserve">
+    <value>it isn't a ramp file</value>
+    <comment>Why a file couldn't be imported.</comment>
+  </data>
+  <data name="RampFileNewerVersion" xml:space="preserve">
+    <value>it's from a newer version of the app</value>
+    <comment>Why a file couldn't be imported.</comment>
+  </data>
+  <data name="RampFileDamaged" xml:space="preserve">
+    <value>it's damaged</value>
+    <comment>Why a file couldn't be imported.</comment>
+  </data>
+  <data name="RampFileCouldNotRead" xml:space="preserve">
+    <value>it couldn't be read</value>
+    <comment>Why a file couldn't be imported.</comment>
+  </data>
+  <data name="ExportRampFailedTitle" xml:space="preserve">
+    <value>Export Ramp</value>
+    <comment>Title of the message saying a ramp couldn't be exported.</comment>
+  </data>
+  <data name="ExportRampFailedMessageFormat" xml:space="preserve">
+    <value>The ramp couldn't be saved as {0}. Check that the folder can be written to.</value>
+    <comment>{0} is the file's name.</comment>
+  </data>
 </root>
