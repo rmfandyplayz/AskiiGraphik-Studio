@@ -11,9 +11,9 @@ using CommunityToolkit.Mvvm.Input;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds
-/// Show Frame Rate. Zooming with the mouse wheel is handled by the canvas control itself, because
-/// it zooms around the pointer.
+/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds Show Frame Rate and
+/// Mouse Acts as a Pen. Zooming with the mouse wheel is handled by the canvas control itself, because it zooms around
+/// the pointer.
 /// </summary>
 internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugActions) : IActionProvider
 {
@@ -22,8 +22,9 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
         var zoomIn = new RelayCommand(canvas.ZoomIn, () => canvas.CanZoomIn);
         var zoomOut = new RelayCommand(canvas.ZoomOut, () => canvas.CanZoomOut);
         var gridState = new ActionCheckedState(() => canvas.IsGridVisible);
+        var penState = new ActionCheckedState(() => canvas.IsMouseActingAsPen);
 
-        canvas.PropertyChanged += (_, e) => OnCanvasPropertyChanged(e, zoomIn, zoomOut, gridState);
+        canvas.PropertyChanged += (_, e) => OnCanvasPropertyChanged(e, zoomIn, zoomOut, gridState, penState);
 
         // The plus key is "=" without Shift on many keyboards, so both work, as does the keypad.
         yield return new AppAction(CanvasActionIds.ZoomIn, nameof(Strings.ActionZoomIn), zoomIn,
@@ -57,6 +58,8 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
             canvas.FrameRate.PropertyChanged += (_, e) => OnFrameRatePropertyChanged(e, frameRateState);
             yield return new AppAction(CanvasActionIds.ShowFrameRate, nameof(Strings.ActionShowFrameRate),
                 new RelayCommand(canvas.FrameRate.Toggle), checkedState: frameRateState);
+            yield return new AppAction(CanvasActionIds.MouseActsAsPen, nameof(Strings.ActionMouseActsAsPen),
+                new RelayCommand(canvas.ToggleMouseActingAsPen), checkedState: penState);
         }
     }
 
@@ -67,7 +70,7 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
     }
 
     private static void OnCanvasPropertyChanged(PropertyChangedEventArgs e, RelayCommand zoomIn, RelayCommand zoomOut,
-        ActionCheckedState gridState)
+        ActionCheckedState gridState, ActionCheckedState penState)
     {
         switch (e.PropertyName)
         {
@@ -77,6 +80,9 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
                 break;
             case nameof(CanvasViewModel.IsGridVisible):
                 gridState.NotifyChanged();
+                break;
+            case nameof(CanvasViewModel.IsMouseActingAsPen):
+                penState.NotifyChanged();
                 break;
         }
     }

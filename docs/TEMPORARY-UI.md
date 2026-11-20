@@ -62,7 +62,8 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | History panel: a plain list, oldest step first and newest at the bottom, below a "Start" row. The current row is highlighted and undone rows are dimmed. A single click jumps, and focus then returns to the canvas | `Editing/HistoryPanelView.axaml` | 2.2 |
 | Step names: Typing, Edit Cells, Resize Canvas, Change Font, Change Character Set, Add Layer, Duplicate Layer, Delete Layer, Move Layer, Merge Down, Rename Layer, Show or Hide Layer, Lock or Unlock Layer, Change Space Option, Erase, Change Layer, Change Color Mode (2b.1, not reachable until 2b.3). Backspace and Delete count as Typing, because they merge into the same burst | `Strings.resx`, `TextTool` | 2.2 |
 | "Start" stays at the top even after the oldest steps are dropped to save memory, when it means the oldest point still reachable | `HistoryPanelViewModel` | 2.2 |
-| A Debug menu (Open Sample Document, Open Color Sample, Open ANSI Test Sample, Open RGB Test Sample, Open Density Sample, Throw Test Exception, Show Frame Rate) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs`, `Canvas/CanvasActions.cs`, `Ramps/RampActions.cs` | 0.3, 1.7, 2b.2, 2b.2b, 3.1 |
+| A Debug menu (Open Sample Document, Open Color Sample, Open ANSI Test Sample, Open RGB Test Sample, Open Density Sample, Throw Test Exception, Show Frame Rate, Mouse Acts as a Pen at Half Pressure) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs`, `Canvas/CanvasActions.cs`, `Ramps/RampActions.cs` | 0.3, 1.7, 2b.2, 2b.2b, 3.1, 3.7 |
+| Debug → Mouse Acts as a Pen at Half Pressure: while ticked, the mouse presses like a pen at half pressure, to try pen pressure without a tablet. It's off at every start and isn't remembered | `Canvas/PointerPressure.cs`, `Canvas/CanvasActions.cs` | 3.7 |
 | Debug → Show Frame Rate: at the right of the status bar, plain text such as "144 fps · 1% low 120 · slowest draw 1.2 ms", from the last 2 seconds and refreshed twice a second, or "Canvas idle". It's off at every start and isn't remembered | `Canvas/FrameRate/FrameRateReadout.cs`, `Shell/StatusBarView.axaml`, `AppStatusBarFrameRateMargin` | 2b.2b |
 | Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Close Cmd+W (macOS only). Export as Text, Export as ANSI and Copy as ANSI have none | each feature's `*Actions.cs` | 0.3–1.8 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
@@ -250,6 +251,14 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Tool Options shows the Character Brush's character in a small button after the tip options; clicking it shows the Characters window | `ToolOptions/ToolOptionsToolbar.axaml` | 3.6 |
 | The Character Brush's History step is "Paint", like the other brushes' | `Core/Tools/Brush/CharacterBrushTool.cs` | 3.6 |
 
+### Pen pressure (step 3.7, ADR 0054)
+
+| Choice | Where | Step |
+|---|---|---|
+| A pen's pressure scales how strongly the Brush and the Soft Eraser cover each cell, linearly, with no setting to turn it off. A mouse or touch presses fully. The other tools ignore pressure | `Core/Tools/RampStrokes/RampStroke.cs`, `Canvas/PointerPressure.cs` | 3.7 |
+| Pressing harder without moving paints further where the pen is. The line from one pointer report to the next takes the newer report's pressure | `Core/Tools/RampStrokes/RampStroke.cs` | 3.7 |
+| The pen's eraser end and side buttons do nothing special: the eraser end paints like the tip | `Canvas/CanvasControl.cs` | 3.7 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
@@ -279,7 +288,8 @@ The owner's ideas, parked until the stage they belong to.
 - **Blend modes for the Brush** (raised in M3 planning): Blend only for now. Replace and Darken only could come later, perhaps from a dropdown on Tool Options where they show greyed out until then.
 - **Erasing text and backgrounds separately** (raised in M3 planning): the owner wants to erase a background without erasing the text first. 3.4 built separate erasers: soft and hard for text, and hard for backgrounds, since what a soft background eraser does waits for M5. A better way, such as a toggle on Tool Options, gets found in the UI Pass (M8).
 - **How ramp strokes round** (raised after 3.4's testing; **decide in M8**): the Soft Eraser always lightens at least one level, so a low Strength still clears `.`, but 1% and 10% look alike. The Brush still rounds to the nearest level, so repeated soft strokes stop darkening their edge short of the intensity. The owner leans towards at least one level, and will decide for both tools in the UI Pass.
-- **Pen pressure choices** (raised in M3 planning): pressure scales intensity for now; later the user chooses what it controls. Checked on a real tablet in M10.
+- **Pen pressure choices** (raised in M3 planning): 3.7 made pressure scale how strongly the Brush and the Soft Eraser cover cells (ADR 0054). Later the user chooses what it controls (size, strength) and perhaps a curve. Checked on a real tablet in M10.
+- **The pen's eraser end** (raised in 3.7's planning): turning the pen over could erase, as it does in painting apps. Today it paints like the tip.
 - **Shipped or measured ramp order** (raised after 3.1's testing): Standard keeps its classic `.:-=+*#%@`, though every bundled font measures `-` lighter than `:`. The user could switch a ramp between its shipped order and the order the font's measured darkness gives.
 - **Ramps and brushes across the whole darkness range** (raised after 3.1's testing): letters and symbols ink at most about a quarter of a cell (`@` is about 25%), while blocks reach all of it. Other ramps or brushes could make use of that later.
 - **Notice when a file changes outside the app** (raised in 1.7): a message when the open document's file is deleted or changed elsewhere, instead of locking the file (ADR 0024). It's on the roadmap for M10.

@@ -47,3 +47,5 @@ Step 3.4 adds a soft eraser for text and a hard one for backgrounds, as separate
 - The ramp choice that 3.5 saves is one setting for both tools.
 
 Updated 2026-11-18: after testing step 3.4, the owner chose that every Soft Eraser stroke lightens at least one level, so a low Strength still clears. `RampStroke` takes `movesAtLeastOneLevel` for this; the Brush passes false.
+
+Updated 2026-11-19: a pen's pressure scales how strongly the Soft Eraser covers each cell, and it still lightens at least one level wherever it reaches (ADR 0054).

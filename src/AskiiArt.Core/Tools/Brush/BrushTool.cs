@@ -14,12 +14,12 @@ namespace AskiiArt.Core.Tools.Brush;
 
 /// <summary>
 /// The Brush, which paints a ramp (ADR 0049). Each cell under the tip moves from its darkness now towards the brush's
-/// intensity, by the tip's weight there, and shows the ramp's glyph for where it gets to, once per stroke
-/// (<see cref="RampStroke"/>). Every glyph it reaches gets the current colours, as typing gives them, even one whose
-/// level doesn't change. One lightened to nothing loses its glyph and keeps its background, as does an empty cell it
-/// leaves empty. It doesn't paint while the ramp has characters the document's character set can't hold. The tip is
-/// the Brush group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo step.
-/// Alt+click (Option+click) picks both colours up from what the canvas shows instead.
+/// intensity, by the tip's weight there times the pen's pressure (ADR 0054), and shows the ramp's glyph for where it
+/// gets to, once per stroke (<see cref="RampStroke"/>). Every glyph it reaches gets the current colours, as typing
+/// gives them, even one whose level doesn't change. One lightened to nothing loses its glyph and keeps its background,
+/// as does an empty cell it leaves empty. It doesn't paint while the ramp has characters the document's character set
+/// can't hold. The tip is the Brush group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce
+/// into one undo step. Alt+click (Option+click) picks both colours up from what the canvas shows instead.
 /// </summary>
 public sealed class BrushTool : ITool
 {

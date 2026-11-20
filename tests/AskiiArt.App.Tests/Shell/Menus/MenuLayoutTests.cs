@@ -114,6 +114,7 @@ public sealed class MenuLayoutTests
                 ShellActionIds.ThrowTestException,
                 ShellActionIds.AllowTinyWindow,
                 CanvasActionIds.ShowFrameRate,
+                CanvasActionIds.MouseActsAsPen,
                 WindowSampleActionIds.First,
                 WindowSampleActionIds.Second,
                 WindowSampleActionIds.Third,

@@ -60,3 +60,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0051](0051-built-with-the-net-11-sdk.md) | Built with the .NET 11 SDK | Accepted |
 | [0052](0052-user-ramps-and-remembered-tool-settings.md) | User ramps and remembered tool settings | Accepted |
 | [0053](0053-the-character-brush-and-character-sets.md) | The Character Brush and character sets | Accepted |
+| [0054](0054-pen-pressure.md) | Pen pressure | Accepted |

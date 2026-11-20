@@ -378,6 +378,10 @@
     <value>Show _Frame Rate</value>
     <comment>Debug menu: shows or hides the canvas's frame rate at the right of the status bar.</comment>
   </data>
+  <data name="ActionMouseActsAsPen" xml:space="preserve">
+    <value>Mouse Acts as a Pen at Half Pressure</value>
+    <comment>Debug menu: while ticked, the mouse presses like a drawing tablet's pen at half pressure, to try pen pressure without a tablet.</comment>
+  </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>
     <comment>Debug menu: replaces the document with a busy one in colour, to check how the canvas draws colour.</comment>

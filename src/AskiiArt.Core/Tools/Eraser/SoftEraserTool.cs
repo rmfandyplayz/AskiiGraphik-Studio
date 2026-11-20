@@ -13,11 +13,11 @@ namespace AskiiArt.Core.Tools.Eraser;
 
 /// <summary>
 /// The Soft Eraser (ARCHITECTURE §8.3, ADR 0050), which lightens text along the ramp it shares with the Brush. Each
-/// glyph under the tip moves lighter by the strength times the tip's weight there, and at least one level, once per
-/// stroke (<see cref="RampStroke"/>), and one lightened to nothing goes. A glyph keeps its own colours, and
-/// backgrounds stay. It doesn't erase while the ramp has characters the document's character set can't hold. The tip
-/// is the Eraser group's (ADR 0047), and [ and ] change its size. The moves of one stroke coalesce into one undo
-/// step.
+/// glyph under the tip moves lighter by the strength times the tip's weight there times the pen's pressure (ADR 0054),
+/// and at least one level, once per stroke (<see cref="RampStroke"/>), and one lightened to nothing goes. A glyph
+/// keeps its own colours, and backgrounds stay. It doesn't erase while the ramp has characters the document's
+/// character set can't hold. The tip is the Eraser group's (ADR 0047), and [ and ] change its size. The moves of one
+/// stroke coalesce into one undo step.
 /// </summary>
 public sealed class SoftEraserTool : ITool
 {

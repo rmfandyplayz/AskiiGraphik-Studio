@@ -100,7 +100,10 @@ public enum ToolKey
 /// <param name="SubCellX">Where across the cell the pointer is, from 0 (left edge) to 1 (right edge).</param>
 /// <param name="SubCellY">Where down the cell the pointer is, from 0 (top edge) to 1 (bottom edge).</param>
 /// <param name="Modifiers">The modifier keys held.</param>
-/// <param name="Pressure">Pen pressure from 0 to 1; 1 for a mouse. Reserved for drawing tablets.</param>
+/// <param name="Pressure">
+/// Pen pressure from 0 to 1; 1 for a mouse or touch. The Brush and the Soft Eraser cover cells more strongly the
+/// harder a pen presses (ADR 0054).
+/// </param>
 public readonly record struct ToolPointerInput(
     CellPoint Cell,
     double SubCellX,

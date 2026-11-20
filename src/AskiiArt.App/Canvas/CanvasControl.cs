@@ -46,6 +46,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     public static readonly StyledProperty<bool> IsGridVisibleProperty =
         AvaloniaProperty.Register<CanvasControl, bool>(nameof(IsGridVisible));
 
+    public static readonly StyledProperty<bool> IsMouseActingAsPenProperty =
+        AvaloniaProperty.Register<CanvasControl, bool>(nameof(IsMouseActingAsPen));
+
     public static readonly StyledProperty<double> CanvasMarginProperty =
         AvaloniaProperty.Register<CanvasControl, double>(nameof(CanvasMargin), 32);
 
@@ -182,6 +185,13 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         get => GetValue(IsGridVisibleProperty);
         set => SetValue(IsGridVisibleProperty, value);
+    }
+
+    /// <summary>Whether the mouse presses like a pen at half pressure, from the Debug menu (ADR 0054).</summary>
+    public bool IsMouseActingAsPen
+    {
+        get => GetValue(IsMouseActingAsPenProperty);
+        set => SetValue(IsMouseActingAsPenProperty, value);
     }
 
     /// <summary>The empty space around the canvas when scrolled to an edge, in logical pixels.</summary>
@@ -407,7 +417,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
                 _panStartOffset.Y - (int)Math.Round(current.Y - start.Y));
             SetViewport(_viewport.ScrolledTo(offset));
         }
-        else if (Tool is { } tool && ToToolInput(_pointerPosition.Value, e.KeyModifiers) is { } input)
+        else if (Tool is { } tool && ToToolInput(_pointerPosition.Value, e.KeyModifiers, PressureOf(e)) is { } input)
         {
             tool.PointerMoved(input);
         }
@@ -445,7 +455,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             e.Handled = true;
         }
         else if (point.Properties.IsLeftButtonPressed && Tool is { } tool &&
-                 ToToolInput(ToDevicePixels(point.Position), e.KeyModifiers) is { } input)
+                 ToToolInput(ToDevicePixels(point.Position), e.KeyModifiers, PressureOf(e)) is { } input)
         {
             _isToolGestureActive = true;
             e.Pointer.Capture(this);
@@ -466,8 +476,11 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         {
             _isToolGestureActive = false;
             e.Pointer.Capture(null);
-            if (Tool is { } tool && ToToolInput(ToDevicePixels(e.GetPosition(this)), e.KeyModifiers) is { } input)
+            if (Tool is { } tool &&
+                ToToolInput(ToDevicePixels(e.GetPosition(this)), e.KeyModifiers, PressureOf(e)) is { } input)
+            {
                 tool.PointerReleased(input);
+            }
 
             e.Handled = true;
         }
@@ -772,7 +785,11 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         return 0;
     }
 
-    private ToolPointerInput? ToToolInput(Point devicePoint, KeyModifiers modifiers)
+    private float PressureOf(PointerEventArgs e) =>
+        PointerPressure.Of(e.Pointer.Type, e.GetCurrentPoint(this).Properties.Pressure, IsMouseActingAsPen);
+
+    // Without a pressure, the pointer presses fully, as a mouse does.
+    private ToolPointerInput? ToToolInput(Point devicePoint, KeyModifiers modifiers, float pressure = 1)
     {
         if (_viewport is null)
             return null;
@@ -781,7 +798,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var column = (devicePoint.X - origin.X) / _viewport.CellSize.Width;
         var row = (devicePoint.Y - origin.Y) / _viewport.CellSize.Height;
         var cell = new CellPoint((int)Math.Floor(column), (int)Math.Floor(row));
-        return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers));
+        return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers), pressure);
     }
 
     // A modifier tools don't know (Ctrl on a Mac, the Windows key) makes it a different shortcut.

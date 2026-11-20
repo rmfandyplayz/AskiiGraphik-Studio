@@ -18,10 +18,11 @@ internal delegate Cell RampCellPaint(Cell before, int levelBefore, int level);
 
 /// <summary>
 /// One stroke of a tool that moves cells along a ramp: the Brush, or the Soft Eraser (ADRs 0049, 0050). Each cell
-/// under the tip moves from its darkness before the stroke towards <c>target</c>, by the tip's weight there times
-/// <c>strength</c>. A cell's darkness is its level in the ramp (<see cref="Ramp.NearestLevel"/>), and an empty cell's
-/// is 0. A cell moves once, by the greatest weight that has reached it, so going over it again adds nothing, and the
-/// next stroke takes it further. The new level is the nearest one, unless the stroke moves at least a level: then any
+/// under the tip moves from its darkness before the stroke towards <c>target</c>, by the tip's weight there times the
+/// pen's pressure (ADR 0054) times <c>strength</c>. A cell's darkness is its level in the ramp
+/// (<see cref="Ramp.NearestLevel"/>), and an empty cell's is 0. A cell moves once, by the greatest weight that has
+/// reached it, so going over it again adds nothing, pressing harder takes it further, and the next stroke takes it
+/// further. The new level is the nearest one, unless the stroke moves at least a level: then any
 /// move short of a level still takes the cell one level towards the target. Its edits show as it goes and coalesce
 /// into one undo step.
 /// </summary>
@@ -43,6 +44,9 @@ internal sealed class RampStroke
     private readonly Dictionary<Rune, int> _levels = [];
 
     private CellPoint _lastTopLeft;
+
+    // The hardest the pen has pressed since the tip got to where it is.
+    private double _hardestPressureHere;
 
     // Where the history stood after this stroke's last edit, or null before its first. Esc only takes back the newest
     // step if it's still this stroke's.
@@ -77,7 +81,8 @@ internal sealed class RampStroke
         _stepNameKey = stepNameKey;
 
         _lastTopLeft = Footprint.TopLeftAt(start);
-        Move(_lastTopLeft, _lastTopLeft);
+        _hardestPressureHere = PressureOf(start);
+        Move(_lastTopLeft, _lastTopLeft, _hardestPressureHere);
     }
 
     /// <summary>The tip the stroke started with, which it keeps throughout.</summary>
@@ -86,15 +91,27 @@ internal sealed class RampStroke
     /// <summary>The cells the tip covers.</summary>
     public BrushFootprint Footprint => Falloff.Footprint;
 
-    /// <summary>Continues the stroke in a straight line, because a fast drag reports cells far apart.</summary>
+    /// <summary>
+    /// Continues the stroke in a straight line, because a fast drag reports cells far apart, at the pressure
+    /// <paramref name="input"/> reports. A pen pressed harder without moving reaches further where it is.
+    /// </summary>
     public void MoveTo(ToolPointerInput input)
     {
         var topLeft = Footprint.TopLeftAt(input);
+        var pressure = PressureOf(input);
         if (topLeft == _lastTopLeft)
-            return;
+        {
+            if (pressure <= _hardestPressureHere)
+                return;
 
-        Move(_lastTopLeft, topLeft);
+            _hardestPressureHere = pressure;
+            Move(topLeft, topLeft, pressure);
+            return;
+        }
+
+        Move(_lastTopLeft, topLeft, pressure);
         _lastTopLeft = topLeft;
+        _hardestPressureHere = pressure;
     }
 
     /// <summary>Takes the stroke back as if it never happened, unless another step has followed it.</summary>
@@ -104,7 +121,8 @@ internal sealed class RampStroke
             _session.History.CancelNewestStep();
     }
 
-    private void Move(CellPoint fromTopLeft, CellPoint toTopLeft)
+    // The whole way from the last report takes this report's pressure, since a pen reports often enough.
+    private void Move(CellPoint fromTopLeft, CellPoint toTopLeft, double pressure)
     {
         // Undoing during a stroke can take away the layer it started on, or lock it.
         if (!_session.CanEditActiveLayer)
@@ -113,9 +131,10 @@ internal sealed class RampStroke
         var document = _session.Document;
         var layer = _session.ActiveLayer;
         var cells = new CellEditBuilder(document, layer.Id);
-        foreach (var (point, weight) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
+        foreach (var (point, tipWeight) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
                      document.CanvasSize))
         {
+            var weight = tipWeight * pressure;
             var now = layer.GetCell(point);
             if (!_reached.TryGetValue(point, out var before))
                 before = new ReachedCell(now, 0);
@@ -149,6 +168,10 @@ internal sealed class RampStroke
 
         return _paint(before, levelBefore, level);
     }
+
+    // A pressure the device can't tell counts as full, as a mouse's does.
+    private static double PressureOf(ToolPointerInput input) =>
+        float.IsNaN(input.Pressure) ? 1 : Math.Clamp(input.Pressure, 0, 1);
 
     private int LevelOf(Cell cell)
     {

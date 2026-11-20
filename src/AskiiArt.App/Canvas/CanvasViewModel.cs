@@ -123,6 +123,13 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         set => SetProperty(ref field, value);
     }
 
+    /// <summary>Whether the mouse presses like a pen at half pressure, from the Debug menu (ADR 0054).</summary>
+    public bool IsMouseActingAsPen
+    {
+        get;
+        set => SetProperty(ref field, value);
+    }
+
     /// <summary>The cell under the pointer, reported by the canvas control.</summary>
     public CellPoint? HoveredCell
     {
@@ -181,6 +188,8 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     public void ZoomToActualSize() => ZoomFactor = ZoomLevels.ActualSize;
 
     public void ToggleGrid() => IsGridVisible = !IsGridVisible;
+
+    public void ToggleMouseActingAsPen() => IsMouseActingAsPen = !IsMouseActingAsPen;
 
     /// <summary>Makes another tool active. It stays chosen when New or Open replaces the document.</summary>
     public void SelectTool(string toolId)

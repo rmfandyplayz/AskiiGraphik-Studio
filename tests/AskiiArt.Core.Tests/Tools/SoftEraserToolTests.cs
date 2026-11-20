@@ -268,6 +268,35 @@ public sealed class SoftEraserToolTests
         Assert.Equal("···@@@", TestCells.Read(Layer)[0]);
     }
 
+    // Pressure scales how strongly the tip covers a cell, as it does for the Brush (ADR 0054).
+    [Fact]
+    public void HalfPressure_LightensHalfAsFar()
+    {
+        Press(0, 0, pressure: 0.5f);
+        Release(0, 0);
+
+        Assert.Equal('+', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void ALightPress_StillLightensAtLeastOneLevel()
+    {
+        Press(0, 0, pressure: 0.05f);
+        Release(0, 0);
+
+        Assert.Equal('%', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void NoPressure_LightensNothing()
+    {
+        Press(0, 0, pressure: 0);
+        Release(0, 0);
+
+        Assert.Equal('@', TestCells.Read(Layer)[0][0]);
+        Assert.Equal(0, History.StepCount);
+    }
+
     [Fact]
     public void TheBracketKeys_ChangeTheErasersTipSize_AndNumberKeysArentTheSoftErasers()
     {
@@ -328,9 +357,10 @@ public sealed class SoftEraserToolTests
         Release(x, y);
     }
 
-    private static ToolPointerInput PointerAt(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);
+    private static ToolPointerInput PointerAt(int x, int y, float pressure = 1) =>
+        new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None, pressure);
 
-    private void Press(int x, int y) => _tool.PointerPressed(PointerAt(x, y));
+    private void Press(int x, int y, float pressure = 1) => _tool.PointerPressed(PointerAt(x, y, pressure));
 
     private void Move(int x, int y) => _tool.PointerMoved(PointerAt(x, y));
 

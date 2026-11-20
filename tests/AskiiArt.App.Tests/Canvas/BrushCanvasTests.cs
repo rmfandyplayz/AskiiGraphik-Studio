@@ -140,6 +140,21 @@ public sealed class BrushCanvasTests : IDisposable
         Assert.Equal(2, _canvas.Session.History.UndoCount);
     }
 
+    // Half pressure covers the cell half as strongly, so full intensity gets halfway (ADR 0054).
+    [AvaloniaFact]
+    public void WhileTheMouseActsAsAPen_TheBrushPaintsAtHalfPressure()
+    {
+        ChooseTheBrush();
+        Canvas.IsMouseActingAsPen = true;
+
+        Click(new CellPoint(0, 1));
+        Canvas.IsMouseActingAsPen = false;
+        Click(new CellPoint(2, 1));
+
+        Assert.Equal(new Rune('+'), Layer.GetCell(new CellPoint(0, 1)).Glyph);
+        Assert.Equal(new Rune('@'), Layer.GetCell(new CellPoint(2, 1)).Glyph);
+    }
+
     [AvaloniaFact]
     public void DraggingWithTheBGBrush_PaintsBackgroundsThroughTheCanvas_AsOneStep()
     {

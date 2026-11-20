@@ -16,6 +16,7 @@
                           BaseFontSize="{Binding FontSize}"
                           ZoomFactor="{Binding ZoomFactor, Mode=TwoWay}"
                           IsGridVisible="{Binding IsGridVisible}"
+                          IsMouseActingAsPen="{Binding IsMouseActingAsPen}"
                           HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
                           Tool="{Binding ActiveTool}"
                           FrameTimings="{Binding FrameRate.Timings}"

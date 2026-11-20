@@ -310,6 +310,78 @@ public sealed class BrushToolTests
         Assert.Equal(TestCells.Glyph('@', _red, _blue), CellAt(2, 0));
     }
 
+    // Pressure scales how strongly the tip covers a cell, not the intensity (ADR 0054). On an empty cell the two look
+    // the same.
+    [Fact]
+    public void HalfPressure_OnAnEmptyCell_PaintsLikeHalfTheIntensity()
+    {
+        Press(0, 0, pressure: 0.5f);
+        Release(0, 0);
+
+        Assert.Equal('+', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void ALightPress_NeverLightensACell_TowardsNothing()
+    {
+        TestCells.Paint(Layer, "@");
+
+        Press(0, 0, pressure: 0.2f);
+        Release(0, 0);
+
+        Assert.Equal('@', TestCells.Read(Layer)[0][0]);
+    }
+
+    // At full pressure 50% takes '@' to '+'. A fifth of the pressure goes a fifth of the way.
+    [Fact]
+    public void ALightPress_MovesACellOnlyPartWay_TowardsTheIntensity()
+    {
+        TestCells.Paint(Layer, "@");
+        _options.Set(RampBrushOptions.Intensity, 50);
+
+        Press(0, 0, pressure: 0.2f);
+        Release(0, 0);
+
+        Assert.Equal('%', TestCells.Read(Layer)[0][0]);
+    }
+
+    [Fact]
+    public void EachMove_PaintsWithItsOwnPressure()
+    {
+        Press(0, 0, pressure: 1);
+        Move(1, 0, pressure: 0.5f);
+        Move(2, 0, pressure: 0.2f);
+        Release(2, 0);
+
+        Assert.Equal("@+:", TestCells.Read(Layer)[0][..3]);
+    }
+
+    [Fact]
+    public void PressingHarderWithoutMoving_PaintsDarker_AndPressingLighterAddsNothing()
+    {
+        Press(0, 0, pressure: 0.3f);
+        Assert.Equal('-', TestCells.Read(Layer)[0][0]);
+
+        Move(0, 0, pressure: 0.8f);
+        Move(0, 0, pressure: 0.5f);
+        Release(0, 0);
+
+        Assert.Equal('#', TestCells.Read(Layer)[0][0]);
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Theory]
+    [InlineData(2f, '@')]
+    [InlineData(float.NaN, '@')]
+    [InlineData(-1f, '·')]
+    public void APressureOutside0To1_CountsAsTheNearestEnd_AndAnUnknownOneAsFull(float pressure, char expected)
+    {
+        Press(0, 0, pressure: pressure);
+        Release(0, 0);
+
+        Assert.Equal(expected, TestCells.Read(Layer)[0][0]);
+    }
+
     [Fact]
     public void AltClick_PicksBothColorsShown()
     {
@@ -370,13 +442,14 @@ public sealed class BrushToolTests
         Release(x, y);
     }
 
-    private static ToolPointerInput PointerAt(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
-        new(new CellPoint(x, y), 0.5, 0.5, modifiers);
+    private static ToolPointerInput PointerAt(int x, int y, ToolModifiers modifiers = ToolModifiers.None,
+        float pressure = 1) =>
+        new(new CellPoint(x, y), 0.5, 0.5, modifiers, pressure);
 
-    private void Press(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
-        _tool.PointerPressed(PointerAt(x, y, modifiers));
+    private void Press(int x, int y, ToolModifiers modifiers = ToolModifiers.None, float pressure = 1) =>
+        _tool.PointerPressed(PointerAt(x, y, modifiers, pressure));
 
-    private void Move(int x, int y) => _tool.PointerMoved(PointerAt(x, y));
+    private void Move(int x, int y, float pressure = 1) => _tool.PointerMoved(PointerAt(x, y, pressure: pressure));
 
     private void Release(int x, int y) => _tool.PointerReleased(PointerAt(x, y));
 }

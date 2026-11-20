@@ -182,6 +182,7 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(ShellActionIds.ThrowTestException),
                 new ActionMenuEntry(ShellActionIds.AllowTinyWindow),
                 new ActionMenuEntry(CanvasActionIds.ShowFrameRate),
+                new ActionMenuEntry(CanvasActionIds.MouseActsAsPen),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(WindowSampleActionIds.First),
                 new ActionMenuEntry(WindowSampleActionIds.Second),

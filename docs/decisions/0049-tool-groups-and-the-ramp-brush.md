@@ -69,3 +69,5 @@ Updated 2026-11-17: the Ramp option is its own group, `RampOptions.Group`, which
 Updated 2026-11-18: each group's last tool is remembered between runs, though the app still starts on the Text tool. The Ramp option lists the user's ramps after the built-in ones, and tools read the chosen ramp through `RampSource` (ADR 0052).
 
 Updated 2026-11-19: the Character Brush joined the group on key 4 (ADR 0053). The FG and BG Brushes' stroke is `FootprintStroke`, which the Character Brush shares.
+
+Updated 2026-11-19: a pen's pressure scales how strongly the Brush covers each cell (ADR 0054).
