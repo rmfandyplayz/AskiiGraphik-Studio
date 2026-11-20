@@ -27,7 +27,7 @@ Nothing uses the selection yet: drawing tools still paint outside it. That comes
 
 ## Known limitations (not bugs)
 
-- The outline is a placeholder: still dashes, no marching ants, the same in light and dark mode.
+- The outline is a placeholder, the same in light and dark mode. (Changed after testing: its dashes now run round the selection; see the follow-ups.)
 - Drawing tools don't keep to the selection yet (step 4.4), and there's no way to move, copy or delete the selected cells yet (4.4–4.6).
 - Shift and Alt do nothing with Rectangle Select yet. Adding to and taking away from a selection comes in 4.2.
 - The Select group has only Rectangle Select, so it has no sub-toolbar yet. Ellipse and the lassos join it in 4.2.

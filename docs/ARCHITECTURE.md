@@ -228,7 +228,7 @@ The Brush group (ADR 0049) has four brushes, which share one size and shape (ADR
 - Combine modes: replace, add, subtract and intersect, chosen with modifier keys or a tool option.
 - When a selection exists, every drawing tool clips to it.
 - Selected content can be moved, copied, cut and pasted. Paste creates a **floating** selection that commits as a command. Details get settled at that milestone.
-- How the selection looks (marching ants or similar) is the owner's design call. Until then it's a still, dashed black-and-white outline (`docs/TEMPORARY-UI.md`).
+- How the selection looks (marching ants or similar) is the owner's design call. Until then it's a dashed black-and-white outline whose dashes run clockwise round the selection (`docs/TEMPORARY-UI.md`).
 
 ## 11. Fonts and glyph rasterization (Imaging)
 

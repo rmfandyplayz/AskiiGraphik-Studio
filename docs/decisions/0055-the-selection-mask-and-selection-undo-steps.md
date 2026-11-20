@@ -17,7 +17,7 @@ Step 4.1 starts M4 (Selection) with the mask, Rectangle Select, Select All and D
 - **`SelectionEdits`** makes each change one step (`Select`, `SelectAll`, `Deselect`), and makes none when the selection wouldn't change.
 - **Resize Canvas** is `EditingSession.ResizeCanvas`: one composite step of the resize and the selection moved by the same offset, cropped to the new canvas. Undo restores both.
 - **Rectangle Select** (`askiiart.select.rectangle`, group M) drags from cell to cell, both included and kept to the canvas, replacing the selection on release as one step. A click without reaching another cell deselects. While dragging, the tool's overlay carries the pending mask, which the canvas outlines instead of the selection. Esc cancels a drag; any other Esc switches to the Hand tool (ADR 0041). It works on locked and hidden layers. Modifiers are ignored until combine modes arrive (4.2).
-- **The outline** is drawn after the grid, as strips inside the selected cells, in black dashes on white counted from the canvas corner so they don't crawl when the view scrolls. It doesn't animate, so an idle canvas stays idle. Only edges in view are drawn.
+- **The outline** is drawn after the grid, as strips inside the selected cells, in black dashes on white counted from the canvas corner so they don't crawl when the view scrolls. The dashes run clockwise round the selection, repainting only when they've moved a device pixel, and stop with no selection (see the update below). Only edges in view are drawn.
 
 ## Alternatives
 
@@ -25,7 +25,7 @@ Step 4.1 starts M4 (Selection) with the mask, Rectangle Select, Select All and D
 - **Selection changes outside undo:** simpler, but the owner wants them in History, as in image editors.
 - **Selection steps that dirty the document:** closing would ask to save a document whose content never changed.
 - **Clearing the selection on resize:** losing it would surprise, and undo would have to bring it back anyway.
-- **Marching ants:** a timer would keep the canvas redrawing; the look is the owner's to design later.
+- **A still outline** (4.1's first version): it kept an idle canvas idle, but was hard to spot on a big canvas, so the owner asked for running dashes.
 
 ## Consequences
 
