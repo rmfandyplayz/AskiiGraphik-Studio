@@ -89,12 +89,21 @@ public sealed class TypingHistoryTests
     }
 
     [Fact]
-    public void TypingOverASelection_IsAStepOfItsOwn()
+    public void TypingOverASelection_StartsAStep_ThatTheTypingAfterItCarriesOn()
     {
-        var history = Type("abc", "x");
+        var history = Type("abc", "x", "xy", "xyz");
 
         Assert.Equal(new TextBoxState("abc", 0, 3), history.Undo());
         Assert.False(history.CanUndo);
+    }
+
+    [Fact]
+    public void TypingOverASelection_StraightAfterTyping_StartsANewStep()
+    {
+        var history = Type("", "a", "ab", "abc", "az");
+
+        Assert.Equal(new TextBoxState("abc", 1, 3), history.Undo());
+        Assert.Equal("", history.Undo()?.Text);
     }
 
     [Fact]

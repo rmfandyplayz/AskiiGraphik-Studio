@@ -24,7 +24,7 @@ public sealed class TextTool : ITool
     public const string Id = "askiiart.text";
 
     /// <summary>How long a pause in typing ends the burst, so the next keystroke starts a new undo step.</summary>
-    public static readonly TimeSpan TypingPause = TimeSpan.FromSeconds(2);
+    public static readonly TimeSpan TypingPause = TimeSpan.FromSeconds(1);
 
     /// <summary>How many cells a jump moves (<see cref="ToolKey.JumpLeft"/> and friends). A setting later (M8).</summary>
     public const int ShortJump = 3;

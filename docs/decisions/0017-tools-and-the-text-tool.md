@@ -27,7 +27,7 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
   - A click places the caret on a cell. Typing **overwrites** that cell and moves right; nothing shifts sideways, since that would wreck the art beside the text. At the right edge the caret stays in the last column.
   - Backspace after typing empties the cell before the caret and moves into it. When the caret was put on its cell instead (a click, an arrow key, Home, Enter), at the left edge, or stuck at the right edge after typing, Backspace first empties the caret's own cell. Delete empties the caret's cell. Both make cells **empty**, not spaces (§5.4), and do nothing on a locked layer.
   - Enter moves to the next row, under the start of the current **block** of text. A block starts at a click; typing with the caret moved by the keys (but still on the block's rows, between its start and just past its right end) continues it, and typing or Enter anywhere else starts a new block at the caret. Arrows move one cell; Home goes to the first column, End to just past the row's last glyph, Top to the first row and Bottom to the last. Esc removes the caret.
-  - Each keystroke is a command; a burst shares a `CoalescingGroup`. A burst ends when the caret moves by any means but typing, or after a 2-second pause.
+  - Each keystroke is a command; a burst shares a `CoalescingGroup`. A burst ends when the caret moves by any means but typing, or after a 1-second pause.
 - **Undo and Redo** are actions (Cmd+Z; Cmd+Shift+Z and Cmd+Y) in a new Edit menu.
 
 ## Alternatives
@@ -48,3 +48,5 @@ Updated 2026-11-01: tool keys are commands from a per-platform keymap, with jump
 Updated 2026-11-01: from the owner's 1.6 testing, the 10-cell jump on Windows and Linux moved from Alt+arrow to Ctrl+Shift+arrow, because a lone Alt opens the menu bar.
 Updated 2026-11-02: the text tool is no longer always active, and tools have shortcut letters that don't fire while the caret is placed (ADR 0033).
 Updated 2026-11-14: Esc is no longer the text tool's. It switches to the Hand tool, which removes the caret (ADR 0041). Typing writes the current FG and BG colours, and Backspace and Delete keep the cell's background (ADR 0042).
+
+Updated 2026-11-20: the pause that ends a typing burst is 1 second (it was 2), to match the text boxes (ADR 0058), at the owner's request.

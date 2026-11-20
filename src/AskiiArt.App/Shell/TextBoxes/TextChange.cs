@@ -6,13 +6,13 @@ namespace AskiiArt.App.Shell.TextBoxes;
 /// <summary>What kind of change a <see cref="TextChange"/> is, for grouping changes into undo steps.</summary>
 internal enum TextChangeKind
 {
-    /// <summary>One character typed, with nothing selected.</summary>
+    /// <summary>One character typed, alone or over a selection.</summary>
     Typing,
 
     /// <summary>One character deleted, by Backspace or Delete.</summary>
     Deleting,
 
-    /// <summary>Anything else, such as a paste, a cut, or typing over a selection.</summary>
+    /// <summary>Anything else, such as a paste or a cut.</summary>
     Other
 }
 
@@ -42,7 +42,7 @@ internal readonly record struct TextChange(int Position, int Removed, int Insert
         var removed = before.Length - prefix - suffix;
         var inserted = after.Length - prefix - suffix;
         var kind = TextChangeKind.Other;
-        if (removed == 0 && IsOneCharacter(after, prefix, inserted))
+        if (IsOneCharacter(after, prefix, inserted))
             kind = TextChangeKind.Typing;
         else if (inserted == 0 && IsOneCharacter(before, prefix, removed))
             kind = TextChangeKind.Deleting;
@@ -53,6 +53,7 @@ internal readonly record struct TextChange(int Position, int Removed, int Insert
     /// <summary>
     /// True when this change carries on from <paramref name="last"/> as part of the same typing or deleting: typing
     /// just after the last character typed, or deleting just before (Backspace) or at (Delete) the last one deleted.
+    /// Typing over a selection never carries on, but the typing after it does, so it's undone with the selection.
     /// </summary>
     public bool FollowsOn(TextChange last)
     {
@@ -61,7 +62,7 @@ internal readonly record struct TextChange(int Position, int Removed, int Insert
 
         return Kind switch
         {
-            TextChangeKind.Typing => Position == last.Position + last.Inserted,
+            TextChangeKind.Typing => Removed == 0 && Position == last.Position + last.Inserted,
             TextChangeKind.Deleting => Position == last.Position || Position + Removed == last.Position,
             _ => false
         };

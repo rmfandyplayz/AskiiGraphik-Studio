@@ -80,6 +80,36 @@ public sealed class TypingUndoTests : IDisposable
         Assert.Equal("", _textBox.Text);
     }
 
+    [AvaloniaFact]
+    public void TypingOverASelection_AndCarryingOn_IsOneStep_ThatBringsTheSelectionBackHighlighted()
+    {
+        Type("a", "s", "d", "f");
+        Press(Key.A);
+        Type("x", "y", "z");
+
+        Press(Key.Z);
+
+        Assert.Equal("asdf", _textBox.Text);
+        Assert.Equal((0, 4), Selection());
+    }
+
+    [AvaloniaFact]
+    public void UndoingTypingOverPartOfTheText_HighlightsWhatComesBack()
+    {
+        Type("a", "b", "c");
+        _textBox.SelectionStart = 1;
+        _textBox.SelectionEnd = 3;
+        Type("z");
+
+        Press(Key.Z);
+
+        Assert.Equal("abc", _textBox.Text);
+        Assert.Equal((1, 3), Selection());
+    }
+
+    private (int Start, int End) Selection() =>
+        (Math.Min(_textBox.SelectionStart, _textBox.SelectionEnd), Math.Max(_textBox.SelectionStart, _textBox.SelectionEnd));
+
     private void Type(params string[] characters)
     {
         foreach (var character in characters)

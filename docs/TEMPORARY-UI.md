@@ -48,6 +48,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | A hidden toolbar shown again when its anchor has been taken floats exactly where it would sit with that anchor to itself | `LayoutSolver.WhereAloneOnItsAnchor` | 2.5c |
 | Debug → Allow Tiny Window lifts the minimum size until the window closes, to test the fights along an edge. An app window narrower than its sides' windows at their narrowest, which only this reaches, lets the sides overlap, with the left drawn over the right. Nothing more gives way, since the normal minimum width never gets there | `MainWindow.AllowAnySize`, `AskiiArt.Docking/Solving/LayoutSolver.cs` | 2.5c, 2.5g |
 | A new window that has to float moves down and right by 24, the same as Float from the menu, while another floating window is exactly where it would go | `WindowOpening`, `AppWindowFloatOffset` | 2.5g |
+| The main window opens where it closed last time: same position and size, maximized if it was. If the screen it was on has gone, or its title bar wouldn't be on any screen, it opens in the middle of the main screen, at its saved size made to fit. Full screen isn't remembered | `Shell/Placement/RememberedWindowPlacement.cs` | 4.1 |
 | Clicking a window or toolbar, or closing a menu, hands keyboard focus back to the canvas, unless a text box has it. If the click opened a dialog, the canvas gets it when the dialog closes | `MainWindow.GiveTypingBackToCanvas` | 2.1, 3.6 |
 | A damaged settings file: a message says so when the window opens, and the old file is kept with "damaged" in its name. An unreadable saved layout alone resets silently, and one that's readable but wrong is put right | `Settings/AppSettingsFile.cs`, `Shell/Docking/ShellDocking.cs`, `AskiiArt.Docking/Layouts/LayoutRepair.cs` | 2.1, 2.5b |
 | Layers panel: a plain list, top layer first, with the active one highlighted. Each row has a visible checkbox, a locked checkbox, a "spaces are see-through" checkbox and the name, which turns grey when hidden. Below it, text buttons that wrap: New, Duplicate, Delete, Rename, Move Up, Move Down, Merge Down | `Layers/LayersPanelView.axaml`, `ToolbarLayout.CreateLayersPanel` | 2.3 |
@@ -146,7 +147,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Home goes to the first column; End to just past the row's last character; Esc hides the caret | `TextTool` | 1.5 |
 | Jumps: 3 cells with Ctrl+arrow (Option+arrow on a Mac), 10 cells with Ctrl+Shift+arrow (Cmd+Option+arrow). Ctrl+Home and Ctrl+End (Cmd+Up and Cmd+Down) go to the top and bottom of the column; on a Mac, Cmd+Left and Cmd+Right are Home and End. Shift+arrow and Alt+arrow do nothing (Shift is kept for selection, and a lone Alt opens the menu bar on Windows and Linux) | `Canvas/ToolKeymap.cs`, `TextTool.ShortJump`, `LongJump` | 1.6, 1.7 |
 | The bottom of the column is the canvas's last row, even when the column is empty (End, in contrast, goes just past the row's text) | `TextTool` | 1.6 |
-| One undo step per burst of typing; a 2-second pause, or moving the caret, starts a new one | `TextTool.TypingPause` | 1.5 |
+| One undo step per burst of typing; a 1-second pause (2 seconds until 4.1), or moving the caret, starts a new one | `TextTool.TypingPause` | 1.5, 4.1 |
 | The canvas scrolls to keep the caret on screen | `CanvasControl` | 1.5 |
 | Characters the document's character set doesn't allow are silently skipped | `TextTool` | 1.5 |
 | ASCII Only is a check-mark item in the Document menu (the Edit menu in 1.5), and switching to it asks first when it would remove characters | `DocumentActions`, `AsciiOnlyConfirm*` strings | 1.5, 1.6 |
@@ -273,7 +274,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Step names: Rectangle Select, Select All, Deselect. Resizing the canvas keeps its one Resize Canvas step, which moves the selection too | `Strings.resx` | 4.1 |
 | New and Open start with nothing selected | `Core/Editing/EditingSession.cs` | 4.1 |
 | Ctrl+A, Ctrl+Z and Ctrl+Y (and Copy, Cut and Paste, when they come) go to a text box that has the keyboard, not the document, from the keys and from the menu. Edit → Undo is available while typing in a text box, even with nothing to undo in the document | `Shell/TextBoxes/TextBoxFirstCommand.cs` | 4.1 |
-| Undo in a text box takes away a burst of typing at a time. A pause of 1 second, moving the caret, or switching between typing and deleting starts a new step, and a paste or typing over a selection is a step of its own. Undo selects the characters it brings back. Each box keeps 1000 steps | `Shell/TextBoxes/TypingHistory.cs` | 4.1 |
+| Undo in a text box takes away a burst of typing at a time. A pause of 1 second, moving the caret, or switching between typing and deleting starts a new step. A paste is a step of its own, and typing over a selection starts a step that the typing after it carries on. Undo selects the characters it brings back. Each box keeps 1000 steps | `Shell/TextBoxes/TypingHistory.cs` | 4.1 |
 
 ## Ideas to revisit
 
@@ -292,7 +293,7 @@ The owner's ideas, parked until the stage they belong to.
 - **Document options** (raised in 1.5): the New dialog (1.6) chooses Unicode or ASCII only; document options should switch it later, with a warning that switching to ASCII removes every other character. Until then it's Document → ASCII Only.
 - **Blinking caret** (raised in 1.5): blink at the system's caret rate where the OS has one (on Windows, the Control Panel keyboard setting), else every 0.5 s. The rate becomes a setting later (M8).
 - **Rebinding the caret keys and jump sizes** (raised in 1.5; the jumps were built in 1.6): part of the shortcut settings (M8).
-- **Typing pause as a setting** (raised in 1.5): the 2-second pause that ends an undo step could be an advanced setting (M8).
+- **Typing pause as a setting** (raised in 1.5): the 1-second pause that ends an undo step, in text boxes and the Text tool, could be an advanced setting (M8).
 - **How missing glyphs are flagged** (1.3): the orange and red cells are placeholders.
 - **Removing the space option** (raised in M2b planning): the owner may drop the per-layer "spaces are empty" option one day. Nothing but the glyph plane of compositing depends on it, so removing it stays small (ADR 0036).
 - **A custom colour picker** (raised in M2b planning): 2b.3a uses Avalonia's ColorPicker, which has a fixed layout that doesn't grow with its window. The owner decided on 2026-11-15 that we'll build our own, for precise control over its layout and each part. It's planned for M8; Avalonia's stays until then, for testing.

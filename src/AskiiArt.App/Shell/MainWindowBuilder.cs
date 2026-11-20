@@ -14,6 +14,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.Placement;
 using AskiiArt.App.Shell.TextBoxes;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.ToolOptions;
@@ -62,6 +63,7 @@ internal sealed class MainWindowBuilder(
         AddKeyBindings(window, platformCommandModifiers, textBoxes);
         AskAboutUnsavedChangesBeforeClosing(window);
         SayWhenTheSettingsWereDamaged(window);
+        RememberedWindowPlacement.Follow(window, settings);
 
         return window;
     }

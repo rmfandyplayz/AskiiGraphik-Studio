@@ -124,10 +124,11 @@ internal sealed class TypingUndo
         _isShowingAStep = true;
         try
         {
+            // The caret first: moving it clears the selection.
             _textBox.SetCurrentValue(TextBox.TextProperty, shown.Text);
+            _textBox.SetCurrentValue(TextBox.CaretIndexProperty, shown.SelectionEnd);
             _textBox.SetCurrentValue(TextBox.SelectionStartProperty, shown.SelectionStart);
             _textBox.SetCurrentValue(TextBox.SelectionEndProperty, shown.SelectionEnd);
-            _textBox.SetCurrentValue(TextBox.CaretIndexProperty, shown.SelectionEnd);
         }
         finally
         {

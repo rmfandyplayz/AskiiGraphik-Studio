@@ -22,9 +22,10 @@ Avalonia's `TextBox` keeps its own undo: one state per change, and only ten of t
 
 - **Raise `UndoLimit` and keep Avalonia's undo:** still a step per character.
 - **A pause that follows typing speed:** one Undo would take away different amounts for no visible reason, and speed changes within a burst. Text editors use fixed rules like these.
-- **The canvas Text tool's 2-second pause (ADR 0017):** the owner asked for about a second here.
+- **The canvas Text tool's 2-second pause (ADR 0017):** the owner asked for about a second here, and then for the Text tool to use 1 second too, so the two match.
 
 ## Consequences
 
 - The history belongs to the text box, so a window that's closed and opened again starts with none.
-- The canvas Text tool still uses 2 seconds; making the two match is a one-line change if the owner wants it.
+- Typing anywhere ends an undo step after the same 1-second pause.
+- Typing over a selection starts a step, and the typing straight after it carries it on, so one Undo brings the selection back (changed after the owner's retest: the replacement was a step of its own).
