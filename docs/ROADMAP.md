@@ -74,7 +74,7 @@ Add the selection mask and the rectangle, ellipse, lasso, polygonal lasso and ma
 
 - [~] **4.1 Selection mask, Rectangle Select, Select All and Deselect.** The selection mask in the editing session, Rectangle Select on M, a placeholder dashed outline, and a Select menu with Select All (Cmd+A) and Deselect (Cmd+D). Selection changes are undo steps that don't make the document unsaved, and Resize Canvas moves the selection with the art. Text-editing shortcuts go to a focused text box.
   - **The owner checks:** dragging, clicking and Esc with Rectangle Select; Select All and Deselect from the menu and keys; undoing them without the document becoming unsaved; resizing with a selection; Cmd+A in a text box.
-  - **Note:** built and ready to test. ADRs 0055, 0056 · [test doc](testing/step-4.1-selection-mask.md)
+  - **Note:** fixes from testing ready to test: text box undo in bursts, menu shortcuts in text boxes on macOS, running dashes, every window remembered, and the Character Brush in the Tools menu. ADRs 0055, 0057, 0058 · [test doc](testing/step-4.1-selection-mask.md) · [follow-ups](testing/step-4.1-follow-ups.md)
 - [ ] **4.2 Ellipse, Lasso, Polygonal Lasso and combine modes.** The rest of the M group on keys 2–4, and replace, add, subtract and intersect. How the modifier keys fit with Alt+click picking is settled at the start of the step.
 - [ ] **4.3 Magic Wand and selection commands.** The Magic Wand on W (contiguous or global, the active layer or all visible layers), Invert, Grow, Shrink and Select Occupied Cells.
 - [ ] **4.4 Clipping and Delete.** Every drawing tool clips to the selection, and Delete clears the selected cells of the active layer.

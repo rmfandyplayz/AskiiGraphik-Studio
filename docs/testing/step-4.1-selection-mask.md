@@ -7,6 +7,8 @@
 **Test on:** Windows, plus macOS for the tests marked "Also on macOS: Yes" (Linux is covered by CI only)
 **Time needed:** about 25 min
 
+> The fixes from your first round of testing are in [step-4.1-follow-ups.md](step-4.1-follow-ups.md). Its tests replace T7 row 3 and T8 here.
+
 ## What changed
 
 You can now select cells. **Rectangle Select** (press **M**, or the new **Select** button on the Tools toolbar) selects a rectangle by dragging, and a new **Select** menu has **Select All** (Ctrl+A) and **Deselect** (Ctrl+D). The selection shows as a dashed black-and-white outline.

@@ -327,6 +327,24 @@ public sealed class CanvasRenderingTests : IDisposable
     }
 
     [Fact]
+    public void Paint_SelectionDashes_RunClockwiseAroundTheSelection()
+    {
+        var viewport = CreateViewport();
+
+        using var scene = Build(viewport, selection: SelectionMask.All(new CanvasSize(4, 2)), selectionDashOffset: 1);
+        using var bitmap = PaintScene(scene);
+
+        // Before they run, each edge has a dash over its first four pixels from the canvas's corner, then a gap. One
+        // pixel on, the top edge's dash has moved right, the right edge's down, the bottom edge's left and the left
+        // edge's up.
+        var corner = viewport.CanvasBounds;
+        Assert.Equal(SKColors.Yellow, bitmap.GetPixel(corner.X, corner.Y + 3));
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(corner.X + 4, corner.Y));
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(corner.Right - 1, corner.Y + 4));
+        Assert.Equal(SKColors.Yellow, bitmap.GetPixel(corner.X + 3, corner.Bottom - 1));
+    }
+
+    [Fact]
     public void Build_SelectionOutline_KeepsOnlyWhatIsInView()
     {
         // A viewport just big enough for the top-left cell, with no margin.
@@ -423,9 +441,11 @@ public sealed class CanvasRenderingTests : IDisposable
         new(_canvas.ViewModel.Composite.Size, CellSize, new PixelSize(200, 100), margin: 10, default);
 
     private CanvasScene Build(CanvasViewport viewport, bool isGridVisible = false, CellPoint? hoveredCell = null,
-        CellPoint? caret = null, BrushOutline? brush = null, SelectionMask? selection = null) =>
+        CellPoint? caret = null, BrushOutline? brush = null, SelectionMask? selection = null,
+        int selectionDashOffset = 0) =>
         _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
-            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush, selection));
+            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush, selection,
+                SelectionDashOffset: selectionDashOffset));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

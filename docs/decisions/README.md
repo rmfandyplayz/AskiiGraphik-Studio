@@ -62,4 +62,6 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0053](0053-the-character-brush-and-character-sets.md) | The Character Brush and character sets | Accepted |
 | [0054](0054-pen-pressure.md) | Pen pressure | Accepted |
 | [0055](0055-the-selection-mask-and-selection-undo-steps.md) | The selection mask and selection undo steps | Accepted |
-| [0056](0056-text-editing-shortcuts-go-to-a-focused-text-box.md) | Text-editing shortcuts go to a focused text box | Accepted |
+| [0056](0056-text-editing-shortcuts-go-to-a-focused-text-box.md) | Text-editing shortcuts go to a focused text box | Superseded by 0057 |
+| [0057](0057-text-editing-actions-act-on-a-focused-text-box.md) | Text-editing actions act on a focused text box | Accepted |
+| [0058](0058-text-boxes-group-typing-into-undo-steps.md) | Text boxes group typing into undo steps | Accepted |

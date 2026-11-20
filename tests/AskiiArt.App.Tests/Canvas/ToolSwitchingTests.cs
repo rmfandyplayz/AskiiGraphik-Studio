@@ -3,6 +3,8 @@
 
 using System.Text;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Resources;
+using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
@@ -108,6 +110,18 @@ public sealed class ToolSwitchingTests : IDisposable
             .Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal));
 
         Assert.Equal(groupActions, ToolbarLayout.CreateTools().ActionIds());
+    }
+
+    [AvaloniaFact]
+    public void TheToolsMenu_HasAnItemForEachTool_InOrder()
+    {
+        var toolActions = new ToolActions(Canvas).CreateActions()
+            .Select(action => action.Id)
+            .Where(id => id.StartsWith("tool.", StringComparison.Ordinal));
+        var toolsMenu = MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false).WindowMenus
+            .Single(menu => menu.LabelKey == nameof(Strings.MenuTools));
+
+        Assert.Equal(toolActions, toolsMenu.Entries.OfType<ActionMenuEntry>().Select(entry => entry.ActionId));
     }
 
     [AvaloniaFact]

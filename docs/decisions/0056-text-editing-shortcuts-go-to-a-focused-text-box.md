@@ -1,9 +1,11 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Written with Claude Code (Anthropic). -->
 
+> Superseded by [0057](0057-text-editing-actions-act-on-a-focused-text-box.md): on macOS the menu bar takes the shortcut first, so the menu items now act on the text box too.
+
 # 0056: Text-editing shortcuts go to a focused text box
 
-Status: Accepted
+Status: Superseded by 0057
 
 ## Context
 

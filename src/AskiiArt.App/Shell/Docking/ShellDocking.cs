@@ -349,13 +349,22 @@ internal sealed partial class ShellDocking(IAppSettings settings, ILogger<ShellD
         return LayoutSolver.WhereAloneOnItsAnchor(layout, toolbarId, measurements, _metrics!.Docking);
     }
 
+    // Every window a saved layout keeps. Those the default layout doesn't open start closed, rather than opening as
+    // new ones would.
     private DockingCatalog Catalog()
     {
         var defaults = ShellDefaultLayout.Create(_metrics!.WidgetWidth);
+        string[] kept =
+            [.. _catalog!.Windows.Values.Where(window => !window.IsForgottenOnRestart).Select(window => window.Id)];
+        string[] openAtFirst = [.. defaults.OpenWindowIds().Where(kept.Contains)];
+        string[] closedAtFirst = [.. kept.Except(openAtFirst, StringComparer.Ordinal)];
         return new DockingCatalog(
-            [.. defaults.OpenWindowIds().Where(_catalog!.Windows.ContainsKey)],
+            [.. openAtFirst, .. closedAtFirst],
             [.. defaults.Toolbars.Where(toolbar => _catalog.Toolbars.ContainsKey(toolbar.ToolbarId))],
-            _metrics.WidgetWidth);
+            _metrics.WidgetWidth)
+        {
+            WindowsThatStartClosed = closedAtFirst
+        };
     }
 
     private DockingLayout DefaultLayout() =>

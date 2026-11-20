@@ -163,6 +163,26 @@ public sealed class ShellDockingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void AWindowThatStartsClosed_StaysClosedAtFirst()
+    {
+        ShowWindow();
+
+        Assert.False(_docking.IsWindowOpen(ShellDockingIds.RampsPanel));
+    }
+
+    [AvaloniaFact]
+    public void AWindowThatStartsClosed_IsStillOpen_AfterSavingAndABuiltFromScratchWindow()
+    {
+        ShowWindow();
+        _docking.ToggleWindow(ShellDockingIds.RampsPanel);
+        _docking.SaveAndDetach();
+
+        ShowWindow();
+
+        Assert.True(_docking.IsWindowOpen(ShellDockingIds.RampsPanel));
+    }
+
+    [AvaloniaFact]
     public void ResetLayout_BringsBackEverything()
     {
         ShowWindow();
@@ -249,7 +269,10 @@ public sealed class ShellDockingTests : IDisposable
         ShellWindowEntry Window(string id) => new(id, id, metrics.WindowMinHeight, () => new Border());
         ShellToolbarEntry Toolbar(string id) => new(id, () => new Border { Width = 100, Height = 30 });
         var catalog = new ShellCatalog(
-            [Window(ShellDockingIds.LayersPanel), Window(ShellDockingIds.HistoryPanel)],
+            [
+                Window(ShellDockingIds.LayersPanel), Window(ShellDockingIds.HistoryPanel),
+                Window(ShellDockingIds.RampsPanel)
+            ],
             [
                 Toolbar(ShellDockingIds.FileToolbar), Toolbar(ShellDockingIds.ToolsToolbar),
                 Toolbar(ShellDockingIds.EditToolbar), Toolbar(ShellDockingIds.ViewToolbar)

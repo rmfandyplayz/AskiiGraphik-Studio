@@ -34,7 +34,8 @@
                           SelectionBrush="{DynamicResource AppCanvasSelectionBrush}"
                           SelectionBackdropBrush="{DynamicResource AppCanvasSelectionBackdropBrush}"
                           SelectionThickness="{DynamicResource AppCanvasSelectionThickness}"
-                          SelectionDashLength="{DynamicResource AppCanvasSelectionDashLength}" />
+                          SelectionDashLength="{DynamicResource AppCanvasSelectionDashLength}"
+                          SelectionAntsSpeed="{DynamicResource AppCanvasSelectionAntsSpeed}" />
     <ScrollBar x:Name="VerticalBar"
                HorizontalAlignment="Right"
                Orientation="Vertical"

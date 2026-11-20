@@ -95,6 +95,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     public static readonly StyledProperty<double> SelectionDashLengthProperty =
         AvaloniaProperty.Register<CanvasControl, double>(nameof(SelectionDashLength), 4);
 
+    public static readonly StyledProperty<double> SelectionAntsSpeedProperty =
+        AvaloniaProperty.Register<CanvasControl, double>(nameof(SelectionAntsSpeed), 12);
+
     public static readonly StyledProperty<SessionSelection?> SelectionProperty =
         AvaloniaProperty.Register<CanvasControl, SessionSelection?>(nameof(Selection));
 
@@ -140,6 +143,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private readonly CanvasSceneBuilder _sceneBuilder = new();
     private readonly WheelGestureTracker _wheelGesture = new();
     private readonly AltClickMenuGuard _altClickMenuGuard = new();
+    private readonly Stopwatch _antsClock = Stopwatch.StartNew();
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
@@ -155,6 +159,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private double _horizontalOffset;
     private double _verticalOffset;
     private bool _isPublishingViewport;
+    private bool _isAntsFrameRequested;
+    private int _paintedAntsRun;
 
     static CanvasControl()
     {
@@ -311,6 +317,16 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     }
 
     /// <summary>
+    /// How fast the dashes of the selection outline run around it, in logical pixels a second. They move a whole
+    /// device pixel at a time, so the canvas repaints only that often.
+    /// </summary>
+    public double SelectionAntsSpeed
+    {
+        get => GetValue(SelectionAntsSpeedProperty);
+        set => SetValue(SelectionAntsSpeedProperty, value);
+    }
+
+    /// <summary>
     /// The document's selection, which the canvas outlines, unless the tool is dragging out another (ADR 0055).
     /// </summary>
     public SessionSelection? Selection
@@ -395,13 +411,53 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
         var overlay = Tool?.Overlay;
+        _paintedAntsRun = AntsRun();
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
-            BrushOutlineOf(overlay), overlay?.PendingSelection ?? Selection?.Mask,
-            ToDeviceLength(SelectionThickness), ToDeviceLength(SelectionDashLength));
+            BrushOutlineOf(overlay), OutlinedSelection, ToDeviceLength(SelectionThickness),
+            ToDeviceLength(SelectionDashLength), _paintedAntsRun);
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
+
+        if (OutlinedSelection is { IsEmpty: false })
+            RequestAntsFrame();
+    }
+
+    /// <summary>True while the selection outline's dashes are running, which they do whenever there's one.</summary>
+    internal bool AreAntsRunning => _isAntsFrameRequested;
+
+    private SelectionMask? OutlinedSelection => Tool?.Overlay.PendingSelection ?? Selection?.Mask;
+
+    // How far the dashes have run within one dash and gap, in device pixels.
+    private int AntsRun()
+    {
+        var period = 2 * ToDeviceLength(SelectionDashLength);
+        var run = _antsClock.Elapsed.TotalSeconds * SelectionAntsSpeed * _renderScaling;
+        return (int)(run % period);
+    }
+
+    private void RequestAntsFrame()
+    {
+        if (_isAntsFrameRequested || _topLevel is null)
+            return;
+
+        _isAntsFrameRequested = true;
+        _topLevel.RequestAnimationFrame(OnAntsFrame);
+    }
+
+    // Repaints only once the dashes have moved a whole device pixel; Render then asks for the next frame. With no
+    // selection left to outline, the dashes stop until there's another.
+    private void OnAntsFrame(TimeSpan frameTime)
+    {
+        _isAntsFrameRequested = false;
+        if (_topLevel is null || OutlinedSelection is not { IsEmpty: false })
+            return;
+
+        if (AntsRun() != _paintedAntsRun)
+            InvalidateVisual();
+        else
+            RequestAntsFrame();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

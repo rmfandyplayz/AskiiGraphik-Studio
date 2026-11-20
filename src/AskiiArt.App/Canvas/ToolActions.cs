@@ -20,6 +20,7 @@ internal static class ToolActionIds
     public const string Brush = Prefix + BrushTool.Id;
     public const string ForegroundBrush = Prefix + ColorBrushTool.ForegroundId;
     public const string BackgroundBrush = Prefix + ColorBrushTool.BackgroundId;
+    public const string CharacterBrush = Prefix + CharacterBrushTool.Id;
     public const string Eraser = Prefix + EraserTool.Id;
     public const string SoftEraser = Prefix + SoftEraserTool.Id;
     public const string BackgroundEraser = Prefix + EraserTool.BackgroundId;

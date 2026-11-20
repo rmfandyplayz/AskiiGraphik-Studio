@@ -102,12 +102,14 @@ internal static class CanvasScenePainter
     }
 
     // Each strip in the backdrop colour, with dashes of the line colour over it. The dashes are counted from the
-    // canvas's corner, so they line up where strips meet and stay put on the art while it scrolls.
+    // canvas's corner, so they line up where strips meet and stay put on the art while it scrolls, and then moved
+    // along by how far they've run, clockwise around the selection.
     private static void DrawSelectionOutline(SKCanvas canvas, SKPaint paint, CanvasScene scene)
     {
         var dash = scene.SelectionDashLength;
         var period = dash * 2;
         var origin = scene.Viewport.CanvasOrigin;
+        var run = scene.SelectionDashOffset % period;
         foreach (var strip in scene.SelectionOutline)
         {
             var rect = strip.Rect;
@@ -116,8 +118,8 @@ internal static class CanvasScenePainter
 
             var start = strip.IsHorizontal ? rect.X : rect.Y;
             var end = strip.IsHorizontal ? rect.Right : rect.Bottom;
-            var canvasStart = strip.IsHorizontal ? origin.X : origin.Y;
-            var dashStart = start - (((start - canvasStart) % period) + period) % period;
+            var firstDash = (strip.IsHorizontal ? origin.X : origin.Y) + (strip.RunsForward ? run : -run);
+            var dashStart = start - (((start - firstDash) % period) + period) % period;
             for (; dashStart < end; dashStart += period)
             {
                 var from = Math.Max(dashStart, start);

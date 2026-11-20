@@ -32,3 +32,5 @@ Step 4.1 starts M4 (Selection) with the mask, Rectangle Select, Select All and D
 - Every later selection tool and operation (4.2–4.6) only builds a mask and calls `SelectionEdits.Select`.
 - The outline is a flat list of edges walked each frame; a very ragged Magic Wand selection (4.3) may need measuring.
 - On macOS, Cmd+A goes through the menu bar; whether it still reaches a focused text box is checked by hand (ADR 0056).
+
+Updated 2026-11-20: at the owner's request the outline's dashes now run clockwise round the selection (marching ants), at a speed set by a theme token. They move a whole device pixel at a time: while there's an outline, the canvas asks for animation frames and repaints only when the dashes have moved, and with no selection it goes idle again. Cmd+A in a text box is now handled as ADR 0057 says.

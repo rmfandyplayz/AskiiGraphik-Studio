@@ -31,6 +31,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -225,6 +226,106 @@ public sealed class MainWindowTests : IDisposable
 
         Assert.False(_canvas.Session.Selection.IsEmpty);
         Assert.True(_canvas.Session.History.CanUndo);
+    }
+
+    [AvaloniaFact]
+    public void TheMenusSelectAll_WithATextBoxFocused_SelectsItsText_AndLeavesTheCanvasAlone()
+    {
+        // In the macOS menu bar, Cmd+A runs the menu item before the window sees the key.
+        var (window, textBox) = ShowWindowWithATextBoxFocused(isMacOS: true);
+
+        MenuItem(window, Strings.MenuSelect, Strings.ActionSelectAll).Command!.Execute(null);
+
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+        Assert.Equal(textBox.Text!.Length, Math.Abs(textBox.SelectionEnd - textBox.SelectionStart));
+    }
+
+    [AvaloniaFact]
+    public void TheMenusUndoAndRedo_WithATextBoxFocused_UndoAndRedoItsTyping_AndLeaveTheDocumentAlone()
+    {
+        var (window, textBox) = ShowWindowWithATextBoxFocused(isMacOS: true);
+        var before = textBox.Text;
+        SelectionEdits.SelectAll(_canvas.Session);
+        textBox.CaretIndex = before!.Length;
+        window.KeyTextInput("x");
+        window.KeyTextInput("y");
+        Dispatcher.UIThread.RunJobs();
+
+        MenuItem(window, Strings.MenuEdit, Strings.ActionUndo).Command!.Execute(null);
+
+        Assert.Equal(before, textBox.Text);
+        Assert.False(_canvas.Session.Selection.IsEmpty);
+
+        MenuItem(window, Strings.MenuEdit, Strings.ActionRedo).Command!.Execute(null);
+
+        Assert.Equal(before + "xy", textBox.Text);
+        Assert.False(_canvas.Session.Selection.IsEmpty);
+    }
+
+    [AvaloniaFact]
+    public void ClickingEditUndo_InTheWindowsMenuBar_WithATextBoxFocused_UndoesItsTyping_AndLeavesTheDocumentAlone()
+    {
+        // Clicking Edit in the menu bar inside the window takes the keyboard from the text box until the menu closes.
+        var (window, textBox) = ShowWindowWithATextBoxFocused();
+        var before = textBox.Text;
+        SelectionEdits.SelectAll(_canvas.Session);
+        textBox.CaretIndex = before!.Length;
+        window.KeyTextInput("x");
+        Dispatcher.UIThread.RunJobs();
+
+        ChooseFromTheMenuBar(window, Strings.MenuEdit, Strings.ActionUndo);
+
+        Assert.Equal(before, textBox.Text);
+        Assert.False(_canvas.Session.Selection.IsEmpty);
+    }
+
+    [AvaloniaFact]
+    public void ClickingSelectAll_InTheWindowsMenuBar_WithATextBoxFocused_SelectsItsText_AndLeavesTheCanvasAlone()
+    {
+        var (window, textBox) = ShowWindowWithATextBoxFocused();
+
+        ChooseFromTheMenuBar(window, Strings.MenuSelect, Strings.ActionSelectAll);
+
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+        Assert.Equal(textBox.Text!.Length, Math.Abs(textBox.SelectionEnd - textBox.SelectionStart));
+        Assert.Same(textBox, window.FocusManager.GetFocusedElement());
+    }
+
+    private static void ChooseFromTheMenuBar(MainWindow window, string menuHeader, string itemHeader)
+    {
+        var menu = MenuBarOf(window).GetLogicalChildren().OfType<MenuItem>()
+            .Single(item => Equals(item.Header, menuHeader));
+        Click(window, menu);
+        var item = menu.GetLogicalDescendants().OfType<MenuItem>().Single(entry => Equals(entry.Header, itemHeader));
+        Click(TopLevel.GetTopLevel(item)!, item);
+    }
+
+    private static void Click(TopLevel topLevel, Control control)
+    {
+        var centre = new Point(control.Bounds.Width / 2, control.Bounds.Height / 2);
+        var point = control.TranslatePoint(centre, topLevel)!.Value;
+        topLevel.MouseMove(point);
+        topLevel.MouseDown(point, MouseButton.Left);
+        topLevel.MouseUp(point, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    [AvaloniaFact]
+    public void TheMenusUndo_IsAvailable_WhileATextBoxHasTheKeyboard_EvenWithNothingToUndoInTheDocument()
+    {
+        var (window, _) = ShowWindowWithATextBoxFocused(isMacOS: true);
+        var undo = MenuItem(window, Strings.MenuEdit, Strings.ActionUndo).Command!;
+        var changes = 0;
+        undo.CanExecuteChanged += (_, _) => changes++;
+        Assert.True(undo.CanExecute(null));
+
+        window.GetVisualDescendants().OfType<CanvasControl>().Single().Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(undo.CanExecute(null));
+        Assert.True(changes > 0);
     }
 
     [AvaloniaFact]
@@ -593,9 +694,9 @@ public sealed class MainWindowTests : IDisposable
         Assert.True(AreAccessKeysUnderlined(window));
     }
 
-    private MainWindow ShowWindow(ShellDocking docking)
+    private MainWindow ShowWindow(ShellDocking docking, bool isMacOS = false)
     {
-        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false), docking)
+        var window = CreateBuilder(MenuLayout.CreateDefault(isMacOS, includeDebugMenu: false), docking)
             .Build(KeyModifiers.Control);
         _windows.Add(window);
         window.Show();
@@ -613,20 +714,27 @@ public sealed class MainWindowTests : IDisposable
         return window;
     }
 
-    // The main window with the Ramps window open and the typing in one of its text boxes, which holds some text.
-    private (MainWindow Window, TextBox TextBox) ShowWindowWithATextBoxFocused()
+    // The main window with the Ramps window open and the typing in one of its text boxes, which holds some text and can
+    // be typed in. With the macOS menus, the menu bar has the first shortcut of each item, so the window doesn't.
+    private (MainWindow Window, TextBox TextBox) ShowWindowWithATextBoxFocused(bool isMacOS = false)
     {
         var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
-        var window = ShowWindow(docking);
+        var window = ShowWindow(docking, isMacOS);
         docking.ToggleWindow(ShellDockingIds.RampsPanel);
         Dispatcher.UIThread.RunJobs();
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         Dispatcher.UIThread.RunJobs();
         var textBox = window.GetVisualDescendants().OfType<RampsPanelView>().Single()
-            .GetVisualDescendants().OfType<TextBox>().First(box => !string.IsNullOrEmpty(box.Text));
+            .GetVisualDescendants().OfType<TextBox>().First(box => !box.IsReadOnly && !string.IsNullOrEmpty(box.Text));
         textBox.Focus();
         Dispatcher.UIThread.RunJobs();
         return (window, textBox);
+    }
+
+    private static NativeMenuItem MenuItem(MainWindow window, string menu, string item)
+    {
+        var menuItem = NativeMenu.GetMenu(window)!.Items.Cast<NativeMenuItem>().Single(entry => entry.Header == menu);
+        return menuItem.Menu!.Items.OfType<NativeMenuItem>().Single(entry => entry.Header == item);
     }
 
     private static void PressCommandShortcut(MainWindow window, Key key, PhysicalKey physicalKey, string symbol)

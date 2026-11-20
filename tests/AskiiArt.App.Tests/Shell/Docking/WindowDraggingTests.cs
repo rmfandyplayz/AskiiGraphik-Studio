@@ -874,7 +874,7 @@ public sealed class WindowDraggingTests : IDisposable
             () => ToolbarMenu.Create(id, _actions, _docking));
 
         var catalog = new ShellCatalog(
-            [Panel(Layers), Panel(History), Panel(ShellDockingIds.SampleWindow1)],
+            [Panel(Layers), Panel(History), Panel(ShellDockingIds.SampleWindow1) with { IsForgottenOnRestart = true }],
             [
                 Toolbar(ShellDockingIds.FileToolbar), Toolbar(Tools), Toolbar(ShellDockingIds.EditToolbar),
                 Toolbar(ShellDockingIds.ViewToolbar)

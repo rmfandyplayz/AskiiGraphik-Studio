@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
@@ -231,6 +232,23 @@ public sealed class CanvasControlTests : IDisposable
         Assert.Equal(new CanvasSize(400, 100), Viewport.CanvasSize);
     }
 
+    [AvaloniaFact]
+    public void TheSelectionOutline_RunsWhileThereIsASelection_AndStopsWithout()
+    {
+        _control.Selection = _canvas.Session.Selection;
+        Show();
+        Render();
+        Assert.False(_control.AreAntsRunning);
+
+        SelectionEdits.SelectAll(_canvas.Session);
+        Render();
+        Assert.True(_control.AreAntsRunning);
+
+        SelectionEdits.Deselect(_canvas.Session);
+        Render();
+        Assert.False(_control.AreAntsRunning);
+    }
+
     public void Dispose()
     {
         _window.Close();
@@ -241,5 +259,15 @@ public sealed class CanvasControlTests : IDisposable
     {
         _window.Show();
         Dispatcher.UIThread.RunJobs();
+    }
+
+    // A few frames, so the canvas paints and any frame it asked for comes round.
+    private static void Render()
+    {
+        for (var frame = 0; frame < 3; frame++)
+        {
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Dispatcher.UIThread.RunJobs();
+        }
     }
 }

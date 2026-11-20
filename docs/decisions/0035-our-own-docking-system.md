@@ -62,3 +62,5 @@ Updated 2026-11-12: a window drag's preview is room the solver makes for a marke
 Updated 2026-11-16: plugins are M9 now (ADR 0046).
 
 Updated 2026-11-17: a toolbar whose buttons change size by themselves, such as Tool Options when the tool changes, slides to its new size too. The host notices it when it measures, whatever caused it.
+
+Updated 2026-11-20: `LayoutRepair` dropped every window a saved layout had that the default layout didn't open (Ramps, Characters, Color, Swatches), so only Layers and History came back after a restart. The catalog now lists every window, and those the default doesn't open are `WindowsThatStartClosed`: kept where a saved layout has them, and not opened where it doesn't. The Debug menu's sample windows are left out, so a restart still forgets them.

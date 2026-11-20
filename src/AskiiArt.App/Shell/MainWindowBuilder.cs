@@ -14,6 +14,7 @@ using AskiiArt.App.Resources;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
+using AskiiArt.App.Shell.TextBoxes;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.ToolOptions;
 using Avalonia;
@@ -51,13 +52,14 @@ internal sealed class MainWindowBuilder(
     {
         rememberedTools.Restore(canvas);
         var window = new MainWindow { DataContext = canvas, Title = title.Text };
-        var menus = new NativeMenuBuilder(actions, platformCommandModifiers);
+        var textBoxes = TextBoxShortcuts.ForThisPlatform(window);
+        var menus = new NativeMenuBuilder(actions, platformCommandModifiers, textBoxes);
 
         FollowTitle(window);
         NativeMenu.SetMenu(window, menus.BuildWindowMenu(layout.WindowMenus));
         window.SetMenuBar(layout.IsSystemMenuBar ? null : new NativeMenuBar());
         ShowPanels(window);
-        AddKeyBindings(window, platformCommandModifiers);
+        AddKeyBindings(window, platformCommandModifiers, textBoxes);
         AskAboutUnsavedChangesBeforeClosing(window);
         SayWhenTheSettingsWereDamaged(window);
 
@@ -132,9 +134,12 @@ internal sealed class MainWindowBuilder(
         if (actions.All.All(action => action.Id != WindowSampleActionIds.First))
             yield break;
 
-        yield return window(ShellDockingIds.SampleWindow1, Strings.ActionSampleWindow1, () => new Border());
-        yield return window(ShellDockingIds.SampleWindow2, Strings.ActionSampleWindow2, () => new Border());
-        yield return window(ShellDockingIds.SampleWindow3, Strings.ActionSampleWindow3, () => new Border());
+        yield return Sample(ShellDockingIds.SampleWindow1, Strings.ActionSampleWindow1);
+        yield return Sample(ShellDockingIds.SampleWindow2, Strings.ActionSampleWindow2);
+        yield return Sample(ShellDockingIds.SampleWindow3, Strings.ActionSampleWindow3);
+
+        ShellWindowEntry Sample(string id, string title) =>
+            window(id, title, () => new Border()) with { IsForgottenOnRestart = true };
     }
 
     // After the window has opened, so the message has a window to belong to.
@@ -215,7 +220,7 @@ internal sealed class MainWindowBuilder(
         };
     }
 
-    private void AddKeyBindings(Window window, KeyModifiers platformCommandModifiers)
+    private void AddKeyBindings(Window window, KeyModifiers platformCommandModifiers, TextBoxShortcuts textBoxes)
     {
         // In the macOS system menu bar, a menu item's shortcut (an action's first one) already
         // triggers it. Binding it again on the window could run the action twice, so there only
@@ -224,7 +229,6 @@ internal sealed class MainWindowBuilder(
             ? layout.ActionIds().ToHashSet(StringComparer.Ordinal)
             : [];
 
-        var textEditingGestures = TextEditingGestures();
         foreach (var action in actions.All)
         {
             var firstBoundShortcut = actionsTriggeredByMenu.Contains(action.Id) ? 1 : 0;
@@ -234,25 +238,9 @@ internal sealed class MainWindowBuilder(
                 window.KeyBindings.Add(new KeyBinding
                 {
                     Gesture = gesture,
-                    Command = textEditingGestures.Contains(gesture)
-                        ? new YieldToTextBoxCommand(action.Command, window)
-                        : action.Command,
+                    Command = textBoxes.CommandFor(action.Command, [gesture]),
                 });
             }
         }
-    }
-
-    // The keys a text box edits with on this platform, such as Select All and Undo, which a shortcut mustn't take from
-    // a text box that has the keyboard.
-    private static HashSet<KeyGesture> TextEditingGestures()
-    {
-        if (Application.Current?.PlatformSettings?.HotkeyConfiguration is not { } hotkeys)
-            return [];
-
-        return
-        [
-            .. hotkeys.SelectAll, .. hotkeys.Undo, .. hotkeys.Redo,
-            .. hotkeys.Copy, .. hotkeys.Cut, .. hotkeys.Paste,
-        ];
     }
 }

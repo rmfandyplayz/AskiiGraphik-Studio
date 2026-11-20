@@ -91,7 +91,8 @@ internal sealed class CanvasSceneBuilder
             CaretThickness = overlays.CaretThickness,
             BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness),
             SelectionOutline = SelectionOutlineOf(viewport, overlays.Selection, overlays.SelectionThickness),
-            SelectionDashLength = Math.Max(1, overlays.SelectionDashLength)
+            SelectionDashLength = Math.Max(1, overlays.SelectionDashLength),
+            SelectionDashOffset = overlays.SelectionDashOffset
         };
     }
 
@@ -142,8 +143,7 @@ internal sealed class CanvasSceneBuilder
         var strips = new List<SelectionStrip>();
         foreach (var edge in selection.Edges)
         {
-            var isHorizontal = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom;
-            var cells = isHorizontal
+            var cells = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom
                 ? new CellRect(edge.Column, edge.Row, edge.Length, 1)
                 : new CellRect(edge.Column, edge.Row, 1, edge.Length);
             var shown = cells.Intersect(visible);
@@ -159,7 +159,7 @@ internal sealed class CanvasSceneBuilder
                 CellEdgeSide.Left => new PixelRect(x, y, width, shown.Height * cell.Height),
                 _ => new PixelRect(x + cell.Width - width, y, width, shown.Height * cell.Height)
             };
-            strips.Add(new SelectionStrip(rect, isHorizontal));
+            strips.Add(new SelectionStrip(rect, edge.Side));
         }
 
         return [.. strips];

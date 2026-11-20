@@ -212,6 +212,7 @@ public sealed class MenuLayoutTests
                 ToolActionIds.Brush,
                 ToolActionIds.ForegroundBrush,
                 ToolActionIds.BackgroundBrush,
+                ToolActionIds.CharacterBrush,
                 ToolActionIds.Eraser,
                 ToolActionIds.SoftEraser,
                 ToolActionIds.BackgroundEraser

@@ -286,7 +286,7 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 ### 14.3 Shortcuts
 
-Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings. A shortcut that text boxes also edit with (Select All, Undo, Redo, Copy, Cut, Paste) goes to a text box that has the keyboard instead (ADR 0056).
+Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings. A shortcut that text boxes also edit with (Select All, Undo, Redo, Copy, Cut, Paste) goes to a text box that has the keyboard instead, from the key and from the menu (ADR 0057).
 
 Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a plain strip along the top of the window (ADR 0007, ADR 0035).
 

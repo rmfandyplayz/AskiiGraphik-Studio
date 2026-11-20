@@ -19,7 +19,11 @@ internal sealed record ShellWindowEntry(
     double MinimumHeight,
     Func<Control> CreateView,
     Func<ContextMenu>? CreateMenu = null,
-    ICommand? CloseCommand = null);
+    ICommand? CloseCommand = null)
+{
+    /// <summary>True for a window the saved layout leaves out, so it's closed after a restart.</summary>
+    public bool IsForgottenOnRestart { get; init; }
+}
 
 /// <summary>A toolbar the app has.</summary>
 /// <param name="Id">Its id in the layout.</param>

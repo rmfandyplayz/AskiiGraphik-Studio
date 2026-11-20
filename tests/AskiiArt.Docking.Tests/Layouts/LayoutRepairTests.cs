@@ -33,6 +33,28 @@ public sealed class LayoutRepairTests
     }
 
     [Fact]
+    public void AWindowThatStartsClosed_StaysClosed_WhenMissingFromTheLayout()
+    {
+        var catalog = _small with { WindowsThatStartClosed = ["b"] };
+
+        var layout = LayoutRepair.Repair(_empty, catalog);
+
+        Assert.True(layout.IsWindowOpen("a"));
+        Assert.False(layout.IsWindowOpen("b"));
+        Assert.DoesNotContain(layout.ClosedWindows, closed => closed.WindowId == "b");
+    }
+
+    [Fact]
+    public void AWindowThatStartsClosed_IsKept_WhereTheLayoutHasIt()
+    {
+        var catalog = _small with { WindowsThatStartClosed = ["b"] };
+
+        var layout = LayoutRepair.Repair(Widgets(SideEdge.Right, new WindowGroup(["b"])), catalog);
+
+        Assert.True(layout.IsWindowOpen("b"));
+    }
+
+    [Fact]
     public void AClosedWindow_StaysClosed()
     {
         var layout = _empty with { ClosedWindows = [new ClosedWindow("a", SideEdge.Left, 0, 1, 240)] };

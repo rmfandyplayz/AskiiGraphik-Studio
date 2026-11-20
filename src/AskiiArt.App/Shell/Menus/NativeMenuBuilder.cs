@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Windows.Input;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Shell.TextBoxes;
 using Avalonia.Controls;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.Input;
@@ -14,7 +16,10 @@ namespace AskiiArt.App.Shell.Menus;
 /// the system menu bar; on Windows and Linux a <see cref="NativeMenuBar"/> shows them in the
 /// window.
 /// </summary>
-internal sealed class NativeMenuBuilder(ActionRegistry actions, KeyModifiers platformCommandModifiers)
+internal sealed class NativeMenuBuilder(
+    ActionRegistry actions,
+    KeyModifiers platformCommandModifiers,
+    TextBoxShortcuts? textBoxes = null)
 {
     public NativeMenu BuildWindowMenu(IReadOnlyList<MenuDefinition> menus)
     {
@@ -82,7 +87,7 @@ internal sealed class NativeMenuBuilder(ActionRegistry actions, KeyModifiers pla
             ? UiText.Get(action.LabelKey)
             : UiText.GetWithAppName(entry.LabelWithAppNameKey);
 
-        var item = new NativeMenuItem(label) { Command = action.Command };
+        var item = new NativeMenuItem(label) { Command = CommandFor(action) };
 
         // Shown next to the label. On macOS it's also the key equivalent that triggers the item;
         // on Windows and Linux the shortcut itself is a window key binding (MainWindowBuilder).
@@ -97,5 +102,16 @@ internal sealed class NativeMenuBuilder(ActionRegistry actions, KeyModifiers pla
         }
 
         return item;
+    }
+
+    // A menu item whose shortcut a text box also edits with makes the text box's edit while one has the keyboard. In
+    // the macOS menu bar that's what the shortcut does too, since the menu takes it first (ADR 0057).
+    private ICommand CommandFor(AppAction action)
+    {
+        if (textBoxes is null)
+            return action.Command;
+
+        return textBoxes.CommandFor(action.Command,
+            action.DefaultShortcuts.Select(shortcut => shortcut.ToKeyGesture(platformCommandModifiers)));
     }
 }

@@ -2,6 +2,7 @@
 <!-- Written with Claude Code (Anthropic). -->
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:textBoxes="using:AskiiArt.App.Shell.TextBoxes"
              x:Class="AskiiArt.App.App"
              RequestedThemeVariant="Default">
   <Application.Resources>
@@ -15,5 +16,11 @@
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
+
+    <!-- Every text box groups its typing into undo steps, in place of Avalonia's own undo (ADR 0058). -->
+    <Style Selector="TextBox">
+      <Setter Property="IsUndoEnabled" Value="False" />
+      <Setter Property="textBoxes:TypingUndo.IsEnabled" Value="True" />
+    </Style>
   </Application.Styles>
 </Application>

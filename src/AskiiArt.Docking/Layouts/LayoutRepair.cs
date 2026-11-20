@@ -10,12 +10,20 @@ namespace AskiiArt.Docking.Layouts;
 public sealed record DockingCatalog(
     IReadOnlyList<string> WindowIds,
     IReadOnlyList<ToolbarPlacement> DefaultToolbars,
-    double DefaultSideWidth);
+    double DefaultSideWidth)
+{
+    /// <summary>
+    /// The windows that aren't open until the user opens them. One of these missing from a layout stays closed, where
+    /// another window would count as new and open.
+    /// </summary>
+    public IReadOnlyList<string> WindowsThatStartClosed { get; init; } = [];
+}
 
 /// <summary>
 /// Turns any layout into one that keeps the rules, changing as little as possible. Repairing a layout that
-/// already keeps them changes nothing. Afterwards every window the app has is either open or closed exactly
-/// once, so a window missing from the saved layout counts as new, and opens.
+/// already keeps them changes nothing. Afterwards no window is open or closed more than once, and every window
+/// the app has is one or the other, except one that starts closed and has never been opened. Any other window
+/// missing from the saved layout counts as new, and opens.
 /// </summary>
 public static class LayoutRepair
 {
@@ -171,10 +179,14 @@ public static class LayoutRepair
 
     private static DockingLayout OpenMissingWindows(DockingLayout layout, DockingCatalog catalog)
     {
+        var startClosed = catalog.WindowsThatStartClosed.ToHashSet(StringComparer.Ordinal);
         foreach (var windowId in catalog.WindowIds.Distinct(StringComparer.Ordinal))
         {
-            if (layout.IsWindowOpen(windowId) || layout.ClosedWindows.Any(closed => closed.WindowId == windowId))
+            if (startClosed.Contains(windowId) || layout.IsWindowOpen(windowId) ||
+                layout.ClosedWindows.Any(closed => closed.WindowId == windowId))
+            {
                 continue;
+            }
 
             var opened = LayoutEdits.OpenWindow(layout, windowId, catalog.DefaultSideWidth);
             if (!opened.IsWindowOpen(windowId))

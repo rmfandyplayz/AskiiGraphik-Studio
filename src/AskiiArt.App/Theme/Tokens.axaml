@@ -83,9 +83,11 @@
   <!-- The text caret is an outline around its cell, this many logical pixels thick. -->
   <x:Double x:Key="AppCanvasCaretThickness">2</x:Double>
   <!-- The selection outline (step 4.1, placeholder): black dashes on white, this many logical pixels thick, each
-       dash and gap this long, so it shows on any art. It doesn't move, so the canvas stays idle. -->
+       dash and gap this long, so it shows on any art. The dashes run clockwise around the selection at this many
+       logical pixels a second, a whole device pixel at a time. -->
   <x:Double x:Key="AppCanvasSelectionThickness">1</x:Double>
   <x:Double x:Key="AppCanvasSelectionDashLength">4</x:Double>
+  <x:Double x:Key="AppCanvasSelectionAntsSpeed">12</x:Double>
 
   <!-- Status bar -->
   <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>

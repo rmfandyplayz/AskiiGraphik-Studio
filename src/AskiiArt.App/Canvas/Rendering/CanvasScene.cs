@@ -48,6 +48,9 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The length of each dash of the selection outline, and of each gap, in device pixels.</summary>
     public int SelectionDashLength { get; init; } = 1;
 
+    /// <summary>How far the selection outline's dashes have run around it, in device pixels.</summary>
+    public int SelectionDashOffset { get; init; }
+
     public void Dispose()
     {
         Backgrounds?.Dispose();
