@@ -94,6 +94,9 @@ internal static class AppServices
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(HandTool.Definition);
         services.AddSingleton(RectangleSelectTool.Definition);
+        services.AddSingleton(EllipseSelectTool.Definition);
+        services.AddSingleton(LassoTool.Definition);
+        services.AddSingleton(PolygonalLassoTool.Definition);
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton(BrushTool.Definition);
         services.AddSingleton(ColorBrushTool.ForegroundDefinition);

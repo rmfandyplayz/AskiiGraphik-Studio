@@ -24,6 +24,7 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -692,6 +693,29 @@ public sealed class MainWindowTests : IDisposable
         // Alt on its own underlines them again.
         window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
         Assert.True(AreAccessKeysUnderlined(window));
+    }
+
+    [AvaloniaFact]
+    public void LettingGoOfAlt_PressedDuringADragOnTheCanvas_LeavesTheMenuBarClosed()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+        _canvas.ViewModel.SelectTool(RectangleSelectTool.Id);
+        var centre = CentreOfTheCanvas(window);
+
+        window.MouseDown(centre, MouseButton.Left);
+        window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
+        Assert.False(AreAccessKeysUnderlined(window));
+        window.MouseMove(centre + new Point(40, 40), RawInputModifiers.Alt);
+        window.MouseUp(centre + new Point(40, 40), MouseButton.Left, RawInputModifiers.Alt);
+        window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(MenuBarOf(window).IsOpen);
+        Assert.False(AreAccessKeysUnderlined(window));
+
+        // Nothing is left half done: tapping Alt again opens the menu bar.
+        TapAlt(window);
+        Assert.True(MenuBarOf(window).IsOpen);
     }
 
     private MainWindow ShowWindow(ShellDocking docking, bool isMacOS = false)

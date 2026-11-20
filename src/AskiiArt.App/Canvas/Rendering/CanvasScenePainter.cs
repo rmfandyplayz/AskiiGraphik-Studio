@@ -70,6 +70,8 @@ internal static class CanvasScenePainter
         foreach (var strip in scene.BrushOutline)
             Fill(canvas, paint, strip, colors.Caret);
 
+        DrawToolPath(canvas, paint, scene);
+
         canvas.Restore();
     }
 
@@ -133,6 +135,35 @@ internal static class CanvasScenePainter
                 canvas.DrawRect(piece, paint);
             }
         }
+    }
+
+    // The line in the selection outline's colours, a thin line along a backdrop three times as wide, so it shows on any
+    // art. A placeholder look (docs/TEMPORARY-UI.md).
+    private static void DrawToolPath(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    {
+        var points = scene.ToolPath;
+        if (points.Count < 2)
+            return;
+
+        using var path = new SKPath();
+        path.MoveTo((float)points[0].X, (float)points[0].Y);
+        for (var index = 1; index < points.Count; index++)
+            path.LineTo((float)points[index].X, (float)points[index].Y);
+
+        paint.Style = SKPaintStyle.Stroke;
+        paint.IsAntialias = true;
+        paint.StrokeJoin = SKStrokeJoin.Round;
+        paint.StrokeCap = SKStrokeCap.Round;
+        paint.StrokeWidth = scene.ToolPathThickness * 3;
+        paint.Color = scene.Colors.SelectionBackdrop;
+        canvas.DrawPath(path, paint);
+        paint.StrokeWidth = scene.ToolPathThickness;
+        paint.Color = scene.Colors.SelectionLine;
+        canvas.DrawPath(path, paint);
+
+        paint.Style = SKPaintStyle.Fill;
+        paint.IsAntialias = false;
+        paint.StrokeWidth = 0;
     }
 
     // Four filled edges inside the rect, so the outline lands on whole pixels and never covers

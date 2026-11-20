@@ -22,19 +22,11 @@ internal static class BitRow
         (row[index / BitsPerWord] & (1UL << (index % BitsPerWord))) != 0;
 
     /// <summary>Sets <paramref name="length"/> bits from <paramref name="start"/>.</summary>
-    public static void SetRange(Span<ulong> row, int start, int length)
-    {
-        var end = start + length;
-        while (start < end)
-        {
-            var wordIndex = start / BitsPerWord;
-            var firstBit = start % BitsPerWord;
-            var bitCount = Math.Min(BitsPerWord - firstBit, end - start);
-            var bits = bitCount == BitsPerWord ? ulong.MaxValue : ((1UL << bitCount) - 1) << firstBit;
-            row[wordIndex] |= bits;
-            start += bitCount;
-        }
-    }
+    public static void SetRange(Span<ulong> row, int start, int length) => ChangeRange(row, start, length, set: true);
+
+    /// <summary>Clears <paramref name="length"/> bits from <paramref name="start"/>.</summary>
+    public static void ClearRange(Span<ulong> row, int start, int length) =>
+        ChangeRange(row, start, length, set: false);
 
     /// <summary>
     /// The first set bit at or after <paramref name="from"/>, or <paramref name="length"/> when there's none.
@@ -59,6 +51,24 @@ internal static class BitRow
             count += BitOperations.PopCount(word);
 
         return count;
+    }
+
+    private static void ChangeRange(Span<ulong> row, int start, int length, bool set)
+    {
+        var end = start + length;
+        while (start < end)
+        {
+            var wordIndex = start / BitsPerWord;
+            var firstBit = start % BitsPerWord;
+            var bitCount = Math.Min(BitsPerWord - firstBit, end - start);
+            var bits = bitCount == BitsPerWord ? ulong.MaxValue : ((1UL << bitCount) - 1) << firstBit;
+            if (set)
+                row[wordIndex] |= bits;
+            else
+                row[wordIndex] &= ~bits;
+
+            start += bitCount;
+        }
     }
 
     private static int NextBit(ReadOnlySpan<ulong> row, int from, int length, bool invert)

@@ -19,7 +19,7 @@ public sealed class RectangleSelectToolTests
 
     public RectangleSelectToolTests()
     {
-        _tool = new RectangleSelectTool(_session);
+        _tool = new RectangleSelectTool(TestTools.Context(_session));
         _tool.OverlayChanged += (_, _) => _overlayChanges++;
     }
 
@@ -207,15 +207,6 @@ public sealed class RectangleSelectToolTests
     }
 
     [Fact]
-    public void ModifiersAreIgnored_ForNow()
-    {
-        _tool.PointerPressed(Input(0, 0, ToolModifiers.Shift));
-        _tool.PointerReleased(Input(1, 0, ToolModifiers.Alt));
-
-        Assert.Equal(["##···", "·····", "·····", "·····"], Selected);
-    }
-
-    [Fact]
     public void Panning_UsesSpaceOnly()
     {
         Assert.True(_tool.AllowsSpacePanning);
@@ -223,8 +214,7 @@ public sealed class RectangleSelectToolTests
         Assert.False(_tool.IsTakingText);
     }
 
-    private static ToolPointerInput Input(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
-        new(new CellPoint(x, y), 0.5, 0.5, modifiers);
+    private static ToolPointerInput Input(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);
 
     private void Press(int x, int y) => _tool.PointerPressed(Input(x, y));
 

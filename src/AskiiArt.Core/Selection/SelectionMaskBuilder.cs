@@ -36,7 +36,30 @@ public sealed class SelectionMaskBuilder
     /// Selects <paramref name="length"/> cells of row <paramref name="row"/> from column <paramref name="column"/>,
     /// leaving out any outside the builder's area.
     /// </summary>
-    public void AddRun(int row, int column, int length)
+    public void AddRun(int row, int column, int length) => ChangeRun(row, column, length, add: true);
+
+    /// <summary>
+    /// Leaves out <paramref name="length"/> cells of row <paramref name="row"/> from column <paramref name="column"/>,
+    /// whether or not they were added.
+    /// </summary>
+    public void RemoveRun(int row, int column, int length) => ChangeRun(row, column, length, add: false);
+
+    /// <summary>Keeps only the cells <paramref name="other"/> has too. Both must cover the same area.</summary>
+    /// <exception cref="ArgumentException">The builders cover different areas.</exception>
+    public void IntersectWith(SelectionMaskBuilder other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (other._area != _area || other._canvasSize != _canvasSize)
+            throw new ArgumentException("The builders cover different areas.", nameof(other));
+
+        for (var index = 0; index < _bits.Length; index++)
+            _bits[index] &= other._bits[index];
+    }
+
+    /// <summary>The mask of every cell added so far.</summary>
+    public SelectionMask Build() => SelectionMask.FromBits(_canvasSize, _area, [.. _bits], _stride);
+
+    private void ChangeRun(int row, int column, int length, bool add)
     {
         if (row < _area.Top || row >= _area.Bottom)
             return;
@@ -46,9 +69,10 @@ public sealed class SelectionMaskBuilder
         if (end <= start)
             return;
 
-        BitRow.SetRange(_bits.AsSpan((row - _area.Top) * _stride, _stride), start - _area.Left, end - start);
+        var bits = _bits.AsSpan((row - _area.Top) * _stride, _stride);
+        if (add)
+            BitRow.SetRange(bits, start - _area.Left, end - start);
+        else
+            BitRow.ClearRange(bits, start - _area.Left, end - start);
     }
-
-    /// <summary>The mask of every cell added so far.</summary>
-    public SelectionMask Build() => SelectionMask.FromBits(_canvasSize, _area, [.. _bits], _stride);
 }

@@ -103,6 +103,9 @@ internal sealed record MenuLayout(
         [
             new ActionMenuEntry(ToolActionIds.Hand),
             new ActionMenuEntry(ToolActionIds.RectangleSelect),
+            new ActionMenuEntry(ToolActionIds.EllipseSelect),
+            new ActionMenuEntry(ToolActionIds.Lasso),
+            new ActionMenuEntry(ToolActionIds.PolygonalLasso),
             new ActionMenuEntry(ToolActionIds.Text),
             new ActionMenuEntry(ToolActionIds.Brush),
             new ActionMenuEntry(ToolActionIds.ForegroundBrush),

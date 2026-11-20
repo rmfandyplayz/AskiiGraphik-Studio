@@ -119,6 +119,12 @@ public sealed record ChoiceToolOption : ToolOption
     public string DefaultValue { get; }
 
     /// <summary>
+    /// Whether the Tool Options toolbar shows every choice as a button, however many there are, for choices that are
+    /// switched often. Otherwise it decides by how many there are.
+    /// </summary>
+    public bool IsShownAsButtons { get; init; }
+
+    /// <summary>
     /// Whether <paramref name="value"/> is one of <see cref="Choices"/>, and one that can be chosen. It doesn't look at
     /// <see cref="MoreChoicesFrom"/>'s: <see cref="ToolOptionValues.Allows"/> does.
     /// </summary>

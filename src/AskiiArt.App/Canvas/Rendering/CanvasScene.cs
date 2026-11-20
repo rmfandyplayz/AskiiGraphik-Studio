@@ -51,6 +51,12 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>How far the selection outline's dashes have run around it, in device pixels.</summary>
     public int SelectionDashOffset { get; init; }
 
+    /// <summary>The points of the line the tool shows, such as a lasso's path, in device pixels.</summary>
+    public IReadOnlyList<Point> ToolPath { get; init; } = [];
+
+    /// <summary>The tool's line's thickness, in device pixels.</summary>
+    public int ToolPathThickness { get; init; } = 1;
+
     public void Dispose()
     {
         Backgrounds?.Dispose();

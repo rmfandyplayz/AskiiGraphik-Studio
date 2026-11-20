@@ -66,6 +66,15 @@ public static class UndoStepNames
     /// <summary>Selecting a rectangle with Rectangle Select.</summary>
     public const string RectangleSelect = "UndoStepRectangleSelect";
 
+    /// <summary>Selecting an ellipse with Ellipse Select.</summary>
+    public const string EllipseSelect = "UndoStepEllipseSelect";
+
+    /// <summary>Selecting a freehand shape with the Lasso.</summary>
+    public const string Lasso = "UndoStepLasso";
+
+    /// <summary>Selecting a shape of straight sides with the Polygonal Lasso.</summary>
+    public const string PolygonalLasso = "UndoStepPolygonalLasso";
+
     /// <summary>Selecting the whole canvas.</summary>
     public const string SelectAll = "UndoStepSelectAll";
 

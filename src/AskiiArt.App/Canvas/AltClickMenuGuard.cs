@@ -9,8 +9,8 @@ using Avalonia.Interactivity;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// Keeps an Alt+click on the canvas from opening the menu bar, or leaving its letters underlined, when Alt is let go
-/// (ADR 0043). One belongs to each canvas.
+/// Keeps an Alt+click on the canvas, or Alt pressed during a drag on it, from opening the menu bar, or leaving its
+/// letters underlined, when Alt is let go (ADR 0043). One belongs to each canvas.
 /// </summary>
 /// <remarks>
 /// On Windows and Linux, Avalonia's access key handler underlines the menu bar's letters while Alt is down, and opens
@@ -28,23 +28,21 @@ internal sealed class AltClickMenuGuard
     public void OnPointerPressed(Interactive source, KeyModifiers modifiers)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (!modifiers.HasFlag(KeyModifiers.Alt))
-            return;
-
-        _isAltHeldAfterClick = true;
-        source.RaiseEvent(new KeyEventArgs
-        {
-            RoutedEvent = InputElement.KeyDownEvent,
-            Source = source,
-            Key = Key.None,
-            KeyModifiers = KeyModifiers.Alt,
-        });
+        if (modifiers.HasFlag(KeyModifiers.Alt))
+            TellTheHandlerAltWasUsed(source);
     }
 
-    // The access key handler has already seen the key: it listens on the way down to the canvas.
-    public void OnKeyDown(Interactive source, Key key)
+    // Alt pressed during a drag changes the drag, as a selection's Alt does, so it counts as an Alt+click does. The
+    // access key handler has already seen the key: it listens on the way down to the canvas.
+    public void OnKeyDown(Interactive source, Key key, bool isDragging)
     {
-        if (_isAltHeldAfterClick && IsAlt(key))
+        if (!IsAlt(key))
+            return;
+
+        if (isDragging && !_isAltHeldAfterClick)
+            TellTheHandlerAltWasUsed(source);
+
+        if (_isAltHeldAfterClick)
             HideUnderlines(source);
     }
 
@@ -61,6 +59,18 @@ internal sealed class AltClickMenuGuard
     public void OnLostFocus() => _isAltHeldAfterClick = false;
 
     private static bool IsAlt(Key key) => key is Key.LeftAlt or Key.RightAlt;
+
+    private void TellTheHandlerAltWasUsed(Interactive source)
+    {
+        _isAltHeldAfterClick = true;
+        source.RaiseEvent(new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Source = source,
+            Key = Key.None,
+            KeyModifiers = KeyModifiers.Alt,
+        });
+    }
 
     private static void HideUnderlines(Interactive source)
     {

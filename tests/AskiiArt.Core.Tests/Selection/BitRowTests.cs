@@ -25,6 +25,25 @@ public sealed class BitRowTests
         Assert.Equal(length, BitRow.CountSetBits(row));
     }
 
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(3, 61)]
+    [InlineData(60, 10)]
+    [InlineData(0, 140)]
+    [InlineData(127, 2)]
+    public void ClearRange_ClearsExactlyThoseBits(int start, int length)
+    {
+        var row = new ulong[BitRow.WordsFor(140)];
+        BitRow.SetRange(row, 0, 140);
+
+        BitRow.ClearRange(row, start, length);
+
+        for (var index = 0; index < 140; index++)
+            Assert.Equal(index < start || index >= start + length, BitRow.IsSet(row, index));
+
+        Assert.Equal(140 - length, BitRow.CountSetBits(row));
+    }
+
     [Fact]
     public void Runs_FindEachStretchOfSetBits_AcrossWords()
     {

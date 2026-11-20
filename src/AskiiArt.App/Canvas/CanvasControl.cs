@@ -414,7 +414,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _paintedAntsRun = AntsRun();
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
             BrushOutlineOf(overlay), OutlinedSelection, ToDeviceLength(SelectionThickness),
-            ToDeviceLength(SelectionDashLength), _paintedAntsRun);
+            ToDeviceLength(SelectionDashLength), _paintedAntsRun, overlay?.Path);
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
@@ -569,7 +569,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             e.Handled = true;
         }
         else if (point.Properties.IsLeftButtonPressed && Tool is { } tool &&
-                 ToToolInput(ToDevicePixels(point.Position), e.KeyModifiers, PressureOf(e)) is { } input)
+                 ToToolInput(ToDevicePixels(point.Position), e.KeyModifiers, PressureOf(e), e.ClickCount) is { } input)
         {
             _isToolGestureActive = true;
             e.Pointer.Capture(this);
@@ -645,7 +645,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        _altClickMenuGuard.OnKeyDown(this, e.Key);
+        _altClickMenuGuard.OnKeyDown(this, e.Key, _isToolGestureActive);
+        if (ModifierOf(e.Key) is { } pressed && Tool is { } shaped)
+            shaped.ModifiersChanged(ToToolModifiers(e.KeyModifiers) | pressed);
 
         // A text tool wants Space as a typed space, so it isn't handled here: on macOS a handled
         // key never reaches text input.
@@ -665,6 +667,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         base.OnKeyUp(e);
         _altClickMenuGuard.OnKeyUp(this, e.Key);
+        if (ModifierOf(e.Key) is { } released && Tool is { } tool)
+            tool.ModifiersChanged(ToToolModifiers(e.KeyModifiers) & ~released);
         if (e.Key != Key.Space || !_isSpaceHeld)
             return;
 
@@ -921,7 +925,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         PointerPressure.Of(e.Pointer.Type, e.GetCurrentPoint(this).Properties.Pressure, IsMouseActingAsPen);
 
     // Without a pressure, the pointer presses fully, as a mouse does.
-    private ToolPointerInput? ToToolInput(Point devicePoint, KeyModifiers modifiers, float pressure = 1)
+    private ToolPointerInput? ToToolInput(Point devicePoint, KeyModifiers modifiers, float pressure = 1,
+        int clickCount = 1)
     {
         if (_viewport is null)
             return null;
@@ -930,8 +935,18 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var column = (devicePoint.X - origin.X) / _viewport.CellSize.Width;
         var row = (devicePoint.Y - origin.Y) / _viewport.CellSize.Height;
         var cell = new CellPoint((int)Math.Floor(column), (int)Math.Floor(row));
-        return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers), pressure);
+        return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers), pressure,
+            clickCount);
     }
+
+    // The modifier a key is, for the ones tools follow during a gesture, or null for any other key. A key's own
+    // event may or may not count it among the modifiers held, depending on the platform, so it's added or taken away.
+    private static ToolModifiers? ModifierOf(Key key) => key switch
+    {
+        Key.LeftShift or Key.RightShift => ToolModifiers.Shift,
+        Key.LeftAlt or Key.RightAlt => ToolModifiers.Alt,
+        _ => null
+    };
 
     // A modifier tools don't know (Ctrl on a Mac, the Windows key) makes it a different shortcut.
     private ToolKey? FindToolKey(KeyEventArgs e)

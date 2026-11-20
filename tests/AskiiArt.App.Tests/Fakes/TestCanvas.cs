@@ -47,6 +47,9 @@ internal sealed class TestCanvas : IDisposable
             [
                 HandTool.Definition,
                 RectangleSelectTool.Definition,
+                EllipseSelectTool.Definition,
+                LassoTool.Definition,
+                PolygonalLassoTool.Definition,
                 TextTool.Definition,
                 BrushTool.Definition,
                 ColorBrushTool.ForegroundDefinition,

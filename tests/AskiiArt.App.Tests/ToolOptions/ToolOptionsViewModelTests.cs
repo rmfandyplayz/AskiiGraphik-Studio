@@ -14,6 +14,7 @@ using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.RampStrokes;
+using AskiiArt.Core.Tools.Selecting;
 using Avalonia.Headless.XUnit;
 
 namespace AskiiArt.App.Tests.ToolOptions;
@@ -181,6 +182,23 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         Assert.Equal(BuiltInRamps.All.Select(builtIn => builtIn.Ramp.ToString()), ramp.Choices.Select(c => c.Detail));
         Assert.Equal(Strings.RampStandard, ramp.SelectedChoice?.Name);
         Assert.False(Choice("Shape").IsDropDown);
+    }
+
+    [AvaloniaFact]
+    public void TheSelectionTools_ShowTheirFourModesAsButtons()
+    {
+        _canvas.ViewModel.SelectTool(LassoTool.Id);
+
+        var mode = Choice(Strings.ToolOptionSelectionMode);
+
+        Assert.False(mode.IsDropDown);
+        Assert.Equal(
+            [
+                Strings.ToolOptionSelectionModeReplace, Strings.ToolOptionSelectionModeAdd,
+                Strings.ToolOptionSelectionModeSubtract, Strings.ToolOptionSelectionModeIntersect
+            ],
+            mode.Choices.Select(choice => choice.Name));
+        Assert.True(mode.Choices[0].IsChosen);
     }
 
     [AvaloniaFact]

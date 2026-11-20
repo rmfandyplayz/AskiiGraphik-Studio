@@ -17,6 +17,10 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <param name="SelectionThickness">The selection outline's thickness, in device pixels.</param>
 /// <param name="SelectionDashLength">The length of each dash of the selection outline, in device pixels.</param>
 /// <param name="SelectionDashOffset">How far the selection outline's dashes have run, in device pixels.</param>
+/// <param name="ToolPath">
+/// A line the tool shows through these points in cells, such as a lasso's path, or null for none. It's drawn as
+/// thick as the selection outline.
+/// </param>
 internal readonly record struct CanvasOverlays(
     bool IsGridVisible,
     CellPoint? HoveredCell,
@@ -26,7 +30,8 @@ internal readonly record struct CanvasOverlays(
     SelectionMask? Selection = null,
     int SelectionThickness = 1,
     int SelectionDashLength = 4,
-    int SelectionDashOffset = 0);
+    int SelectionDashOffset = 0,
+    IReadOnlyList<CanvasPoint>? ToolPath = null);
 
 /// <summary>
 /// A brush tip's footprint, with its top-left at <paramref name="TopLeft"/>, which may be off the canvas.

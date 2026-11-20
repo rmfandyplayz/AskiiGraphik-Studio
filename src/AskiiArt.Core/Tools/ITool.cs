@@ -55,6 +55,14 @@ public interface ITool
     /// <summary>A key went down. Returns true when the tool used it.</summary>
     bool KeyPressed(ToolKey key, ToolModifiers modifiers);
 
+    /// <summary>
+    /// Shift or Alt went down or up, so <paramref name="modifiers"/> are held now, though the pointer hasn't moved. A
+    /// tool whose gesture follows them, such as a selection drag that Shift makes square, uses it.
+    /// </summary>
+    void ModifiersChanged(ToolModifiers modifiers)
+    {
+    }
+
     /// <summary>The user typed <paramref name="text"/>. Returns true when the tool used it.</summary>
     bool TextEntered(string text);
 

@@ -38,3 +38,5 @@ Updated 2026-11-16: a tool's definition has a list of option groups (`OptionGrou
 Updated 2026-11-17: the Eraser's tip group is shared by the Eraser, the Soft Eraser and the BG Eraser (ADR 0050).
 
 Updated 2026-11-18: tool settings are remembered between runs, saved when the window closes (ADR 0052). A choice option can take more choices from a source, which is how the Ramp option lists the user's ramps.
+
+Updated 2026-11-20: a choice option can ask to show as buttons however many values it has (`IsShownAsButtons`), as the selection tools' Mode does (ADR 0060).

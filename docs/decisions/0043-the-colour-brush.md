@@ -36,3 +36,5 @@ Step 2b.3b adds a Brush tool (B) that paints the FG colour as text colour or the
 Updated 2026-11-15: the guard also keeps the menu bar's letters from staying underlined after an Alt+click, which the owner's testing found, and Esc while picking needs Alt let go first on Windows.
 
 Updated 2026-11-16: the Brush Options toolbar is now the Colors toolbar (ADR 0047).
+
+Updated 2026-11-20: the guard also counts Alt pressed during a drag on the canvas as used, since the selection tools follow it (ADR 0060).

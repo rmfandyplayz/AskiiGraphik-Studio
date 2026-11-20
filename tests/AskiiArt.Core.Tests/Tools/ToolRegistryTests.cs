@@ -16,6 +16,9 @@ public sealed class ToolRegistryTests
     [
         HandTool.Definition,
         RectangleSelectTool.Definition,
+        EllipseSelectTool.Definition,
+        LassoTool.Definition,
+        PolygonalLassoTool.Definition,
         TextTool.Definition,
         BrushTool.Definition,
         ColorBrushTool.ForegroundDefinition,
@@ -32,7 +35,9 @@ public sealed class ToolRegistryTests
         var registry = new ToolRegistry(_builtInTools, BuiltInToolGroups.All);
 
         Assert.Equal(["V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
-        Assert.Equal([RectangleSelectTool.Id], registry.GroupOf(RectangleSelectTool.Id).ToolIds);
+        Assert.Equal(
+            [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id],
+            registry.GroupOf(LassoTool.Id).ToolIds);
         Assert.Equal(
             [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId, CharacterBrushTool.Id],
             registry.GroupOf(ColorBrushTool.BackgroundId).ToolIds);
@@ -40,6 +45,15 @@ public sealed class ToolRegistryTests
             [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId],
             registry.GroupOf(SoftEraserTool.Id).ToolIds);
         Assert.Same(BuiltInToolGroups.Eraser, registry.GetGroup(BuiltInToolGroups.Eraser.Id));
+    }
+
+    [Fact]
+    public void TheSelectionTools_ShareTheirMode()
+    {
+        Assert.All(
+            [RectangleSelectTool.Definition, EllipseSelectTool.Definition, LassoTool.Definition,
+                PolygonalLassoTool.Definition],
+            tool => Assert.Same(SelectionToolOptions.Group, Assert.Single(tool.OptionGroups)));
     }
 
     [Fact]

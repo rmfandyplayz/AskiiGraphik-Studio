@@ -92,8 +92,25 @@ internal sealed class CanvasSceneBuilder
             BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness),
             SelectionOutline = SelectionOutlineOf(viewport, overlays.Selection, overlays.SelectionThickness),
             SelectionDashLength = Math.Max(1, overlays.SelectionDashLength),
-            SelectionDashOffset = overlays.SelectionDashOffset
+            SelectionDashOffset = overlays.SelectionDashOffset,
+            ToolPath = PathOf(viewport, overlays.ToolPath),
+            ToolPathThickness = Math.Max(1, overlays.SelectionThickness)
         };
+    }
+
+    // The points in device pixels. The line may run off the canvas, as the pointer can.
+    private static Point[] PathOf(CanvasViewport viewport, IReadOnlyList<CanvasPoint>? path)
+    {
+        if (path is null)
+            return [];
+
+        var origin = viewport.CanvasOrigin;
+        var cell = viewport.CellSize;
+        var points = new Point[path.Count];
+        for (var index = 0; index < points.Length; index++)
+            points[index] = new Point(origin.X + path[index].X * cell.Width, origin.Y + path[index].Y * cell.Height);
+
+        return points;
     }
 
     // Each edge becomes a strip inside its cells, as the caret's outline is, so it lands on whole pixels. Edges off

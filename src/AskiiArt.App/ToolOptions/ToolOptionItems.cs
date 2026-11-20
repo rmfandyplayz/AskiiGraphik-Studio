@@ -99,8 +99,8 @@ internal sealed class GlyphToolOptionItem(GlyphToolOption option, ToolOptionValu
 }
 
 /// <summary>
-/// A choice, shown as a row of buttons of which one is down, or as a dropdown when there are many. Its choices can
-/// change while it's shown, as the user's ramps do (ADR 0052).
+/// A choice, shown as a row of buttons of which one is down, or as a dropdown when there are many and the option
+/// doesn't ask for buttons. Its choices can change while it's shown, as the user's ramps do (ADR 0052).
 /// </summary>
 internal sealed class ChoiceToolOptionItem : ToolOptionItem
 {
@@ -127,7 +127,7 @@ internal sealed class ChoiceToolOptionItem : ToolOptionItem
     public ReadOnlyObservableCollection<ToolOptionChoiceItem> Choices { get; }
 
     /// <summary>Whether the toolbar shows the choices as a dropdown rather than as a row of buttons.</summary>
-    public bool IsDropDown => Choices.Count > MostChoicesAsButtons;
+    public bool IsDropDown => !_option.IsShownAsButtons && Choices.Count > MostChoicesAsButtons;
 
     /// <summary>
     /// The chosen choice, for the dropdown. Setting it chooses it, unless it can't be chosen yet, which just shows the

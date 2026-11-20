@@ -208,6 +208,9 @@ public sealed class MenuLayoutTests
             [
                 ToolActionIds.Hand,
                 ToolActionIds.RectangleSelect,
+                ToolActionIds.EllipseSelect,
+                ToolActionIds.Lasso,
+                ToolActionIds.PolygonalLasso,
                 ToolActionIds.Text,
                 ToolActionIds.Brush,
                 ToolActionIds.ForegroundBrush,

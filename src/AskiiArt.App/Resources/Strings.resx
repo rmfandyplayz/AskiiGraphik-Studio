@@ -186,6 +186,18 @@
     <value>Rectangle Select</value>
     <comment>The Select group's sub-toolbar and the Tools menu: drag to select a rectangle of cells. Key 1 chooses it while a selection tool is chosen.</comment>
   </data>
+  <data name="ToolEllipseSelect" xml:space="preserve">
+    <value>Ellipse Select</value>
+    <comment>The Select group's sub-toolbar and the Tools menu: drag to select an ellipse of cells. Key 2 chooses it while a selection tool is chosen.</comment>
+  </data>
+  <data name="ToolLasso" xml:space="preserve">
+    <value>Lasso</value>
+    <comment>The Select group's sub-toolbar and the Tools menu: drag around the cells to select. Key 3 chooses it while a selection tool is chosen.</comment>
+  </data>
+  <data name="ToolPolygonalLasso" xml:space="preserve">
+    <value>Polygonal Lasso</value>
+    <comment>The Select group's sub-toolbar and the Tools menu: click corner after corner of a shape to select. Key 4 chooses it while a selection tool is chosen.</comment>
+  </data>
   <data name="ToolGroupSelect" xml:space="preserve">
     <value>Select</value>
     <comment>Tools toolbar: the Select group's button, which chooses the selection tool used last. M chooses it too.</comment>
@@ -727,6 +739,18 @@
     <value>Rectangle Select</value>
     <comment>History: a rectangle selected with Rectangle Select. Selecting doesn't make the document unsaved.</comment>
   </data>
+  <data name="UndoStepEllipseSelect" xml:space="preserve">
+    <value>Ellipse Select</value>
+    <comment>History: an ellipse selected with Ellipse Select. Selecting doesn't make the document unsaved.</comment>
+  </data>
+  <data name="UndoStepLasso" xml:space="preserve">
+    <value>Lasso</value>
+    <comment>History: a shape selected with the Lasso.</comment>
+  </data>
+  <data name="UndoStepPolygonalLasso" xml:space="preserve">
+    <value>Polygonal Lasso</value>
+    <comment>History: a shape selected with the Polygonal Lasso.</comment>
+  </data>
   <data name="UndoStepSelectAll" xml:space="preserve">
     <value>Select All</value>
   </data>
@@ -898,6 +922,26 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   <data name="ToolOptionsNone" xml:space="preserve">
     <value>No options</value>
     <comment>Tool Options toolbar: shown when the chosen tool has no options.</comment>
+  </data>
+  <data name="ToolOptionSelectionMode" xml:space="preserve">
+    <value>Mode</value>
+    <comment>Tool Options toolbar: how a selection tool's shape combines with what's already selected. Shift, Alt (Option on a Mac) or both, held when a selection starts, pick a mode for that selection only.</comment>
+  </data>
+  <data name="ToolOptionSelectionModeReplace" xml:space="preserve">
+    <value>Replace</value>
+    <comment>Tool Options toolbar: the shape becomes the selection.</comment>
+  </data>
+  <data name="ToolOptionSelectionModeAdd" xml:space="preserve">
+    <value>Add</value>
+    <comment>Tool Options toolbar: the shape is added to the selection. Shift picks it for one selection.</comment>
+  </data>
+  <data name="ToolOptionSelectionModeSubtract" xml:space="preserve">
+    <value>Subtract</value>
+    <comment>Tool Options toolbar: the shape is taken away from the selection. Alt (Option on a Mac) picks it for one selection.</comment>
+  </data>
+  <data name="ToolOptionSelectionModeIntersect" xml:space="preserve">
+    <value>Intersect</value>
+    <comment>Tool Options toolbar: only the cells both the shape and the selection hold stay selected. Shift and Alt together pick it for one selection.</comment>
   </data>
   <data name="ToolOptionSize" xml:space="preserve">
     <value>Size</value>

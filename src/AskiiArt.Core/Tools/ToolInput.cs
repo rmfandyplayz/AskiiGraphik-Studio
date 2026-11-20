@@ -104,12 +104,20 @@ public enum ToolKey
 /// Pen pressure from 0 to 1; 1 for a mouse or touch. The Brush and the Soft Eraser cover cells more strongly the
 /// harder a pen presses (ADR 0054).
 /// </param>
+/// <param name="ClickCount">
+/// When the button goes down, how many clicks in a row this is: 2 for the second click of a double-click.
+/// </param>
 public readonly record struct ToolPointerInput(
     CellPoint Cell,
     double SubCellX,
     double SubCellY,
     ToolModifiers Modifiers,
-    float Pressure = 1);
+    float Pressure = 1,
+    int ClickCount = 1)
+{
+    /// <summary>Where the pointer is on the canvas, in cells with fractions.</summary>
+    public CanvasPoint Position => new(Cell.X + SubCellX, Cell.Y + SubCellY);
+}
 
 /// <summary>
 /// What the canvas draws on top of the document for the active tool. It isn't part of the
@@ -123,10 +131,14 @@ public readonly record struct ToolPointerInput(
 /// The selection a selection tool's gesture would make, which the canvas outlines in place of the session's
 /// selection until the gesture ends, or null when there's no such gesture.
 /// </param>
+/// <param name="Path">
+/// A line through these points, such as the path a lasso has drawn so far, or null for none. It isn't closed.
+/// </param>
 public sealed record ToolOverlay(
     CellPoint? Caret,
     BrushFootprint? Footprint = null,
-    SelectionMask? PendingSelection = null)
+    SelectionMask? PendingSelection = null,
+    IReadOnlyList<CanvasPoint>? Path = null)
 {
     /// <summary>Nothing to draw.</summary>
     public static ToolOverlay None { get; } = new(Caret: null);

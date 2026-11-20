@@ -103,6 +103,59 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
         return builder.Build();
     }
 
+    /// <summary>
+    /// The selection after combining <paramref name="shape"/> with this one by <paramref name="mode"/>: the shape
+    /// alone, both, this without the shape, or only what both have.
+    /// </summary>
+    /// <exception cref="ArgumentException">The shape belongs to a canvas of another size.</exception>
+    public SelectionMask CombinedWith(SelectionMask shape, SelectionCombineMode mode)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        if (shape.CanvasSize != CanvasSize)
+        {
+            throw new ArgumentException($"The shape belongs to a {shape.CanvasSize} canvas, not this {CanvasSize} one.",
+                nameof(shape));
+        }
+
+        switch (mode)
+        {
+            case SelectionCombineMode.Replace:
+                return shape;
+            case SelectionCombineMode.Add:
+                if (IsEmpty)
+                    return shape;
+
+                if (shape.IsEmpty || (IsRectangle && Bounds.Contains(shape.Bounds)))
+                    return this;
+
+                var union = new SelectionMaskBuilder(CanvasSize, Bounds.Union(shape.Bounds));
+                AddTo(union);
+                shape.AddTo(union);
+                return union.Build();
+            case SelectionCombineMode.Subtract:
+                if (!Bounds.Intersects(shape.Bounds))
+                    return this;
+
+                var difference = new SelectionMaskBuilder(CanvasSize, Bounds);
+                AddTo(difference);
+                shape.RemoveFrom(difference);
+                return difference.Build();
+            case SelectionCombineMode.Intersect:
+                var shared = Bounds.Intersect(shape.Bounds);
+                if (shared.IsEmpty)
+                    return Empty(CanvasSize);
+
+                var mine = new SelectionMaskBuilder(CanvasSize, shared);
+                AddTo(mine);
+                var theirs = new SelectionMaskBuilder(CanvasSize, shared);
+                shape.AddTo(theirs);
+                mine.IntersectWith(theirs);
+                return mine.Build();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+        }
+    }
+
     /// <inheritdoc/>
     public bool Equals(SelectionMask? other)
     {
@@ -160,6 +213,38 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     }
 
     private ReadOnlySpan<ulong> Row(int row) => _bits.AsSpan(row * _stride, _stride);
+
+    // Adds every selected cell to the builder, a run at a time.
+    private void AddTo(SelectionMaskBuilder builder)
+    {
+        for (var row = 0; row < Bounds.Height; row++)
+        {
+            if (_bits is null)
+            {
+                builder.AddRun(Bounds.Top + row, Bounds.Left, Bounds.Width);
+                continue;
+            }
+
+            foreach (var (start, length) in BitRow.Runs(Row(row), Bounds.Width))
+                builder.AddRun(Bounds.Top + row, Bounds.Left + start, length);
+        }
+    }
+
+    // Removes every selected cell from the builder, a run at a time.
+    private void RemoveFrom(SelectionMaskBuilder builder)
+    {
+        for (var row = 0; row < Bounds.Height; row++)
+        {
+            if (_bits is null)
+            {
+                builder.RemoveRun(Bounds.Top + row, Bounds.Left, Bounds.Width);
+                continue;
+            }
+
+            foreach (var (start, length) in BitRow.Runs(Row(row), Bounds.Width))
+                builder.RemoveRun(Bounds.Top + row, Bounds.Left + start, length);
+        }
+    }
 
     private static CellRect TightBounds(CellRect area, ulong[] bits, int stride)
     {

@@ -370,6 +370,34 @@ public sealed class CanvasRenderingTests : IDisposable
     }
 
     [Fact]
+    public void Paint_ToolPath_DrawsALineThroughItsPoints_OverABackdrop()
+    {
+        var viewport = CreateViewport();
+        var origin = viewport.CanvasOrigin;
+        var cell = viewport.CellSize;
+        CanvasPoint[] path = [new(0.5, 0.5), new(3.5, 0.5), new(3.5, 1.5)];
+
+        using var scene = _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
+            new CanvasOverlays(false, null, SelectionThickness: 2, ToolPath: path));
+        using var bitmap = PaintScene(scene);
+
+        Assert.Equal(new Point(origin.X + 3.5 * cell.Width, origin.Y + 0.5 * cell.Height), scene.ToolPath[1]);
+        var lineY = origin.Y + cell.Height / 2;
+        var middleX = origin.X + 2 * cell.Width;
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(middleX, lineY));
+        Assert.Equal(SKColors.Yellow, bitmap.GetPixel(middleX, lineY - 2));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(middleX, lineY - 5));
+    }
+
+    [Fact]
+    public void Build_NoToolPath_DrawsNoLine()
+    {
+        using var scene = Build(CreateViewport());
+
+        Assert.Empty(scene.ToolPath);
+    }
+
+    [Fact]
     public void Paint_Grid_DrawsLinesOnCellEdgesOnlyWhenVisible()
     {
         var viewport = CreateViewport();
