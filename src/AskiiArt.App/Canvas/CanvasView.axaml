@@ -19,6 +19,7 @@
                           IsMouseActingAsPen="{Binding IsMouseActingAsPen}"
                           HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
                           Tool="{Binding ActiveTool}"
+                          Selection="{Binding Selection}"
                           FrameTimings="{Binding FrameRate.Timings}"
                           CanvasMargin="{DynamicResource AppCanvasMargin}"
                           PasteboardBrush="{DynamicResource AppCanvasPasteboardBrush}"
@@ -29,7 +30,11 @@
                           FallbackGlyphBrush="{DynamicResource AppCanvasFallbackGlyphBrush}"
                           PlaceholderGlyphBrush="{DynamicResource AppCanvasPlaceholderGlyphBrush}"
                           CaretBrush="{DynamicResource AppCanvasCaretBrush}"
-                          CaretThickness="{DynamicResource AppCanvasCaretThickness}" />
+                          CaretThickness="{DynamicResource AppCanvasCaretThickness}"
+                          SelectionBrush="{DynamicResource AppCanvasSelectionBrush}"
+                          SelectionBackdropBrush="{DynamicResource AppCanvasSelectionBackdropBrush}"
+                          SelectionThickness="{DynamicResource AppCanvasSelectionThickness}"
+                          SelectionDashLength="{DynamicResource AppCanvasSelectionDashLength}" />
     <ScrollBar x:Name="VerticalBar"
                HorizontalAlignment="Right"
                Orientation="Vertical"

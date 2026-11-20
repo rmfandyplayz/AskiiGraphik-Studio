@@ -30,6 +30,7 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
     public static ToolbarLayout CreateTools() => new(
     [
         new ActionMenuEntry(ToolGroupActionIds.Hand),
+        new ActionMenuEntry(ToolGroupActionIds.Select),
         new ActionMenuEntry(ToolGroupActionIds.Text),
         new ActionMenuEntry(ToolGroupActionIds.Brush),
         new ActionMenuEntry(ToolGroupActionIds.Eraser)

@@ -9,6 +9,7 @@ using AskiiArt.App.Fonts;
 using AskiiArt.App.Resources;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
@@ -73,6 +74,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     }
 
     public EditingSession Session { get; private set; }
+
+    /// <summary>The document's selection, which the canvas outlines (ADR 0055).</summary>
+    public SessionSelection Selection => Session.Selection;
 
     public ITool ActiveTool { get; private set; }
 
@@ -345,6 +349,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         Attach(_activeDocument.Session);
 
         OnPropertyChanged(nameof(Session));
+        OnPropertyChanged(nameof(Selection));
         OnPropertyChanged(nameof(Composite));
         OnPropertyChanged(nameof(Font));
         OnPropertyChanged(nameof(ActiveTool));

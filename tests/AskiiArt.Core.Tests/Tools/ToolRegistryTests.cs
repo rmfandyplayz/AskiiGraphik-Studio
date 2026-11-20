@@ -5,6 +5,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 
 namespace AskiiArt.Core.Tests.Tools;
@@ -14,6 +15,7 @@ public sealed class ToolRegistryTests
     private static readonly ToolDefinition[] _builtInTools =
     [
         HandTool.Definition,
+        RectangleSelectTool.Definition,
         TextTool.Definition,
         BrushTool.Definition,
         ColorBrushTool.ForegroundDefinition,
@@ -29,7 +31,8 @@ public sealed class ToolRegistryTests
     {
         var registry = new ToolRegistry(_builtInTools, BuiltInToolGroups.All);
 
-        Assert.Equal(["V", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
+        Assert.Equal(["V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
+        Assert.Equal([RectangleSelectTool.Id], registry.GroupOf(RectangleSelectTool.Id).ToolIds);
         Assert.Equal(
             [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId, CharacterBrushTool.Id],
             registry.GroupOf(ColorBrushTool.BackgroundId).ToolIds);

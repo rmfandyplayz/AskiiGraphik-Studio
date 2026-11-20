@@ -9,7 +9,8 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <summary>
 /// Paints a <see cref="CanvasScene"/> onto a Skia canvas whose units are device pixels. Draw order
 /// follows ARCHITECTURE §12: the composite (paper, cell backgrounds, missing-glyph flags, glyphs),
-/// then grid lines, then the hover highlight and the caret. Safe to call from the render thread.
+/// then grid lines, the selection outline, the hover highlight, the caret and the brush outline. Safe to
+/// call from the render thread.
 /// </summary>
 internal static class CanvasScenePainter
 {
@@ -58,6 +59,8 @@ internal static class CanvasScenePainter
         if (scene.IsGridVisible && viewport.CellSize.Width >= MinimumCellWidthForGrid)
             DrawGrid(canvas, paint, viewport, colors.GridLine);
 
+        DrawSelectionOutline(canvas, paint, scene);
+
         if (scene.HoveredCell is { } hovered)
             Fill(canvas, paint, hovered, colors.Hover);
 
@@ -95,6 +98,38 @@ internal static class CanvasScenePainter
         {
             var y = Math.Min(canvasBounds.Y + row * viewport.CellSize.Height, canvasBounds.Bottom - GridLineWidth);
             canvas.DrawRect(SKRect.Create(left, y, right - left, GridLineWidth), paint);
+        }
+    }
+
+    // Each strip in the backdrop colour, with dashes of the line colour over it. The dashes are counted from the
+    // canvas's corner, so they line up where strips meet and stay put on the art while it scrolls.
+    private static void DrawSelectionOutline(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    {
+        var dash = scene.SelectionDashLength;
+        var period = dash * 2;
+        var origin = scene.Viewport.CanvasOrigin;
+        foreach (var strip in scene.SelectionOutline)
+        {
+            var rect = strip.Rect;
+            Fill(canvas, paint, rect, scene.Colors.SelectionBackdrop);
+            paint.Color = scene.Colors.SelectionLine;
+
+            var start = strip.IsHorizontal ? rect.X : rect.Y;
+            var end = strip.IsHorizontal ? rect.Right : rect.Bottom;
+            var canvasStart = strip.IsHorizontal ? origin.X : origin.Y;
+            var dashStart = start - (((start - canvasStart) % period) + period) % period;
+            for (; dashStart < end; dashStart += period)
+            {
+                var from = Math.Max(dashStart, start);
+                var to = Math.Min(dashStart + dash, end);
+                if (to <= from)
+                    continue;
+
+                var piece = strip.IsHorizontal
+                    ? SKRect.Create(from, rect.Y, to - from, rect.Height)
+                    : SKRect.Create(rect.X, from, rect.Width, to - from);
+                canvas.DrawRect(piece, paint);
+            }
         }
     }
 

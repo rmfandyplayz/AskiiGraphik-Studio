@@ -98,7 +98,7 @@ internal sealed class DocumentActions(ActiveDocument activeDocument, DocumentFil
         if (request is null || request.Size == session.Document.CanvasSize)
             return;
 
-        session.History.Execute(new ResizeCanvasCommand(request.Size, request.Anchor));
+        session.ResizeCanvas(request.Size, request.Anchor);
     }
 
     private async Task ChooseFontAsync()

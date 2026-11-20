@@ -8,6 +8,7 @@ using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Selection;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
@@ -39,6 +40,7 @@ public sealed class MenuLayoutTests
                 Assert.Equal([.. FileActionIds, ShellActionIds.Quit], ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
+            AssertIsSelectMenu,
             AssertIsDocumentMenu,
             AssertIsLayerMenu,
             AssertIsToolsMenu,
@@ -73,6 +75,7 @@ public sealed class MenuLayoutTests
                 ], ActionIdsIn(file.Entries));
             },
             AssertIsEditMenu,
+            AssertIsSelectMenu,
             AssertIsDocumentMenu,
             AssertIsLayerMenu,
             AssertIsToolsMenu,
@@ -167,6 +170,12 @@ public sealed class MenuLayoutTests
             ActionIdsIn(edit.Entries));
     }
 
+    private static void AssertIsSelectMenu(MenuDefinition select)
+    {
+        Assert.Equal(nameof(Strings.MenuSelect), select.LabelKey);
+        Assert.Equal([SelectionActionIds.SelectAll, SelectionActionIds.Deselect], ActionIdsIn(select.Entries));
+    }
+
     private static void AssertIsDocumentMenu(MenuDefinition document)
     {
         Assert.Equal(nameof(Strings.MenuDocument), document.LabelKey);
@@ -198,6 +207,7 @@ public sealed class MenuLayoutTests
         Assert.Equal(
             [
                 ToolActionIds.Hand,
+                ToolActionIds.RectangleSelect,
                 ToolActionIds.Text,
                 ToolActionIds.Brush,
                 ToolActionIds.ForegroundBrush,

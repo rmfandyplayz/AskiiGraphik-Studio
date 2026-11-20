@@ -182,6 +182,14 @@
     <value>Eraser</value>
     <comment>Tools toolbar: the Eraser group's button, which chooses the eraser used last. E chooses it too.</comment>
   </data>
+  <data name="ToolRectangleSelect" xml:space="preserve">
+    <value>Rectangle Select</value>
+    <comment>The Select group's sub-toolbar and the Tools menu: drag to select a rectangle of cells. Key 1 chooses it while a selection tool is chosen.</comment>
+  </data>
+  <data name="ToolGroupSelect" xml:space="preserve">
+    <value>Select</value>
+    <comment>Tools toolbar: the Select group's button, which chooses the selection tool used last. M chooses it too.</comment>
+  </data>
   <data name="ToolBrush" xml:space="preserve">
     <value>Brush</value>
     <comment>The Brush group's sub-toolbar and the Tools menu: paints a ramp's characters. Key 1 chooses it while a brush is chosen.</comment>
@@ -496,6 +504,17 @@
     <value>Copy as _ANSI</value>
     <comment>Copies the visible art to the clipboard with the escape codes terminals use for colour.</comment>
   </data>
+  <data name="MenuSelect" xml:space="preserve">
+    <value>_Select</value>
+  </data>
+  <data name="ActionSelectAll" xml:space="preserve">
+    <value>Select _All</value>
+    <comment>Select menu: selects every cell of the canvas.</comment>
+  </data>
+  <data name="ActionDeselect" xml:space="preserve">
+    <value>_Deselect</value>
+    <comment>Select menu: selects nothing.</comment>
+  </data>
   <data name="AnsiFileTypeName" xml:space="preserve">
     <value>ANSI art</value>
   </data>
@@ -703,6 +722,16 @@
   <data name="UndoStepPaint" xml:space="preserve">
     <value>Paint</value>
     <comment>History: a stroke of the Brush.</comment>
+  </data>
+  <data name="UndoStepRectangleSelect" xml:space="preserve">
+    <value>Rectangle Select</value>
+    <comment>History: a rectangle selected with Rectangle Select. Selecting doesn't make the document unsaved.</comment>
+  </data>
+  <data name="UndoStepSelectAll" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+  <data name="UndoStepDeselect" xml:space="preserve">
+    <value>Deselect</value>
   </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>

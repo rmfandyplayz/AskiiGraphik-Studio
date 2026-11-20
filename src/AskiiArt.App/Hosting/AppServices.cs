@@ -12,6 +12,7 @@ using AskiiArt.App.Hosting.Logging;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Painting;
 using AskiiArt.App.Ramps;
+using AskiiArt.App.Selection;
 using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Docking;
@@ -27,6 +28,7 @@ using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -64,6 +66,7 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
+        services.AddSingleton<IActionProvider, SelectionActions>();
         services.AddSingleton<IActionProvider, WindowMenuActions>();
         services.AddSingleton<IActionProvider, ToolbarMenuActions>();
         services.AddSingleton<IActionProvider, WindowFrameActions>();
@@ -90,6 +93,7 @@ internal static class AppServices
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(HandTool.Definition);
+        services.AddSingleton(RectangleSelectTool.Definition);
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton(BrushTool.Definition);
         services.AddSingleton(ColorBrushTool.ForegroundDefinition);
@@ -99,6 +103,7 @@ internal static class AppServices
         services.AddSingleton(SoftEraserTool.Definition);
         services.AddSingleton(EraserTool.BackgroundDefinition);
         services.AddSingleton(BuiltInToolGroups.Hand);
+        services.AddSingleton(BuiltInToolGroups.Select);
         services.AddSingleton(BuiltInToolGroups.Text);
         services.AddSingleton(BuiltInToolGroups.Brush);
         services.AddSingleton(BuiltInToolGroups.Eraser);

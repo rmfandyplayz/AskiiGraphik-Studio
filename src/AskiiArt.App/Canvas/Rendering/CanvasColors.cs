@@ -14,6 +14,8 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <param name="FallbackGlyph">Behind a glyph drawn with a fallback font.</param>
 /// <param name="PlaceholderGlyph">Behind a glyph no font has.</param>
 /// <param name="Caret">The text caret's outline.</param>
+/// <param name="SelectionLine">The dashes of the selection outline.</param>
+/// <param name="SelectionBackdrop">Between the dashes of the selection outline.</param>
 internal readonly record struct CanvasColors(
     SKColor Pasteboard,
     SKColor Paper,
@@ -22,4 +24,6 @@ internal readonly record struct CanvasColors(
     SKColor Hover,
     SKColor FallbackGlyph,
     SKColor PlaceholderGlyph,
-    SKColor Caret);
+    SKColor Caret,
+    SKColor SelectionLine,
+    SKColor SelectionBackdrop);

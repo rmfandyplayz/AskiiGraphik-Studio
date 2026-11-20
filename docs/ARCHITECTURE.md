@@ -177,7 +177,7 @@ Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging imple
 Tools are **Core** classes with no UI dependencies. Each tool has:
 
 - **A descriptor:** a stable string id (`"askiiart.brush"`), a resource key for its localized name, an icon key and a category.
-- **A group:** every tool belongs to one `ToolGroup`, which has the shortcut letter and its tools in order. The Tools toolbar has a button per group, which brings back the group's last tool, and a group with several tools shows them on a sub-toolbar, where keys 1–9 choose them. The letter and number keys work while the canvas has focus and the active tool isn't taking text (ADRs 0033, 0049).
+- **A group:** every tool belongs to one `ToolGroup`, which has the shortcut letter and its tools in order. The Tools toolbar has a button per group, which brings back the group's last tool, and a group with several tools shows them on a sub-toolbar, where keys 1–9 choose them. The letter and number keys work while the canvas has focus and the active tool isn't taking text (ADRs 0033, 0049). *Decided in 4.1 (ADR 0055):* the shape selection tools are one group on M and the Magic Wand is W; in 4.5 the Move tool takes V and the Hand tool moves to H.
 - **Options:** data, not controls. A tool's definition may carry `ToolOptionGroup`s (numbers and choices, each with an id and a label), and `ToolSettings` holds the values for each group, so they outlive the tool, tools can share them, and they can be exported. The Tool Options toolbar is drawn from the chosen tool's groups, so the tool doesn't know what draws its options. A definition can also give a warning for the toolbar to show when the tool can't work in the document. A choice can take more choices from a source that `ToolSettings` registers, which is how the Ramp option lists the user's ramps (ADRs 0047, 0049, 0052).
 - **Input handling:** the tool receives Core input events. These are pointer down, move and up events in **cell coordinates plus sub-cell position**, with modifiers and **pressure** (a pen's, from 0 to 1; a mouse or touch presses fully), and key commands (move left, jump right, row end, …) for text mode. The App translates Avalonia events into these; a per-platform keymap turns keys into commands, following each platform's conventions (ADR 0017). *Decided in 3.7 (ADR 0054):* pressure scales how strongly the Brush and the Soft Eraser cover a cell, not their intensity, so a light touch never erases; the other tools ignore it.
 - **One gesture, one undo step:** during a gesture, a tool can draw a preview overlay that isn't part of the document and emit one command when it ends. Or, where the result has to show as it happens, it can apply small commands that coalesce into one step, as the eraser does (ADR 0033). Pressing Esc cancels the gesture and leaves no trace.
@@ -216,19 +216,19 @@ The Brush group (ADR 0049) has four brushes, which share one size and shape (ADR
 - **Coalescing:** consecutive typing in text mode merges into one command. The merge ends when the caret jumps, the tool changes, a pause threshold passes, or the user does anything else. Repeated nudges coalesce the same way.
 - **Composite commands** group several commands into one undo step (for example, paste = add layer + write cells).
 - History has a **memory budget** that's configurable, with a default such as 256 MB. When the budget is exceeded, the oldest entries are dropped. There is no fixed limit on the number of steps.
-- The document's **dirty state** comes from comparing the history position with the last-saved position. Undoing back to the saved state clears "unsaved changes".
+- The document's **dirty state** comes from the steps between the history position and the last-saved position: it's unsaved when one of them changes the document. Undoing back to the saved state clears "unsaved changes".
 - Each command names its step with a key the app turns into text, and the History panel can jump to any step using ordinary undo and redo (ADR 0028). Which layer is active belongs to the editing session, and isn't saved or undone (ADR 0030).
-- Whether selection changes count as undo steps is an open question (§23).
+- *Decided in 4.1 (ADR 0055):* selection changes are undo steps, named in History, but a step that changes only the selection doesn't make the document unsaved.
 
 ## 10. Selection
 
-- A selection is a **mask**: an arbitrary set of cells (a bitset the size of the canvas) plus a cached bounding rect. It isn't limited to rectangles.
-- The selection lives in the **editing session**, not in the document, and it isn't saved to files.
+- A selection is a **mask**: an arbitrary set of cells plus a cached bounding rect. It isn't limited to rectangles. *Decided in 4.1 (ADR 0055):* the mask is immutable and stores bits only for its bounding rect, or none when it's a rectangle, so a selection costs little on a huge canvas and undo steps can share masks.
+- The selection lives in the **editing session**, not in the document, and it isn't saved to files. Resizing the canvas moves it with the art and drops the cells that are cropped, in the same undo step (ADR 0055).
 - Creation tools: rectangle, ellipse, lasso (freehand), polygonal lasso, and magic wand. The magic wand can work contiguously or globally, matches by glyph (later also by color), and samples either the active layer or all visible layers. Other selection operations: select all, select none, invert, grow, shrink, and select occupied cells.
 - Combine modes: replace, add, subtract and intersect, chosen with modifier keys or a tool option.
 - When a selection exists, every drawing tool clips to it.
 - Selected content can be moved, copied, cut and pasted. Paste creates a **floating** selection that commits as a command. Details get settled at that milestone.
-- How the selection looks (marching ants or similar) is the owner's design call.
+- How the selection looks (marching ants or similar) is the owner's design call. Until then it's a still, dashed black-and-white outline (`docs/TEMPORARY-UI.md`).
 
 ## 11. Fonts and glyph rasterization (Imaging)
 
@@ -248,7 +248,7 @@ The Brush group (ADR 0049) has four brushes, which share one size and shape (ADR
 - **One custom control** draws the whole canvas. There are no per-cell controls and no `TextBlock`s.
 - **Virtualized:** it draws only the cells that intersect the viewport, so cost scales with the number of visible cells, not with document size.
 - **Dirty regions:** only the regions that changed are re-composited from their layers (§5.9). Avalonia always repaints a control as a whole, so each frame redraws the visible cells from the cached composite and the glyph atlas, which is cheap. A cache of pre-drawn tiles gets added only if measurements show it's needed.
-- **Draw order:** composite (paper, cell backgrounds, glyphs in their colours) → grid lines (toggleable) → tool preview overlay → selection overlay → caret and hover highlight. Overlays never touch the document.
+- **Draw order:** composite (paper, cell backgrounds, glyphs in their colours) → grid lines (toggleable) → selection outline (or the one a selection tool is dragging out) → hover highlight, caret and brush outline. Overlays never touch the document.
 - **Zoom:** discrete steps (25% to 800%) where the cell size lands on whole device pixels, so no seams appear between cells. Zoom centers on the cursor. Pan with the mouse wheel, middle-drag or Space-drag (when the tool allows it, §8.1). Scrollbars exist but are off for now (ADR 0035). Wheel events are grouped into gestures, so a touchpad's glide never turns into a zoom (ADR 0018).
 - **HiDPI:** rendering must be crisp under Windows display scaling (125%, 150%, …) and on Retina displays. Test both.
 - **Target:** smooth zoom, pan and brush strokes on a 500 × 500 canvas (§21).
@@ -286,7 +286,7 @@ Actions are different from document *commands* (§9): a command is an undoable c
 
 ### 14.3 Shortcuts
 
-Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings.
+Shortcuts are defined per action and are platform-aware: `Ctrl` on Windows and Linux corresponds to `Cmd` on macOS. Use Avalonia's platform hotkey configuration and never hardcode `Ctrl`. User rebinding comes later and is stored in settings. A shortcut that text boxes also edit with (Select All, Undo, Redo, Copy, Cut, Paste) goes to a text box that has the keyboard instead (ADR 0056).
 
 Menus are Avalonia native menus built from a menu layout of action ids: the system menu bar on macOS (with About in the application menu), and on Windows and Linux a menu bar in a plain strip along the top of the window (ADR 0007, ADR 0035).
 
@@ -406,7 +406,7 @@ Ask the owner about each of these at the milestone that needs it.
 |---|---|
 | How the canvas marks a cell whose glyph is missing from the document's font. *Decided in 1.3:* draw it with a fallback font and flag the cell as an error. *Still open:* what the flag looks like and how the user is warned. *The owner's lean (after 3.1):* a character borrowed from another font, such as braille, which no bundled font has, isn't flagged on the canvas but is warned about some other way, since it may look different on another computer or after export | M8 (UI Pass) |
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
-| Should selection changes count as undo steps? | M4 |
+| Should selection changes count as undo steps? *Decided in 4.1:* yes, but they don't make the document unsaved (ADR 0055) | M4 |
 | Default ramp(s) to ship. *Decided in M3's planning:* Standard, Standard Alphanumerical, Fine, Blocks and Braille, each painting an empty cell at intensity 0 (ADR 0045) | M3 |
 | What a soft background eraser does, since a background colour has no intensity to lower. 3.4 built soft and hard text erasers and a hard background eraser (ADR 0050) | M5 |
 | Exact behavior of each tool | That tool's milestone |

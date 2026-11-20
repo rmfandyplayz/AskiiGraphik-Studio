@@ -12,29 +12,6 @@ public readonly record struct FootprintRow(int Start, int Length)
     public int End => Start + Length;
 }
 
-/// <summary>Which side of its cells an outline edge runs along.</summary>
-public enum FootprintEdgeSide
-{
-    /// <summary>The top of a run of cells in one row.</summary>
-    Top,
-
-    /// <summary>The bottom of a run of cells in one row.</summary>
-    Bottom,
-
-    /// <summary>The left of a run of cells in one column.</summary>
-    Left,
-
-    /// <summary>The right of a run of cells in one column.</summary>
-    Right
-}
-
-/// <summary>
-/// One straight piece of a footprint's outline: the <paramref name="Side"/> of <paramref name="Length"/> cells,
-/// starting at (<paramref name="Column"/>, <paramref name="Row"/>) relative to the footprint's top-left. Top and
-/// bottom edges run along a row, and left and right edges down a column.
-/// </summary>
-public readonly record struct FootprintEdge(FootprintEdgeSide Side, int Column, int Row, int Length);
-
 /// <summary>
 /// The cells a <see cref="BrushTip"/> covers, relative to its top-left (ADR 0047), in a font whose cells are
 /// <c>cellWidthToHeight</c> times as wide as they're tall. Every row is one unbroken run of cells, because both shapes
@@ -68,8 +45,10 @@ public sealed class BrushFootprint
     /// <summary>How many cells the footprint covers.</summary>
     public int CellCount { get; }
 
-    /// <summary>The outline: every side of a covered cell whose neighbour there isn't covered.</summary>
-    public IReadOnlyList<FootprintEdge> Edges { get; }
+    /// <summary>
+    /// The outline, relative to the footprint's top-left: each side of a covered cell whose neighbour isn't covered.
+    /// </summary>
+    public IReadOnlyList<CellEdge> Edges { get; }
 
     /// <summary>The footprint of <paramref name="tip"/>.</summary>
     /// <param name="tip">The tip.</param>
@@ -150,26 +129,26 @@ public sealed class BrushFootprint
         return end > start ? new FootprintRow(start, end - start) : new FootprintRow(width / 2, 1);
     }
 
-    private FootprintEdge[] FindEdges()
+    private CellEdge[] FindEdges()
     {
-        var edges = new List<FootprintEdge>();
+        var edges = new List<CellEdge>();
         for (var row = 0; row < Height; row++)
         {
-            AddRuns(edges, FootprintEdgeSide.Top, row, row - 1);
-            AddRuns(edges, FootprintEdgeSide.Bottom, row, row + 1);
+            AddRuns(edges, CellEdgeSide.Top, row, row - 1);
+            AddRuns(edges, CellEdgeSide.Bottom, row, row + 1);
         }
 
         for (var column = 0; column < Width; column++)
         {
-            AddColumnRuns(edges, FootprintEdgeSide.Left, column, column - 1);
-            AddColumnRuns(edges, FootprintEdgeSide.Right, column, column + 1);
+            AddColumnRuns(edges, CellEdgeSide.Left, column, column - 1);
+            AddColumnRuns(edges, CellEdgeSide.Right, column, column + 1);
         }
 
         return [.. edges];
     }
 
     // The runs of cells in row that have no covered neighbour in neighbourRow.
-    private void AddRuns(List<FootprintEdge> edges, FootprintEdgeSide side, int row, int neighbourRow)
+    private void AddRuns(List<CellEdge> edges, CellEdgeSide side, int row, int neighbourRow)
     {
         var cells = _rows[row];
         var runStart = -1;
@@ -182,14 +161,14 @@ public sealed class BrushFootprint
             }
             else if (!isEdge && runStart >= 0)
             {
-                edges.Add(new FootprintEdge(side, runStart, row, column - runStart));
+                edges.Add(new CellEdge(side, runStart, row, column - runStart));
                 runStart = -1;
             }
         }
     }
 
     // The runs of cells in column that have no covered neighbour in neighbourColumn.
-    private void AddColumnRuns(List<FootprintEdge> edges, FootprintEdgeSide side, int column, int neighbourColumn)
+    private void AddColumnRuns(List<CellEdge> edges, CellEdgeSide side, int column, int neighbourColumn)
     {
         var runStart = -1;
         for (var row = 0; row <= Height; row++)
@@ -201,7 +180,7 @@ public sealed class BrushFootprint
             }
             else if (!isEdge && runStart >= 0)
             {
-                edges.Add(new FootprintEdge(side, column, runStart, row - runStart));
+                edges.Add(new CellEdge(side, column, runStart, row - runStart));
                 runStart = -1;
             }
         }

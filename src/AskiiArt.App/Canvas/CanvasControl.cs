@@ -5,6 +5,7 @@ using System.Diagnostics;
 using AskiiArt.App.Canvas.FrameRate;
 using AskiiArt.App.Canvas.Rendering;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -81,6 +82,21 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
     public static readonly StyledProperty<double> CaretThicknessProperty =
         AvaloniaProperty.Register<CanvasControl, double>(nameof(CaretThickness), 2);
+
+    public static readonly StyledProperty<IBrush?> SelectionBrushProperty =
+        AvaloniaProperty.Register<CanvasControl, IBrush?>(nameof(SelectionBrush));
+
+    public static readonly StyledProperty<IBrush?> SelectionBackdropBrushProperty =
+        AvaloniaProperty.Register<CanvasControl, IBrush?>(nameof(SelectionBackdropBrush));
+
+    public static readonly StyledProperty<double> SelectionThicknessProperty =
+        AvaloniaProperty.Register<CanvasControl, double>(nameof(SelectionThickness), 1);
+
+    public static readonly StyledProperty<double> SelectionDashLengthProperty =
+        AvaloniaProperty.Register<CanvasControl, double>(nameof(SelectionDashLength), 4);
+
+    public static readonly StyledProperty<SessionSelection?> SelectionProperty =
+        AvaloniaProperty.Register<CanvasControl, SessionSelection?>(nameof(Selection));
 
     public static readonly StyledProperty<ITool?> ToolProperty =
         AvaloniaProperty.Register<CanvasControl, ITool?>(nameof(Tool));
@@ -266,6 +282,43 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         set => SetValue(CaretThicknessProperty, value);
     }
 
+    /// <summary>The dashes of the selection outline.</summary>
+    public IBrush? SelectionBrush
+    {
+        get => GetValue(SelectionBrushProperty);
+        set => SetValue(SelectionBrushProperty, value);
+    }
+
+    /// <summary>Between the dashes of the selection outline, so it shows on light and dark art alike.</summary>
+    public IBrush? SelectionBackdropBrush
+    {
+        get => GetValue(SelectionBackdropBrushProperty);
+        set => SetValue(SelectionBackdropBrushProperty, value);
+    }
+
+    /// <summary>The selection outline's thickness, in logical pixels.</summary>
+    public double SelectionThickness
+    {
+        get => GetValue(SelectionThicknessProperty);
+        set => SetValue(SelectionThicknessProperty, value);
+    }
+
+    /// <summary>The length of each dash of the selection outline, and of each gap, in logical pixels.</summary>
+    public double SelectionDashLength
+    {
+        get => GetValue(SelectionDashLengthProperty);
+        set => SetValue(SelectionDashLengthProperty, value);
+    }
+
+    /// <summary>
+    /// The document's selection, which the canvas outlines, unless the tool is dragging out another (ADR 0055).
+    /// </summary>
+    public SessionSelection? Selection
+    {
+        get => GetValue(SelectionProperty);
+        set => SetValue(SelectionProperty, value);
+    }
+
     /// <summary>The active tool, which gets the pointer and keyboard input the canvas doesn't use itself.</summary>
     public ITool? Tool
     {
@@ -343,7 +396,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
         var overlay = Tool?.Overlay;
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
-            BrushOutlineOf(overlay));
+            BrushOutlineOf(overlay), overlay?.PendingSelection ?? Selection?.Mask,
+            ToDeviceLength(SelectionThickness), ToDeviceLength(SelectionDashLength));
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
@@ -359,6 +413,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         if (change.Property == ToolProperty)
             FollowTool(change.GetOldValue<ITool?>(), change.GetNewValue<ITool?>());
+
+        if (change.Property == SelectionProperty)
+            FollowSelection(change.GetOldValue<SessionSelection?>(), change.GetNewValue<SessionSelection?>());
 
         if (change.Property == ZoomFactorProperty)
         {
@@ -399,6 +456,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _topLevel = null;
         FollowComposite(null);
         FollowTool(Tool, null);
+        FollowSelection(Selection, null);
         _sceneBuilder.ReleaseCachedPages();
         _panCursor?.Dispose();
         _panCursor = null;
@@ -736,7 +794,25 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         ToSkColor(HoverBrush),
         ToSkColor(FallbackGlyphBrush),
         ToSkColor(PlaceholderGlyphBrush),
-        ToSkColor(CaretBrush));
+        ToSkColor(CaretBrush),
+        ToSkColor(SelectionBrush),
+        ToSkColor(SelectionBackdropBrush));
+
+    // A length in logical pixels as whole device pixels, at least one.
+    private int ToDeviceLength(double length) => Math.Max(1, (int)Math.Round(length * _renderScaling));
+
+    private void FollowSelection(SessionSelection? oldSelection, SessionSelection? newSelection)
+    {
+        if (oldSelection is not null)
+            oldSelection.Changed -= OnSelectionChanged;
+
+        if (newSelection is not null)
+            newSelection.Changed += OnSelectionChanged;
+
+        InvalidateVisual();
+    }
+
+    private void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e) => InvalidateVisual();
 
     private void FollowTool(ITool? oldTool, ITool? newTool)
     {

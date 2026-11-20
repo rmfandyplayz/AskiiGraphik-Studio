@@ -31,6 +31,12 @@ public interface IDocumentCommand
     /// </summary>
     long EstimatedMemoryInBytes { get; }
 
+    /// <summary>
+    /// False for a step that changes only what isn't saved, such as the selection, so it doesn't make the document
+    /// unsaved (ADR 0055). True by default.
+    /// </summary>
+    bool ChangesDocument => true;
+
     /// <summary>Makes the change.</summary>
     void Apply(Document document);
 

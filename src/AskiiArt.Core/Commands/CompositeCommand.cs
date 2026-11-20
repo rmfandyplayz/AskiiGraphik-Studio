@@ -38,6 +38,9 @@ public sealed class CompositeCommand : IDocumentCommand
     /// <inheritdoc/>
     public long EstimatedMemoryInBytes => FixedOverheadInBytes + _commands.Sum(command => command.EstimatedMemoryInBytes);
 
+    /// <summary>True when any of the commands changes the document.</summary>
+    public bool ChangesDocument => _commands.Any(command => command.ChangesDocument);
+
     /// <inheritdoc/>
     /// <remarks>If one command throws, the ones before it are reverted, so the document is left unchanged.</remarks>
     public void Apply(Document document)

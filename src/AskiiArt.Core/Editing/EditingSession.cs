@@ -3,13 +3,14 @@
 
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 
 namespace AskiiArt.Core.Editing;
 
 /// <summary>
-/// Editing one document: the document, its undo history, the layer tools draw on, and the clock
-/// tools use to notice a pause in typing. Tools work through a session, never on the document
-/// alone. Selection joins it in M4 (ARCHITECTURE §10).
+/// Editing one document: the document, its undo history, the layer tools draw on, the selection, and
+/// the clock tools use to notice a pause in typing. Tools work through a session, never on the
+/// document alone.
 /// </summary>
 public sealed class EditingSession
 {
@@ -25,6 +26,7 @@ public sealed class EditingSession
         Document = document;
         History = new CommandHistory(document);
         Clock = clock ?? TimeProvider.System;
+        Selection = new SessionSelection(document.CanvasSize);
         _activeLayerId = TopLayerId();
     }
 
@@ -36,6 +38,12 @@ public sealed class EditingSession
 
     /// <summary>The time source for timing rules, such as when a pause ends a typing burst.</summary>
     public TimeProvider Clock { get; }
+
+    /// <summary>
+    /// The selected cells (ARCHITECTURE §10). Like the active layer, it belongs to the session rather than the
+    /// document and isn't saved, but changing it is an undo step (ADR 0055).
+    /// </summary>
+    public SessionSelection Selection { get; }
 
     /// <summary>Raised when <see cref="SetActiveLayer"/> chooses another layer.</summary>
     public event EventHandler? ActiveLayerChanged;
@@ -70,6 +78,20 @@ public sealed class EditingSession
 
         _activeLayerId = layerId;
         ActiveLayerChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Resizes the canvas to <paramref name="newSize"/>, keeping <paramref name="anchor"/> in place, as one undo
+    /// step. The selection moves with the art, and loses any cells that are cropped (ADR 0055).
+    /// </summary>
+    public void ResizeCanvas(CanvasSize newSize, ResizeAnchor anchor)
+    {
+        var plan = CanvasResizePlan.Create(Document.CanvasSize, newSize, anchor);
+        History.Execute(new CompositeCommand(
+        [
+            new ResizeCanvasCommand(newSize, anchor),
+            new SetSelectionCommand(Selection, Selection.Mask.Resized(plan), UndoStepNames.ResizeCanvas)
+        ]));
     }
 
     private Guid TopLayerId() => Document.ActiveFrame.Layers[^1].Id;

@@ -6,6 +6,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using CommunityToolkit.Mvvm.Input;
 
@@ -14,6 +15,7 @@ namespace AskiiArt.App.Canvas;
 internal static class ToolActionIds
 {
     public const string Hand = Prefix + HandTool.Id;
+    public const string RectangleSelect = Prefix + RectangleSelectTool.Id;
     public const string Text = Prefix + TextTool.Id;
     public const string Brush = Prefix + BrushTool.Id;
     public const string ForegroundBrush = Prefix + ColorBrushTool.ForegroundId;
@@ -32,6 +34,7 @@ internal static class ToolGroupActionIds
     private const string Prefix = "toolGroup.";
 
     public static string Hand { get; } = For(BuiltInToolGroups.Hand.Id);
+    public static string Select { get; } = For(BuiltInToolGroups.Select.Id);
     public static string Text { get; } = For(BuiltInToolGroups.Text.Id);
     public static string Brush { get; } = For(BuiltInToolGroups.Brush.Id);
     public static string Eraser { get; } = For(BuiltInToolGroups.Eraser.Id);

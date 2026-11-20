@@ -112,10 +112,10 @@ public sealed class BrushFootprintTests
 
         Assert.Equal(
             [
-                new FootprintEdge(FootprintEdgeSide.Top, 0, 0, 3),
-                new FootprintEdge(FootprintEdgeSide.Bottom, 0, 2, 3),
-                new FootprintEdge(FootprintEdgeSide.Left, 0, 0, 3),
-                new FootprintEdge(FootprintEdgeSide.Right, 2, 0, 3)
+                new CellEdge(CellEdgeSide.Top, 0, 0, 3),
+                new CellEdge(CellEdgeSide.Bottom, 0, 2, 3),
+                new CellEdge(CellEdgeSide.Left, 0, 0, 3),
+                new CellEdge(CellEdgeSide.Right, 2, 0, 3)
             ],
             Sorted(footprint.Edges));
     }
@@ -140,7 +140,7 @@ public sealed class BrushFootprintTests
         {
             var footprint = BrushFootprint.Create(new BrushTip(size, shape, proportions), 0.5);
 
-            var expected = new HashSet<(FootprintEdgeSide, int, int)>();
+            var expected = new HashSet<(CellEdgeSide, int, int)>();
             for (var row = 0; row < footprint.Height; row++)
             {
                 for (var column = 0; column < footprint.Width; column++)
@@ -149,13 +149,13 @@ public sealed class BrushFootprintTests
                         continue;
 
                     if (!footprint.Contains(column, row - 1))
-                        expected.Add((FootprintEdgeSide.Top, column, row));
+                        expected.Add((CellEdgeSide.Top, column, row));
                     if (!footprint.Contains(column, row + 1))
-                        expected.Add((FootprintEdgeSide.Bottom, column, row));
+                        expected.Add((CellEdgeSide.Bottom, column, row));
                     if (!footprint.Contains(column - 1, row))
-                        expected.Add((FootprintEdgeSide.Left, column, row));
+                        expected.Add((CellEdgeSide.Left, column, row));
                     if (!footprint.Contains(column + 1, row))
-                        expected.Add((FootprintEdgeSide.Right, column, row));
+                        expected.Add((CellEdgeSide.Right, column, row));
                 }
             }
 
@@ -185,15 +185,15 @@ public sealed class BrushFootprintTests
             .Select(column => footprint.Contains(column, row) ? '#' : '.').ToArray()))
     ];
 
-    private static FootprintEdge[] Sorted(IEnumerable<FootprintEdge> edges) =>
+    private static CellEdge[] Sorted(IEnumerable<CellEdge> edges) =>
         [.. edges.OrderBy(edge => edge.Side).ThenBy(edge => edge.Row).ThenBy(edge => edge.Column)];
 
     // Each edge as one entry per cell side it runs along.
-    private static IEnumerable<(FootprintEdgeSide, int, int)> Unrolled(IEnumerable<FootprintEdge> edges)
+    private static IEnumerable<(CellEdgeSide, int, int)> Unrolled(IEnumerable<CellEdge> edges)
     {
         foreach (var edge in edges)
         {
-            var isAlongARow = edge.Side is FootprintEdgeSide.Top or FootprintEdgeSide.Bottom;
+            var isAlongARow = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom;
             for (var step = 0; step < edge.Length; step++)
             {
                 yield return isAlongARow

@@ -63,9 +63,28 @@ public sealed class CompositeCommandTests
         Assert.True(composite.EstimatedMemoryInBytes >= 2 * LoggingCommand.Size);
     }
 
-    private sealed class LoggingCommand(string name, List<string> log, bool throwOnApply = false) : IDocumentCommand
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(false, true, true)]
+    public void ChangesDocument_WhenAnyOfItsCommandsDoes(bool firstChanges, bool secondChanges, bool expected)
+    {
+        var log = new List<string>();
+        var composite = new CompositeCommand(
+        [
+            new LoggingCommand("first", log, changesDocument: firstChanges),
+            new LoggingCommand("second", log, changesDocument: secondChanges)
+        ]);
+
+        Assert.Equal(expected, composite.ChangesDocument);
+    }
+
+    private sealed class LoggingCommand(string name, List<string> log, bool throwOnApply = false,
+        bool changesDocument = true) : IDocumentCommand
     {
         public string StepNameKey => name;
+
+        public bool ChangesDocument => changesDocument;
 
         public const long Size = 10;
 

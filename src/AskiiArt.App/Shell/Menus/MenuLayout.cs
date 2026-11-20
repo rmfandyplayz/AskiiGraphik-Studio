@@ -7,6 +7,7 @@ using AskiiArt.App.Editing;
 using AskiiArt.App.Layers;
 using AskiiArt.App.Ramps;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Selection;
 using AskiiArt.App.Shell.Docking;
 
 namespace AskiiArt.App.Shell.Menus;
@@ -66,6 +67,12 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(EditActionIds.CopyAsAnsi)
         ]);
 
+        var selectMenu = new MenuDefinition(nameof(Strings.MenuSelect),
+        [
+            new ActionMenuEntry(SelectionActionIds.SelectAll),
+            new ActionMenuEntry(SelectionActionIds.Deselect)
+        ]);
+
         // ASCII Only and the colour modes sit here until the owner designs document options.
         var documentMenu = new MenuDefinition(nameof(Strings.MenuDocument),
         [
@@ -95,6 +102,7 @@ internal sealed record MenuLayout(
         var toolsMenu = new MenuDefinition(nameof(Strings.MenuTools),
         [
             new ActionMenuEntry(ToolActionIds.Hand),
+            new ActionMenuEntry(ToolActionIds.RectangleSelect),
             new ActionMenuEntry(ToolActionIds.Text),
             new ActionMenuEntry(ToolActionIds.Brush),
             new ActionMenuEntry(ToolActionIds.ForegroundBrush),
@@ -139,6 +147,7 @@ internal sealed record MenuLayout(
             applicationMenu = [new ActionMenuEntry(ShellActionIds.About, nameof(Strings.MenuAboutAppFormat))];
             windowMenus.Add(new MenuDefinition(nameof(Strings.MenuFile), [.. FileEntries(isMacOS)]));
             windowMenus.Add(editMenu);
+            windowMenus.Add(selectMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(layerMenu);
             windowMenus.Add(toolsMenu);
@@ -157,6 +166,7 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(ShellActionIds.Quit)
             ]));
             windowMenus.Add(editMenu);
+            windowMenus.Add(selectMenu);
             windowMenus.Add(documentMenu);
             windowMenus.Add(layerMenu);
             windowMenus.Add(toolsMenu);

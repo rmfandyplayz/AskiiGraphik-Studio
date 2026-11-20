@@ -68,9 +68,11 @@ public sealed class CommandHistory
 
     /// <summary>
     /// True when the document differs from the last save (or from when the history was created).
-    /// Undoing or redoing back to that point makes it false again.
+    /// Undoing or redoing back to that point makes it false again. Steps that change only what isn't saved,
+    /// such as the selection, don't count (ADR 0055).
     /// </summary>
-    public bool HasUnsavedChanges => _savedPosition != _position;
+    public bool HasUnsavedChanges =>
+        _savedPosition is not { } savedPosition || ChangesDocumentBetween(savedPosition, _position);
 
     /// <summary>
     /// The name of a step: a key from <see cref="UndoStepNames"/>. Steps are numbered oldest first,
@@ -253,8 +255,10 @@ public sealed class CommandHistory
         if (!CanRedo)
             return;
 
-        if (_savedPosition > _position)
-            _savedPosition = null;
+        // A saved state among the dropped steps can't be reached again, unless the steps between here and it only
+        // changed the selection: then the document already is as it was saved (ADR 0055).
+        if (_savedPosition is { } savedPosition && savedPosition > _position)
+            _savedPosition = ChangesDocumentBetween(_position, savedPosition) ? null : _position;
 
         for (var index = _position; index < _entries.Count; index++)
             MemoryInBytes -= _entries[index].MemoryInBytes;
@@ -275,17 +279,33 @@ public sealed class CommandHistory
         if (dropCount == 0)
             return;
 
+        // A saved state before the dropped steps can never be reached by undoing again, unless the steps after it
+        // only changed the selection: then the oldest state left is the saved one, as far as the document goes.
+        if (_savedPosition is { } savedPosition && savedPosition < dropCount)
+            _savedPosition = ChangesDocumentBetween(savedPosition, dropCount) ? null : dropCount;
+
         _entries.RemoveRange(0, dropCount);
         MemoryInBytes = remainingMemory;
         _position -= dropCount;
         _droppedCount += dropCount;
 
-        // A saved state before the dropped steps can never be reached by undoing again.
-        if (_savedPosition is { } savedPosition)
-            _savedPosition = savedPosition >= dropCount ? savedPosition - dropCount : null;
+        if (_savedPosition is { } keptPosition)
+            _savedPosition = keptPosition - dropCount;
     }
 
     private void RaiseStateChanged() => StateChanged?.Invoke(this, EventArgs.Empty);
+
+    // Whether any step between the two positions, in either direction, changes the document.
+    private bool ChangesDocumentBetween(int position, int otherPosition)
+    {
+        for (var index = Math.Min(position, otherPosition); index < Math.Max(position, otherPosition); index++)
+        {
+            if (_entries[index].ChangesDocument)
+                return true;
+        }
+
+        return false;
+    }
 
     private sealed class Entry(IDocumentCommand command, CoalescingGroup? group)
     {
@@ -295,5 +315,7 @@ public sealed class CommandHistory
 
         // Read once, after the command was applied, so the running total stays consistent.
         public long MemoryInBytes { get; } = command.EstimatedMemoryInBytes;
+
+        public bool ChangesDocument { get; } = command.ChangesDocument;
     }
 }

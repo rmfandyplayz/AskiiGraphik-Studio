@@ -37,3 +37,4 @@ ARCHITECTURE §9 asks for undo through commands that store only what they touch,
 
 Updated 2026-11-01: `BeginSave` and `MarkSaved(SavePoint)` mark the state a background save wrote, so edits made during it stay unsaved (step 1.7, ADR 0021).
 Updated 2026-11-14: `ResizeCanvasCommand` stores every cropped cell that holds anything, a background included. `SetColorModeCommand` converts or removes colours as one step (ADR 0036).
+Updated 2026-11-19: a step can say it doesn't change the document (`IDocumentCommand.ChangesDocument`), as a selection change doesn't. `HasUnsavedChanges` is true when a step between the saved position and now changes the document, and dropping steps that only changed the selection keeps the saved state reachable (ADR 0055).

@@ -224,17 +224,35 @@ internal sealed class MainWindowBuilder(
             ? layout.ActionIds().ToHashSet(StringComparer.Ordinal)
             : [];
 
+        var textEditingGestures = TextEditingGestures();
         foreach (var action in actions.All)
         {
             var firstBoundShortcut = actionsTriggeredByMenu.Contains(action.Id) ? 1 : 0;
             foreach (var shortcut in action.DefaultShortcuts.Skip(firstBoundShortcut))
             {
+                var gesture = shortcut.ToKeyGesture(platformCommandModifiers);
                 window.KeyBindings.Add(new KeyBinding
                 {
-                    Gesture = shortcut.ToKeyGesture(platformCommandModifiers),
-                    Command = action.Command,
+                    Gesture = gesture,
+                    Command = textEditingGestures.Contains(gesture)
+                        ? new YieldToTextBoxCommand(action.Command, window)
+                        : action.Command,
                 });
             }
         }
+    }
+
+    // The keys a text box edits with on this platform, such as Select All and Undo, which a shortcut mustn't take from
+    // a text box that has the keyboard.
+    private static HashSet<KeyGesture> TextEditingGestures()
+    {
+        if (Application.Current?.PlatformSettings?.HotkeyConfiguration is not { } hotkeys)
+            return [];
+
+        return
+        [
+            .. hotkeys.SelectAll, .. hotkeys.Undo, .. hotkeys.Redo,
+            .. hotkeys.Copy, .. hotkeys.Cut, .. hotkeys.Paste,
+        ];
     }
 }

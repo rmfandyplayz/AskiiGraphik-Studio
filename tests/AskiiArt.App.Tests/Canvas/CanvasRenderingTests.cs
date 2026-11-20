@@ -7,6 +7,7 @@ using AskiiArt.App.Canvas.Rendering;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
@@ -30,7 +31,9 @@ public sealed class CanvasRenderingTests : IDisposable
         Hover: new SKColor(0, 255, 0, 128),
         FallbackGlyph: SKColors.Orange,
         PlaceholderGlyph: SKColors.Pink,
-        Caret: SKColors.Purple);
+        Caret: SKColors.Purple,
+        SelectionLine: SKColors.Black,
+        SelectionBackdrop: SKColors.Yellow);
 
     private static readonly SKColor _blue = new(0, 0, 200);
     private static readonly SKColor _green = new(0, 200, 0);
@@ -289,6 +292,66 @@ public sealed class CanvasRenderingTests : IDisposable
     }
 
     [Fact]
+    public void Paint_SelectionOutline_RunsInsideTheSelectedCells_AndLeavesTheirMiddleAlone()
+    {
+        var viewport = CreateViewport();
+        var selection = SelectionMask.Rectangle(new CanvasSize(4, 2), CellRect.FromEdges(1, 0, 3, 2));
+
+        using var scene = Build(viewport, selection: selection);
+        using var bitmap = PaintScene(scene);
+
+        var topLeft = viewport.GetCellBounds(new CellPoint(1, 0));
+        var bottomRight = viewport.GetCellBounds(new CellPoint(2, 1));
+        Assert.Equal(4, scene.SelectionOutline.Count);
+        Assert.Equal([SKColors.Black, SKColors.Yellow], OutlineColours(bitmap, topLeft.X, topLeft.Y, topLeft.Width));
+        Assert.Equal(SKColors.White, CentreOf(bitmap, topLeft));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(topLeft.Right - 1, topLeft.Y + topLeft.Height / 2));
+        Assert.Equal(SKColors.White, bitmap.GetPixel(topLeft.X - 1, topLeft.Y + topLeft.Height / 2));
+        Assert.NotEqual(SKColors.White, bitmap.GetPixel(bottomRight.Right - 1, bottomRight.Y + bottomRight.Height / 2));
+    }
+
+    [Fact]
+    public void Paint_SelectionDashes_AreCountedFromTheCanvasCorner()
+    {
+        var viewport = CreateViewport();
+
+        using var scene = Build(viewport, selection: SelectionMask.All(new CanvasSize(4, 2)));
+        using var bitmap = PaintScene(scene);
+
+        var corner = viewport.CanvasBounds;
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(corner.X, corner.Y));
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(corner.X + 3, corner.Y));
+        Assert.Equal(SKColors.Yellow, bitmap.GetPixel(corner.X + 4, corner.Y));
+        Assert.Equal(SKColors.Black, bitmap.GetPixel(corner.X + 8, corner.Y));
+        Assert.Equal(SKColors.Yellow, bitmap.GetPixel(corner.X, corner.Y + 4));
+    }
+
+    [Fact]
+    public void Build_SelectionOutline_KeepsOnlyWhatIsInView()
+    {
+        // A viewport just big enough for the top-left cell, with no margin.
+        var viewport = new CanvasViewport(_canvas.ViewModel.Composite.Size, CellSize, CellSize, margin: 0, default);
+
+        using var scene = Build(viewport, selection: SelectionMask.All(new CanvasSize(4, 2)));
+
+        Assert.Equal(2, scene.SelectionOutline.Count);
+        Assert.All(scene.SelectionOutline,
+            strip => Assert.True(strip.Rect.Right <= CellSize.Width && strip.Rect.Bottom <= CellSize.Height));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Build_NoSelection_DrawsNoOutline(bool hasEmptyMask)
+    {
+        var selection = hasEmptyMask ? SelectionMask.Empty(new CanvasSize(4, 2)) : null;
+
+        using var scene = Build(CreateViewport(), selection: selection);
+
+        Assert.Empty(scene.SelectionOutline);
+    }
+
+    [Fact]
     public void Paint_Grid_DrawsLinesOnCellEdgesOnlyWhenVisible()
     {
         var viewport = CreateViewport();
@@ -337,6 +400,10 @@ public sealed class CanvasRenderingTests : IDisposable
         return [.. pixels];
     }
 
+    // The distinct colours along a row of pixels, in the order they first appear.
+    private static SKColor[] OutlineColours(SKBitmap bitmap, int x, int y, int length) =>
+        [.. Enumerable.Range(x, length).Select(column => bitmap.GetPixel(column, y)).Distinct()];
+
     private static SKColor CentreOf(SKBitmap bitmap, PixelRect rect) =>
         bitmap.GetPixel(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
 
@@ -356,9 +423,9 @@ public sealed class CanvasRenderingTests : IDisposable
         new(_canvas.ViewModel.Composite.Size, CellSize, new PixelSize(200, 100), margin: 10, default);
 
     private CanvasScene Build(CanvasViewport viewport, bool isGridVisible = false, CellPoint? hoveredCell = null,
-        CellPoint? caret = null, BrushOutline? brush = null) =>
+        CellPoint? caret = null, BrushOutline? brush = null, SelectionMask? selection = null) =>
         _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
-            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush));
+            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush, selection));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

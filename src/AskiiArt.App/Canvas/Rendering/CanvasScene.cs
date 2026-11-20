@@ -40,6 +40,14 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The pieces of the brush tip's outline, each a filled strip along the inside of its cells.</summary>
     public required IReadOnlyList<PixelRect> BrushOutline { get; init; }
 
+    /// <summary>
+    /// The visible pieces of the selection's outline, each a strip along the inside of its cells, drawn dashed.
+    /// </summary>
+    public IReadOnlyList<SelectionStrip> SelectionOutline { get; init; } = [];
+
+    /// <summary>The length of each dash of the selection outline, and of each gap, in device pixels.</summary>
+    public int SelectionDashLength { get; init; } = 1;
+
     public void Dispose()
     {
         Backgrounds?.Dispose();

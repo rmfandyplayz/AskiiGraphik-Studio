@@ -62,4 +62,13 @@ public static class UndoStepNames
 
     /// <summary>A stroke of the brush.</summary>
     public const string Paint = "UndoStepPaint";
+
+    /// <summary>Selecting a rectangle with Rectangle Select.</summary>
+    public const string RectangleSelect = "UndoStepRectangleSelect";
+
+    /// <summary>Selecting the whole canvas.</summary>
+    public const string SelectAll = "UndoStepSelectAll";
+
+    /// <summary>Selecting nothing.</summary>
+    public const string Deselect = "UndoStepDeselect";
 }

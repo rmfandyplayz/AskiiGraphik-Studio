@@ -3,14 +3,17 @@
 
 using System.Text;
 using AskiiArt.App.Canvas;
+using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -90,8 +93,21 @@ public sealed class ToolSwitchingTests : IDisposable
         brushGroup.Command.Execute(null);
         Assert.Equal(ColorBrushTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
         Assert.Equal(
-            [ToolGroupActionIds.Hand, ToolGroupActionIds.Text, ToolGroupActionIds.Brush, ToolGroupActionIds.Eraser],
+            [
+                ToolGroupActionIds.Hand, ToolGroupActionIds.Select, ToolGroupActionIds.Text, ToolGroupActionIds.Brush,
+                ToolGroupActionIds.Eraser
+            ],
             actions.Keys.Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal)));
+    }
+
+    [AvaloniaFact]
+    public void TheToolsToolbar_HasAButtonForEachToolGroup_InOrder()
+    {
+        var groupActions = new ToolActions(Canvas).CreateActions()
+            .Select(action => action.Id)
+            .Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal));
+
+        Assert.Equal(groupActions, ToolbarLayout.CreateTools().ActionIds());
     }
 
     [AvaloniaFact]
@@ -239,6 +255,56 @@ public sealed class ToolSwitchingTests : IDisposable
         PressLetter(Key.V, PhysicalKey.V, "v");
 
         Assert.IsType<HandTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void TheMKey_ChoosesRectangleSelect_WhichSelectsByDragging_AsOneStep()
+    {
+        PressLetter(Key.M, PhysicalKey.M, "m");
+        Assert.IsType<RectangleSelectTool>(Canvas.ActiveTool);
+        Dispatcher.UIThread.RunJobs();
+
+        _window.MouseDown(CentreOf(new CellPoint(1, 1)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(3, 2)));
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+        _window.MouseUp(CentreOf(new CellPoint(3, 2)), MouseButton.Left);
+
+        var expected = SelectionMask.Rectangle(_canvas.Document.CanvasSize, CellRect.FromEdges(1, 1, 4, 3));
+        Assert.Equal(expected, _canvas.Session.Selection.Mask);
+        Assert.Equal(1, _canvas.Session.History.UndoCount);
+        Assert.Same(_canvas.Session.Selection, _control.Selection);
+    }
+
+    [AvaloniaFact]
+    public void Esc_DuringASelectionDrag_OnlyCancelsIt_AndTheNextEscSwitchesToTheHandTool()
+    {
+        Canvas.SelectTool(RectangleSelectTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        _window.MouseDown(CentreOf(new CellPoint(1, 1)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(3, 2)));
+        PressEscape();
+        _window.MouseUp(CentreOf(new CellPoint(3, 2)), MouseButton.Left);
+
+        Assert.IsType<RectangleSelectTool>(Canvas.ActiveTool);
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+
+        PressEscape();
+
+        Assert.IsType<HandTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void TheCanvas_FollowsTheSelectionOfANewDocument()
+    {
+        SelectionEdits.SelectAll(_canvas.Session);
+        var next = new EditingSession(Document.Create(new CanvasSize(5, 5), "Layer"));
+
+        _canvas.ActiveDocument.Replace(next);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(next.Selection, _control.Selection);
+        Assert.True(_control.Selection!.IsEmpty);
     }
 
     [AvaloniaFact]

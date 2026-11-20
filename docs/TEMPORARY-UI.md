@@ -13,9 +13,9 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 | Choice | Where | Step |
 |---|---|---|
-| Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4 |
-| Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a |
-| A Tools menu between Layer and View: Hand, Text, Brush, FG Brush, BG Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4 |
+| Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI), Select (Select All, Deselect), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4, 4.1 |
+| Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Select, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a, 4.1 |
+| A Tools menu between Layer and View: Hand, Rectangle Select, Text, Brush, FG Brush, BG Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4, 4.1 |
 | A Window menu between View and Help: Layers, History, Color, Swatches, Ramps, Characters, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a, 3.5, 3.6 |
 | Default layout (`docs/DOCKING.md` §9): the menu bar as a strip along the top (Windows and Linux) and the status bar along the bottom. Layers above History as widgets on the right, 240 wide. File toolbar top left and Tools in the bottom middle, as the owner asked. Edit top right and View bottom right, as placeholders | `Shell/Docking/ShellDefaultLayout.cs`, `Theme/Tokens.axaml` | 2.1, 2.5b |
 | A toolbar that doesn't fit scrolls along its length with no scrollbar, 50 pixels per wheel notch on a horizontal one. Its buttons fade over the last 20 pixels on a side with more to scroll to | `Shell/Docking/ToolbarFrame.axaml`, `ToolbarFades.cs`, `AppToolbarWheelStep`, `AppToolbarFadeLength` | 2.1, 2.5c |
@@ -65,7 +65,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | A Debug menu (Open Sample Document, Open Color Sample, Open ANSI Test Sample, Open RGB Test Sample, Open Density Sample, Throw Test Exception, Show Frame Rate, Mouse Acts as a Pen at Half Pressure) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs`, `Canvas/CanvasActions.cs`, `Ramps/RampActions.cs` | 0.3, 1.7, 2b.2, 2b.2b, 3.1, 3.7 |
 | Debug → Mouse Acts as a Pen at Half Pressure: while ticked, the mouse presses like a pen at half pressure, to try pen pressure without a tablet. It's off at every start and isn't remembered | `Canvas/PointerPressure.cs`, `Canvas/CanvasActions.cs` | 3.7 |
 | Debug → Show Frame Rate: at the right of the status bar, plain text such as "144 fps · 1% low 120 · slowest draw 1.2 ms", from the last 2 seconds and refreshed twice a second, or "Canvas idle". It's off at every start and isn't remembered | `Canvas/FrameRate/FrameRateReadout.cs`, `Shell/StatusBarView.axaml`, `AppStatusBarFrameRateMargin` | 2b.2b |
-| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Close Cmd+W (macOS only). Export as Text, Export as ANSI and Copy as ANSI have none | each feature's `*Actions.cs` | 0.3–1.8 |
+| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Select All Ctrl+A; Deselect Ctrl+D; Close Cmd+W (macOS only). Export as Text, Export as ANSI and Copy as ANSI have none | each feature's `*Actions.cs` | 0.3–1.8, 4.1 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
 | About window and unexpected-error dialog (Open Log Folder, Quit, Continue) | `Shell/Dialogs/` | 0.3 |
 | A plain yes-or-cancel dialog, with Cancel as the default button | `Shell/Dialogs/ConfirmWindow.axaml` | 1.5 |
@@ -259,6 +259,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Pressing harder without moving paints further where the pen is. The line from one pointer report to the next takes the newer report's pressure | `Core/Tools/RampStrokes/RampStroke.cs` | 3.7 |
 | The pen's eraser end and side buttons do nothing special: the eraser end paints like the tip | `Canvas/CanvasControl.cs` | 3.7 |
 
+### Selection (step 4.1, ADRs 0055, 0056)
+
+| Choice | Where | Step |
+|---|---|---|
+| The selection outline: black dashes on white, 1 logical pixel thick, each dash and gap 4 pixels, along the inside of the outer cells. It doesn't move (no marching ants), and it's the same in light and dark mode | `AppCanvasSelection*` tokens, `Canvas/Rendering/CanvasScenePainter.cs` | 4.1 |
+| The outline is drawn over the grid and under the hover highlight, the caret and the brush outline | `Canvas/Rendering/CanvasScenePainter.cs` | 4.1 |
+| A Select menu between Edit and Document, with Select All (Ctrl+A) and Deselect (Ctrl+D). Deselect is greyed out when nothing is selected | `Shell/Menus/MenuLayout.cs`, `Selection/SelectionActions.cs` | 4.1 |
+| The Select group is on M, and its button sits after Hand on the Tools toolbar. With one tool it has no sub-toolbar yet | `Core/Tools/BuiltInToolGroups.cs`, `Shell/Toolbars/ToolbarLayout.cs` | 4.1 |
+| Rectangle Select: dragging shows the rectangle's outline in place of the selection until release. A click that doesn't reach another cell deselects. Dragging back to the first cell selects that one cell. Starting off the canvas works; a drag wholly off it deselects | `Core/Tools/Selecting/RectangleSelectTool.cs` | 4.1 |
+| Rectangle Select: Esc during a drag cancels it, and switching tools mid-drag cancels it too. Shift and Alt do nothing yet (combine modes are 4.2). The pointer is the normal arrow | `Core/Tools/Selecting/RectangleSelectTool.cs` | 4.1 |
+| Step names: Rectangle Select, Select All, Deselect. Resizing the canvas keeps its one Resize Canvas step, which moves the selection too | `Strings.resx` | 4.1 |
+| New and Open start with nothing selected | `Core/Editing/EditingSession.cs` | 4.1 |
+| Ctrl+A, Ctrl+Z and Ctrl+Y (and Copy, Cut and Paste, when they come) go to a text box that has the keyboard, not the document | `Shell/YieldToTextBoxCommand.cs` | 4.1 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
@@ -282,7 +296,8 @@ The owner's ideas, parked until the stage they belong to.
 - **A custom colour picker** (raised in M2b planning): 2b.3a uses Avalonia's ColorPicker, which has a fixed layout that doesn't grow with its window. The owner decided on 2026-11-15 that we'll build our own, for precise control over its layout and each part. It's planned for M8; Avalonia's stays until then, for testing.
 - **Reference image layer** (raised in M2b planning): an image layer to work from, which the eyedropper (2b.3b) picks colours from the same way as from the canvas.
 - **Right-click paints the BG colour** (raised in M2b planning): maybe, for the brush. Right-click does nothing yet.
-- **The Select tool** (raised in 2b.3a's planning): it will probably replace the Hand tool, take V, and be where Esc goes (ADR 0041).
+- **The Select tool** (raised in 2b.3a's planning; decided in 4.1): the selection tools don't replace the Hand tool. The shape selection tools are on M and the Magic Wand on W; the Move tool takes V in 4.5 and the Hand tool moves to H. Esc keeps switching to the Hand tool (ADR 0055).
+- **How the selection looks** (4.1): the still, dashed outline is a placeholder. Marching ants, a tint over the selected cells, or both, are the owner's call.
 - **Color and plugins** (decided after 2.3's testing, ADR 0032): colour and ANSI are in, as milestone M2b. Plugins are in, as M9 (first M8b, ADR 0046), with a built-in Discord ANSI message plugin. Opacity isn't planned; wide (CJK) characters could be a plugin.
 - **Tool Options toolbar** (raised in M3 planning): it's built from the active tool's options as data, so it isn't a plain container of tool buttons. It will probably be edited through a menu of its own rather than by dragging its contents, and tool settings should be exportable one day (like brush presets).
 - **Blend modes for the Brush** (raised in M3 planning): Blend only for now. Replace and Darken only could come later, perhaps from a dropdown on Tool Options where they show greyed out until then.

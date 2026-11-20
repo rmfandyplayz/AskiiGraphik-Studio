@@ -2,7 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Documents;
-using AskiiArt.Core.Tools.Footprints;
+using AskiiArt.Core.Selection;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
 
@@ -89,7 +89,9 @@ internal sealed class CanvasSceneBuilder
             HoveredCell = overlays.Brush is null ? BoundsOf(viewport, overlays.HoveredCell) : null,
             Caret = BoundsOf(viewport, overlays.Caret),
             CaretThickness = overlays.CaretThickness,
-            BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness)
+            BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness),
+            SelectionOutline = SelectionOutlineOf(viewport, overlays.Selection, overlays.SelectionThickness),
+            SelectionDashLength = Math.Max(1, overlays.SelectionDashLength)
         };
     }
 
@@ -115,14 +117,52 @@ internal sealed class CanvasSceneBuilder
             var y = top + edge.Row * cell.Height;
             strips[index] = edge.Side switch
             {
-                FootprintEdgeSide.Top => new PixelRect(x, y, edge.Length * cell.Width, width),
-                FootprintEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, edge.Length * cell.Width, width),
-                FootprintEdgeSide.Left => new PixelRect(x, y, width, edge.Length * cell.Height),
+                CellEdgeSide.Top => new PixelRect(x, y, edge.Length * cell.Width, width),
+                CellEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, edge.Length * cell.Width, width),
+                CellEdgeSide.Left => new PixelRect(x, y, width, edge.Length * cell.Height),
                 _ => new PixelRect(x + cell.Width - width, y, width, edge.Length * cell.Height)
             };
         }
 
         return strips;
+    }
+
+    // The selection's edges that lie in the visible cells, cut to them, so a selection far bigger than the view costs
+    // only what shows. Each is a strip inside its cells, like the brush outline.
+    private static SelectionStrip[] SelectionOutlineOf(CanvasViewport viewport, SelectionMask? selection,
+        int thickness)
+    {
+        var visible = viewport.VisibleCells;
+        if (selection is null || selection.IsEmpty || !selection.Bounds.Intersects(visible))
+            return [];
+
+        var cell = viewport.CellSize;
+        var width = Math.Clamp(thickness, 1, Math.Max(1, Math.Min(cell.Width, cell.Height) / 2));
+        var origin = viewport.CanvasOrigin;
+        var strips = new List<SelectionStrip>();
+        foreach (var edge in selection.Edges)
+        {
+            var isHorizontal = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom;
+            var cells = isHorizontal
+                ? new CellRect(edge.Column, edge.Row, edge.Length, 1)
+                : new CellRect(edge.Column, edge.Row, 1, edge.Length);
+            var shown = cells.Intersect(visible);
+            if (shown.IsEmpty)
+                continue;
+
+            var x = origin.X + shown.X * cell.Width;
+            var y = origin.Y + shown.Y * cell.Height;
+            var rect = edge.Side switch
+            {
+                CellEdgeSide.Top => new PixelRect(x, y, shown.Width * cell.Width, width),
+                CellEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, shown.Width * cell.Width, width),
+                CellEdgeSide.Left => new PixelRect(x, y, width, shown.Height * cell.Height),
+                _ => new PixelRect(x + cell.Width - width, y, width, shown.Height * cell.Height)
+            };
+            strips.Add(new SelectionStrip(rect, isHorizontal));
+        }
+
+        return [.. strips];
     }
 
     private static PixelRect? BoundsOf(CanvasViewport viewport, CellPoint? cell) =>

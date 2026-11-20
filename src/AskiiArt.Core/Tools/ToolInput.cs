@@ -2,7 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Documents;
-
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools.Footprints;
 
 namespace AskiiArt.Core.Tools;
@@ -119,7 +119,14 @@ public readonly record struct ToolPointerInput(
 /// <param name="Footprint">
 /// The brush tip's footprint, which the canvas outlines under the pointer, or null for a tool without one.
 /// </param>
-public sealed record ToolOverlay(CellPoint? Caret, BrushFootprint? Footprint = null)
+/// <param name="PendingSelection">
+/// The selection a selection tool's gesture would make, which the canvas outlines in place of the session's
+/// selection until the gesture ends, or null when there's no such gesture.
+/// </param>
+public sealed record ToolOverlay(
+    CellPoint? Caret,
+    BrushFootprint? Footprint = null,
+    SelectionMask? PendingSelection = null)
 {
     /// <summary>Nothing to draw.</summary>
     public static ToolOverlay None { get; } = new(Caret: null);

@@ -20,6 +20,7 @@ using AskiiArt.App.ToolOptions;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using AskiiArt.Core.Ramps;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
@@ -129,8 +130,8 @@ public sealed class MainWindowTests : IDisposable
         var topLevelItems = menuBar.Items.Cast<NativeMenuItem>().ToArray();
         Assert.Equal(
             [
-                Strings.MenuFile, Strings.MenuEdit, Strings.MenuDocument, Strings.MenuLayer, Strings.MenuTools,
-                Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp
+                Strings.MenuFile, Strings.MenuEdit, Strings.MenuSelect, Strings.MenuDocument, Strings.MenuLayer,
+                Strings.MenuTools, Strings.MenuView, Strings.MenuWindow, Strings.MenuHelp
             ],
             topLevelItems.Select(item => item.Header));
 
@@ -188,6 +189,42 @@ public sealed class MainWindowTests : IDisposable
         window.KeyPress(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
         window.KeyRelease(Key.Y, RawInputModifiers.Control, PhysicalKey.Y, "y");
         Assert.True(_canvas.Document.ActiveFrame.Layers[0].GetCell(cell).HasGlyph);
+    }
+
+    [AvaloniaFact]
+    public void SelectAllAndDeselectShortcuts_InTheMainWindow_SelectAndDeselectTheCanvas()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+
+        PressCommandShortcut(window, Key.A, PhysicalKey.A, "a");
+        Assert.Equal(SelectionMask.All(_canvas.Document.CanvasSize), _canvas.Session.Selection.Mask);
+
+        PressCommandShortcut(window, Key.D, PhysicalKey.D, "d");
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+        Assert.False(_canvas.Session.History.HasUnsavedChanges);
+    }
+
+    [AvaloniaFact]
+    public void SelectAllShortcut_InATextBox_SelectsItsText_AndLeavesTheCanvasAlone()
+    {
+        var (window, textBox) = ShowWindowWithATextBoxFocused();
+
+        PressCommandShortcut(window, Key.A, PhysicalKey.A, "a");
+
+        Assert.True(_canvas.Session.Selection.IsEmpty);
+        Assert.Equal(textBox.Text!.Length, Math.Abs(textBox.SelectionEnd - textBox.SelectionStart));
+    }
+
+    [AvaloniaFact]
+    public void UndoShortcut_InATextBox_LeavesTheDocumentAlone()
+    {
+        var (window, _) = ShowWindowWithATextBoxFocused();
+        SelectionEdits.SelectAll(_canvas.Session);
+
+        PressCommandShortcut(window, Key.Z, PhysicalKey.Z, "z");
+
+        Assert.False(_canvas.Session.Selection.IsEmpty);
+        Assert.True(_canvas.Session.History.CanUndo);
     }
 
     [AvaloniaFact]
@@ -574,6 +611,29 @@ public sealed class MainWindowTests : IDisposable
         window.GetVisualDescendants().OfType<CanvasControl>().Single().Focus();
         Dispatcher.UIThread.RunJobs();
         return window;
+    }
+
+    // The main window with the Ramps window open and the typing in one of its text boxes, which holds some text.
+    private (MainWindow Window, TextBox TextBox) ShowWindowWithATextBoxFocused()
+    {
+        var docking = new ShellDocking(_settings, NullLogger<ShellDocking>.Instance);
+        var window = ShowWindow(docking);
+        docking.ToggleWindow(ShellDockingIds.RampsPanel);
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        var textBox = window.GetVisualDescendants().OfType<RampsPanelView>().Single()
+            .GetVisualDescendants().OfType<TextBox>().First(box => !string.IsNullOrEmpty(box.Text));
+        textBox.Focus();
+        Dispatcher.UIThread.RunJobs();
+        return (window, textBox);
+    }
+
+    private static void PressCommandShortcut(MainWindow window, Key key, PhysicalKey physicalKey, string symbol)
+    {
+        window.KeyPress(key, RawInputModifiers.Control, physicalKey, symbol);
+        window.KeyRelease(key, RawInputModifiers.Control, physicalKey, symbol);
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static void TapAlt(MainWindow window)
