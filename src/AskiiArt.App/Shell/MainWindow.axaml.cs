@@ -101,10 +101,18 @@ internal sealed partial class MainWindow : Window
     }
 
     // Not while a menu has the keyboard, such as one a button just opened, or Esc and the arrow keys stop working in it.
+    // Not while a dialog has it either, such as the confirmation a Delete button opened, or what's typed in the dialog
+    // reaches the canvas behind it; the canvas gets it once the dialog closes.
     private void GiveTypingBackToCanvas()
     {
         Dispatcher.UIThread.Post(() =>
         {
+            if (OpenDialog() is { } dialog)
+            {
+                dialog.Closed += (_, _) => GiveTypingBackToCanvas();
+                return;
+            }
+
             var focused = FocusManager?.GetFocusedElement();
             if (focused is TextBox || IsInAMenu(focused))
                 return;
@@ -112,6 +120,9 @@ internal sealed partial class MainWindow : Window
             CanvasView.FocusCanvas();
         });
     }
+
+    private Window? OpenDialog() =>
+        OwnedWindows.FirstOrDefault(window => window is { IsDialog: true, IsVisible: true });
 
     private static bool IsInAMenu(IInputElement? element) =>
         element is Visual visual && visual.FindAncestorOfType<MenuBase>(includeSelf: true) is { IsOpen: true };

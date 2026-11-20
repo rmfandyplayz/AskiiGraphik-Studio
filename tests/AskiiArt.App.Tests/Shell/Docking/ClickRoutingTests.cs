@@ -9,6 +9,7 @@ using AskiiArt.App.Layers;
 using AskiiArt.App.Painting;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
+using AskiiArt.App.Shell.Dialogs;
 using AskiiArt.App.Shell.Docking;
 using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
@@ -457,6 +458,32 @@ public sealed class ClickRoutingTests : IDisposable
 
         Assert.Equal(1, _canvas.Session.History.UndoCount);
         Assert.Equal(1, steps.SelectedIndex);
+        Assert.True(Canvas.IsFocused);
+    }
+
+    // The owner's bug in step 3.6: Esc in the confirmation that a window's Delete button opened chose the Hand tool.
+    // On Windows the dialog takes the keyboard before the click hands typing back to the canvas, and then the canvas
+    // took it from the dialog. Headless activates a dialog later, so here it's opened first to keep that order.
+    [AvaloniaFact]
+    public async Task AClickBehindADialog_LeavesItTheKeyboard_ThenTypingGoesBackToTheCanvasWhenItCloses()
+    {
+        _canvas.ViewModel.SelectTool(BrushTool.Id);
+        var dialog = new ConfirmWindow { DataContext = new ConfirmViewModel("Title", "Message", "Delete") };
+        var answer = ModalDialog.ShowAsync<bool>(dialog, _window);
+        Pump();
+        var inLayers = RectIn(Frames.Single(frame => frame.Title == Strings.PanelLayers)).Center;
+
+        _window.MouseDown(inLayers, MouseButton.Left);
+        _window.MouseUp(inLayers, MouseButton.Left);
+        Pump();
+        Assert.False(Canvas.IsFocused);
+
+        dialog.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Pump();
+
+        Assert.True(answer.IsCompleted);
+        Assert.False(await answer);
+        Assert.Equal(BrushTool.Id, _canvas.ViewModel.SelectedTool.Descriptor.Id);
         Assert.True(Canvas.IsFocused);
     }
 
