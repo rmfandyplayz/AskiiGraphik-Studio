@@ -198,6 +198,10 @@
     <value>Polygonal Lasso</value>
     <comment>The Select group's sub-toolbar and the Tools menu: click corner after corner of a shape to select. Key 4 chooses it while a selection tool is chosen.</comment>
   </data>
+  <data name="ToolMagicWand" xml:space="preserve">
+    <value>Magic Wand</value>
+    <comment>The Select group's sub-toolbar and the Tools menu: click a cell to select the cells that match it. W chooses it, and so does key 5 while a selection tool is chosen.</comment>
+  </data>
   <data name="ToolGroupSelect" xml:space="preserve">
     <value>Select</value>
     <comment>Tools toolbar: the Select group's button, which chooses the selection tool used last. M chooses it too.</comment>
@@ -527,6 +531,26 @@
     <value>_Deselect</value>
     <comment>Select menu: selects nothing.</comment>
   </data>
+  <data name="ActionInvertSelection" xml:space="preserve">
+    <value>_Invert</value>
+    <comment>Select menu: selects every cell that isn't selected, and none that is.</comment>
+  </data>
+  <data name="ActionGrowSelection" xml:space="preserve">
+    <value>_Grow by 1 Cell</value>
+    <comment>Select menu: also selects every cell that touches the selection, along a side or at a corner.</comment>
+  </data>
+  <data name="ActionShrinkSelection" xml:space="preserve">
+    <value>S_hrink by 1 Cell</value>
+    <comment>Select menu: leaves out every selected cell that touches one that isn't, along a side or at a corner. Cells along the canvas's edges stay.</comment>
+  </data>
+  <data name="ActionSelectCellsWithGlyphs" xml:space="preserve">
+    <value>Select _Cells with Glyphs</value>
+    <comment>Select menu: selects the active layer's cells that hold a character other than a space, in place of the selection.</comment>
+  </data>
+  <data name="ActionSelectCellsWithBackground" xml:space="preserve">
+    <value>Select Cells with _Background Color</value>
+    <comment>Select menu: selects the active layer's cells that have a background colour, in place of the selection.</comment>
+  </data>
   <data name="AnsiFileTypeName" xml:space="preserve">
     <value>ANSI art</value>
   </data>
@@ -757,6 +781,30 @@
   <data name="UndoStepDeselect" xml:space="preserve">
     <value>Deselect</value>
   </data>
+  <data name="UndoStepMagicWand" xml:space="preserve">
+    <value>Magic Wand</value>
+    <comment>History: a selection made with the Magic Wand.</comment>
+  </data>
+  <data name="UndoStepInvertSelection" xml:space="preserve">
+    <value>Invert Selection</value>
+    <comment>History: Select, Invert.</comment>
+  </data>
+  <data name="UndoStepGrowSelection" xml:space="preserve">
+    <value>Grow Selection</value>
+    <comment>History: Select, Grow by 1 Cell.</comment>
+  </data>
+  <data name="UndoStepShrinkSelection" xml:space="preserve">
+    <value>Shrink Selection</value>
+    <comment>History: Select, Shrink by 1 Cell.</comment>
+  </data>
+  <data name="UndoStepSelectCellsWithGlyphs" xml:space="preserve">
+    <value>Select Cells with Glyphs</value>
+    <comment>History: Select, Select Cells with Glyphs.</comment>
+  </data>
+  <data name="UndoStepSelectCellsWithBackground" xml:space="preserve">
+    <value>Select Cells with Background Color</value>
+    <comment>History: Select, Select Cells with Background Color.</comment>
+  </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>
   </data>
@@ -942,6 +990,54 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   <data name="ToolOptionSelectionModeIntersect" xml:space="preserve">
     <value>Intersect</value>
     <comment>Tool Options toolbar: only the cells both the shape and the selection hold stay selected. Shift and Alt together pick it for one selection.</comment>
+  </data>
+  <data name="ToolOptionWandArea" xml:space="preserve">
+    <value>Area</value>
+    <comment>Tool Options toolbar: whether the Magic Wand selects only the matching cells joined to the clicked one, or every matching cell.</comment>
+  </data>
+  <data name="ToolOptionWandContiguous" xml:space="preserve">
+    <value>Contiguous</value>
+    <comment>Tool Options toolbar: the Magic Wand selects only the matching cells joined to the clicked one along their sides.</comment>
+  </data>
+  <data name="ToolOptionWandGlobal" xml:space="preserve">
+    <value>Global</value>
+    <comment>Tool Options toolbar: the Magic Wand selects every matching cell on the canvas.</comment>
+  </data>
+  <data name="ToolOptionWandSample" xml:space="preserve">
+    <value>Sample</value>
+    <comment>Tool Options toolbar: which layers the Magic Wand looks at to compare cells.</comment>
+  </data>
+  <data name="ToolOptionWandActiveLayer" xml:space="preserve">
+    <value>Active Layer</value>
+    <comment>Tool Options toolbar: the Magic Wand compares the active layer's cells.</comment>
+  </data>
+  <data name="ToolOptionWandVisibleLayers" xml:space="preserve">
+    <value>Visible Layers</value>
+    <comment>Tool Options toolbar: the Magic Wand compares cells as the canvas shows every visible layer together.</comment>
+  </data>
+  <data name="ToolOptionWandMatch" xml:space="preserve">
+    <value>Match</value>
+    <comment>Tool Options toolbar: what the Magic Wand compares cells by.</comment>
+  </data>
+  <data name="ToolOptionWandMatchGlyph" xml:space="preserve">
+    <value>Same Glyph</value>
+    <comment>Tool Options toolbar: the Magic Wand selects cells with the same character. A space and an empty cell count as the same. Tolerance does nothing here.</comment>
+  </data>
+  <data name="ToolOptionWandMatchLightness" xml:space="preserve">
+    <value>Lightness</value>
+    <comment>Tool Options toolbar: the Magic Wand selects cells whose character puts about as much ink on its cell, within the tolerance.</comment>
+  </data>
+  <data name="ToolOptionWandMatchTextColor" xml:space="preserve">
+    <value>Text Color</value>
+    <comment>Tool Options toolbar: the Magic Wand selects cells whose text colour is close, within the tolerance.</comment>
+  </data>
+  <data name="ToolOptionWandMatchBackgroundColor" xml:space="preserve">
+    <value>Background Color</value>
+    <comment>Tool Options toolbar: the Magic Wand selects cells whose background colour is close, within the tolerance.</comment>
+  </data>
+  <data name="ToolOptionWandTolerance" xml:space="preserve">
+    <value>Tolerance</value>
+    <comment>Tool Options toolbar: how far a cell may differ from the clicked one and still be selected. Dragging left or right while clicking with the Magic Wand changes it too.</comment>
   </data>
   <data name="ToolOptionSize" xml:space="preserve">
     <value>Size</value>

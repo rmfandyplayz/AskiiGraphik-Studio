@@ -967,7 +967,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var row = (devicePoint.Y - origin.Y) / _viewport.CellSize.Height;
         var cell = new CellPoint((int)Math.Floor(column), (int)Math.Floor(row));
         return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers), pressure,
-            clickCount, MarkerReach());
+            clickCount, MarkerReach(), _viewport.CellSize.Width / _renderScaling);
     }
 
     // A tool's marker keeps its size on screen, so how many cells it reaches across and down depends on the zoom.

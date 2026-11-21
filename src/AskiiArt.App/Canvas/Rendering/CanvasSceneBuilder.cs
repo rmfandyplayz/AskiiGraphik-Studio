@@ -99,7 +99,7 @@ internal sealed class CanvasSceneBuilder
             GridShade = gridShade,
             UnselectedHatch = _hatches.BuildUnselected(viewport, overlays.Selection, overlays.Look,
                 overlays.SelectionMotion.UnselectedHatchShift),
-            LostHatch = _hatches.BuildLost(viewport, overlays.Selection, overlays.Look, colors,
+            LostHatch = _hatches.BuildLost(viewport, overlays.Selection, overlays.Look,
                 overlays.SelectionMotion.LostHatchShift),
             SelectionOutlines = SelectionOutlinesOf(viewport, overlays, colors),
             SelectionDashLength = Math.Max(1, overlays.SelectionDashLength),

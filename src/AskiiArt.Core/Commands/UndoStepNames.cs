@@ -80,4 +80,22 @@ public static class UndoStepNames
 
     /// <summary>Selecting nothing.</summary>
     public const string Deselect = "UndoStepDeselect";
+
+    /// <summary>Selecting matching cells with the Magic Wand.</summary>
+    public const string MagicWand = "UndoStepMagicWand";
+
+    /// <summary>Selecting what wasn't selected, and nothing that was.</summary>
+    public const string InvertSelection = "UndoStepInvertSelection";
+
+    /// <summary>Growing the selection by a cell all round.</summary>
+    public const string GrowSelection = "UndoStepGrowSelection";
+
+    /// <summary>Shrinking the selection by a cell all round.</summary>
+    public const string ShrinkSelection = "UndoStepShrinkSelection";
+
+    /// <summary>Selecting the active layer's cells that hold a character.</summary>
+    public const string SelectCellsWithGlyphs = "UndoStepSelectCellsWithGlyphs";
+
+    /// <summary>Selecting the active layer's cells that have a background colour.</summary>
+    public const string SelectCellsWithBackground = "UndoStepSelectCellsWithBackground";
 }

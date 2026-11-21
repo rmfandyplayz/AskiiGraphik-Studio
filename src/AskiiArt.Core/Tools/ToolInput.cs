@@ -111,6 +111,10 @@ public enum ToolKey
 /// How far the pointer can be from one of the tool's markers, such as the Polygonal Lasso's first corner, and still be
 /// on it, at the current zoom. None by default, so nothing is on a marker.
 /// </param>
+/// <param name="CellWidthOnScreen">
+/// How wide a cell is on screen at the current zoom, in logical pixels, for a tool whose drag works in screen
+/// distances, such as the Magic Wand's tolerance drag. 0 by default, so such a drag changes nothing.
+/// </param>
 public readonly record struct ToolPointerInput(
     CellPoint Cell,
     double SubCellX,
@@ -118,7 +122,8 @@ public readonly record struct ToolPointerInput(
     ToolModifiers Modifiers,
     float Pressure = 1,
     int ClickCount = 1,
-    ToolMarkerReach MarkerReach = default)
+    ToolMarkerReach MarkerReach = default,
+    double CellWidthOnScreen = 0)
 {
     /// <summary>Where the pointer is on the canvas, in cells with fractions.</summary>
     public CanvasPoint Position => new(Cell.X + SubCellX, Cell.Y + SubCellY);

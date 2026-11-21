@@ -242,8 +242,9 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Uses a single-letter shortcut (ADR 0033): a tool group's letter chooses that group,
-    /// <see cref="SwapColorsLetter"/> swaps the colours and <see cref="ResetColorsLetter"/> sets both to none.
+    /// Uses a single-letter shortcut (ADR 0033): a tool group's letter chooses that group, a tool's own letter chooses
+    /// that tool (ADR 0063), <see cref="SwapColorsLetter"/> swaps the colours and <see cref="ResetColorsLetter"/> sets
+    /// both to none.
     /// Returns false when the letter isn't a shortcut, or when the active tool is taking text, which is what the
     /// letter is for then.
     /// </summary>
@@ -257,6 +258,15 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         {
             SelectToolGroup(group.Id);
             return true;
+        }
+
+        foreach (var toolGroup in ToolGroups)
+        {
+            if (toolGroup.ToolLetters.TryGetValue(wanted, out var toolId))
+            {
+                SelectTool(toolId);
+                return true;
+            }
         }
 
         switch (wanted)

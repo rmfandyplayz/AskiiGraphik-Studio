@@ -12,7 +12,8 @@ namespace AskiiArt.App.Tests.Canvas.Rendering;
 public sealed class SelectionLookTests
 {
     private static readonly SelectionLook _look = new(SKColors.Black, SKColors.White, SKColors.Red, SKColors.DarkRed,
-        SKColors.Blue, SKColors.DarkBlue, HatchPeriod: 8, HatchThickness: 1, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
+        SKColors.Blue, SKColors.DarkBlue, SKColors.Red, SKColors.DarkRed, SKColors.Blue, SKColors.DarkBlue,
+        HatchBandWidth: 3, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
         IntersectHatchSpeed: 0.4, HatchStepsPerPixel: 4, FaintOpacity: 0.3, VanishingOpacity: 0.1,
         LostHatchOpacity: 0.7, GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5,
         CornerMarkerRadius: 3, FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
@@ -24,8 +25,7 @@ public sealed class SelectionLookTests
         {
             var look = SelectionLook.FromResources(Application.Current!, theme);
 
-            Assert.True(look.HatchPeriod >= 2);
-            Assert.True(look.HatchThickness > 0);
+            Assert.True(look.HatchBandWidth > 0);
             Assert.True(look.FinishMarkerRadius > look.CornerMarkerRadius);
             Assert.InRange(look.FaintOpacity, 0.01, 0.99);
             Assert.InRange(look.VanishingOpacity, 0.01, look.FaintOpacity);
@@ -47,8 +47,7 @@ public sealed class SelectionLookTests
 
         var expected = _look with
         {
-            HatchPeriod = 16,
-            HatchThickness = 2,
+            HatchBandWidth = 6,
             CornerMarkerRadius = 6,
             FinishMarkerRadius = 16
         };
@@ -56,11 +55,22 @@ public sealed class SelectionLookTests
     }
 
     [Fact]
-    public void TheHatchingTile_IsItsPeriodInWholePixels_AtLeastTwo()
+    public void TheHatchingTile_HoldsADarkAndALightStripe_AlongARow_InWholePixels_AtLeastTwo()
     {
+        // Two stripes 3 pixels wide at 45° take 2 × 3 × √2 ≈ 8.49 pixels along a row.
         Assert.Equal(8, _look.HatchTilePeriod);
-        Assert.Equal(3, (_look with { HatchPeriod = 2.6 }).HatchTilePeriod);
-        Assert.Equal(2, (_look with { HatchPeriod = 0.5 }).HatchTilePeriod);
+        Assert.Equal(34, (_look with { HatchBandWidth = 12 }).HatchTilePeriod);
+        Assert.Equal(2, (_look with { HatchBandWidth = 0.2 }).HatchTilePeriod);
+    }
+
+    [Fact]
+    public void TheHatchingOverCellsAboutToBeDeselected_HasItsOwnColours_NotTheDashes()
+    {
+        var look = _look with { SubtractHatchLine = SKColors.Orange, IntersectHatchBackdrop = SKColors.Pink };
+
+        Assert.Equal(SKColors.Orange, look.HatchColoursOf(SelectionLineStyle.Subtract).Line);
+        Assert.Equal(SKColors.Pink, look.HatchColoursOf(SelectionLineStyle.Intersect).Backdrop);
+        Assert.Equal(SKColors.Red, look.ColoursOf(SelectionLineStyle.Subtract, default!).Line);
     }
 
     [Fact]

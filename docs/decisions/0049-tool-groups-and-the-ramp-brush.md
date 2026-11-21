@@ -71,3 +71,5 @@ Updated 2026-11-18: each group's last tool is remembered between runs, though th
 Updated 2026-11-19: the Character Brush joined the group on key 4 (ADR 0053). The FG and BG Brushes' stroke is `FootprintStroke`, which the Character Brush shares.
 
 Updated 2026-11-19: a pen's pressure scales how strongly the Brush covers each cell (ADR 0054).
+
+Updated 2026-11-20: a group can also give one of its tools a letter of its own (`ToolGroup.ToolLetters`), as W picks the Magic Wand in the Select group on M (ADR 0063).

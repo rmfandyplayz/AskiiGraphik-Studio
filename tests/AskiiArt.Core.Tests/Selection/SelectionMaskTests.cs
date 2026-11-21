@@ -260,6 +260,115 @@ public sealed class SelectionMaskTests
         Assert.Throws<ArgumentException>(() => SelectionMask.All(_size).Resized(plan));
     }
 
+    [Fact]
+    public void Inverted_SelectsWhatWasntSelected_AndNothingThatWas()
+    {
+        var mask = TestMasks.Parse("##···", "·#···", "·····");
+
+        Assert.Equal(["··###", "#·###", "#####"], TestMasks.Describe(mask.Inverted()));
+        Assert.Equal(SelectionMask.All(_size), SelectionMask.Empty(_size).Inverted());
+        Assert.True(SelectionMask.All(_size).Inverted().IsEmpty);
+    }
+
+    [Fact]
+    public void Grown_AddsEveryCellTouchingTheSelection_CornersIncluded()
+    {
+        var mask = TestMasks.Parse("·····", "··#··", "·····", "·····");
+
+        Assert.Equal(["·###·", "·###·", "·###·", "·····"], TestMasks.Describe(mask.Grown()));
+    }
+
+    [Fact]
+    public void Grown_StopsAtTheCanvasEdges()
+    {
+        var mask = TestMasks.Parse("#····", "·····", "····#");
+
+        Assert.Equal(["##···", "##·##", "···##"], TestMasks.Describe(mask.Grown()));
+    }
+
+    [Fact]
+    public void Grown_OfNothing_IsNothing()
+    {
+        Assert.True(SelectionMask.Empty(_size).Grown().IsEmpty);
+    }
+
+    [Fact]
+    public void Shrunk_LeavesOutEveryCellTouchingAnUnselectedOne_CornersIncluded()
+    {
+        var mask = TestMasks.Parse("·····", "·###·", "·###·", "·###·", "·····");
+
+        Assert.Equal(["·····", "·····", "··#··", "·····", "·····"], TestMasks.Describe(mask.Shrunk()));
+    }
+
+    [Fact]
+    public void Shrunk_KeepsCellsAlongTheCanvasEdges()
+    {
+        var mask = TestMasks.Parse("###··", "###··", "####·");
+
+        Assert.Equal(["##···", "##···", "##···"], TestMasks.Describe(mask.Shrunk()));
+        Assert.Equal(SelectionMask.All(_size), SelectionMask.All(_size).Shrunk());
+    }
+
+    [Fact]
+    public void Shrunk_ThenGrown_OfAThinLine_IsNothing()
+    {
+        var mask = TestMasks.Parse("·····", "·###·", "·····");
+
+        Assert.True(mask.Shrunk().IsEmpty);
+        Assert.True(mask.Shrunk().Grown().IsEmpty);
+    }
+
+    [Fact]
+    public void GrownAndShrunk_MatchABruteForceCount_OnRandomMasks()
+    {
+        var size = new CanvasSize(23, 11);
+        for (var seed = 0; seed < 20; seed++)
+        {
+            var mask = TestMasks.Random(size, seed);
+
+            Assert.Equal(GrownByBruteForce(mask), TestMasks.Describe(mask.Grown()));
+            Assert.Equal(ShrunkByBruteForce(mask), TestMasks.Describe(mask.Shrunk()));
+        }
+    }
+
+    // A cell is selected after growing when it or any of its eight neighbours was.
+    private static string[] GrownByBruteForce(SelectionMask mask) =>
+        ByNeighbours(mask, (cell, neighbours) => cell || neighbours.Any(selected => selected));
+
+    // A cell stays selected after shrinking when it and all its neighbours on the canvas were.
+    private static string[] ShrunkByBruteForce(SelectionMask mask) =>
+        ByNeighbours(mask, (cell, neighbours) => cell && neighbours.All(selected => selected));
+
+    private static string[] ByNeighbours(SelectionMask mask, Func<bool, List<bool>, bool> isSelected)
+    {
+        var size = mask.CanvasSize;
+        var rows = new string[size.Height];
+        for (var y = 0; y < size.Height; y++)
+        {
+            var row = new char[size.Width];
+            for (var x = 0; x < size.Width; x++)
+            {
+                var neighbours = new List<bool>();
+                for (var dy = -1; dy <= 1; dy++)
+                {
+                    for (var dx = -1; dx <= 1; dx++)
+                    {
+                        var neighbour = new CellPoint(x + dx, y + dy);
+                        if ((dx != 0 || dy != 0) && size.Contains(neighbour))
+                            neighbours.Add(mask.Contains(neighbour));
+                    }
+                }
+
+                var selected = isSelected(mask.Contains(new CellPoint(x, y)), neighbours);
+                row[x] = selected ? TestMasks.Selected : TestCells.EmptyMarker;
+            }
+
+            rows[y] = new string(row);
+        }
+
+        return rows;
+    }
+
     // What resizing should give: each new cell is selected when the old cell that moves onto it was.
     private static string[] Shifted(SelectionMask mask, CanvasResizePlan plan)
     {

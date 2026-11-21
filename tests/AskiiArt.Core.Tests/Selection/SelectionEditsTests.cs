@@ -199,6 +199,96 @@ public sealed class SelectionEditsTests
     }
 
     [Fact]
+    public void Invert_SelectsWhatWasntSelected_AsOneStep()
+    {
+        SelectionEdits.Select(_session, SelectionMask.Rectangle(_size, new CellRect(0, 0, 2, 3)), "Step");
+
+        Assert.True(SelectionEdits.Invert(_session));
+
+        Assert.Equal(["··##", "··##", "··##"], TestMasks.Describe(_session.Selection.Mask));
+        Assert.Equal(UndoStepNames.InvertSelection, History.GetStepNameKey(History.UndoCount - 1));
+    }
+
+    [Fact]
+    public void Invert_OfNothing_SelectsEverything()
+    {
+        Assert.True(SelectionEdits.Invert(_session));
+
+        Assert.Equal(SelectionMask.All(_size), _session.Selection.Mask);
+    }
+
+    [Fact]
+    public void GrowAndShrink_ChangeTheSelectionByACell_AsOneStepEach()
+    {
+        SelectionEdits.Select(_session, SelectionMask.Rectangle(_size, new CellRect(1, 1, 1, 1)), "Step");
+
+        Assert.True(SelectionEdits.Grow(_session));
+        Assert.Equal(["###·", "###·", "###·"], TestMasks.Describe(_session.Selection.Mask));
+        Assert.Equal(UndoStepNames.GrowSelection, History.GetStepNameKey(History.UndoCount - 1));
+
+        Assert.True(SelectionEdits.Shrink(_session));
+        Assert.Equal(["##··", "##··", "##··"], TestMasks.Describe(_session.Selection.Mask));
+        Assert.Equal(UndoStepNames.ShrinkSelection, History.GetStepNameKey(History.UndoCount - 1));
+    }
+
+    [Fact]
+    public void GrowAndShrink_OfNothing_MakeNoStep()
+    {
+        Assert.False(SelectionEdits.Grow(_session));
+        Assert.False(SelectionEdits.Shrink(_session));
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void Grow_OfEverything_MakesNoStep()
+    {
+        SelectionEdits.SelectAll(_session);
+
+        Assert.False(SelectionEdits.Grow(_session));
+        Assert.False(SelectionEdits.Shrink(_session));
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void SelectCellsWithGlyphs_SelectsTheActiveLayersCellsWithACharacter_LeavingSpacesOut()
+    {
+        TestCells.Paint(_session.ActiveLayer, "a ·b", "····", "··c·");
+        _session.ActiveLayer.SetCell(new CellPoint(3, 1), Cell.FromBackground(TestCells.Rgb(1, 2, 3)));
+        SelectionEdits.SelectAll(_session);
+
+        Assert.True(SelectionEdits.SelectCellsWithGlyphs(_session));
+
+        Assert.Equal(["#··#", "····", "··#·"], TestMasks.Describe(_session.Selection.Mask));
+        Assert.Equal(UndoStepNames.SelectCellsWithGlyphs, History.GetStepNameKey(History.UndoCount - 1));
+    }
+
+    [Fact]
+    public void SelectCellsWithBackground_SelectsTheActiveLayersCellsWithABackgroundColour()
+    {
+        TestCells.Paint(_session.ActiveLayer, "ab··");
+        _session.ActiveLayer.SetCell(new CellPoint(3, 1), Cell.FromBackground(TestCells.Rgb(1, 2, 3)));
+        _session.ActiveLayer.SetCell(new CellPoint(1, 2),
+            TestCells.Glyph('x', CellColor.Unset, TestCells.Ansi(AnsiColor.Blue)));
+
+        Assert.True(SelectionEdits.SelectCellsWithBackground(_session));
+
+        Assert.Equal(["····", "···#", "·#··"], TestMasks.Describe(_session.Selection.Mask));
+        Assert.Equal(UndoStepNames.SelectCellsWithBackground, History.GetStepNameKey(History.UndoCount - 1));
+    }
+
+    [Fact]
+    public void SelectCellsWithGlyphs_LooksOnlyAtTheActiveLayer()
+    {
+        TestCells.Paint(_session.ActiveLayer, "a···");
+        var top = TestCells.AddLayer(_session.Document);
+        TestCells.Paint(top, "abcd");
+
+        Assert.NotSame(top, _session.ActiveLayer);
+        Assert.True(SelectionEdits.SelectCellsWithGlyphs(_session));
+        Assert.Equal(["#···", "····", "····"], TestMasks.Describe(_session.Selection.Mask));
+    }
+
+    [Fact]
     public void DroppingAnEditForMemory_LeavesTheDocumentUnsaved()
     {
         var history = new CommandHistory(_session.Document, memoryBudgetInBytes: 1);

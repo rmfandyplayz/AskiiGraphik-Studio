@@ -19,11 +19,14 @@ public static class BuiltInToolGroups
     public static ToolGroup Text { get; } = new("askiiart.group.text", "ToolText", "tool.text", 'T', [TextTool.Id]);
 
     /// <summary>
-    /// The selection tools that select a shape, on M (ADR 0055, ADR 0060): Rectangle Select, Ellipse Select, the Lasso
-    /// and the Polygonal Lasso.
+    /// The selection tools, on M (ADR 0055, ADR 0060, ADR 0063): Rectangle Select, Ellipse Select, the Lasso, the
+    /// Polygonal Lasso and the Magic Wand, which W also picks.
     /// </summary>
     public static ToolGroup Select { get; } = new("askiiart.group.select", "ToolGroupSelect", "tool.select", 'M',
-        [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id]);
+        [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id, MagicWandTool.Id])
+    {
+        ToolLetters = new Dictionary<char, string> { ['W'] = MagicWandTool.Id }
+    };
 
     /// <summary>
     /// The Brush, which paints ramps, then the FG Brush, the BG Brush and the Character Brush (ADR 0053), on B.

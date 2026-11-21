@@ -14,14 +14,17 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// are times the selection outline's dash speed, and opacities run from 0 to 1. The default look draws no hatching, no
 /// faint lines and no markers.
 /// </summary>
-/// <param name="HatchLine">The darker of the hatching's two lines over cells that aren't selected.</param>
-/// <param name="HatchBackdrop">The lighter of the hatching's two lines, so it shows on any art.</param>
-/// <param name="SubtractLine">Subtract's outline dashes, and its hatching.</param>
-/// <param name="SubtractBackdrop">Between Subtract's dashes, and beside its hatching's lines.</param>
-/// <param name="IntersectLine">Intersect's outline dashes, and its hatching.</param>
-/// <param name="IntersectBackdrop">Between Intersect's dashes, and beside its hatching's lines.</param>
-/// <param name="HatchPeriod">How far apart the hatching's lines are, along a row.</param>
-/// <param name="HatchThickness">How thick each of the hatching's lines is.</param>
+/// <param name="HatchLine">The darker of the stripes of the hatching over cells that aren't selected.</param>
+/// <param name="HatchBackdrop">The lighter of its stripes, between the darker ones, so it shows on any art.</param>
+/// <param name="SubtractLine">Subtract's outline dashes.</param>
+/// <param name="SubtractBackdrop">Between Subtract's dashes.</param>
+/// <param name="IntersectLine">Intersect's outline dashes.</param>
+/// <param name="IntersectBackdrop">Between Intersect's dashes.</param>
+/// <param name="SubtractHatchLine">The brighter stripes of Subtract's hatching.</param>
+/// <param name="SubtractHatchBackdrop">The darker stripes of Subtract's hatching, between the brighter ones.</param>
+/// <param name="IntersectHatchLine">The brighter stripes of Intersect's hatching.</param>
+/// <param name="IntersectHatchBackdrop">The darker stripes of Intersect's hatching, between the brighter ones.</param>
+/// <param name="HatchBandWidth">How wide each of the hatching's stripes is, across it.</param>
 /// <param name="HatchSpeed">How fast the hatching over cells that aren't selected moves to the top left.</param>
 /// <param name="SubtractHatchSpeed">How fast Subtract's hatching moves to the bottom left.</param>
 /// <param name="IntersectHatchSpeed">How fast Intersect's hatching moves to the bottom left.</param>
@@ -45,8 +48,11 @@ internal readonly record struct SelectionLook(
     SKColor SubtractBackdrop,
     SKColor IntersectLine,
     SKColor IntersectBackdrop,
-    double HatchPeriod,
-    double HatchThickness,
+    SKColor SubtractHatchLine,
+    SKColor SubtractHatchBackdrop,
+    SKColor IntersectHatchLine,
+    SKColor IntersectHatchBackdrop,
+    double HatchBandWidth,
     double HatchSpeed,
     double SubtractHatchSpeed,
     double IntersectHatchSpeed,
@@ -64,16 +70,16 @@ internal readonly record struct SelectionLook(
     /// <summary>The look with its lengths in device pixels, <paramref name="scaling"/> to a logical pixel.</summary>
     public SelectionLook ScaledBy(double scaling) => this with
     {
-        HatchPeriod = HatchPeriod * scaling,
-        HatchThickness = HatchThickness * scaling,
+        HatchBandWidth = HatchBandWidth * scaling,
         CornerMarkerRadius = CornerMarkerRadius * scaling,
         FinishMarkerRadius = FinishMarkerRadius * scaling
     };
 
     /// <summary>
-    /// The hatching tile's width and height, in whole pixels; lines closer than two pixels apart would be a smear.
+    /// The hatching tile's width and height, in whole pixels: along a row, a dark and a light stripe at 45° take √2
+    /// times their widths. Stripes in a tile narrower than two pixels would be a smear.
     /// </summary>
-    public int HatchTilePeriod => Math.Max(2, (int)Math.Round(HatchPeriod));
+    public int HatchTilePeriod => Math.Max(2, (int)Math.Round(2 * HatchBandWidth * Math.Sqrt(2)));
 
     /// <summary>How many steps the hatching takes for each device pixel it moves: a whole number, at least 1.</summary>
     public int HatchSteps => Math.Max(1, (int)Math.Round(HatchStepsPerPixel));
@@ -84,6 +90,16 @@ internal readonly record struct SelectionLook(
         SelectionLineStyle.Subtract => SubtractHatchSpeed,
         SelectionLineStyle.Intersect => IntersectHatchSpeed,
         _ => HatchSpeed
+    };
+
+    /// <summary>
+    /// The stripes' colours of the hatching over cells about to be deselected in <paramref name="style"/>.
+    /// </summary>
+    public (SKColor Line, SKColor Backdrop) HatchColoursOf(SelectionLineStyle style) => style switch
+    {
+        SelectionLineStyle.Subtract => (SubtractHatchLine, SubtractHatchBackdrop),
+        SelectionLineStyle.Intersect => (IntersectHatchLine, IntersectHatchBackdrop),
+        _ => (HatchLine, HatchBackdrop)
     };
 
     /// <summary>The dashes' and the backdrop's colours for <paramref name="style"/>.</summary>
@@ -107,8 +123,11 @@ internal readonly record struct SelectionLook(
         Colour(resources, "AppCanvasSelectionSubtractBackdropBrush", theme),
         Colour(resources, "AppCanvasSelectionIntersectBrush", theme),
         Colour(resources, "AppCanvasSelectionIntersectBackdropBrush", theme),
-        Token(resources, "AppCanvasSelectionHatchPeriod", theme),
-        Token(resources, "AppCanvasSelectionHatchThickness", theme),
+        Colour(resources, "AppCanvasSelectionSubtractHatchBrush", theme),
+        Colour(resources, "AppCanvasSelectionSubtractHatchBackdropBrush", theme),
+        Colour(resources, "AppCanvasSelectionIntersectHatchBrush", theme),
+        Colour(resources, "AppCanvasSelectionIntersectHatchBackdropBrush", theme),
+        Token(resources, "AppCanvasSelectionHatchBandWidth", theme),
         Token(resources, "AppCanvasSelectionHatchSpeed", theme),
         Token(resources, "AppCanvasSelectionSubtractHatchSpeed", theme),
         Token(resources, "AppCanvasSelectionIntersectHatchSpeed", theme),

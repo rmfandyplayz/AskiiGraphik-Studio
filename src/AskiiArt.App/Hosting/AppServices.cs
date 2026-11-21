@@ -97,6 +97,7 @@ internal static class AppServices
         services.AddSingleton(EllipseSelectTool.Definition);
         services.AddSingleton(LassoTool.Definition);
         services.AddSingleton(PolygonalLassoTool.Definition);
+        services.AddSingleton(MagicWandTool.Definition);
         services.AddSingleton(TextTool.Definition);
         services.AddSingleton(BrushTool.Definition);
         services.AddSingleton(ColorBrushTool.ForegroundDefinition);

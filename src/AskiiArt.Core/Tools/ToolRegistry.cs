@@ -42,8 +42,8 @@ public sealed class ToolRegistry
     /// Creates a registry holding <paramref name="definitions"/>, grouped by <paramref name="groups"/>.
     /// </summary>
     /// <exception cref="ArgumentException">
-    /// Two definitions, two groups or two groups' letters are the same, a group is empty or names a tool that isn't
-    /// registered, or a tool is in no group or in more than one.
+    /// Two definitions, two groups or two letters are the same, a group is empty or names a tool that isn't
+    /// registered, a group's tool letter picks a tool of another group, or a tool is in no group or in more than one.
     /// </exception>
     public ToolRegistry(IEnumerable<ToolDefinition> definitions, IEnumerable<ToolGroup> groups)
     {
@@ -109,8 +109,20 @@ public sealed class ToolRegistry
         if (group.ToolIds.Count == 0)
             throw new ArgumentException($"The tool group '{group.Id}' has no tools.", nameof(group));
 
-        if (group.ShortcutLetter is { } letter && _groups.Any(other => other.ShortcutLetter == letter))
-            throw new ArgumentException($"Two tool groups have the letter '{letter}'.", nameof(group));
+        foreach (var letter in LettersOf(group))
+        {
+            if (_groups.Any(other => LettersOf(other).Contains(letter)))
+                throw new ArgumentException($"Two tool groups have the letter '{letter}'.", nameof(group));
+        }
+
+        foreach (var (letter, toolId) in group.ToolLetters)
+        {
+            if (!group.ToolIds.Contains(toolId))
+            {
+                throw new ArgumentException($"The tool group '{group.Id}' gives '{letter}' to '{toolId}', which isn't "
+                    + "one of its tools.", nameof(group));
+            }
+        }
 
         foreach (var toolId in group.ToolIds)
         {
@@ -125,5 +137,15 @@ public sealed class ToolRegistry
         }
 
         _groups.Add(group);
+    }
+
+    // The group's own letter and its tools' letters.
+    private static IEnumerable<char> LettersOf(ToolGroup group)
+    {
+        if (group.ShortcutLetter is { } letter)
+            yield return letter;
+
+        foreach (var toolLetter in group.ToolLetters.Keys)
+            yield return toolLetter;
     }
 }

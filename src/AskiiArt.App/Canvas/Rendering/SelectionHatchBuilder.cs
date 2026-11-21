@@ -11,10 +11,10 @@ namespace AskiiArt.App.Canvas.Rendering;
 
 /// <summary>
 /// Builds a frame's <see cref="SelectionHatch"/>es on the UI thread (ADR 0061): one over the visible cells that aren't
-/// selected, its lines rising to the right, and one over the cells a gesture would deselect, its lines falling, in the
-/// mode's colours. It also builds the <see cref="GridShade"/> that shows the grid less under them. Only visible cells
-/// are visited, a run of selected cells at a time, so a big selection costs what shows. The buffer is kept from frame
-/// to frame.
+/// selected, its stripes rising to the right, and one over the cells a gesture would deselect, its stripes falling, in
+/// the mode's colours. Each is a zebra of dark and light stripes side by side, with no gaps (ADR 0064). It also builds
+/// the <see cref="GridShade"/> that shows the grid less under them. Only visible cells are visited, a run of selected
+/// cells at a time, so a big selection costs what shows. The buffer is kept from frame to frame.
 /// </summary>
 internal sealed class SelectionHatchBuilder
 {
@@ -50,7 +50,7 @@ internal sealed class SelectionHatchBuilder
     /// moved <paramref name="shift"/> device pixels to the left, or null when there's none.
     /// </summary>
     public SelectionHatch? BuildLost(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look,
-        CanvasColors colors, double shift)
+        double shift)
     {
         ArgumentNullException.ThrowIfNull(viewport);
         var visible = viewport.VisibleCells;
@@ -59,7 +59,7 @@ internal sealed class SelectionHatchBuilder
 
         Start(visible, Clear);
         Mark(visible, lost, Hatched);
-        var (line, backdrop) = look.ColoursOf(display!.LostStyle, colors);
+        var (line, backdrop) = look.HatchColoursOf(display!.LostStyle);
         return Complete(viewport, visible, look, rises: false, SelectionLook.Faded(line, look.LostHatchOpacity),
             SelectionLook.Faded(backdrop, look.LostHatchOpacity), shift);
     }
@@ -106,8 +106,8 @@ internal sealed class SelectionHatchBuilder
         return lost;
     }
 
-    // Lines closer than two pixels apart would be a smear, and a look without tokens has none.
-    private static bool CanHatch(SelectionLook look) => look.HatchPeriod >= 2;
+    // A look without tokens has no stripes.
+    private static bool CanHatch(SelectionLook look) => look.HatchBandWidth > 0;
 
     private static byte Strength(double opacity) => (byte)Math.Round(byte.MaxValue * Math.Clamp(opacity, 0, 1));
 
@@ -145,8 +145,7 @@ internal sealed class SelectionHatchBuilder
         if (cellMask is null)
             return null;
 
-        var thickness = (float)Math.Max(1, Math.Round(look.HatchThickness));
-        var tile = CreateTile(look.HatchTilePeriod, thickness, rises, line, backdrop);
+        var tile = CreateTile(look.HatchTilePeriod, rises, line, backdrop);
         return new SelectionHatch(cellMask, tile, BoundsOf(viewport, visible), shift);
     }
 
@@ -164,35 +163,38 @@ internal sealed class SelectionHatchBuilder
             visible.Width * cell.Width, visible.Height * cell.Height);
     }
 
-    // A square tile with one diagonal line across it, plus the pieces of its neighbours that cross its corners, so the
-    // lines join up when it repeats. The lighter line lies just beside the darker one.
-    private static SKImage CreateTile(int period, float thickness, bool rises, SKColor line, SKColor backdrop)
+    // A square tile of the light stripe with a dark one across it diagonally, plus the pieces of its neighbours that
+    // cross its corners, so the stripes join up when it repeats. Each is drawn a tile longer at both ends, so its
+    // square-cut ends lie well outside the tile however wide the stripe is. The dark stripe replaces the light one
+    // under it rather than blending over it, so its smoothed edges fade from one colour to the other and every pixel
+    // shows as strongly.
+    private static SKImage CreateTile(int period, bool rises, SKColor line, SKColor backdrop)
     {
         var info = new SKImageInfo(period, period, SKImageInfo.PlatformColorType, SKAlphaType.Premul);
         using var bitmap = new SKBitmap(info);
         using (var canvas = new SKCanvas(bitmap))
         {
-            canvas.Clear(SKColors.Transparent);
-            using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = thickness };
-            DrawLines(canvas, paint, period, rises, thickness, backdrop);
-            DrawLines(canvas, paint, period, rises, 0, line);
+            canvas.Clear(backdrop);
+            using var paint = new SKPaint
+            {
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = (float)(period / (2 * Math.Sqrt(2))),
+                BlendMode = SKBlendMode.Src,
+                Color = line
+            };
+            for (var tile = -1; tile <= 1; tile++)
+            {
+                var left = (tile - 1) * period;
+                var right = (tile + 2) * period;
+                if (rises)
+                    canvas.DrawLine(left, 2 * period, right, -period, paint);
+                else
+                    canvas.DrawLine(left, -period, right, 2 * period, paint);
+            }
         }
 
         using var pixels = bitmap.PeekPixels();
         return SKImage.FromPixelCopy(pixels);
-    }
-
-    private static void DrawLines(SKCanvas canvas, SKPaint paint, int period, bool rises, float shift, SKColor color)
-    {
-        paint.Color = color;
-        for (var tile = -1; tile <= 1; tile++)
-        {
-            var left = tile * period + shift - 1;
-            var right = tile * period + shift + period + 1;
-            if (rises)
-                canvas.DrawLine(left, period + 1, right, -1, paint);
-            else
-                canvas.DrawLine(left, -1, right, period + 1, paint);
-        }
     }
 }

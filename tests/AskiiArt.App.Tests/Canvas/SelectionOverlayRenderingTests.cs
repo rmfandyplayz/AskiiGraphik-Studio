@@ -43,8 +43,11 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         SubtractBackdrop: new SKColor(128, 0, 0),
         IntersectLine: SKColors.Green,
         IntersectBackdrop: new SKColor(0, 100, 0),
-        HatchPeriod: 6,
-        HatchThickness: 1,
+        SubtractHatchLine: SKColors.Red,
+        SubtractHatchBackdrop: new SKColor(128, 0, 0),
+        IntersectHatchLine: SKColors.Green,
+        IntersectHatchBackdrop: new SKColor(0, 100, 0),
+        HatchBandWidth: 2,
         HatchSpeed: 1,
         SubtractHatchSpeed: 1,
         IntersectHatchSpeed: 1,
@@ -80,6 +83,21 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
 
         Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(0, 1)), IsBluish);
         Assert.All(InsideOf(bitmap, viewport, new CellPoint(3, 0)), pixel => Assert.Equal(SKColors.White, pixel));
+    }
+
+    [Fact]
+    public void TheHatching_IsAZebra_OfDarkAndLightStripesWithNoGapsBetween()
+    {
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport, new CanvasOverlays(false, null,
+            Selection: SelectionDisplay.For(Rectangle(3, 0, 1, 1), null), Look: _look));
+
+        // Blue and cyan stripes, opaque in this look, with every pixel between them some of each and none of the paper.
+        var pixels = InsideOf(bitmap, viewport, new CellPoint(0, 1));
+        Assert.All(pixels, pixel => Assert.True(pixel.Red < 8 && pixel.Blue > 247, pixel.ToString()));
+        Assert.Contains(pixels, pixel => pixel == SKColors.Blue);
+        Assert.Contains(pixels, pixel => pixel == SKColors.Cyan);
     }
 
     [Fact]
@@ -218,7 +236,9 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
             HatchLine = SKColors.Transparent,
             HatchBackdrop = SKColors.Transparent,
             SubtractLine = SKColors.Transparent,
-            SubtractBackdrop = SKColors.Transparent
+            SubtractBackdrop = SKColors.Transparent,
+            SubtractHatchLine = SKColors.Transparent,
+            SubtractHatchBackdrop = SKColors.Transparent
         };
         var viewport = CreateViewport();
 

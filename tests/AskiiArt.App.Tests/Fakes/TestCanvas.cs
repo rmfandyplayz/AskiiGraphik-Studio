@@ -50,6 +50,7 @@ internal sealed class TestCanvas : IDisposable
                 EllipseSelectTool.Definition,
                 LassoTool.Definition,
                 PolygonalLassoTool.Definition,
+                MagicWandTool.Definition,
                 TextTool.Definition,
                 BrushTool.Definition,
                 ColorBrushTool.ForegroundDefinition,

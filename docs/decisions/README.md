@@ -69,3 +69,5 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0060](0060-selection-combine-modes-and-shape-tools.md) | Selection combine modes and the shape selection tools | Accepted |
 | [0061](0061-the-selection-overlay.md) | The selection overlay | Accepted |
 | [0062](0062-the-hatching-glides-in-part-pixel-steps.md) | The hatching glides in part-pixel steps | Accepted |
+| [0063](0063-the-magic-wand-and-selection-commands.md) | The Magic Wand and the selection commands | Accepted |
+| [0064](0064-zebra-hatching-and-brighter-dashes.md) | Zebra hatching and brighter dashes | Accepted |

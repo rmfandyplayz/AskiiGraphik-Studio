@@ -290,6 +290,47 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void TheWKey_ChoosesTheMagicWand_AndSoDoMThen5()
+    {
+        PressLetter(Key.W, PhysicalKey.W, "w");
+
+        Assert.IsType<MagicWandTool>(Canvas.ActiveTool);
+
+        PressLetter(Key.V, PhysicalKey.V, "v");
+        PressLetter(Key.M, PhysicalKey.M, "m");
+        Assert.IsType<MagicWandTool>(Canvas.ActiveTool);
+
+        Canvas.SelectTool(RectangleSelectTool.Id);
+        _window.KeyPress(Key.D5, RawInputModifiers.None, PhysicalKey.Digit5, "5");
+        _window.KeyTextInput("5");
+        _window.KeyRelease(Key.D5, RawInputModifiers.None, PhysicalKey.Digit5, "5");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.IsType<MagicWandTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void DraggingSidewaysWithTheMagicWand_RaisesTheTolerance_ByOneEveryTwoPixels()
+    {
+        var tolerance = _canvas.ToolSettings.For(MagicWandOptions.Group);
+        tolerance.Set(MagicWandOptions.Tolerance, 0);
+        Canvas.SelectTool(MagicWandTool.Id);
+        Dispatcher.UIThread.RunJobs();
+        var cellWidth = _control.Viewport!.CellSize.Width;
+
+        _window.MouseDown(CentreOf(new CellPoint(1, 1)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(2, 1)));
+
+        var expected = Math.Min(100, (int)(cellWidth / MagicWandTool.PixelsPerToleranceStep));
+        Assert.Equal(expected, tolerance.Get(MagicWandOptions.Tolerance));
+
+        _window.MouseUp(CentreOf(new CellPoint(2, 1)), MouseButton.Left);
+
+        Assert.Equal(SelectionMask.All(_canvas.Document.CanvasSize), _canvas.Session.Selection.Mask);
+        Assert.Equal(expected, tolerance.Get(MagicWandOptions.Tolerance));
+    }
+
+    [AvaloniaFact]
     public void Esc_DuringASelectionDrag_OnlyCancelsIt_AndTheNextEscSwitchesToTheHandTool()
     {
         Canvas.SelectTool(RectangleSelectTool.Id);

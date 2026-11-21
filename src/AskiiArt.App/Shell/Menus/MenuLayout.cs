@@ -70,7 +70,14 @@ internal sealed record MenuLayout(
         var selectMenu = new MenuDefinition(nameof(Strings.MenuSelect),
         [
             new ActionMenuEntry(SelectionActionIds.SelectAll),
-            new ActionMenuEntry(SelectionActionIds.Deselect)
+            new ActionMenuEntry(SelectionActionIds.Deselect),
+            new ActionMenuEntry(SelectionActionIds.Invert),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(SelectionActionIds.Grow),
+            new ActionMenuEntry(SelectionActionIds.Shrink),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(SelectionActionIds.SelectCellsWithGlyphs),
+            new ActionMenuEntry(SelectionActionIds.SelectCellsWithBackground)
         ]);
 
         // ASCII Only and the colour modes sit here until the owner designs document options.
@@ -106,6 +113,7 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(ToolActionIds.EllipseSelect),
             new ActionMenuEntry(ToolActionIds.Lasso),
             new ActionMenuEntry(ToolActionIds.PolygonalLasso),
+            new ActionMenuEntry(ToolActionIds.MagicWand),
             new ActionMenuEntry(ToolActionIds.Text),
             new ActionMenuEntry(ToolActionIds.Brush),
             new ActionMenuEntry(ToolActionIds.ForegroundBrush),

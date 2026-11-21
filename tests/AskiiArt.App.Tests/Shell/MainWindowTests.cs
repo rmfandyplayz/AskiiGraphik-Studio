@@ -17,6 +17,7 @@ using AskiiArt.App.Shell.Menus;
 using AskiiArt.App.Shell.Toolbars;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.App.ToolOptions;
+using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Formats;
 using AskiiArt.Core.Ramps;
@@ -204,6 +205,45 @@ public sealed class MainWindowTests : IDisposable
         PressCommandShortcut(window, Key.D, PhysicalKey.D, "d");
         Assert.True(_canvas.Session.Selection.IsEmpty);
         Assert.False(_canvas.Session.History.HasUnsavedChanges);
+    }
+
+    [AvaloniaFact]
+    public void TheInvertShortcut_InTheMainWindow_InvertsTheSelection()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+        var size = _canvas.Document.CanvasSize;
+        SelectionEdits.Select(_canvas.Session, SelectionMask.Rectangle(size, new CellRect(0, 0, 1, 1)),
+            UndoStepNames.RectangleSelect);
+
+        window.KeyPress(Key.I, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.I, "I");
+        window.KeyRelease(Key.I, RawInputModifiers.Control | RawInputModifiers.Shift, PhysicalKey.I, "I");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(_canvas.Session.Selection.Mask.Contains(new CellPoint(0, 0)));
+        Assert.True(_canvas.Session.Selection.Mask.Contains(new CellPoint(1, 0)));
+    }
+
+    [AvaloniaFact]
+    public void GrowAndShrink_InTheSelectMenu_AreAvailableOnlyWhileSomethingIsSelected()
+    {
+        var window = ShowWindowWithTheCanvasFocused();
+        var grow = MenuItem(window, Strings.MenuSelect, Strings.ActionGrowSelection).Command!;
+        var shrink = MenuItem(window, Strings.MenuSelect, Strings.ActionShrinkSelection).Command!;
+
+        Assert.False(grow.CanExecute(null));
+        Assert.False(shrink.CanExecute(null));
+
+        SelectionEdits.Select(_canvas.Session,
+            SelectionMask.Rectangle(_canvas.Document.CanvasSize, new CellRect(2, 2, 1, 1)),
+            UndoStepNames.RectangleSelect);
+
+        Assert.True(grow.CanExecute(null));
+        Assert.True(shrink.CanExecute(null));
+
+        grow.Execute(null);
+
+        Assert.True(_canvas.Session.Selection.Mask.Contains(new CellPoint(1, 1)));
+        Assert.True(_canvas.Session.Selection.Mask.Contains(new CellPoint(3, 3)));
     }
 
     [AvaloniaFact]

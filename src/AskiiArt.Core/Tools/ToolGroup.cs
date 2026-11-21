@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-// Written with Claude Code (Anthropic).
-
 namespace AskiiArt.Core.Tools;
 
 /// <summary>
@@ -23,4 +20,11 @@ public sealed record ToolGroup(
     string NameKey,
     string IconKey,
     char? ShortcutLetter,
-    IReadOnlyList<string> ToolIds);
+    IReadOnlyList<string> ToolIds)
+{
+    /// <summary>
+    /// Capital letters that pick one of the group's tools directly, by letter, as W picks the Magic Wand (ADR 0063).
+    /// None by default.
+    /// </summary>
+    public IReadOnlyDictionary<char, string> ToolLetters { get; init; } = new Dictionary<char, string>();
+}

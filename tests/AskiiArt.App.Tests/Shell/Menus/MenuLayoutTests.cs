@@ -173,7 +173,13 @@ public sealed class MenuLayoutTests
     private static void AssertIsSelectMenu(MenuDefinition select)
     {
         Assert.Equal(nameof(Strings.MenuSelect), select.LabelKey);
-        Assert.Equal([SelectionActionIds.SelectAll, SelectionActionIds.Deselect], ActionIdsIn(select.Entries));
+        Assert.Equal(
+            [
+                SelectionActionIds.SelectAll, SelectionActionIds.Deselect, SelectionActionIds.Invert,
+                SelectionActionIds.Grow, SelectionActionIds.Shrink, SelectionActionIds.SelectCellsWithGlyphs,
+                SelectionActionIds.SelectCellsWithBackground
+            ],
+            ActionIdsIn(select.Entries));
     }
 
     private static void AssertIsDocumentMenu(MenuDefinition document)
@@ -211,6 +217,7 @@ public sealed class MenuLayoutTests
                 ToolActionIds.EllipseSelect,
                 ToolActionIds.Lasso,
                 ToolActionIds.PolygonalLasso,
+                ToolActionIds.MagicWand,
                 ToolActionIds.Text,
                 ToolActionIds.Brush,
                 ToolActionIds.ForegroundBrush,

@@ -17,7 +17,8 @@ public sealed class SelectionMotionTests
     private static readonly CanvasSize _size = new(4, 4);
 
     private static readonly SelectionLook _look = new(SKColors.Black, SKColors.White, SKColors.Red, SKColors.DarkRed,
-        SKColors.Blue, SKColors.DarkBlue, HatchPeriod: 100, HatchThickness: 1, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
+        SKColors.Blue, SKColors.DarkBlue, SKColors.Red, SKColors.DarkRed, SKColors.Blue, SKColors.DarkBlue,
+        HatchBandWidth: 40, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
         IntersectHatchSpeed: 0.6, HatchStepsPerPixel: 1, FaintOpacity: 0.3, VanishingOpacity: 0.1,
         LostHatchOpacity: 0.7, GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5,
         CornerMarkerRadius: 3, FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
@@ -51,7 +52,7 @@ public sealed class SelectionMotionTests
     [Fact]
     public void TheHatchingsShift_StaysWithinOneTile()
     {
-        var motion = SelectionMotion.At(Seconds(9), Seconds(2), display: null, _look with { HatchPeriod = 8 },
+        var motion = SelectionMotion.At(Seconds(9), Seconds(2), display: null, _look with { HatchBandWidth = 3 },
             DashSpeed, DashLength);
 
         Assert.Equal(20 % 8, motion.UnselectedHatchShift);

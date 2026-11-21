@@ -19,6 +19,7 @@ internal static class ToolActionIds
     public const string EllipseSelect = Prefix + EllipseSelectTool.Id;
     public const string Lasso = Prefix + LassoTool.Id;
     public const string PolygonalLasso = Prefix + PolygonalLassoTool.Id;
+    public const string MagicWand = Prefix + MagicWandTool.Id;
     public const string Text = Prefix + TextTool.Id;
     public const string Brush = Prefix + BrushTool.Id;
     public const string ForegroundBrush = Prefix + ColorBrushTool.ForegroundId;

@@ -19,6 +19,7 @@ public sealed class ToolRegistryTests
         EllipseSelectTool.Definition,
         LassoTool.Definition,
         PolygonalLassoTool.Definition,
+        MagicWandTool.Definition,
         TextTool.Definition,
         BrushTool.Definition,
         ColorBrushTool.ForegroundDefinition,
@@ -36,8 +37,9 @@ public sealed class ToolRegistryTests
 
         Assert.Equal(["V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
         Assert.Equal(
-            [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id],
+            [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id, MagicWandTool.Id],
             registry.GroupOf(LassoTool.Id).ToolIds);
+        Assert.Equal(MagicWandTool.Id, BuiltInToolGroups.Select.ToolLetters['W']);
         Assert.Equal(
             [BrushTool.Id, ColorBrushTool.ForegroundId, ColorBrushTool.BackgroundId, CharacterBrushTool.Id],
             registry.GroupOf(ColorBrushTool.BackgroundId).ToolIds);
@@ -113,6 +115,30 @@ public sealed class ToolRegistryTests
             new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Text, sameId]));
         Assert.Throws<ArgumentException>(() =>
             new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Hand, sameLetter]));
+    }
+
+    [Fact]
+    public void AToolLetterThatIsAnotherGroupsLetter_IsRejected()
+    {
+        var text = BuiltInToolGroups.Text with
+        {
+            ToolLetters = new Dictionary<char, string> { ['V'] = TextTool.Id }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Hand, text]));
+    }
+
+    [Fact]
+    public void AToolLetterForAnotherGroupsTool_IsRejected()
+    {
+        var text = BuiltInToolGroups.Text with
+        {
+            ToolLetters = new Dictionary<char, string> { ['W'] = HandTool.Id }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Hand, text]));
     }
 
     [Fact]

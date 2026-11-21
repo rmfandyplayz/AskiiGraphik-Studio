@@ -171,6 +171,39 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
         }
     }
 
+    /// <summary>Every cell of the canvas this mask doesn't select, and none that it does.</summary>
+    public SelectionMask Inverted() => All(CanvasSize).CombinedWith(this, SelectionCombineMode.Subtract);
+
+    /// <summary>
+    /// The selection grown by one cell all round: every cell that touches a selected one, along a side or at a
+    /// corner, is selected too (ADR 0063).
+    /// </summary>
+    public SelectionMask Grown()
+    {
+        if (IsEmpty)
+            return this;
+
+        var area = CellRect.FromEdges(Bounds.Left - 1, Bounds.Top - 1, Bounds.Right + 1, Bounds.Bottom + 1);
+        var builder = new SelectionMaskBuilder(CanvasSize, area);
+        for (var row = Bounds.Top; row < Bounds.Bottom; row++)
+        {
+            foreach (var (column, length) in RunsInRow(row))
+            {
+                for (var target = row - 1; target <= row + 1; target++)
+                    builder.AddRun(target, column - 1, length + 2);
+            }
+        }
+
+        return builder.Build();
+    }
+
+    /// <summary>
+    /// The selection shrunk by one cell all round: every selected cell that touches an unselected one, along a side
+    /// or at a corner, is left out (ADR 0063). The canvas's edges don't count as unselected cells, so selected cells
+    /// along them stay.
+    /// </summary>
+    public SelectionMask Shrunk() => Inverted().Grown().Inverted();
+
     /// <inheritdoc/>
     public bool Equals(SelectionMask? other)
     {
