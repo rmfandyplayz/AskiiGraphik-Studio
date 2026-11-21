@@ -176,7 +176,7 @@ public sealed class TextTool : ITool
             return true;
 
         var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(Document, layer.Id);
+        var cells = _session.EditCellsInSelection(layer.Id);
         var foreground = _colors.ForegroundIn(Document.ColorMode);
         var background = _colors.BackgroundIn(Document.ColorMode);
         var block = BlockAround(caret);
@@ -240,7 +240,7 @@ public sealed class TextTool : ITool
             return;
 
         var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(Document, layer.Id);
+        var cells = _session.EditCellsInSelection(layer.Id);
         cells.Set(point, layer.GetCell(point).WithoutGlyph());
         Execute(cells.Build(UndoStepNames.Typing));
         _backspaceErasesCaretCell = false;

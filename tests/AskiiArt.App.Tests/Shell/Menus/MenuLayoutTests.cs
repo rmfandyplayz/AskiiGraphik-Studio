@@ -166,7 +166,11 @@ public sealed class MenuLayoutTests
     private static void AssertIsEditMenu(MenuDefinition edit)
     {
         Assert.Equal(nameof(Strings.MenuEdit), edit.LabelKey);
-        Assert.Equal([EditActionIds.Undo, EditActionIds.Redo, EditActionIds.CopyAsText, EditActionIds.CopyAsAnsi],
+        Assert.Equal(
+            [
+                EditActionIds.Undo, EditActionIds.Redo, EditActionIds.CopyAsText, EditActionIds.CopyAsAnsi,
+                SelectionActionIds.DeleteSelectedCells
+            ],
             ActionIdsIn(edit.Entries));
     }
 

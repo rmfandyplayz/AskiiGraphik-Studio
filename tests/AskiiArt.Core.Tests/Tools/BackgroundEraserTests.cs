@@ -78,6 +78,24 @@ public sealed class BackgroundEraserTests
         Assert.Null(EraserTool.Definition.WarningFor);
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_ADrag_TakesAwayOnlyTheirBackgrounds()
+    {
+        for (var x = 0; x < 4; x++)
+            Layer.SetCell(new CellPoint(x, 0), Cell.FromBackground(_red));
+
+        TestTools.Select(_session, "·##·");
+
+        _tool.PointerPressed(PointerAt(0, 0));
+        _tool.PointerMoved(PointerAt(3, 0));
+        _tool.PointerReleased(PointerAt(3, 0));
+
+        Assert.Equal(Cell.FromBackground(_red), CellAt(0, 0));
+        Assert.Equal(Cell.Empty, CellAt(1, 0));
+        Assert.Equal(Cell.Empty, CellAt(2, 0));
+        Assert.Equal(Cell.FromBackground(_red), CellAt(3, 0));
+    }
+
     private Cell CellAt(int x, int y) => Layer.GetCell(new CellPoint(x, y));
 
     private static ToolPointerInput PointerAt(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);

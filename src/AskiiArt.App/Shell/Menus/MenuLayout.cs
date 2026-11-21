@@ -64,7 +64,9 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(EditActionIds.Redo),
             new SeparatorMenuEntry(),
             new ActionMenuEntry(EditActionIds.CopyAsText),
-            new ActionMenuEntry(EditActionIds.CopyAsAnsi)
+            new ActionMenuEntry(EditActionIds.CopyAsAnsi),
+            new SeparatorMenuEntry(),
+            new ActionMenuEntry(SelectionActionIds.DeleteSelectedCells)
         ]);
 
         var selectMenu = new MenuDefinition(nameof(Strings.MenuSelect),

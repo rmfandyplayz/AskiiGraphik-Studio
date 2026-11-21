@@ -10,8 +10,8 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <summary>
 /// Paints a <see cref="CanvasScene"/> onto a Skia canvas whose units are device pixels. Draw order
 /// follows ARCHITECTURE §12: the composite (paper, cell backgrounds, missing-glyph flags, glyphs),
-/// then grid lines, the selection's hatching and outlines, the hover highlight, the caret, the brush outline,
-/// and the tool's line and markers. Safe to call from the render thread.
+/// then grid lines, the selection's hatching (left off the hovered cell) and outlines, the hover highlight, the
+/// caret, the brush outline, and the tool's line and markers. Safe to call from the render thread.
 /// </summary>
 internal static class CanvasScenePainter
 {
@@ -60,8 +60,14 @@ internal static class CanvasScenePainter
         if (scene.IsGridVisible && viewport.CellSize.Width >= MinimumCellWidthForGrid)
             DrawGrid(canvas, paint, viewport, colors.GridLine, scene.GridShade);
 
+        // The hatching leaves the hovered cell out, so its faint highlight reads as on top rather than striped.
+        canvas.Save();
+        if (scene.HoveredCell is { } underPointer)
+            canvas.ClipRect(ToSkRect(underPointer), SKClipOperation.Difference);
+
         DrawHatch(canvas, paint, scene.UnselectedHatch, viewport);
         DrawHatch(canvas, paint, scene.LostHatch, viewport);
+        canvas.Restore();
         foreach (var pass in scene.SelectionOutlines)
             DrawSelectionOutline(canvas, paint, pass, scene.SelectionDashLength, viewport.CanvasOrigin);
 

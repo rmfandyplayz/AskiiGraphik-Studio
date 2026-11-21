@@ -44,3 +44,5 @@ Updated 2026-11-20: after the owner's visual check, outlines got a third strengt
 Updated 2026-11-20 (step 4.2c): every hatching moves at the dash speed, in part-pixel steps with thicker lines (ADR 0062), and a preview follows an undo or redo made during the gesture.
 
 Updated 2026-11-20 (step 4.3): the hatching is dark and light stripes side by side with no gaps, and Subtract's and Intersect's dashes are lighter than their hatching, in colours of their own (ADR 0064).
+
+Updated 2026-11-21 (step 4.4): the hatching leaves out the cell under the pointer, so the hover highlight shows over it unstriped.

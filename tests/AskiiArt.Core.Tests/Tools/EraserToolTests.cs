@@ -325,6 +325,18 @@ public sealed class EraserToolTests
         }
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_ADrag_ErasesOnlyThem()
+    {
+        TestTools.Select(_session, "······", "··##··", "······");
+
+        Press(0, 1);
+        Move(5, 1);
+        Release(5, 1);
+
+        Assert.Equal(["abcdef", "gh··kl", "mnopqr"], TestCells.Read(Layer));
+    }
+
     private void Press(int x, int y) => _tool.PointerPressed(Input(x, y));
 
     private void Move(int x, int y) => _tool.PointerMoved(Input(x, y));

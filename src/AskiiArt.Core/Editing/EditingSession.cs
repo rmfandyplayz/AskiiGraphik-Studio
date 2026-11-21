@@ -68,6 +68,14 @@ public sealed class EditingSession
     /// <summary>False when tools must leave the active layer alone: it's locked, or hidden, where a change couldn't be seen.</summary>
     public bool CanEditActiveLayer => ActiveLayer.Properties is { IsLocked: false, IsVisible: true };
 
+    /// <summary>
+    /// Starts collecting a tool's changes to the layer with <paramref name="layerId"/>, kept to the selected cells
+    /// while anything is selected (ARCHITECTURE §10, ADR 0065).
+    /// </summary>
+    /// <exception cref="KeyNotFoundException">The document has no such layer.</exception>
+    public CellEditBuilder EditCellsInSelection(Guid layerId) =>
+        new(Document, layerId, Selection.IsEmpty ? null : Selection.Mask);
+
     /// <summary>Makes the layer with <paramref name="layerId"/> the one tools draw on.</summary>
     /// <exception cref="KeyNotFoundException">The document has no such layer.</exception>
     public void SetActiveLayer(Guid layerId)

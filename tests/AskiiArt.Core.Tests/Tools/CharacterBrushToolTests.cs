@@ -241,6 +241,18 @@ public sealed class CharacterBrushToolTests
         return settings;
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_ADrag_PutsTheCharacterOnlyInThem()
+    {
+        TestTools.Select(_session, "······", "···##·", "······");
+
+        Press(0, 1);
+        Move(5, 1);
+        Release(5, 1);
+
+        Assert.Equal(["abc···", $"ghi{Character}{Character}·", "mno···"], TestCells.Read(Layer));
+    }
+
     private static ToolPointerInput Input(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
         new(new CellPoint(x, y), 0.5, 0.5, modifiers);
 

@@ -98,4 +98,7 @@ public static class UndoStepNames
 
     /// <summary>Selecting the active layer's cells that have a background colour.</summary>
     public const string SelectCellsWithBackground = "UndoStepSelectCellsWithBackground";
+
+    /// <summary>Emptying the active layer's selected cells.</summary>
+    public const string DeleteSelectedCells = "UndoStepDeleteSelectedCells";
 }

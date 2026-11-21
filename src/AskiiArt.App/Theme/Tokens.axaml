@@ -18,8 +18,8 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
       <SolidColorBrush x:Key="AppCanvasSelectionBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="AppCanvasSelectionBackdropBrush" Color="#FFFFFFFF" />
-      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#66000000" />
-      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#66FFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#26000000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#26FFFFFF" />
       <SolidColorBrush x:Key="AppCanvasSelectionSubtractBrush" Color="#FFFF9C96" />
       <SolidColorBrush x:Key="AppCanvasSelectionSubtractBackdropBrush" Color="#FF5C0000" />
       <SolidColorBrush x:Key="AppCanvasSelectionIntersectBrush" Color="#FF9DC0F2" />
@@ -58,8 +58,8 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
       <SolidColorBrush x:Key="AppCanvasSelectionBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="AppCanvasSelectionBackdropBrush" Color="#FFFFFFFF" />
-      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#66000000" />
-      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#66FFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#26000000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#26FFFFFF" />
       <SolidColorBrush x:Key="AppCanvasSelectionSubtractBrush" Color="#FFFF9C96" />
       <SolidColorBrush x:Key="AppCanvasSelectionSubtractBackdropBrush" Color="#FF5C0000" />
       <SolidColorBrush x:Key="AppCanvasSelectionIntersectBrush" Color="#FF9DC0F2" />
@@ -117,7 +117,7 @@
        this strongly under the hatching. The shape's lines that won't be kept show this faintly, and the old
        selection's this faintly. A lasso shows how it would close this faintly. The Polygonal Lasso's corners have
        dots this big and this strong, and its first corner a marker this big, which finishes the shape when clicked. -->
-  <x:Double x:Key="AppCanvasSelectionHatchBandWidth">12</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchBandWidth">8</x:Double>
   <x:Double x:Key="AppCanvasSelectionHatchSpeed">1</x:Double>
   <x:Double x:Key="AppCanvasSelectionHatchStepsPerPixel">8</x:Double>
   <x:Double x:Key="AppCanvasSelectionLostHatchOpacity">0.4</x:Double>

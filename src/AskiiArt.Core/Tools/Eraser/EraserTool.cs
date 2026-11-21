@@ -205,7 +205,7 @@ public sealed class EraserTool : ITool
 
         var document = _session.Document;
         var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(document, layer.Id);
+        var cells = _session.EditCellsInSelection(layer.Id);
         foreach (var point in FootprintSweep.Cover(_strokeFootprint, fromTopLeft, toTopLeft, document.CanvasSize))
             cells.Set(point, Erased(layer.GetCell(point)));
 

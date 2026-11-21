@@ -283,6 +283,19 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Empties the active layer's selected cells, for the Delete and Backspace keys on the canvas (ADR 0065). Returns
+    /// false, leaving the key unused, when nothing is selected or the active layer is locked or hidden.
+    /// </summary>
+    public bool TryDeleteSelectedCells()
+    {
+        if (!SelectionContents.CanClear(Session))
+            return false;
+
+        SelectionContents.Clear(Session);
+        return true;
+    }
+
+    /// <summary>
     /// Uses a number key typed on the canvas (ADR 0049): 1 chooses the first tool of the chosen tool's group, 2 the
     /// second and so on. Returns false when the group has no tool with that number, or when the active tool is
     /// taking text, which is what the key is for then.

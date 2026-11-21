@@ -3,6 +3,7 @@
 
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tests.Selection;
 
 namespace AskiiArt.Core.Tests.Commands;
 
@@ -63,6 +64,37 @@ public sealed class CellEditCommandTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => builder.Set(new CellPoint(2, 0), TestCells.Glyph('x')));
         Assert.Throws<KeyNotFoundException>(() => new CellEditBuilder(document, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void Builder_WithAClip_LeavesOutTheCellsOutsideIt()
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var layer = document.ActiveFrame.Layers[0];
+        var builder = new CellEditBuilder(document, layer.Id, TestMasks.Parse("·#·", "#··"));
+
+        builder.Set(new CellPoint(0, 0), TestCells.Glyph('X'));
+        builder.Set(new CellPoint(1, 0), TestCells.Glyph('Y'));
+        builder.Set(new CellPoint(0, 1), TestCells.Glyph('Z'));
+        builder.Set(new CellPoint(2, 1), TestCells.Glyph('W'));
+        var command = builder.Build();
+
+        Assert.NotNull(command);
+        Assert.Equal(
+            [new CellEdit(1, Cell.Empty, TestCells.Glyph('Y')), new CellEdit(3, Cell.Empty, TestCells.Glyph('Z'))],
+            command.Edits);
+    }
+
+    [Fact]
+    public void Builder_WithAClip_ReturnsNullWhenEveryCellSetIsOutsideIt_AndStillRejectsPointsOffTheCanvas()
+    {
+        var document = TestCells.CreateDocument(3, 2);
+        var builder = new CellEditBuilder(document, document.ActiveFrame.Layers[0].Id, TestMasks.Parse("·#·", "···"));
+
+        builder.Set(new CellPoint(0, 0), TestCells.Glyph('X'));
+
+        Assert.Null(builder.Build());
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.Set(new CellPoint(3, 0), TestCells.Glyph('X')));
     }
 
     [Fact]

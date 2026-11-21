@@ -4,6 +4,7 @@
 using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
+using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Selection;
 using Avalonia.Input;
@@ -13,8 +14,9 @@ namespace AskiiArt.App.Selection;
 
 /// <summary>
 /// The Select menu's commands, for the active document's selection (ADR 0055, ADR 0063): Select All, Deselect, Invert,
-/// Grow, Shrink, and selecting the cells with glyphs or with a background colour. Each is an undo step. Deselect, Grow
-/// and Shrink are available only while something is selected.
+/// Grow, Shrink, and selecting the cells with glyphs or with a background colour, plus the Edit menu's Delete, which
+/// empties the selected cells of the active layer (ADR 0065). Each is an undo step. Deselect, Grow and Shrink are
+/// available only while something is selected, and Delete only while the active layer can be changed too.
 /// </summary>
 internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionProvider
 {
@@ -27,16 +29,19 @@ internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionP
         var shrink = new RelayCommand(() => SelectionEdits.Shrink(Session), IsAnythingSelected);
         var selectCellsWithGlyphs = new RelayCommand(() => SelectionEdits.SelectCellsWithGlyphs(Session));
         var selectCellsWithBackground = new RelayCommand(() => SelectionEdits.SelectCellsWithBackground(Session));
-        RelayCommand[] needingSelection = [deselect, grow, shrink];
+        var deleteSelectedCells = new RelayCommand(() => SelectionContents.Clear(Session),
+            () => SelectionContents.CanClear(Session));
+        RelayCommand[] needingSelection = [deselect, grow, shrink, deleteSelectedCells];
 
-        // New brings a new selection, so the commands that need one follow whichever is current.
-        var followedSelection = Session.Selection;
-        followedSelection.Changed += OnSelectionChanged;
+        // New brings a new session, so the commands that need a selection follow whichever is current. Delete also
+        // follows the active layer, and the document's changes, which lock, unlock, hide and show it.
+        var followedSession = Session;
+        Follow(followedSession);
         activeDocument.SessionChanged += (_, _) =>
         {
-            followedSelection.Changed -= OnSelectionChanged;
-            followedSelection = Session.Selection;
-            followedSelection.Changed += OnSelectionChanged;
+            Unfollow(followedSession);
+            followedSession = Session;
+            Follow(followedSession);
             NotifyNeedingSelection();
         };
 
@@ -53,7 +58,31 @@ internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionP
         yield return new AppAction(SelectionActionIds.SelectCellsWithBackground,
             nameof(Strings.ActionSelectCellsWithBackground), selectCellsWithBackground, []);
 
+        // The Delete and Backspace keys reach it through the canvas rather than as shortcuts, so they keep editing
+        // text in text boxes and at the Text tool's caret (CanvasView).
+        yield return new AppAction(SelectionActionIds.DeleteSelectedCells, nameof(Strings.ActionDeleteSelectedCells),
+            deleteSelectedCells, []);
+
+        void Follow(EditingSession session)
+        {
+            session.Selection.Changed += OnSelectionChanged;
+            session.ActiveLayerChanged += OnSessionChanged;
+            session.Document.Changed += OnDocumentChanged;
+        }
+
+        void Unfollow(EditingSession session)
+        {
+            session.Selection.Changed -= OnSelectionChanged;
+            session.ActiveLayerChanged -= OnSessionChanged;
+            session.Document.Changed -= OnDocumentChanged;
+        }
+
         void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e) => NotifyNeedingSelection();
+
+        void OnSessionChanged(object? sender, EventArgs e) => NotifyNeedingSelection();
+
+        void OnDocumentChanged(object? sender, DocumentChangedEventArgs e) =>
+            deleteSelectedCells.NotifyCanExecuteChanged();
 
         void NotifyNeedingSelection()
         {

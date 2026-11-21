@@ -434,6 +434,23 @@ public sealed class BrushToolTests
         _options.Set(RampBrushOptions.Softness, softness);
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_ADrag_PaintsOnlyThem()
+    {
+        TestTools.Select(_session, "······", "·##···", "······");
+
+        Press(0, 1);
+        Move(5, 1);
+        Release(5, 1);
+
+        var rows = TestCells.Read(Layer);
+        Assert.Equal("······", rows[0]);
+        Assert.Equal('·', rows[1][0]);
+        Assert.DoesNotContain('·', rows[1][1..3]);
+        Assert.Equal("···", rows[1][3..]);
+        Assert.Equal("······", rows[2]);
+    }
+
     private Cell CellAt(int x, int y) => Layer.GetCell(new CellPoint(x, y));
 
     private void Click(int x, int y)

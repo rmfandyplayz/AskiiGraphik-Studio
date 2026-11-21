@@ -13,4 +13,5 @@ internal static class SelectionActionIds
     public const string Shrink = "askiiart.select.shrink";
     public const string SelectCellsWithGlyphs = "askiiart.select.cellsWithGlyphs";
     public const string SelectCellsWithBackground = "askiiart.select.cellsWithBackground";
+    public const string DeleteSelectedCells = "askiiart.select.deleteCells";
 }

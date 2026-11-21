@@ -86,6 +86,21 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
     }
 
     [Fact]
+    public void TheHoveredCell_ShowsOverTheHatching_WithNoStripesThroughIt()
+    {
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport, new CanvasOverlays(false, new CellPoint(0, 1),
+            Selection: SelectionDisplay.For(Rectangle(3, 0, 1, 1), null), Look: _look));
+
+        // Half-strength green over white paper, the same in every pixel.
+        var hovered = InsideOf(bitmap, viewport, new CellPoint(0, 1));
+        Assert.All(hovered, pixel => Assert.Equal(hovered[0], pixel));
+        Assert.False(IsBluish(hovered[0]), hovered[0].ToString());
+        Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(1, 1)), IsBluish);
+    }
+
+    [Fact]
     public void TheHatching_IsAZebra_OfDarkAndLightStripesWithNoGapsBetween()
     {
         var viewport = CreateViewport();

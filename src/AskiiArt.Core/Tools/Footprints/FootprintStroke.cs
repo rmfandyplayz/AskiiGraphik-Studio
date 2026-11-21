@@ -71,7 +71,7 @@ internal sealed class FootprintStroke
 
         var document = _session.Document;
         var layer = _session.ActiveLayer;
-        var cells = new CellEditBuilder(document, layer.Id);
+        var cells = _session.EditCellsInSelection(layer.Id);
         foreach (var point in FootprintSweep.Cover(Footprint, fromTopLeft, toTopLeft, document.CanvasSize))
         {
             var cell = layer.GetCell(point);

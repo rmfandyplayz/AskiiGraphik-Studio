@@ -437,6 +437,21 @@ public sealed class ColorBrushToolTests
         _tool = new ColorBrushTool(PaintColorTarget.Background, _session, _colors, TestTools.Tip(_tipValues));
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_ADrag_ColoursOnlyThem()
+    {
+        TestTools.Select(_session, "······", "·#····", "······");
+        var before = Layer.GetCell(new CellPoint(0, 1));
+
+        Press(0, 1);
+        Move(2, 1);
+        Release(2, 1);
+
+        Assert.Equal(before, Layer.GetCell(new CellPoint(0, 1)));
+        Assert.Equal(_red, Layer.GetCell(new CellPoint(1, 1)).Foreground);
+        Assert.NotEqual(_red, Layer.GetCell(new CellPoint(2, 1)).Foreground);
+    }
+
     private void Press(int x, int y, ToolModifiers modifiers = ToolModifiers.None) =>
         _tool.PointerPressed(new ToolPointerInput(new CellPoint(x, y), 0.5, 0.5, modifiers));
 

@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Commands;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Ramps;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tests.Ramps;
+using AskiiArt.Core.Tests.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Options;
@@ -54,6 +57,13 @@ internal static class TestTools
     /// </summary>
     public static RampSource Ramp(ToolOptionValues values, RampLibrary? ramps = null) =>
         new(values, ramps ?? new RampLibrary());
+
+    /// <summary>
+    /// Selects the cells marked '#' in <paramref name="rows"/>, which cover the whole canvas, as a selection tool
+    /// would.
+    /// </summary>
+    public static void Select(EditingSession session, params string[] rows) =>
+        SelectionEdits.Select(session, TestMasks.Parse(rows), UndoStepNames.RectangleSelect);
 
     /// <summary>Sets <paramref name="values"/> to a mathematical tip of <paramref name="size"/> and shape.</summary>
     public static void SetTip(ToolOptionValues values, int size, string shape = "square")

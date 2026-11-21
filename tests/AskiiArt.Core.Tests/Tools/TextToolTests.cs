@@ -559,6 +559,47 @@ public sealed class TextToolTests
             () => new ToolRegistry([TextTool.Definition, TextTool.Definition], [BuiltInToolGroups.Text]));
     }
 
+    [Fact]
+    public void WhileCellsAreSelected_TypingWritesOnlyInThem_ButTheCaretMovesOnAnyway()
+    {
+        TestTools.Select(_session, "·##···", "······", "······");
+        Click(0, 0);
+
+        Type("abcd");
+
+        Assert.Equal(["·bc···", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(4, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void WhileCellsAreSelected_TypingOnlyOutsideThem_MakesNoStep_ButMovesTheCaret()
+    {
+        TestTools.Select(_session, "·····#", "······", "······");
+        var steps = History.UndoCount;
+        Click(0, 0);
+
+        Type("ab");
+
+        Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(steps, History.UndoCount);
+        Assert.Equal(new CellPoint(2, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void WhileCellsAreSelected_BackspaceErasesOnlyThem_ButTheCaretMovesBackAnyway()
+    {
+        TestCells.Paint(Layer, "abcdef");
+        TestTools.Select(_session, "·##···", "······", "······");
+        Click(4, 0);
+        Type("E");
+
+        for (var i = 0; i < 4; i++)
+            Press(ToolKey.Backspace);
+
+        Assert.Equal(["a··def", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(1, 0), _tool.Caret);
+    }
+
     private static ToolPointerInput PointerAt(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);
 
     private void Click(int x, int y) => _tool.PointerPressed(PointerAt(x, y));

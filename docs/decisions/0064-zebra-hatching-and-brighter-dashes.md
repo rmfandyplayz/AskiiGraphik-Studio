@@ -26,3 +26,5 @@ After step 4.2c the owner confirmed the flicker was gone (ADR 0062) and asked fo
 
 - Stripes at 40% hide more of the art than the thin lines did. All the values are tokens, listed in `docs/TEMPORARY-UI.md`.
 - The motion is unchanged: the tile still glides in part-pixel steps (ADR 0062).
+
+Updated 2026-11-21 (step 4.4): after the owner's 4.3 testing, every stripe is 8 logical pixels wide, and the black and white stripes are 15%. The coloured hatching stays at 40%.

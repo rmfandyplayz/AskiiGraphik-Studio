@@ -520,6 +520,10 @@
     <value>Copy as _ANSI</value>
     <comment>Copies the visible art to the clipboard with the escape codes terminals use for colour.</comment>
   </data>
+  <data name="ActionDeleteSelectedCells" xml:space="preserve">
+    <value>_Delete</value>
+    <comment>Edit menu: empties the selected cells of the active layer, taking away their characters, colours and backgrounds. The selection stays. Delete and Backspace on the canvas do the same, except while the Text tool's caret shows.</comment>
+  </data>
   <data name="MenuSelect" xml:space="preserve">
     <value>_Select</value>
   </data>
@@ -804,6 +808,10 @@
   <data name="UndoStepSelectCellsWithBackground" xml:space="preserve">
     <value>Select Cells with Background Color</value>
     <comment>History: Select, Select Cells with Background Color.</comment>
+  </data>
+  <data name="UndoStepDeleteSelectedCells" xml:space="preserve">
+    <value>Delete</value>
+    <comment>History: emptying the selected cells with Edit, Delete or the Delete or Backspace key.</comment>
   </data>
   <data name="UndoStepSetLayerProperties" xml:space="preserve">
     <value>Change Layer</value>
