@@ -302,7 +302,7 @@ public sealed class CanvasRenderingTests : IDisposable
 
         var topLeft = viewport.GetCellBounds(new CellPoint(1, 0));
         var bottomRight = viewport.GetCellBounds(new CellPoint(2, 1));
-        Assert.Equal(4, scene.SelectionOutline.Count);
+        Assert.Equal(4, scene.SelectionOutlines.Single().Strips.Count);
         Assert.Equal([SKColors.Black, SKColors.Yellow], OutlineColours(bitmap, topLeft.X, topLeft.Y, topLeft.Width));
         Assert.Equal(SKColors.White, CentreOf(bitmap, topLeft));
         Assert.Equal(SKColors.White, bitmap.GetPixel(topLeft.Right - 1, topLeft.Y + topLeft.Height / 2));
@@ -352,8 +352,9 @@ public sealed class CanvasRenderingTests : IDisposable
 
         using var scene = Build(viewport, selection: SelectionMask.All(new CanvasSize(4, 2)));
 
-        Assert.Equal(2, scene.SelectionOutline.Count);
-        Assert.All(scene.SelectionOutline,
+        var strips = scene.SelectionOutlines.Single().Strips;
+        Assert.Equal(2, strips.Count);
+        Assert.All(strips,
             strip => Assert.True(strip.Rect.Right <= CellSize.Width && strip.Rect.Bottom <= CellSize.Height));
     }
 
@@ -366,7 +367,7 @@ public sealed class CanvasRenderingTests : IDisposable
 
         using var scene = Build(CreateViewport(), selection: selection);
 
-        Assert.Empty(scene.SelectionOutline);
+        Assert.Empty(scene.SelectionOutlines);
     }
 
     [Fact]
@@ -472,8 +473,8 @@ public sealed class CanvasRenderingTests : IDisposable
         CellPoint? caret = null, BrushOutline? brush = null, SelectionMask? selection = null,
         int selectionDashOffset = 0) =>
         _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
-            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush, selection,
-                SelectionDashOffset: selectionDashOffset));
+            new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush,
+                SelectionDisplay.For(selection, null), SelectionDashOffset: selectionDashOffset));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

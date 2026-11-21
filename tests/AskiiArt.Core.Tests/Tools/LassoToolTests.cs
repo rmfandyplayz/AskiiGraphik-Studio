@@ -53,6 +53,20 @@ public sealed class LassoToolTests
     }
 
     [Fact]
+    public void WhileDrawing_TheOverlayPreviewsWhatLettingGoWouldSelect_AndHowThePathWouldClose()
+    {
+        Press(0.25, 0.25);
+        Move(3.75, 0.25);
+        Move(3.75, 2.75);
+        Move(0.25, 2.75);
+
+        var overlay = _tool.Overlay;
+        Assert.Equal(["####·", "####·", "####·", "·····"], TestMasks.Describe(overlay.SelectionPreview!.Result));
+        Assert.True(overlay.ShowsPathClosing);
+        Assert.True(_session.Selection.IsEmpty);
+    }
+
+    [Fact]
     public void TinyMoves_DontAddToThePath()
     {
         Press(1.5, 1.5);

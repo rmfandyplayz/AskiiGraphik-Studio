@@ -15,6 +15,9 @@ public sealed class PolygonalLassoToolTests
 {
     private static readonly string[] _square = ["####·", "####·", "####·", "·····"];
 
+    // A marker half a cell across and down, as at a zoom where cells are twice the marker's radius.
+    private static readonly ToolMarkerReach _reach = new(0.5, 0.5);
+
     private readonly EditingSession _session = new(TestCells.CreateDocument(5, 4));
     private readonly PolygonalLassoTool _tool;
 
@@ -125,6 +128,81 @@ public sealed class PolygonalLassoToolTests
     }
 
     [Fact]
+    public void AClickInTheFirstCornersCell_ButOffItsMarker_AddsACorner()
+    {
+        ClickTheSquaresCorners();
+        Click(0.95, 0.95);
+
+        Assert.True(_tool.IsDrawing);
+        Assert.Equal(5, _tool.Overlay.Markers?.Count);
+    }
+
+    [Fact]
+    public void AClickOnTheFirstCornersMarker_FromAnotherCell_Finishes()
+    {
+        Click(0.9, 0.9);
+        Click(3.75, 0.25);
+        Click(3.75, 2.75);
+        Click(1.2, 1.2);
+
+        Assert.False(_tool.IsDrawing);
+        Assert.Equal(1, _session.History.UndoCount);
+    }
+
+    [Fact]
+    public void EachCorner_HasAMarker_TheFirstFinishingTheShape()
+    {
+        Click(0.25, 0.25);
+        Click(3.75, 0.25);
+        Click(3.75, 2.75);
+        _tool.PointerMoved(Input(2.5, 2.5));
+
+        Assert.Equal(
+        [
+            new ToolMarker(new CanvasPoint(0.25, 0.25), ToolMarkerKind.Finish),
+            new ToolMarker(new CanvasPoint(3.75, 0.25), ToolMarkerKind.Corner),
+            new ToolMarker(new CanvasPoint(3.75, 2.75), ToolMarkerKind.Corner)
+        ], _tool.Overlay.Markers);
+    }
+
+    [Fact]
+    public void ThePointerOnTheFirstCornersMarker_LightsItUp_AndJoinsTheLineToIt()
+    {
+        ClickTheSquaresCorners();
+        _tool.PointerMoved(Input(0.4, 0.4));
+
+        var overlay = _tool.Overlay;
+        Assert.Equal(ToolMarkerKind.FinishUnderPointer, overlay.Markers?[0].Kind);
+        Assert.Equal(new CanvasPoint(0.25, 0.25), overlay.Path?[^1]);
+        Assert.False(overlay.ShowsPathClosing);
+        Assert.Equal(_square, TestMasks.Describe(overlay.SelectionPreview!.Result));
+    }
+
+    [Fact]
+    public void WithFewerThanThreeCorners_TheFirstCornerNeverLightsUp()
+    {
+        Click(0.25, 0.25);
+        Click(3.75, 0.25);
+        _tool.PointerMoved(Input(0.3, 0.3));
+
+        Assert.Equal(ToolMarkerKind.Finish, _tool.Overlay.Markers?[0].Kind);
+    }
+
+    [Fact]
+    public void TheOverlay_PreviewsWhatADoubleClickWhereThePointerIsWouldSelect_AndHowTheShapeWouldClose()
+    {
+        Click(0.25, 0.25);
+        Click(3.75, 0.25);
+        Click(3.75, 2.75);
+        _tool.PointerMoved(Input(0.25, 2.75));
+
+        var overlay = _tool.Overlay;
+        Assert.Equal(_square, TestMasks.Describe(overlay.SelectionPreview!.Result));
+        Assert.True(overlay.ShowsPathClosing);
+        Assert.True(_session.Selection.IsEmpty);
+    }
+
+    [Fact]
     public void WithFewerThanThreeCorners_ClickingTheFirstCornerAddsAnother()
     {
         Click(0.25, 0.25);
@@ -177,7 +255,8 @@ public sealed class PolygonalLassoToolTests
         int clickCount = 1)
     {
         var cell = new CellPoint((int)Math.Floor(x), (int)Math.Floor(y));
-        return new ToolPointerInput(cell, x - cell.X, y - cell.Y, modifiers, ClickCount: clickCount);
+        return new ToolPointerInput(cell, x - cell.X, y - cell.Y, modifiers, ClickCount: clickCount,
+            MarkerReach: _reach);
     }
 
     private void ClickTheSquaresCorners()

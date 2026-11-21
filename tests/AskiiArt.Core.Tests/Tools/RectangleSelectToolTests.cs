@@ -134,11 +134,11 @@ public sealed class RectangleSelectToolTests
     public void WhileDragging_TheOverlayShowsTheRectangle_AndTheSelectionWaits()
     {
         Press(1, 1);
-        Assert.Null(_tool.Overlay.PendingSelection);
+        Assert.Null(_tool.Overlay.SelectionPreview);
 
         Move(2, 2);
 
-        var pending = _tool.Overlay.PendingSelection;
+        var pending = _tool.Overlay.SelectionPreview?.Result;
         Assert.NotNull(pending);
         Assert.Equal(["·····", "·##··", "·##··", "·····"], TestMasks.Describe(pending));
         Assert.True(_session.Selection.IsEmpty);
@@ -146,7 +146,7 @@ public sealed class RectangleSelectToolTests
 
         Release(2, 2);
 
-        Assert.Null(_tool.Overlay.PendingSelection);
+        Assert.Null(_tool.Overlay.SelectionPreview);
         Assert.Equal(2, _overlayChanges);
     }
 
@@ -162,7 +162,7 @@ public sealed class RectangleSelectToolTests
         Release(3, 3);
 
         Assert.Same(before, _session.Selection.Mask);
-        Assert.Null(_tool.Overlay.PendingSelection);
+        Assert.Null(_tool.Overlay.SelectionPreview);
         Assert.Equal(1, History.UndoCount);
     }
 
@@ -184,7 +184,7 @@ public sealed class RectangleSelectToolTests
         Release(3, 3);
 
         Assert.True(_session.Selection.IsEmpty);
-        Assert.Null(_tool.Overlay.PendingSelection);
+        Assert.Null(_tool.Overlay.SelectionPreview);
         Assert.False(History.CanUndo);
     }
 

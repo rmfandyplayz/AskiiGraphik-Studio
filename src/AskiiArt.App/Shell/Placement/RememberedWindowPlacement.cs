@@ -9,9 +9,9 @@ using Avalonia.Threading;
 namespace AskiiArt.App.Shell.Placement;
 
 /// <summary>
-/// Opens the main window where it was last time, on the same screen, at the same size, and maximized if it was
-/// (ADR 0059). It's saved when the window closes, as the layout is. If the screen it was on has gone, it opens in the
-/// middle of the main screen instead.
+/// Opens the main window where it was last time, on the same screen, at the same size, and maximized or full screen
+/// if it was (ADR 0059). It's saved when the window closes, as the layout is. If the screen it was on has gone, it
+/// opens in the middle of the main screen instead.
 /// </summary>
 internal sealed class RememberedWindowPlacement
 {
@@ -25,6 +25,7 @@ internal sealed class RememberedWindowPlacement
     private PixelPoint _position;
     private Size _size;
     private bool _isMaximized;
+    private bool _isFullScreen;
     private bool _isKnown;
     private bool _isNoteDue;
 
@@ -73,12 +74,15 @@ internal sealed class RememberedWindowPlacement
 
         _window.Width = size.Width;
         _window.Height = size.Height;
-        if (saved.IsMaximized)
+        if (saved.IsFullScreen)
+            _window.WindowState = WindowState.FullScreen;
+        else if (saved.IsMaximized)
             _window.WindowState = WindowState.Maximized;
 
         _position = _window.Position;
         _size = size;
         _isMaximized = saved.IsMaximized;
+        _isFullScreen = saved.IsFullScreen;
         _isKnown = true;
     }
 
@@ -110,23 +114,30 @@ internal sealed class RememberedWindowPlacement
         if (_window.PlatformImpl is null)
             return;
 
-        // Minimized or full screen, it keeps what was noted before, so it comes back as it was then.
-        if (_window.WindowState == WindowState.Maximized)
+        // Minimized, it keeps what was noted before, so it comes back as it was then. Full screen, it also remembers
+        // whether it was maximized before, which is how it comes back out of full screen.
+        switch (_window.WindowState)
         {
-            _isMaximized = true;
-        }
-        else if (_window.WindowState == WindowState.Normal)
-        {
-            _position = _window.Position;
-            _size = _window.ClientSize;
-            _isMaximized = false;
-            _isKnown = true;
+            case WindowState.FullScreen:
+                _isFullScreen = true;
+                break;
+            case WindowState.Maximized:
+                _isMaximized = true;
+                _isFullScreen = false;
+                break;
+            case WindowState.Normal:
+                _position = _window.Position;
+                _size = _window.ClientSize;
+                _isMaximized = false;
+                _isFullScreen = false;
+                _isKnown = true;
+                break;
         }
     }
 
     private void Save()
     {
         if (_isKnown)
-            _settings.SetText(SettingKey, new WindowPlacement(_position, _size, _isMaximized).ToJson());
+            _settings.SetText(SettingKey, new WindowPlacement(_position, _size, _isMaximized, _isFullScreen).ToJson());
     }
 }

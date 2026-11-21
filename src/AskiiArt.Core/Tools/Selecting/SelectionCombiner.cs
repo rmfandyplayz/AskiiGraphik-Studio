@@ -19,10 +19,14 @@ internal sealed class SelectionCombiner(EditingSession session, ToolOptionValues
     public void Start(ToolModifiers modifiers) =>
         Mode = SelectionToolOptions.ModeFor(modifiers, SelectionToolOptions.ReadMode(options));
 
+    /// <summary>What <paramref name="shape"/> would do to the selection, for the canvas to show meanwhile.</summary>
+    public SelectionPreview Preview(SelectionMask shape) => new(session.Selection.Mask, Mode, shape);
+
     /// <summary>
-    /// The selection <paramref name="shape"/> would make, for the canvas to outline during the gesture.
+    /// What the shape <paramref name="makeShape"/> makes would do to the selection, working the shape out only if the
+    /// canvas draws this preview.
     /// </summary>
-    public SelectionMask Preview(SelectionMask shape) => session.Selection.Mask.CombinedWith(shape, Mode);
+    public SelectionPreview Preview(Func<SelectionMask> makeShape) => new(session.Selection.Mask, Mode, makeShape);
 
     /// <summary>
     /// Ends the gesture with <paramref name="shape"/>, as one undo step named <paramref name="stepNameKey"/>. A shape
@@ -38,6 +42,6 @@ internal sealed class SelectionCombiner(EditingSession session, ToolOptionValues
             return;
         }
 
-        SelectionEdits.Select(session, session.Selection.Mask.CombinedWith(shape, Mode), stepNameKey);
+        SelectionEdits.Select(session, SelectionPreview.ResultOf(session.Selection.Mask, shape, Mode), stepNameKey);
     }
 }

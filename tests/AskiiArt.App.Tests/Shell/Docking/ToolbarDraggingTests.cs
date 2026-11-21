@@ -34,6 +34,7 @@ public sealed class ToolbarDraggingTests : IDisposable
     private readonly ActionRegistry _actions;
 
     private Window _window = null!;
+    private readonly FakeClock _clock = new();
     private DockingHost _host = null!;
     private double _toolbarWidth = 100;
     private TimeSpan _motionDuration = TimeSpan.Zero;
@@ -409,11 +410,11 @@ public sealed class ToolbarDraggingTests : IDisposable
         StartDrag(Tools, _leftEdge);
         _window.MouseUp(_leftEdge, MouseButton.Left);
 
-        // They only go on a later frame, so this can't be too late however slow the machine is.
+        // The host's clock only moves when the test moves it, so they're still fading however slow the machine is.
         Assert.NotEmpty(Zones);
         Assert.All(Zones, zone => Assert.False(zone.IsHitTestVisible));
 
-        Thread.Sleep(60);
+        _clock.Advance(TimeSpan.FromMilliseconds(60));
         Pump();
 
         Assert.Empty(Zones);
@@ -919,7 +920,7 @@ public sealed class ToolbarDraggingTests : IDisposable
 
     private void ShowWindow()
     {
-        _host = new DockingHost();
+        _host = new DockingHost { Clock = _clock };
         _window = new Window { Width = 1000, Height = 700, Content = _host };
         _windows.Add(_window);
 

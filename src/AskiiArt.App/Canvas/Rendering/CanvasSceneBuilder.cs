@@ -3,6 +3,7 @@
 
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Selection;
+using AskiiArt.Core.Tools;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
 
@@ -20,6 +21,7 @@ internal sealed class CanvasSceneBuilder
 
     private readonly AtlasPageImages _pageImages = new();
     private readonly CellBackgroundsBuilder _backgrounds = new();
+    private readonly SelectionHatchBuilder _hatches = new();
 
     public CanvasScene Build(CompositeCache composite, GlyphAtlas atlas, CanvasViewport viewport,
         CanvasColors colors, CanvasOverlays overlays)
@@ -76,6 +78,7 @@ internal sealed class CanvasSceneBuilder
 
         var visibleBounds = new PixelRect(origin.X + visible.Left * cellSize.Width,
             origin.Y + visible.Top * cellSize.Height, visible.Width * cellSize.Width, visible.Height * cellSize.Height);
+        var toolPath = PathOf(viewport, overlays.ToolPath);
 
         return new CanvasScene
         {
@@ -90,11 +93,15 @@ internal sealed class CanvasSceneBuilder
             Caret = BoundsOf(viewport, overlays.Caret),
             CaretThickness = overlays.CaretThickness,
             BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness),
-            SelectionOutline = SelectionOutlineOf(viewport, overlays.Selection, overlays.SelectionThickness),
+            UnselectedHatch = _hatches.BuildUnselected(viewport, overlays.Selection, overlays.Look),
+            LostHatch = _hatches.BuildLost(viewport, overlays.Selection, overlays.Look, colors),
+            SelectionOutlines = SelectionOutlinesOf(viewport, overlays, colors),
             SelectionDashLength = Math.Max(1, overlays.SelectionDashLength),
-            SelectionDashOffset = overlays.SelectionDashOffset,
-            ToolPath = PathOf(viewport, overlays.ToolPath),
-            ToolPathThickness = Math.Max(1, overlays.SelectionThickness)
+            ToolPath = toolPath,
+            ToolPathThickness = Math.Max(1, overlays.SelectionThickness),
+            ToolPathClosingLine = ClosingLineOf(toolPath, overlays.ShowsToolPathClosing),
+            ToolMarkers = MarkersOf(viewport, overlays.ToolMarkers),
+            Look = overlays.Look
         };
     }
 
@@ -104,13 +111,74 @@ internal sealed class CanvasSceneBuilder
         if (path is null)
             return [];
 
-        var origin = viewport.CanvasOrigin;
-        var cell = viewport.CellSize;
         var points = new Point[path.Count];
         for (var index = 0; index < points.Length; index++)
-            points[index] = new Point(origin.X + path[index].X * cell.Width, origin.Y + path[index].Y * cell.Height);
+            points[index] = ToDevicePixels(viewport, path[index]);
 
         return points;
+    }
+
+    private static (Point From, Point To)? ClosingLineOf(Point[] path, bool showsClosing)
+    {
+        if (!showsClosing || path.Length < 3)
+            return null;
+
+        return (path[^1], path[0]);
+    }
+
+    private static SceneMarker[] MarkersOf(CanvasViewport viewport, IReadOnlyList<ToolMarker>? markers)
+    {
+        if (markers is null)
+            return [];
+
+        var sceneMarkers = new SceneMarker[markers.Count];
+        for (var index = 0; index < sceneMarkers.Length; index++)
+        {
+            var marker = markers[index];
+            sceneMarkers[index] = new SceneMarker(ToDevicePixels(viewport, marker.Position), marker.Kind);
+        }
+
+        return sceneMarkers;
+    }
+
+    private static Point ToDevicePixels(CanvasViewport viewport, CanvasPoint point)
+    {
+        var origin = viewport.CanvasOrigin;
+        var cell = viewport.CellSize;
+        return new Point(origin.X + point.X * cell.Width, origin.Y + point.Y * cell.Height);
+    }
+
+    // Each of the display's outlines that shows: a faint one in faded colours that stay still, a bright one in full
+    // colour with its dashes running.
+    private static SelectionOutlinePass[] SelectionOutlinesOf(CanvasViewport viewport, CanvasOverlays overlays,
+        CanvasColors colors)
+    {
+        if (overlays.Selection is not { } display)
+            return [];
+
+        var look = overlays.Look;
+        var passes = new List<SelectionOutlinePass>(display.Outlines.Count);
+        foreach (var layer in display.Outlines)
+        {
+            var strips = SelectionOutlineOf(viewport, layer.Mask, overlays.SelectionThickness);
+            if (strips.Length == 0)
+                continue;
+
+            var (line, backdrop) = look.ColoursOf(layer.Style, colors);
+            if (!layer.IsFaint)
+            {
+                passes.Add(new SelectionOutlinePass(strips, line, backdrop, overlays.SelectionDashOffset));
+                continue;
+            }
+
+            if (look.FaintOpacity > 0)
+            {
+                passes.Add(new SelectionOutlinePass(strips, SelectionLook.Faded(line, look.FaintOpacity),
+                    SelectionLook.Faded(backdrop, look.FaintOpacity), DashOffset: 0));
+            }
+        }
+
+        return [.. passes];
     }
 
     // Each edge becomes a strip inside its cells, as the caret's outline is, so it lands on whole pixels. Edges off

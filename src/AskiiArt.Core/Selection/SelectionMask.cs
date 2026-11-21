@@ -72,6 +72,21 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     }
 
     /// <summary>
+    /// The runs of selected cells in <paramref name="row"/>, left to right, each as the column of its first cell and
+    /// how many cells it has. A row with none, or off the canvas, has no runs.
+    /// </summary>
+    public SelectionRowRuns RunsInRow(int row)
+    {
+        if (row < Bounds.Top || row >= Bounds.Bottom)
+            return default;
+
+        if (_bits is null)
+            return new SelectionRowRuns(Bounds.Left, Bounds.Width);
+
+        return new SelectionRowRuns(Bounds.Left, BitRow.Runs(Row(row - Bounds.Top), Bounds.Width));
+    }
+
+    /// <summary>
     /// The same cells after the canvas is resized by <paramref name="plan"/>: moved with the art, and without any
     /// that are cropped off (ADR 0055).
     /// </summary>

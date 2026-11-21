@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Tools;
 using Avalonia;
 using SkiaSharp;
 
@@ -9,8 +10,8 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <summary>
 /// Paints a <see cref="CanvasScene"/> onto a Skia canvas whose units are device pixels. Draw order
 /// follows ARCHITECTURE §12: the composite (paper, cell backgrounds, missing-glyph flags, glyphs),
-/// then grid lines, the selection outline, the hover highlight, the caret and the brush outline. Safe to
-/// call from the render thread.
+/// then grid lines, the selection's hatching and outlines, the hover highlight, the caret, the brush outline,
+/// and the tool's line and markers. Safe to call from the render thread.
 /// </summary>
 internal static class CanvasScenePainter
 {
@@ -59,7 +60,10 @@ internal static class CanvasScenePainter
         if (scene.IsGridVisible && viewport.CellSize.Width >= MinimumCellWidthForGrid)
             DrawGrid(canvas, paint, viewport, colors.GridLine);
 
-        DrawSelectionOutline(canvas, paint, scene);
+        DrawHatch(canvas, paint, scene.UnselectedHatch, viewport);
+        DrawHatch(canvas, paint, scene.LostHatch, viewport);
+        foreach (var pass in scene.SelectionOutlines)
+            DrawSelectionOutline(canvas, paint, pass, scene.SelectionDashLength, viewport.CanvasOrigin);
 
         if (scene.HoveredCell is { } hovered)
             Fill(canvas, paint, hovered, colors.Hover);
@@ -70,9 +74,35 @@ internal static class CanvasScenePainter
         foreach (var strip in scene.BrushOutline)
             Fill(canvas, paint, strip, colors.Caret);
 
+        DrawClosingLine(canvas, paint, scene);
         DrawToolPath(canvas, paint, scene);
+        DrawMarkers(canvas, paint, scene);
 
         canvas.Restore();
+    }
+
+    // The tile's lines repeat from the canvas's corner, so they stay put on the art while it scrolls, and show only
+    // where the cell mask, stretched over the visible cells without smoothing, has a cell.
+    private static void DrawHatch(SKCanvas canvas, SKPaint paint, SelectionHatch? hatch, CanvasViewport viewport)
+    {
+        if (hatch is null)
+            return;
+
+        var bounds = hatch.Bounds;
+        var cell = viewport.CellSize;
+        var origin = viewport.CanvasOrigin;
+        var unsmoothed = new SKSamplingOptions(SKFilterMode.Nearest);
+        using var cells = hatch.CellMask.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, unsmoothed,
+            SKMatrix.CreateScaleTranslation(cell.Width, cell.Height, bounds.X, bounds.Y));
+        using var lines = hatch.Tile.ToShader(SKShaderTileMode.Repeat, SKShaderTileMode.Repeat, unsmoothed,
+            SKMatrix.CreateTranslation(origin.X, origin.Y));
+
+        // Keeps the lines (the destination) only where the cells (the source) are opaque.
+        using var shader = SKShader.CreateBlend(SKBlendMode.DstIn, lines, cells);
+        paint.Color = SKColors.White;
+        paint.Shader = shader;
+        canvas.DrawRect(ToSkRect(bounds), paint);
+        paint.Shader = null;
     }
 
     // One line along the top and left edge of every visible cell, plus the canvas's right and
@@ -105,18 +135,17 @@ internal static class CanvasScenePainter
 
     // Each strip in the backdrop colour, with dashes of the line colour over it. The dashes are counted from the
     // canvas's corner, so they line up where strips meet and stay put on the art while it scrolls, and then moved
-    // along by how far they've run, clockwise around the selection.
-    private static void DrawSelectionOutline(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    // along by how far they've run, clockwise around the cells.
+    private static void DrawSelectionOutline(SKCanvas canvas, SKPaint paint, SelectionOutlinePass pass, int dash,
+        PixelPoint origin)
     {
-        var dash = scene.SelectionDashLength;
         var period = dash * 2;
-        var origin = scene.Viewport.CanvasOrigin;
-        var run = scene.SelectionDashOffset % period;
-        foreach (var strip in scene.SelectionOutline)
+        var run = pass.DashOffset % period;
+        foreach (var strip in pass.Strips)
         {
             var rect = strip.Rect;
-            Fill(canvas, paint, rect, scene.Colors.SelectionBackdrop);
-            paint.Color = scene.Colors.SelectionLine;
+            Fill(canvas, paint, rect, pass.Backdrop);
+            paint.Color = pass.Line;
 
             var start = strip.IsHorizontal ? rect.X : rect.Y;
             var end = strip.IsHorizontal ? rect.Right : rect.Bottom;
@@ -160,10 +189,110 @@ internal static class CanvasScenePainter
         paint.StrokeWidth = scene.ToolPathThickness;
         paint.Color = scene.Colors.SelectionLine;
         canvas.DrawPath(path, paint);
+        UseFill(paint);
+    }
 
+    // Like the tool's line, but faded and dashed, so it reads as where the line would go rather than where it is.
+    private static void DrawClosingLine(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    {
+        var opacity = scene.Look.ClosingLineOpacity;
+        if (scene.ToolPathClosingLine is not var (from, to) || opacity <= 0)
+            return;
+
+        var start = new SKPoint((float)from.X, (float)from.Y);
+        var end = new SKPoint((float)to.X, (float)to.Y);
+        paint.Style = SKPaintStyle.Stroke;
+        paint.IsAntialias = true;
+        paint.StrokeCap = SKStrokeCap.Butt;
+        paint.StrokeWidth = scene.ToolPathThickness * 3;
+        paint.Color = SelectionLook.Faded(scene.Colors.SelectionBackdrop, opacity);
+        canvas.DrawLine(start, end, paint);
+
+        var dash = scene.SelectionDashLength;
+        using var dashes = SKPathEffect.CreateDash([dash, dash], 0);
+        paint.PathEffect = dashes;
+        paint.StrokeWidth = scene.ToolPathThickness;
+        paint.Color = SelectionLook.Faded(scene.Colors.SelectionLine, opacity);
+        canvas.DrawLine(start, end, paint);
+        paint.PathEffect = null;
+        UseFill(paint);
+    }
+
+    // The corners first, so the marker that finishes the shape is never hidden under one.
+    private static void DrawMarkers(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    {
+        if (scene.ToolMarkers.Count == 0)
+            return;
+
+        paint.IsAntialias = true;
+        foreach (var marker in scene.ToolMarkers)
+        {
+            if (marker.Kind == ToolMarkerKind.Corner)
+                DrawCornerMarker(canvas, paint, scene, marker.Centre);
+        }
+
+        foreach (var marker in scene.ToolMarkers)
+        {
+            if (marker.Kind != ToolMarkerKind.Corner)
+                DrawFinishMarker(canvas, paint, scene, marker);
+        }
+
+        UseFill(paint);
+    }
+
+    // A small dot in the backdrop colour, ringed in the line colour, both a little faded.
+    private static void DrawCornerMarker(SKCanvas canvas, SKPaint paint, CanvasScene scene, Point centre)
+    {
+        var radius = (float)scene.Look.CornerMarkerRadius;
+        if (radius <= 0)
+            return;
+
+        var opacity = scene.Look.CornerMarkerOpacity;
+        var thickness = scene.ToolPathThickness;
+        var point = new SKPoint((float)centre.X, (float)centre.Y);
+        paint.Style = SKPaintStyle.Fill;
+        paint.Color = SelectionLook.Faded(scene.Colors.SelectionBackdrop, opacity);
+        canvas.DrawCircle(point, radius, paint);
+        paint.Style = SKPaintStyle.Stroke;
+        paint.StrokeWidth = thickness;
+        paint.Color = SelectionLook.Faded(scene.Colors.SelectionLine, opacity);
+        canvas.DrawCircle(point, Math.Max(radius - thickness / 2f, thickness / 2f), paint);
+    }
+
+    // A disc in the backdrop colour with a ring and a dot of the line colour in it, all swapped round while the
+    // pointer is on it, to show a click there finishes the shape.
+    private static void DrawFinishMarker(SKCanvas canvas, SKPaint paint, CanvasScene scene, SceneMarker marker)
+    {
+        var radius = (float)scene.Look.FinishMarkerRadius;
+        if (radius <= 0)
+            return;
+
+        var isUnderPointer = marker.Kind == ToolMarkerKind.FinishUnderPointer;
+        var disc = isUnderPointer ? scene.Colors.SelectionLine : scene.Colors.SelectionBackdrop;
+        var ink = isUnderPointer ? scene.Colors.SelectionBackdrop : scene.Colors.SelectionLine;
+        var point = new SKPoint((float)marker.Centre.X, (float)marker.Centre.Y);
+        paint.Style = SKPaintStyle.Fill;
+        paint.Color = disc;
+        canvas.DrawCircle(point, radius, paint);
+        canvas.DrawCircle(point, radius * 0.3f, Ink(paint, ink));
+        paint.Style = SKPaintStyle.Stroke;
+        paint.StrokeWidth = scene.ToolPathThickness;
+        canvas.DrawCircle(point, radius * 0.7f, paint);
+    }
+
+    private static SKPaint Ink(SKPaint paint, SKColor color)
+    {
+        paint.Color = color;
+        return paint;
+    }
+
+    // Back to plain filled rectangles, as everything else is drawn with.
+    private static void UseFill(SKPaint paint)
+    {
         paint.Style = SKPaintStyle.Fill;
         paint.IsAntialias = false;
         paint.StrokeWidth = 0;
+        paint.PathEffect = null;
     }
 
     // Four filled edges inside the rect, so the outline lands on whole pixels and never covers

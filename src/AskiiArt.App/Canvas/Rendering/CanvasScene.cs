@@ -40,16 +40,19 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The pieces of the brush tip's outline, each a filled strip along the inside of its cells.</summary>
     public required IReadOnlyList<PixelRect> BrushOutline { get; init; }
 
+    /// <summary>The hatching over the visible cells that aren't selected, or null for none.</summary>
+    public SelectionHatch? UnselectedHatch { get; init; }
+
     /// <summary>
-    /// The visible pieces of the selection's outline, each a strip along the inside of its cells, drawn dashed.
+    /// The hatching over the visible cells a selection tool's gesture would deselect, or null for none.
     /// </summary>
-    public IReadOnlyList<SelectionStrip> SelectionOutline { get; init; } = [];
+    public SelectionHatch? LostHatch { get; init; }
 
-    /// <summary>The length of each dash of the selection outline, and of each gap, in device pixels.</summary>
+    /// <summary>The selection display's outlines, in drawing order, each made of strips drawn dashed.</summary>
+    public IReadOnlyList<SelectionOutlinePass> SelectionOutlines { get; init; } = [];
+
+    /// <summary>The length of each dash of the selection outlines, and of each gap, in device pixels.</summary>
     public int SelectionDashLength { get; init; } = 1;
-
-    /// <summary>How far the selection outline's dashes have run around it, in device pixels.</summary>
-    public int SelectionDashOffset { get; init; }
 
     /// <summary>The points of the line the tool shows, such as a lasso's path, in device pixels.</summary>
     public IReadOnlyList<Point> ToolPath { get; init; } = [];
@@ -57,9 +60,22 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The tool's line's thickness, in device pixels.</summary>
     public int ToolPathThickness { get; init; } = 1;
 
+    /// <summary>
+    /// The faint line showing how the tool's line would close, from its last point to its first, or null.
+    /// </summary>
+    public (Point From, Point To)? ToolPathClosingLine { get; init; }
+
+    /// <summary>The tool's markers, such as the Polygonal Lasso's corners.</summary>
+    public IReadOnlyList<SceneMarker> ToolMarkers { get; init; } = [];
+
+    /// <summary>How the hatching, the closing line and the markers look, in device pixels.</summary>
+    public SelectionLook Look { get; init; }
+
     public void Dispose()
     {
         Backgrounds?.Dispose();
+        UnselectedHatch?.Dispose();
+        LostHatch?.Dispose();
         foreach (var batch in Glyphs)
             batch.Dispose();
     }

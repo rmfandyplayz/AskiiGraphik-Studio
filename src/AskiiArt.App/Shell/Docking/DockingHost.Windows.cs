@@ -414,7 +414,7 @@ internal sealed partial class DockingHost
             return;
 
         var motion = WindowMotion(windowId);
-        frame.Arrange(ToRect(_motions.Advance(motion, bounds, _clock.Elapsed, metrics.MotionDuration, Slides(motion))));
+        frame.Arrange(ToRect(_motions.Advance(motion, bounds, Now, metrics.MotionDuration, Slides(motion))));
     }
 
     // The window follows the pointer even past the app window's edge, as a toolbar does, and the landing preview shows

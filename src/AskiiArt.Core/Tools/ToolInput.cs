@@ -2,8 +2,8 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Documents;
-using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools.Footprints;
+using AskiiArt.Core.Tools.Selecting;
 
 namespace AskiiArt.Core.Tools;
 
@@ -107,13 +107,18 @@ public enum ToolKey
 /// <param name="ClickCount">
 /// When the button goes down, how many clicks in a row this is: 2 for the second click of a double-click.
 /// </param>
+/// <param name="MarkerReach">
+/// How far the pointer can be from one of the tool's markers, such as the Polygonal Lasso's first corner, and still be
+/// on it, at the current zoom. None by default, so nothing is on a marker.
+/// </param>
 public readonly record struct ToolPointerInput(
     CellPoint Cell,
     double SubCellX,
     double SubCellY,
     ToolModifiers Modifiers,
     float Pressure = 1,
-    int ClickCount = 1)
+    int ClickCount = 1,
+    ToolMarkerReach MarkerReach = default)
 {
     /// <summary>Where the pointer is on the canvas, in cells with fractions.</summary>
     public CanvasPoint Position => new(Cell.X + SubCellX, Cell.Y + SubCellY);
@@ -127,19 +132,68 @@ public readonly record struct ToolPointerInput(
 /// <param name="Footprint">
 /// The brush tip's footprint, which the canvas outlines under the pointer, or null for a tool without one.
 /// </param>
-/// <param name="PendingSelection">
-/// The selection a selection tool's gesture would make, which the canvas outlines in place of the session's
-/// selection until the gesture ends, or null when there's no such gesture.
+/// <param name="SelectionPreview">
+/// What a selection tool's gesture would do if it ended now, which the canvas shows in place of the session's
+/// selection until the gesture ends (ADR 0061), or null when there's no such gesture.
 /// </param>
 /// <param name="Path">
 /// A line through these points, such as the path a lasso has drawn so far, or null for none. It isn't closed.
 /// </param>
+/// <param name="ShowsPathClosing">
+/// True to show faintly how the path would close: a line from its last point back to its first.
+/// </param>
+/// <param name="Markers">Dots to draw, such as the Polygonal Lasso's corners, or null for none.</param>
 public sealed record ToolOverlay(
     CellPoint? Caret,
     BrushFootprint? Footprint = null,
-    SelectionMask? PendingSelection = null,
-    IReadOnlyList<CanvasPoint>? Path = null)
+    SelectionPreview? SelectionPreview = null,
+    IReadOnlyList<CanvasPoint>? Path = null,
+    bool ShowsPathClosing = false,
+    IReadOnlyList<ToolMarker>? Markers = null)
 {
     /// <summary>Nothing to draw.</summary>
     public static ToolOverlay None { get; } = new(Caret: null);
+}
+
+/// <summary>What a tool's marker is, which sets how the canvas draws it (<see cref="ToolMarker"/>).</summary>
+public enum ToolMarkerKind
+{
+    /// <summary>A corner of a shape being drawn, such as one of the Polygonal Lasso's.</summary>
+    Corner,
+
+    /// <summary>A point that finishes the shape when clicked, such as the Polygonal Lasso's first corner.</summary>
+    Finish,
+
+    /// <summary>A finishing point with the pointer on it, so that a click now finishes the shape.</summary>
+    FinishUnderPointer
+}
+
+/// <summary>
+/// A dot the canvas draws for the active tool, at a point on the canvas in cells. Its size is the App's, and stays the
+/// same on screen whatever the zoom (ADR 0061).
+/// </summary>
+/// <param name="Position">Where its middle is, in cells with fractions.</param>
+/// <param name="Kind">What it is.</param>
+public readonly record struct ToolMarker(CanvasPoint Position, ToolMarkerKind Kind);
+
+/// <summary>
+/// How far the pointer can be from a tool's marker and still be on it, in cells across and down: the marker's radius
+/// on screen at the current zoom, which the canvas works out, since markers keep their size on screen (ADR 0061).
+/// </summary>
+/// <param name="Across">The radius across, in cells.</param>
+/// <param name="Down">The radius down, in cells.</param>
+public readonly record struct ToolMarkerReach(double Across, double Down)
+{
+    /// <summary>
+    /// True when <paramref name="point"/> is on a marker at <paramref name="marker"/>. With no reach, no point is.
+    /// </summary>
+    public bool Covers(CanvasPoint marker, CanvasPoint point)
+    {
+        if (Across <= 0 || Down <= 0)
+            return false;
+
+        var across = (point.X - marker.X) / Across;
+        var down = (point.Y - marker.Y) / Down;
+        return across * across + down * down <= 1;
+    }
 }

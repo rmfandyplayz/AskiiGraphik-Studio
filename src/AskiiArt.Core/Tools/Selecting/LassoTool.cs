@@ -10,8 +10,9 @@ namespace AskiiArt.Core.Tools.Selecting;
 
 /// <summary>
 /// The Lasso (ARCHITECTURE §10, ADR 0060): dragging draws a freehand path, and releasing selects every cell whose
-/// centre it goes round, the end joined back to the start, combined with the selection by the mode. The canvas shows
-/// the path while it's drawn. A click without a path deselects when replacing, and Esc during the drag cancels it.
+/// centre it goes round, the end joined back to the start, combined with the selection by the mode. While it's drawn,
+/// the canvas shows the path, faintly how it would close, and what letting go now would select (ADR 0061). A click
+/// without a path deselects when replacing, and Esc during the drag cancels it.
 /// </summary>
 public sealed class LassoTool : ITool
 {
@@ -59,7 +60,7 @@ public sealed class LassoTool : ITool
     /// <summary>False: the tool takes no text.</summary>
     public bool IsTakingText => false;
 
-    /// <summary>The path drawn so far.</summary>
+    /// <summary>The path drawn so far, and what letting go now would select.</summary>
     public ToolOverlay Overlay => _overlay;
 
     /// <summary>Starts a path where the pointer is.</summary>
@@ -83,7 +84,7 @@ public sealed class LassoTool : ITool
             return;
 
         _path.Add(position);
-        SetOverlay(new ToolOverlay(Caret: null, Path: [.. _path]));
+        ShowPath();
     }
 
     /// <summary>Closes the path and selects what it goes round, as one undo step.</summary>
@@ -115,6 +116,17 @@ public sealed class LassoTool : ITool
 
     /// <summary>Cancels a path in progress, leaving the selection as it was.</summary>
     public void Deactivate() => End();
+
+    // The canvas works the shape out from a copy of the path, and only if it draws this overlay, at most once a frame.
+    private void ShowPath()
+    {
+        IReadOnlyList<CanvasPoint> path = [.. _path];
+        var canvasSize = _session.Document.CanvasSize;
+        SetOverlay(new ToolOverlay(Caret: null,
+            SelectionPreview: _combiner.Preview(() => SelectionShapes.Polygon(canvasSize, path)),
+            Path: path,
+            ShowsPathClosing: path.Count > 2));
+    }
 
     private void End()
     {

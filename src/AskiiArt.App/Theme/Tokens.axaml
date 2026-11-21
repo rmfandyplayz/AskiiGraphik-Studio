@@ -18,6 +18,12 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF0078D7" />
       <SolidColorBrush x:Key="AppCanvasSelectionBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="AppCanvasSelectionBackdropBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#47000000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#59FFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionSubtractBrush" Color="#FFFF3B30" />
+      <SolidColorBrush x:Key="AppCanvasSelectionSubtractBackdropBrush" Color="#FF5C0000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionIntersectBrush" Color="#FF2F8CFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionIntersectBackdropBrush" Color="#FF002B66" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF9A5B00" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D9F3F3F3" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#400078D7" />
@@ -48,6 +54,12 @@
       <SolidColorBrush x:Key="AppCanvasCaretBrush" Color="#FF4C9EEB" />
       <SolidColorBrush x:Key="AppCanvasSelectionBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="AppCanvasSelectionBackdropBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBrush" Color="#47000000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionHatchBackdropBrush" Color="#59FFFFFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionSubtractBrush" Color="#FFFF3B30" />
+      <SolidColorBrush x:Key="AppCanvasSelectionSubtractBackdropBrush" Color="#FF5C0000" />
+      <SolidColorBrush x:Key="AppCanvasSelectionIntersectBrush" Color="#FF2F8CFF" />
+      <SolidColorBrush x:Key="AppCanvasSelectionIntersectBackdropBrush" Color="#FF002B66" />
       <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FFFFB454" />
       <SolidColorBrush x:Key="AppWidgetBrush" Color="#D92B2B2B" />
       <SolidColorBrush x:Key="AppDropZoneBrush" Color="#504C9EEB" />
@@ -88,6 +100,20 @@
   <x:Double x:Key="AppCanvasSelectionThickness">1</x:Double>
   <x:Double x:Key="AppCanvasSelectionDashLength">4</x:Double>
   <x:Double x:Key="AppCanvasSelectionAntsSpeed">12</x:Double>
+  <!-- The selection overlay (step 4.2b, placeholder, ADR 0061). Cells that aren't selected are hatched with thin
+       lines rising to the right, a dark one and a light one beside it, this many logical pixels apart along a row and
+       this thick. While a selection tool is used, the cells it would deselect are hatched the other way in Subtract's
+       red or Intersect's blue, this strongly, and the outlines that won't be the selection's show this faintly. A
+       lasso shows how it would close this faintly. The Polygonal Lasso's corners have dots this big and this strong,
+       and its first corner a marker this big, which finishes the shape when clicked. -->
+  <x:Double x:Key="AppCanvasSelectionHatchPeriod">8</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchThickness">1</x:Double>
+  <x:Double x:Key="AppCanvasSelectionFaintOpacity">0.35</x:Double>
+  <x:Double x:Key="AppCanvasSelectionLostHatchOpacity">0.75</x:Double>
+  <x:Double x:Key="AppCanvasSelectionClosingLineOpacity">0.5</x:Double>
+  <x:Double x:Key="AppCanvasCornerMarkerRadius">3.5</x:Double>
+  <x:Double x:Key="AppCanvasFinishMarkerRadius">8</x:Double>
+  <x:Double x:Key="AppCanvasCornerMarkerOpacity">0.85</x:Double>
 
   <!-- Status bar -->
   <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>

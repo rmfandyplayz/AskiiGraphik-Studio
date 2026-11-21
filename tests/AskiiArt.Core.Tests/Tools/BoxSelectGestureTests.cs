@@ -96,7 +96,7 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(1, 1, Shift));
         _tool.PointerMoved(Input(3, 2, Shift));
 
-        Assert.Equal(Union(new CellRect(0, 0, 2, 2), new CellRect(1, 1, 3, 2)), _tool.Overlay.PendingSelection);
+        Assert.Equal(Union(new CellRect(0, 0, 2, 2), new CellRect(1, 1, 3, 2)), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Theory]
@@ -131,11 +131,11 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(0, 0, ToolModifiers.None));
         _tool.PointerMoved(Input(3, 3, Shift));
 
-        Assert.Equal(Rectangle(0, 0, 8, 4), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(0, 0, 8, 4), _tool.Overlay.SelectionPreview?.Result);
 
         _tool.PointerMoved(Input(9, 1, Shift));
 
-        Assert.Equal(Rectangle(0, 0, 10, 5), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(0, 0, 10, 5), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(11, 6, ToolModifiers.None));
         _tool.PointerMoved(Input(10, 5, Shift));
 
-        Assert.Equal(Rectangle(8, 5, 4, 2), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(8, 5, 4, 2), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(5, 3, ToolModifiers.None));
         _tool.PointerMoved(Input(7, 4, Alt));
 
-        Assert.Equal(Rectangle(3, 2, 5, 3), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(3, 2, 5, 3), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(5, 3, ToolModifiers.None));
         _tool.PointerMoved(Input(7, 3, Shift | Alt));
 
-        Assert.Equal(Rectangle(3, 2, 5, 3), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(3, 2, 5, 3), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]
@@ -171,14 +171,14 @@ public sealed class BoxSelectGestureTests
         _tool.PointerPressed(Input(0, 0, Shift));
         _tool.PointerMoved(Input(3, 1, Shift));
 
-        Assert.Equal(Rectangle(0, 0, 4, 2), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(0, 0, 4, 2), _tool.Overlay.SelectionPreview?.Result);
 
         _tool.ModifiersChanged(ToolModifiers.None);
         _tool.ModifiersChanged(Shift);
 
-        Assert.Equal(Rectangle(0, 0, 4, 2), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(0, 0, 4, 2), _tool.Overlay.SelectionPreview?.Result);
         _tool.PointerMoved(Input(3, 3, Shift));
-        Assert.Equal(Rectangle(0, 0, 8, 4), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(0, 0, 8, 4), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]
@@ -188,10 +188,10 @@ public sealed class BoxSelectGestureTests
         _tool.PointerMoved(Input(6, 4, ToolModifiers.None));
 
         _tool.ModifiersChanged(Alt);
-        Assert.Equal(Rectangle(4, 2, 3, 3), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(4, 2, 3, 3), _tool.Overlay.SelectionPreview?.Result);
 
         _tool.ModifiersChanged(ToolModifiers.None);
-        Assert.Equal(Rectangle(5, 3, 2, 2), _tool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(5, 3, 2, 2), _tool.Overlay.SelectionPreview?.Result);
     }
 
     [Fact]

@@ -107,6 +107,47 @@ public sealed class SelectionMaskTests
     }
 
     [Fact]
+    public void RunsInRow_OfARectangle_IsOneRunPerRow()
+    {
+        var mask = SelectionMask.Rectangle(_size, new CellRect(1, 1, 3, 2));
+
+        Assert.Equal([], Runs(mask, 0));
+        Assert.Equal([(1, 3)], Runs(mask, 1));
+        Assert.Equal([(1, 3)], Runs(mask, 2));
+        Assert.Equal([], Runs(mask, 5));
+    }
+
+    [Fact]
+    public void RunsInRow_GoLeftToRight_InCanvasColumns()
+    {
+        var mask = TestMasks.Parse("·····", "·#·##", "··#··");
+
+        Assert.Equal([(1, 1), (3, 2)], Runs(mask, 1));
+        Assert.Equal([(2, 1)], Runs(mask, 2));
+    }
+
+    [Fact]
+    public void RunsInRow_CoverEverySelectedCell_AndNoOther()
+    {
+        for (var seed = 0; seed < 20; seed++)
+        {
+            var mask = TestMasks.Random(new CanvasSize(70, 6), seed);
+            for (var row = 0; row < 6; row++)
+            {
+                var covered = new bool[70];
+                foreach (var (column, length) in mask.RunsInRow(row))
+                {
+                    for (var x = column; x < column + length; x++)
+                        covered[x] = true;
+                }
+
+                for (var x = 0; x < 70; x++)
+                    Assert.Equal(mask.Contains(new CellPoint(x, row)), covered[x]);
+            }
+        }
+    }
+
+    [Fact]
     public void Edges_OfARectangle_AreItsFourSides()
     {
         var mask = SelectionMask.Rectangle(_size, CellRect.FromEdges(1, 0, 4, 2));
@@ -287,5 +328,14 @@ public sealed class SelectionMaskTests
 
         public int Compare(CellEdge x, CellEdge y) =>
             (x.Side, x.Row, x.Column, x.Length).CompareTo((y.Side, y.Row, y.Column, y.Length));
+    }
+
+    private static List<(int Column, int Length)> Runs(SelectionMask mask, int row)
+    {
+        var runs = new List<(int Column, int Length)>();
+        foreach (var run in mask.RunsInRow(row))
+            runs.Add(run);
+
+        return runs;
     }
 }

@@ -46,6 +46,36 @@ public sealed class RememberedWindowPlacementTests
     }
 
     [AvaloniaFact]
+    public void AWindowClosedFullScreen_OpensFullScreen()
+    {
+        var first = Open();
+        first.WindowState = WindowState.FullScreen;
+        Dispatcher.UIThread.RunJobs();
+        first.Close();
+
+        var second = Open();
+
+        Assert.Equal(WindowState.FullScreen, second.WindowState);
+        second.Close();
+    }
+
+    [AvaloniaFact]
+    public void AWindowThatLeftFullScreen_OpensAsItWasThen()
+    {
+        var first = Open();
+        first.WindowState = WindowState.FullScreen;
+        Dispatcher.UIThread.RunJobs();
+        first.WindowState = WindowState.Maximized;
+        Dispatcher.UIThread.RunJobs();
+        first.Close();
+
+        var second = Open();
+
+        Assert.Equal(WindowState.Maximized, second.WindowState);
+        second.Close();
+    }
+
+    [AvaloniaFact]
     public void WithNothingSaved_TheWindowIsLeftAsItWas()
     {
         var window = new Window { Width = 321, Height = 123 };

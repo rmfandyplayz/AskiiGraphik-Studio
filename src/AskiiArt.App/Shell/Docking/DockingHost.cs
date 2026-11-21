@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
-using System.Diagnostics;
 using AskiiArt.Docking.Dragging;
 using AskiiArt.Docking.Layouts;
 using AskiiArt.Docking.Solving;
@@ -76,7 +75,11 @@ internal sealed partial class DockingHost : Panel
     private readonly Dictionary<string, LayoutSize> _toolbarSizes = new(StringComparer.Ordinal);
     private readonly LayoutMotions _motions = new();
     private readonly List<(Control View, TimeSpan GoneAt)> _fadingOut = [];
-    private readonly Stopwatch _clock = Stopwatch.StartNew();
+
+    /// <summary>Times the slides and fades. Tests give the host a clock that only moves when they move it.</summary>
+    internal TimeProvider Clock { get; init; } = TimeProvider.System;
+
+    private TimeSpan Now => Clock.GetElapsedTime(0, Clock.GetTimestamp());
 
     private DockingLayout? _layout;
     private ShellCatalog? _catalog;
@@ -393,7 +396,7 @@ internal sealed partial class DockingHost : Panel
             }
             else if (bounds.TryGetValue(toolbarId, out var target))
             {
-                view.Arrange(ToRect(_motions.Advance(toolbarId, target, _clock.Elapsed, metrics.MotionDuration,
+                view.Arrange(ToRect(_motions.Advance(toolbarId, target, Now, metrics.MotionDuration,
                     Slides(toolbarId))));
             }
             else
@@ -461,7 +464,7 @@ internal sealed partial class DockingHost : Panel
             return;
         }
 
-        subToolbar.Frame.Arrange(ToRect(_motions.Advance(SubToolbarMotion, target.Bounds, _clock.Elapsed,
+        subToolbar.Frame.Arrange(ToRect(_motions.Advance(SubToolbarMotion, target.Bounds, Now,
             metrics.MotionDuration, Slides(subToolbar.ParentToolbarId))));
     }
 
@@ -497,13 +500,13 @@ internal sealed partial class DockingHost : Panel
             return;
         }
 
-        _fadingOut.Add((view, _clock.Elapsed + duration));
+        _fadingOut.Add((view, Now + duration));
         RequestNextFrame();
     }
 
     private void RemoveWhatHasFadedOut()
     {
-        foreach (var (view, _) in _fadingOut.Where(entry => entry.GoneAt <= _clock.Elapsed))
+        foreach (var (view, _) in _fadingOut.Where(entry => entry.GoneAt <= Now))
             Children.Remove(view);
 
         _fadingOut.RemoveAll(entry => !Children.Contains(entry.View));

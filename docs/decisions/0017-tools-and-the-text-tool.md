@@ -12,7 +12,7 @@ Step 1.5 adds the first tool. ARCHITECTURE §8.1 describes tools as Core classes
 ## Decision
 
 - **`EditingSession`** (Core) holds what tools edit through: the document, its `CommandHistory`, the active layer (the top layer until layers have a UI in M2) and a `TimeProvider` clock, so tests control time.
-- **`ITool`** gets pointer input as `ToolPointerInput` (cell, position within the cell, modifiers, pressure, click count), keys as `ToolKey` commands, Shift or Alt going down or up, and typed text as strings. It exposes a `ToolOverlay` (the caret, a brush's footprint, a selection being made or a lasso's line) that the canvas draws on top, and `AllowsSpacePanning`. Tools are created per session from a `ToolDefinition` in the `ToolRegistry`, registered through DI. The canvas control translates Avalonia input and gives the tool whatever it doesn't use for zooming and panning.
+- **`ITool`** gets pointer input as `ToolPointerInput` (cell, position within the cell, modifiers, pressure, click count, how far the tool's markers reach), keys as `ToolKey` commands, Shift or Alt going down or up, and typed text as strings. It exposes a `ToolOverlay` (the caret, a brush's footprint, a preview of a selection being made, a lasso's line and how it would close, and markers such as the Polygonal Lasso's corners) that the canvas draws on top, and `AllowsSpacePanning`. Tools are created per session from a `ToolDefinition` in the `ToolRegistry`, registered through DI. The canvas control translates Avalonia input and gives the tool whatever it doesn't use for zooming and panning.
 - **Keys:** the App's `ToolKeymap` turns the platform's keys into `ToolKey` commands, following each platform's conventions. A key matches only with exactly its modifiers, so Shift+arrow stays free for selection (M4). Ctrl+Alt+arrow is avoided: Ubuntu uses it to switch workspaces, and some Intel graphics drivers rotate the screen with it. Alt+arrow is avoided on Windows and Linux too: letting go of Alt on its own opens the menu bar there, so pressing Alt for a jump and changing your mind made the next letter open a menu. The keys and jump sizes become settings in M8.
 
   | Move | Windows and Linux | macOS |
@@ -52,3 +52,5 @@ Updated 2026-11-14: Esc is no longer the text tool's. It switches to the Hand to
 Updated 2026-11-20: the pause that ends a typing burst is 1 second (it was 2), to match the text boxes (ADR 0058), at the owner's request.
 
 Updated 2026-11-20: tools also get the click count and Shift or Alt changes, and the overlay grew past the caret (ADRs 0047, 0055, 0060).
+
+Updated 2026-11-20: the overlay carries a selection preview, a closing line and markers, and the input how far the markers reach (ADR 0061).

@@ -19,6 +19,23 @@ public sealed class WindowPlacementTests
         Assert.Equal(placement, WindowPlacement.FromJson(placement.ToJson()));
     }
 
+    [Fact]
+    public void AFullScreenPlacement_ReadsBack_AsItWasSaved()
+    {
+        var placement = new WindowPlacement(new PixelPoint(0, 0), new Size(900, 600), IsMaximized: false,
+            IsFullScreen: true);
+
+        Assert.Equal(placement, WindowPlacement.FromJson(placement.ToJson()));
+    }
+
+    [Fact]
+    public void APlacementSavedBeforeFullScreenWasKept_IsNotFullScreen()
+    {
+        var placement = WindowPlacement.FromJson("{\"x\":1,\"y\":2,\"width\":300,\"height\":200,\"maximized\":true}");
+
+        Assert.Equal(new WindowPlacement(new PixelPoint(1, 2), new Size(300, 200), IsMaximized: true), placement);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("[]")]

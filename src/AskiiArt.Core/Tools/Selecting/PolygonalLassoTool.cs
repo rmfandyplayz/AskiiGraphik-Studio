@@ -10,9 +10,10 @@ namespace AskiiArt.Core.Tools.Selecting;
 
 /// <summary>
 /// The Polygonal Lasso (ARCHITECTURE §10, ADR 0060): each click adds a corner, and a line follows the pointer from the
-/// last one. Clicking the first corner's cell again, double-clicking or pressing Enter selects every cell whose centre
-/// the shape goes round, combined with the selection by the mode, as one undo step. Backspace takes the last corner
-/// away, and Esc cancels.
+/// last one. Clicking the first corner's marker, double-clicking or pressing Enter selects every cell whose centre the
+/// shape goes round, combined with the selection by the mode, as one undo step. Backspace takes the last corner away,
+/// and Esc cancels. While it's drawn, the canvas shows a marker on each corner, faintly how the shape would close, and
+/// what a double-click where the pointer is would select (ADR 0061).
 /// </summary>
 public sealed class PolygonalLassoTool : ITool
 {
@@ -23,6 +24,7 @@ public sealed class PolygonalLassoTool : ITool
     private readonly SelectionCombiner _combiner;
     private readonly List<CanvasPoint> _corners = [];
     private CanvasPoint _pointer;
+    private ToolMarkerReach _reach;
     private ToolOverlay _overlay = ToolOverlay.None;
 
     /// <summary>Creates the tool for <paramref name="context"/>'s session.</summary>
@@ -63,16 +65,21 @@ public sealed class PolygonalLassoTool : ITool
     /// <summary>True while a shape is being drawn, so Enter, Backspace and Esc are the tool's.</summary>
     public bool IsDrawing => _corners.Count > 0;
 
-    /// <summary>The corners so far, and the line from the last one to the pointer.</summary>
+    /// <summary>The corners, the line from the last one to the pointer, and what the shape would select.</summary>
     public ToolOverlay Overlay => _overlay;
+
+    // True when a click now would finish the shape on its first corner: there are enough corners to make one, and the
+    // pointer is on the first corner's marker.
+    private bool IsPointerOnFinish => _corners.Count > 2 && _reach.Covers(_corners[0], _pointer);
 
     /// <summary>
     /// Adds a corner where the pointer is, starting a shape if there's none. The second click of a double-click, or a
-    /// click in the first corner's cell, finishes the shape instead.
+    /// click on the first corner's marker, finishes the shape instead.
     /// </summary>
     public void PointerPressed(ToolPointerInput input)
     {
         _pointer = input.Position;
+        _reach = input.MarkerReach;
         if (!IsDrawing)
         {
             _combiner.Start(input.Modifiers);
@@ -81,7 +88,7 @@ public sealed class PolygonalLassoTool : ITool
             return;
         }
 
-        if (input.ClickCount >= 2 || (_corners.Count > 2 && input.Cell == _corners[0].Cell))
+        if (input.ClickCount >= 2 || IsPointerOnFinish)
         {
             Finish();
             return;
@@ -91,10 +98,13 @@ public sealed class PolygonalLassoTool : ITool
         ShowPath();
     }
 
-    /// <summary>Moves the line from the last corner to the pointer.</summary>
+    /// <summary>
+    /// Moves the line from the last corner to the pointer. On the first corner's marker, the line joins it instead.
+    /// </summary>
     public void PointerMoved(ToolPointerInput input)
     {
         _pointer = input.Position;
+        _reach = input.MarkerReach;
         if (IsDrawing)
             ShowPath();
     }
@@ -149,8 +159,35 @@ public sealed class PolygonalLassoTool : ITool
         ShowPath();
     }
 
-    private void ShowPath() =>
-        SetOverlay(IsDrawing ? new ToolOverlay(Caret: null, Path: [.. _corners, _pointer]) : ToolOverlay.None);
+    // The shape is the corners and the pointer, as a double-click there would make it, or the corners alone when a
+    // click would finish it on the first corner. The canvas works it out only if it draws this overlay.
+    private void ShowPath()
+    {
+        if (!IsDrawing)
+        {
+            SetOverlay(ToolOverlay.None);
+            return;
+        }
+
+        var isClosing = IsPointerOnFinish;
+        IReadOnlyList<CanvasPoint> outline = isClosing ? [.. _corners] : [.. _corners, _pointer];
+        var canvasSize = _session.Document.CanvasSize;
+        SetOverlay(new ToolOverlay(Caret: null,
+            SelectionPreview: _combiner.Preview(() => SelectionShapes.Polygon(canvasSize, outline)),
+            Path: isClosing ? [.. _corners, _corners[0]] : outline,
+            ShowsPathClosing: !isClosing && outline.Count > 2,
+            Markers: Markers(isClosing)));
+    }
+
+    private ToolMarker[] Markers(bool isClosing)
+    {
+        var markers = new ToolMarker[_corners.Count];
+        markers[0] = new ToolMarker(_corners[0], isClosing ? ToolMarkerKind.FinishUnderPointer : ToolMarkerKind.Finish);
+        for (var index = 1; index < _corners.Count; index++)
+            markers[index] = new ToolMarker(_corners[index], ToolMarkerKind.Corner);
+
+        return markers;
+    }
 
     private void SetOverlay(ToolOverlay overlay)
     {

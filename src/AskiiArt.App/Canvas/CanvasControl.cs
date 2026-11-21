@@ -161,6 +161,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private bool _isPublishingViewport;
     private bool _isAntsFrameRequested;
     private int _paintedAntsRun;
+    private SelectionLook? _look;
+    private Avalonia.Styling.ThemeVariant? _lookTheme;
 
     static CanvasControl()
     {
@@ -411,23 +413,47 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
         var overlay = Tool?.Overlay;
+        var display = SelectionDisplay.For(Selection?.Mask, overlay?.SelectionPreview);
         _paintedAntsRun = AntsRun();
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
-            BrushOutlineOf(overlay), OutlinedSelection, ToDeviceLength(SelectionThickness),
-            ToDeviceLength(SelectionDashLength), _paintedAntsRun, overlay?.Path);
+            BrushOutlineOf(overlay), display, ToDeviceLength(SelectionThickness),
+            ToDeviceLength(SelectionDashLength), _paintedAntsRun, overlay?.Path, overlay?.ShowsPathClosing ?? false,
+            overlay?.Markers, Look.ScaledBy(_renderScaling));
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
 
-        if (OutlinedSelection is { IsEmpty: false })
+        if (display is { HasRunningOutline: true })
             RequestAntsFrame();
     }
 
     /// <summary>True while the selection outline's dashes are running, which they do whenever there's one.</summary>
     internal bool AreAntsRunning => _isAntsFrameRequested;
 
-    private SelectionMask? OutlinedSelection => Tool?.Overlay.PendingSelection ?? Selection?.Mask;
+    // The selection, or what a selection tool's gesture would leave, has a bright outline whose dashes run.
+    private bool HasRunningOutline =>
+        SelectionDisplay.For(Selection?.Mask, Tool?.Overlay.SelectionPreview) is { HasRunningOutline: true };
+
+    // The hatching's, mode colours' and markers' look, in logical pixels, read from the theme's tokens once per theme.
+    private SelectionLook Look
+    {
+        get
+        {
+            var theme = ActualThemeVariant;
+            if (_look is { } look && Equals(_lookTheme, theme))
+                return look;
+
+            if (Application.Current is { } application)
+                look = SelectionLook.FromResources(application, theme);
+            else
+                look = default;
+
+            _look = look;
+            _lookTheme = theme;
+            return look;
+        }
+    }
 
     // How far the dashes have run within one dash and gap, in device pixels.
     private int AntsRun()
@@ -451,7 +477,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private void OnAntsFrame(TimeSpan frameTime)
     {
         _isAntsFrameRequested = false;
-        if (_topLevel is null || OutlinedSelection is not { IsEmpty: false })
+        if (_topLevel is null || !HasRunningOutline)
             return;
 
         if (AntsRun() != _paintedAntsRun)
@@ -936,7 +962,17 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var row = (devicePoint.Y - origin.Y) / _viewport.CellSize.Height;
         var cell = new CellPoint((int)Math.Floor(column), (int)Math.Floor(row));
         return new ToolPointerInput(cell, column - cell.X, row - cell.Y, ToToolModifiers(modifiers), pressure,
-            clickCount);
+            clickCount, MarkerReach());
+    }
+
+    // A tool's marker keeps its size on screen, so how many cells it reaches across and down depends on the zoom.
+    private ToolMarkerReach MarkerReach()
+    {
+        if (_viewport is null)
+            return default;
+
+        var radius = Look.FinishMarkerRadius * _renderScaling;
+        return new ToolMarkerReach(radius / _viewport.CellSize.Width, radius / _viewport.CellSize.Height);
     }
 
     // The modifier a key is, for the ones tools follow during a gesture, or null for any other key. A key's own

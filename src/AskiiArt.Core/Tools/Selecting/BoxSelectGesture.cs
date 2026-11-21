@@ -97,7 +97,7 @@ internal sealed class BoxSelectGesture
         _modifiers = modifiers;
         _hasMoved |= cell != anchor;
         if (_hasMoved)
-            SetOverlay(new ToolOverlay(Caret: null, PendingSelection: _combiner.Preview(Shape())));
+            SetOverlay(new ToolOverlay(Caret: null, SelectionPreview: _combiner.Preview(Shape())));
     }
 
     private SelectionMask Shape() => _shape(_session.Document.CanvasSize, Box());

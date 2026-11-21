@@ -67,3 +67,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0058](0058-text-boxes-group-typing-into-undo-steps.md) | Text boxes group typing into undo steps | Accepted |
 | [0059](0059-the-main-window-remembers-where-it-was.md) | The main window remembers where it was | Accepted |
 | [0060](0060-selection-combine-modes-and-shape-tools.md) | Selection combine modes and the shape selection tools | Accepted |
+| [0061](0061-the-selection-overlay.md) | The selection overlay | Accepted |

@@ -72,10 +72,10 @@ public sealed class SelectionToolCanvasTests : IDisposable
         _window.MouseMove(CentreOf(6, 6));
 
         _window.KeyPress(Key.LeftAlt, RawInputModifiers.Alt, PhysicalKey.AltLeft, null);
-        Assert.Equal(Rectangle(4, 4, 3, 3), Canvas.ActiveTool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(4, 4, 3, 3), Canvas.ActiveTool.Overlay.SelectionPreview?.Result);
 
         _window.KeyRelease(Key.LeftAlt, RawInputModifiers.None, PhysicalKey.AltLeft, null);
-        Assert.Equal(Rectangle(5, 5, 2, 2), Canvas.ActiveTool.Overlay.PendingSelection);
+        Assert.Equal(Rectangle(5, 5, 2, 2), Canvas.ActiveTool.Overlay.SelectionPreview?.Result);
 
         _window.MouseUp(CentreOf(6, 6), MouseButton.Left);
         Assert.Equal(Rectangle(5, 5, 2, 2), _canvas.Session.Selection.Mask);
@@ -141,6 +141,22 @@ public sealed class SelectionToolCanvasTests : IDisposable
         Click(CornerOf(6, 5));
         Click(CornerOf(2, 5));
         Click(CornerOf(2, 5));
+
+        Assert.Equal(Rectangle(2, 2, 4, 3), _canvas.Session.Selection.Mask);
+        Assert.False(((PolygonalLassoTool)Canvas.ActiveTool).IsDrawing);
+    }
+
+    [AvaloniaFact]
+    public void ThePolygonalLasso_FinishesOnAClickOnItsFirstCornersMarker_EvenInTheNextCell()
+    {
+        Canvas.SelectTool(PolygonalLassoTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Click(CornerOf(2, 2));
+        Click(CornerOf(6, 2));
+        Click(CornerOf(6, 5));
+        Click(CornerOf(2, 5));
+        Click(CornerOf(2, 2) - new Point(3, 3));
 
         Assert.Equal(Rectangle(2, 2, 4, 3), _canvas.Session.Selection.Mask);
         Assert.False(((PolygonalLassoTool)Canvas.ActiveTool).IsDrawing);

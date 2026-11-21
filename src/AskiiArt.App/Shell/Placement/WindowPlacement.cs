@@ -12,9 +12,9 @@ internal readonly record struct ScreenArea(PixelRect WorkingArea, double Scaling
 
 /// <summary>
 /// Where the main window was, kept in settings between runs (ADR 0059): its top-left corner in device pixels and its
-/// size in logical pixels when it isn't maximized, and whether it was maximized.
+/// size in logical pixels when it isn't maximized, and whether it was maximized or full screen.
 /// </summary>
-internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMaximized)
+internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMaximized, bool IsFullScreen = false)
 {
     // How far below the window's top edge to look for its title bar, in logical pixels.
     private const double TitleBarDepth = 16;
@@ -25,6 +25,9 @@ internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMa
     private const string HeightKey = "height";
     private const string MaximizedKey = "maximized";
 
+    // Saved from step 4.2b on. A placement saved before then has none, and wasn't full screen.
+    private const string FullScreenKey = "fullScreen";
+
     /// <summary>The placement in the form it's saved in.</summary>
     public string ToJson() =>
         new JsonObject
@@ -33,7 +36,8 @@ internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMa
             [YKey] = Position.Y,
             [WidthKey] = Size.Width,
             [HeightKey] = Size.Height,
-            [MaximizedKey] = IsMaximized
+            [MaximizedKey] = IsMaximized,
+            [FullScreenKey] = IsFullScreen
         }.ToJsonString();
 
     /// <summary>Reads a placement saved by <see cref="ToJson"/>, or returns null when it can't.</summary>
@@ -49,11 +53,12 @@ internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMa
             var width = json[WidthKey]?.GetValue<double>();
             var height = json[HeightKey]?.GetValue<double>();
             var isMaximized = json[MaximizedKey]?.GetValue<bool>();
+            var isFullScreen = json[FullScreenKey]?.GetValue<bool>() ?? false;
             if (x is null || y is null || !IsALength(width) || !IsALength(height) || isMaximized is null)
                 return null;
 
             return new WindowPlacement(new PixelPoint(x.Value, y.Value), new Size(width!.Value, height!.Value),
-                isMaximized.Value);
+                isMaximized.Value, isFullScreen);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException or FormatException)
         {
