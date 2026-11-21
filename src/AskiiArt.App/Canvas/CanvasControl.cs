@@ -477,8 +477,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _topLevel.RequestAnimationFrame(OnMotionFrame);
     }
 
-    // Repaints only once the dashes or the hatching have moved a whole device pixel; Render then asks for the next
-    // frame. With nothing left that moves, they stop until there is something again.
+    // Repaints only once the dashes have run a whole device pixel or the hatching has taken a step (ADR 0062); Render
+    // then asks for the next frame. With nothing left that moves, they stop until there is something again.
     private void OnMotionFrame(TimeSpan frameTime)
     {
         _isMotionFrameRequested = false;

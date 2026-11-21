@@ -171,6 +171,63 @@ public sealed class LassoToolTests
     }
 
     [Fact]
+    public void AnUndoDuringADrag_ShowsWhatLettingGoWouldNowSelect_WithoutThePointerMoving()
+    {
+        var corner = SelectionMask.Rectangle(_session.Document.CanvasSize, new CellRect(4, 3, 1, 1));
+        SelectionEdits.Select(_session, corner, UndoStepNames.RectangleSelect);
+        SelectionEdits.Deselect(_session);
+        _tool.PointerPressed(Input(0.25, 0.25, ToolModifiers.Shift));
+        Move(3.75, 0.25);
+        Move(3.75, 2.75);
+        Move(0.25, 2.75);
+        var path = _tool.Overlay.Path;
+        var overlayChanges = 0;
+        _tool.OverlayChanged += (_, _) => overlayChanges++;
+
+        _session.History.Undo();
+
+        var overlay = _tool.Overlay;
+        Assert.Equal(1, overlayChanges);
+        Assert.Equal(corner, overlay.SelectionPreview!.Before);
+        Assert.Equal(["####·", "####·", "####·", "····#"], TestMasks.Describe(overlay.SelectionPreview.Result));
+        Assert.Same(path, overlay.Path);
+
+        Release(0.25, 2.75);
+
+        Assert.Equal(["####·", "####·", "####·", "····#"], Selected);
+    }
+
+    [Fact]
+    public void AfterADragIsCancelled_AnUndoShowsNoPreview()
+    {
+        SelectionEdits.SelectAll(_session);
+        SelectionEdits.Deselect(_session);
+        Press(0.25, 0.25);
+        Move(3.75, 0.25);
+        Move(3.75, 2.75);
+        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+
+        _session.History.Undo();
+
+        Assert.Equal(ToolOverlay.None, _tool.Overlay);
+    }
+
+    [Fact]
+    public void UndoingACanvasResizeDuringADrag_PreviewsOnTheCanvasItBringsBack()
+    {
+        _session.ResizeCanvas(new CanvasSize(6, 5), ResizeAnchor.TopLeft);
+        Press(0.25, 0.25);
+        Move(3.75, 0.25);
+        Move(3.75, 2.75);
+        Move(0.25, 2.75);
+
+        _session.History.Undo();
+
+        Assert.Equal(["####·", "####·", "####·", "·····"],
+            TestMasks.Describe(_tool.Overlay.SelectionPreview!.Result));
+    }
+
+    [Fact]
     public void MovesWithoutADrag_DrawNothing()
     {
         Move(2, 2);

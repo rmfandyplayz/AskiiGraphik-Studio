@@ -100,20 +100,22 @@
   <x:Double x:Key="AppCanvasSelectionThickness">1</x:Double>
   <x:Double x:Key="AppCanvasSelectionDashLength">4</x:Double>
   <x:Double x:Key="AppCanvasSelectionAntsSpeed">12</x:Double>
-  <!-- The selection overlay (step 4.2b, placeholder, ADR 0061). Cells that aren't selected are hatched with thin
-       lines rising to the right, a dark one and a light one beside it, this many logical pixels apart along a row and
-       this thick, moving to the top left at this many times the outline's dash speed. While a selection tool is used,
-       the cells it would deselect are hatched the other way in Subtract's red or Intersect's blue, this strongly,
-       moving to the bottom left at these speeds, while the other hatching stands still. The grid shows this strongly
+  <!-- The selection overlay (step 4.2b, placeholder, ADR 0061). Cells that aren't selected are hatched with lines
+       rising to the right, a dark one and a light one beside it, this many logical pixels apart along a row and this
+       thick, moving to the top left at this many times the outline's dash speed, in this many steps for each screen
+       pixel, so they glide (step 4.2c, ADR 0062). While a selection tool is used, the cells it would deselect are
+       hatched the other way in Subtract's red or Intersect's blue, this strongly, moving to the bottom left at these
+       speeds, while the other hatching stands still. The grid shows this strongly
        under the hatching. The shape's lines that won't be kept show this faintly, and the old selection's this
        faintly. A lasso shows how it would close this faintly. The Polygonal Lasso's corners have dots this big and
        this strong, and its first corner a marker this big, which finishes the shape when clicked. -->
-  <x:Double x:Key="AppCanvasSelectionHatchPeriod">8</x:Double>
-  <x:Double x:Key="AppCanvasSelectionHatchThickness">1</x:Double>
-  <x:Double x:Key="AppCanvasSelectionHatchSpeed">0.6</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchPeriod">16</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchThickness">2</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchSpeed">1</x:Double>
+  <x:Double x:Key="AppCanvasSelectionHatchStepsPerPixel">8</x:Double>
   <x:Double x:Key="AppCanvasSelectionLostHatchOpacity">0.75</x:Double>
   <x:Double x:Key="AppCanvasSelectionSubtractHatchSpeed">1</x:Double>
-  <x:Double x:Key="AppCanvasSelectionIntersectHatchSpeed">0.6</x:Double>
+  <x:Double x:Key="AppCanvasSelectionIntersectHatchSpeed">1</x:Double>
   <x:Double x:Key="AppCanvasGridUnderHatchOpacity">0.4</x:Double>
   <x:Double x:Key="AppCanvasGridUnderLostHatchOpacity">0.7</x:Double>
   <x:Double x:Key="AppCanvasSelectionFaintOpacity">0.35</x:Double>

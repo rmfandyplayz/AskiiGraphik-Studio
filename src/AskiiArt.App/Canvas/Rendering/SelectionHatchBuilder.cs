@@ -30,7 +30,7 @@ internal sealed class SelectionHatchBuilder
     /// was selected, or the look draws no hatching.
     /// </summary>
     public SelectionHatch? BuildUnselected(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look,
-        int shift)
+        double shift)
     {
         ArgumentNullException.ThrowIfNull(viewport);
         var visible = viewport.VisibleCells;
@@ -50,7 +50,7 @@ internal sealed class SelectionHatchBuilder
     /// moved <paramref name="shift"/> device pixels to the left, or null when there's none.
     /// </summary>
     public SelectionHatch? BuildLost(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look,
-        CanvasColors colors, int shift)
+        CanvasColors colors, double shift)
     {
         ArgumentNullException.ThrowIfNull(viewport);
         var visible = viewport.VisibleCells;
@@ -139,7 +139,7 @@ internal sealed class SelectionHatchBuilder
     }
 
     private SelectionHatch? Complete(CanvasViewport viewport, CellRect visible, SelectionLook look, bool rises,
-        SKColor line, SKColor backdrop, int shift)
+        SKColor line, SKColor backdrop, double shift)
     {
         var cellMask = CellImage(visible);
         if (cellMask is null)

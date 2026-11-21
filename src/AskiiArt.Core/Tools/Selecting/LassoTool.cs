@@ -37,10 +37,13 @@ public sealed class LassoTool : ITool
     {
         ArgumentNullException.ThrowIfNull(context);
         _session = context.Session;
-        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group));
+        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
+            ShowPreview);
     }
 
-    /// <summary>Raised when the path grows or the drag ends.</summary>
+    /// <summary>
+    /// Raised when the path grows, an undo or redo changes what letting go would select, or the drag ends.
+    /// </summary>
     public event EventHandler? OverlayChanged;
 
     /// <summary>The tool's identity. The name key is the App's resource key.</summary>
@@ -125,9 +128,8 @@ public sealed class LassoTool : ITool
     private void ShowPath()
     {
         IReadOnlyList<CanvasPoint> path = [.. _path];
-        var canvasSize = _session.Document.CanvasSize;
         SetOverlay(new ToolOverlay(Caret: null,
-            SelectionPreview: _combiner.Preview(() => ShapeOf(canvasSize, path)),
+            SelectionPreview: _combiner.Preview(() => ShapeOf(_session.Document.CanvasSize, path)),
             Path: path,
             ShowsPathClosing: path.Count > 2));
     }
@@ -144,8 +146,12 @@ public sealed class LassoTool : ITool
     {
         _isDrawing = false;
         _path.Clear();
+        _combiner.Stop();
         SetOverlay(ToolOverlay.None);
     }
+
+    // An undo or redo during the drag changed the selection the path combines with.
+    private void ShowPreview(SelectionPreview preview) => SetOverlay(_overlay with { SelectionPreview = preview });
 
     private void SetOverlay(ToolOverlay overlay)
     {

@@ -26,7 +26,10 @@ public sealed class EllipseSelectTool : ITool
         _gesture.OverlayChanged += (_, _) => OverlayChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Raised when a drag starts showing an ellipse, the ellipse changes, or the drag ends.</summary>
+    /// <summary>
+    /// Raised when a drag starts showing an ellipse, the ellipse changes, an undo or redo changes what letting go would
+    /// select, or the drag ends.
+    /// </summary>
     public event EventHandler? OverlayChanged;
 
     /// <summary>The tool's identity. The name key is the App's resource key.</summary>

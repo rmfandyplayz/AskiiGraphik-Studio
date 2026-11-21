@@ -249,6 +249,21 @@ public sealed class BoxSelectGestureTests
         Assert.Equal(ToolOverlay.None, tool.Overlay);
     }
 
+    [Fact]
+    public void AnUndoDuringADrag_ShowsWhatLettingGoWouldNowSelect_WithoutThePointerMoving()
+    {
+        Select(new CellRect(0, 0, 2, 2));
+        SelectionEdits.Deselect(_session);
+        _tool.PointerPressed(Input(5, 3, Shift));
+        _tool.PointerMoved(Input(7, 4, Shift));
+
+        History.Undo();
+
+        var preview = _tool.Overlay.SelectionPreview!;
+        Assert.Equal(Rectangle(0, 0, 2, 2), preview.Before);
+        Assert.Equal(Union(new CellRect(0, 0, 2, 2), new CellRect(5, 3, 3, 2)), preview.Result);
+    }
+
     private static ToolPointerInput Input(int x, int y, ToolModifiers modifiers) =>
         new(new CellPoint(x, y), 0.5, 0.5, modifiers);
 

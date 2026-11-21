@@ -36,11 +36,13 @@ public sealed class PolygonalLassoTool : ITool
     {
         ArgumentNullException.ThrowIfNull(context);
         _session = context.Session;
-        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group));
+        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
+            ShowPreview);
     }
 
     /// <summary>
-    /// Raised when a corner is added or taken away, the pointer moves while there are corners, or the shape ends.
+    /// Raised when a corner is added or taken away, the pointer moves while there are corners, an undo or redo
+    /// changes what finishing would select, or the shape ends.
     /// </summary>
     public event EventHandler? OverlayChanged;
 
@@ -160,6 +162,7 @@ public sealed class PolygonalLassoTool : ITool
     private void Cancel()
     {
         _corners.Clear();
+        _combiner.Stop();
         ShowPath();
     }
 
@@ -175,13 +178,15 @@ public sealed class PolygonalLassoTool : ITool
 
         var isClosing = IsPointerOnFinish;
         IReadOnlyList<CanvasPoint> outline = isClosing ? [.. _corners] : [.. _corners, _pointer];
-        var canvasSize = _session.Document.CanvasSize;
         SetOverlay(new ToolOverlay(Caret: null,
-            SelectionPreview: _combiner.Preview(() => ShapeOf(canvasSize, outline)),
+            SelectionPreview: _combiner.Preview(() => ShapeOf(_session.Document.CanvasSize, outline)),
             Path: isClosing ? [.. _corners, _corners[0]] : outline,
             ShowsPathClosing: !isClosing && outline.Count > 2,
             Markers: Markers(isClosing)));
     }
+
+    // An undo or redo during the shape changed the selection it combines with.
+    private void ShowPreview(SelectionPreview preview) => SetOverlay(_overlay with { SelectionPreview = preview });
 
     private static SelectionMask? ShapeOf(CanvasSize canvasSize, IReadOnlyList<CanvasPoint> corners)
     {

@@ -276,6 +276,27 @@ public sealed class PolygonalLassoToolTests
         Assert.False(_session.History.CanUndo);
     }
 
+    [Fact]
+    public void AnUndoDuringAShape_ShowsWhatFinishingWouldNowSelect_WithoutThePointerMoving()
+    {
+        var corner = SelectionMask.Rectangle(_session.Document.CanvasSize, new CellRect(4, 3, 1, 1));
+        SelectionEdits.Select(_session, corner, UndoStepNames.RectangleSelect);
+        SelectionEdits.Deselect(_session);
+        _tool.PointerPressed(Input(0.25, 0.25, ToolModifiers.Shift));
+        _tool.PointerReleased(Input(0.25, 0.25, ToolModifiers.Shift));
+        Click(3.75, 0.25);
+        Click(3.75, 2.75);
+        _tool.PointerMoved(Input(0.25, 2.75));
+        var markers = _tool.Overlay.Markers;
+
+        _session.History.Undo();
+
+        var overlay = _tool.Overlay;
+        Assert.Equal(corner, overlay.SelectionPreview!.Before);
+        Assert.Equal(["####·", "####·", "####·", "····#"], TestMasks.Describe(overlay.SelectionPreview.Result));
+        Assert.Same(markers, overlay.Markers);
+    }
+
     private static ToolPointerInput Input(double x, double y, ToolModifiers modifiers = ToolModifiers.None,
         int clickCount = 1)
     {

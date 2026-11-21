@@ -13,9 +13,9 @@ public sealed class SelectionLookTests
 {
     private static readonly SelectionLook _look = new(SKColors.Black, SKColors.White, SKColors.Red, SKColors.DarkRed,
         SKColors.Blue, SKColors.DarkBlue, HatchPeriod: 8, HatchThickness: 1, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
-        IntersectHatchSpeed: 0.4, FaintOpacity: 0.3, VanishingOpacity: 0.1, LostHatchOpacity: 0.7,
-        GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5, CornerMarkerRadius: 3,
-        FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
+        IntersectHatchSpeed: 0.4, HatchStepsPerPixel: 4, FaintOpacity: 0.3, VanishingOpacity: 0.1,
+        LostHatchOpacity: 0.7, GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5,
+        CornerMarkerRadius: 3, FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
 
     [AvaloniaFact]
     public void TheThemeTokens_GiveALookThatHatchesAndHasMarkers_InBothThemes()
@@ -35,6 +35,7 @@ public sealed class SelectionLookTests
             Assert.True(look.HatchSpeed > 0);
             Assert.True(look.SubtractHatchSpeed > 0);
             Assert.True(look.IntersectHatchSpeed > 0);
+            Assert.True(look.HatchSteps > 1);
             Assert.NotEqual(look.SubtractLine, look.IntersectLine);
         }
     }
@@ -60,6 +61,14 @@ public sealed class SelectionLookTests
         Assert.Equal(8, _look.HatchTilePeriod);
         Assert.Equal(3, (_look with { HatchPeriod = 2.6 }).HatchTilePeriod);
         Assert.Equal(2, (_look with { HatchPeriod = 0.5 }).HatchTilePeriod);
+    }
+
+    [Fact]
+    public void TheHatchingsSteps_AreAWholeNumberAtLeastOne()
+    {
+        Assert.Equal(4, _look.HatchSteps);
+        Assert.Equal(3, (_look with { HatchStepsPerPixel = 2.6 }).HatchSteps);
+        Assert.Equal(1, (_look with { HatchStepsPerPixel = 0 }).HatchSteps);
     }
 
     [Fact]

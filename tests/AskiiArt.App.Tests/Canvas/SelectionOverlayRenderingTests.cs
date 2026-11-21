@@ -48,6 +48,7 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         HatchSpeed: 1,
         SubtractHatchSpeed: 1,
         IntersectHatchSpeed: 1,
+        HatchStepsPerPixel: 4,
         FaintOpacity: 0.5,
         VanishingOpacity: 0.25,
         LostHatchOpacity: 1,
@@ -178,6 +179,36 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
     }
 
     [Fact]
+    public void HatchingMovedPartOfAPixel_SpreadsEachLineOverThePixelsItLiesAcross()
+    {
+        var display = SelectionDisplay.For(Rectangle(0, 0, 1, 1), null);
+        var viewport = CreateViewport();
+        var cell = new CellPoint(2, 1);
+
+        using var still = Paint(viewport, new CanvasOverlays(false, null, Selection: display, Look: _look));
+        using var halfway = Paint(viewport, new CanvasOverlays(false, null, Selection: display,
+            SelectionMotion: new SelectionMotion(0, 0.5, 0), Look: _look));
+
+        // Each pixel is half its own colour and half its right-hand neighbour's, give or take rounding.
+        var rect = Inside(viewport, cell);
+        var blended = 0;
+        for (var y = rect.Y; y < rect.Bottom; y++)
+        {
+            for (var x = rect.X; x < rect.Right - 1; x++)
+            {
+                var (here, next, actual) = (still.GetPixel(x, y), still.GetPixel(x + 1, y), halfway.GetPixel(x, y));
+                Assert.InRange(actual.Red, Halfway(here.Red, next.Red) - 2, Halfway(here.Red, next.Red) + 2);
+                Assert.InRange(actual.Green, Halfway(here.Green, next.Green) - 2, Halfway(here.Green, next.Green) + 2);
+                Assert.InRange(actual.Blue, Halfway(here.Blue, next.Blue) - 2, Halfway(here.Blue, next.Blue) + 2);
+                if (actual != here && actual != next)
+                    blended++;
+            }
+        }
+
+        Assert.True(blended > 0);
+    }
+
+    [Fact]
     public void TheGrid_ShowsLessUnderTheHatching_AndLessStillUnderTheHatchingOverCellsAboutToBeDeselected()
     {
         var preview = new SelectionPreview(Rectangle(0, 0, 3, 2), SelectionCombineMode.Subtract,
@@ -304,6 +335,8 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
     }
 
     private static bool IsBluish(SKColor pixel) => pixel.Blue > pixel.Red + 40;
+
+    private static int Halfway(byte first, byte second) => (first + second) / 2;
 
     // How many pixels in the rect have the same colour as their neighbour up and to the right (rising) or down and
     // to the right (falling): along a hatching's lines, they all do.

@@ -25,6 +25,10 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <param name="HatchSpeed">How fast the hatching over cells that aren't selected moves to the top left.</param>
 /// <param name="SubtractHatchSpeed">How fast Subtract's hatching moves to the bottom left.</param>
 /// <param name="IntersectHatchSpeed">How fast Intersect's hatching moves to the bottom left.</param>
+/// <param name="HatchStepsPerPixel">
+/// How many steps the hatching takes for each device pixel it moves: one moves it a whole pixel at a time, and more
+/// move it in smaller steps that look smoother (ADR 0062).
+/// </param>
 /// <param name="FaintOpacity">How strongly a faint outline shows.</param>
 /// <param name="VanishingOpacity">How strongly the old selection's lines that won't be kept show.</param>
 /// <param name="LostHatchOpacity">How strongly the hatching over cells about to be deselected shows.</param>
@@ -46,6 +50,7 @@ internal readonly record struct SelectionLook(
     double HatchSpeed,
     double SubtractHatchSpeed,
     double IntersectHatchSpeed,
+    double HatchStepsPerPixel,
     double FaintOpacity,
     double VanishingOpacity,
     double LostHatchOpacity,
@@ -69,6 +74,9 @@ internal readonly record struct SelectionLook(
     /// The hatching tile's width and height, in whole pixels; lines closer than two pixels apart would be a smear.
     /// </summary>
     public int HatchTilePeriod => Math.Max(2, (int)Math.Round(HatchPeriod));
+
+    /// <summary>How many steps the hatching takes for each device pixel it moves: a whole number, at least 1.</summary>
+    public int HatchSteps => Math.Max(1, (int)Math.Round(HatchStepsPerPixel));
 
     /// <summary>How fast the hatching over cells about to be deselected moves, in <paramref name="style"/>.</summary>
     public double LostHatchSpeedOf(SelectionLineStyle style) => style switch
@@ -104,6 +112,7 @@ internal readonly record struct SelectionLook(
         Token(resources, "AppCanvasSelectionHatchSpeed", theme),
         Token(resources, "AppCanvasSelectionSubtractHatchSpeed", theme),
         Token(resources, "AppCanvasSelectionIntersectHatchSpeed", theme),
+        Token(resources, "AppCanvasSelectionHatchStepsPerPixel", theme),
         Token(resources, "AppCanvasSelectionFaintOpacity", theme),
         Token(resources, "AppCanvasSelectionVanishingOpacity", theme),
         Token(resources, "AppCanvasSelectionLostHatchOpacity", theme),

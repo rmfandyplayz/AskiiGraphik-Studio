@@ -83,7 +83,8 @@ internal static class CanvasScenePainter
 
     // The tile's lines repeat from the canvas's corner, moved along by how far they've gone, so they stay put on the
     // art while it scrolls, and show only where the cell mask, stretched over the visible cells without smoothing, has
-    // a cell.
+    // a cell. The tile is smoothed, so a move of part of a pixel spreads each line over the two pixels it lies across,
+    // and the lines glide rather than jump (ADR 0062). Moved a whole pixel, it lands exactly on the pixels.
     private static void DrawHatch(SKCanvas canvas, SKPaint paint, SelectionHatch? hatch, CanvasViewport viewport)
     {
         if (hatch is null)
@@ -95,8 +96,9 @@ internal static class CanvasScenePainter
         var unsmoothed = new SKSamplingOptions(SKFilterMode.Nearest);
         using var cells = hatch.CellMask.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, unsmoothed,
             SKMatrix.CreateScaleTranslation(cell.Width, cell.Height, bounds.X, bounds.Y));
-        using var lines = hatch.Tile.ToShader(SKShaderTileMode.Repeat, SKShaderTileMode.Repeat, unsmoothed,
-            SKMatrix.CreateTranslation(origin.X - hatch.Shift, origin.Y));
+        using var lines = hatch.Tile.ToShader(SKShaderTileMode.Repeat, SKShaderTileMode.Repeat,
+            new SKSamplingOptions(SKFilterMode.Linear), SKMatrix.CreateTranslation((float)(origin.X - hatch.Shift),
+                origin.Y));
 
         // Keeps the lines (the destination) only where the cells (the source) are opaque.
         using var shader = SKShader.CreateBlend(SKBlendMode.DstIn, lines, cells);

@@ -37,7 +37,8 @@ internal sealed class BoxSelectGesture
     {
         ArgumentNullException.ThrowIfNull(context);
         _session = context.Session;
-        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group));
+        _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
+            ShowPreview);
         _cellWidthToHeight = context.CellWidthToHeight;
         _shape = shape;
         _stepNameKey = stepNameKey;
@@ -96,8 +97,13 @@ internal sealed class BoxSelectGesture
         _corner = cell;
         _modifiers = modifiers;
         _hasMoved |= cell != anchor;
-        if (_hasMoved)
-            SetOverlay(new ToolOverlay(Caret: null, SelectionPreview: _combiner.Preview(Shape())));
+        if (!_hasMoved)
+            return;
+
+        // The canvas works the shape out only if it draws this overlay.
+        var box = Box();
+        SetOverlay(new ToolOverlay(Caret: null,
+            SelectionPreview: _combiner.Preview(() => _shape(_session.Document.CanvasSize, box))));
     }
 
     private SelectionMask Shape() => _shape(_session.Document.CanvasSize, Box());
@@ -147,8 +153,12 @@ internal sealed class BoxSelectGesture
     {
         _anchor = null;
         _hasMoved = false;
+        _combiner.Stop();
         SetOverlay(ToolOverlay.None);
     }
+
+    // An undo or redo during the drag changed the selection the box combines with.
+    private void ShowPreview(SelectionPreview preview) => SetOverlay(_overlay with { SelectionPreview = preview });
 
     private void SetOverlay(ToolOverlay overlay)
     {

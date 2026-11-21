@@ -18,9 +18,9 @@ public sealed class SelectionMotionTests
 
     private static readonly SelectionLook _look = new(SKColors.Black, SKColors.White, SKColors.Red, SKColors.DarkRed,
         SKColors.Blue, SKColors.DarkBlue, HatchPeriod: 100, HatchThickness: 1, HatchSpeed: 0.6, SubtractHatchSpeed: 1,
-        IntersectHatchSpeed: 0.6, FaintOpacity: 0.3, VanishingOpacity: 0.1, LostHatchOpacity: 0.7,
-        GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5, CornerMarkerRadius: 3,
-        FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
+        IntersectHatchSpeed: 0.6, HatchStepsPerPixel: 1, FaintOpacity: 0.3, VanishingOpacity: 0.1,
+        LostHatchOpacity: 0.7, GridUnderHatchOpacity: 0.4, GridUnderLostHatchOpacity: 0.7, ClosingLineOpacity: 0.5,
+        CornerMarkerRadius: 3, FinishMarkerRadius: 8, CornerMarkerOpacity: 0.9);
 
     [Fact]
     public void TheDashes_RunAtTheirSpeed_WithinADashAndAGap()
@@ -39,6 +39,16 @@ public sealed class SelectionMotionTests
     }
 
     [Fact]
+    public void TheHatching_MovesInStepsOfAPixel()
+    {
+        // 0.6 × 12 × √2 × 2 seconds ≈ 20.36 pixels, rounded down to a quarter of a pixel.
+        var motion = SelectionMotion.At(Seconds(9), Seconds(2), display: null, _look with { HatchStepsPerPixel = 4 },
+            DashSpeed, DashLength);
+
+        Assert.Equal(20.25, motion.UnselectedHatchShift);
+    }
+
+    [Fact]
     public void TheHatchingsShift_StaysWithinOneTile()
     {
         var motion = SelectionMotion.At(Seconds(9), Seconds(2), display: null, _look with { HatchPeriod = 8 },
@@ -50,7 +60,7 @@ public sealed class SelectionMotionTests
     [Theory]
     [InlineData(SelectionCombineMode.Subtract, 16)]
     [InlineData(SelectionCombineMode.Intersect, 10)]
-    public void TheHatchingOverCellsAboutToBeDeselected_MovesAtItsModesSpeed(SelectionCombineMode mode, int shift)
+    public void TheHatchingOverCellsAboutToBeDeselected_MovesAtItsModesSpeed(SelectionCombineMode mode, double shift)
     {
         var before = SelectionMask.Rectangle(_size, new CellRect(0, 0, 2, 2));
         var preview = new SelectionPreview(before, mode, SelectionMask.Rectangle(_size, new CellRect(1, 0, 3, 3)));
