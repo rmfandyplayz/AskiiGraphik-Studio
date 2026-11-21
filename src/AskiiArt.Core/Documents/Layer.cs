@@ -83,12 +83,26 @@ public sealed class Layer
     /// <inheritdoc cref="SetCell(CellPoint, Cell)"/>
     internal void SetCell(int index, Cell cell)
     {
+        if (SetCellUnreported(index, cell))
+            ReportChangedCells(CellRect.FromPoint(_cells.PointAt(index)));
+    }
+
+    /// <summary>
+    /// Stores <paramref name="cell"/> without reporting the change, for a command that changes so many cells that
+    /// reporting each would be slow, and reports them together with <see cref="ReportChangedCells"/> (ADR 0066).
+    /// </summary>
+    /// <returns>True when the cell didn't already hold it.</returns>
+    internal bool SetCellUnreported(int index, Cell cell)
+    {
         if (_cells[index] == cell)
-            return;
+            return false;
 
         _cells[index] = cell;
-        Frame?.Document.ChangeTracker.RecordCells(Id, CellRect.FromPoint(_cells.PointAt(index)));
+        return true;
     }
+
+    /// <summary>Reports that cells in <paramref name="region"/> changed, after <see cref="SetCellUnreported"/>.</summary>
+    internal void ReportChangedCells(CellRect region) => Frame?.Document.ChangeTracker.RecordCells(Id, region);
 
     internal void SetProperties(LayerProperties properties)
     {

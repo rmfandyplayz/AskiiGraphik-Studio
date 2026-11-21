@@ -5,6 +5,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 
@@ -15,6 +16,7 @@ public sealed class ToolRegistryTests
     private static readonly ToolDefinition[] _builtInTools =
     [
         HandTool.Definition,
+        MoveTool.Definition,
         RectangleSelectTool.Definition,
         EllipseSelectTool.Definition,
         LassoTool.Definition,
@@ -35,7 +37,8 @@ public sealed class ToolRegistryTests
     {
         var registry = new ToolRegistry(_builtInTools, BuiltInToolGroups.All);
 
-        Assert.Equal(["V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
+        Assert.Equal(["", "V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
+        Assert.Equal([MoveTool.Id], registry.GroupOf(MoveTool.Id).ToolIds);
         Assert.Equal(
             [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id, MagicWandTool.Id],
             registry.GroupOf(LassoTool.Id).ToolIds);
@@ -114,7 +117,7 @@ public sealed class ToolRegistryTests
         Assert.Throws<ArgumentException>(() =>
             new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Text, sameId]));
         Assert.Throws<ArgumentException>(() =>
-            new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Hand, sameLetter]));
+            new ToolRegistry([MoveTool.Definition, TextTool.Definition], [BuiltInToolGroups.Move, sameLetter]));
     }
 
     [Fact]
@@ -126,7 +129,7 @@ public sealed class ToolRegistryTests
         };
 
         Assert.Throws<ArgumentException>(() =>
-            new ToolRegistry([HandTool.Definition, TextTool.Definition], [BuiltInToolGroups.Hand, text]));
+            new ToolRegistry([MoveTool.Definition, TextTool.Definition], [BuiltInToolGroups.Move, text]));
     }
 
     [Fact]

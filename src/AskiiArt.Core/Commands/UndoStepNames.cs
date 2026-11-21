@@ -101,4 +101,7 @@ public static class UndoStepNames
 
     /// <summary>Emptying the active layer's selected cells.</summary>
     public const string DeleteSelectedCells = "UndoStepDeleteSelectedCells";
+
+    /// <summary>Moving the selected cells with the Move tool, or a copy of them, from its first drag or nudge on.</summary>
+    public const string Move = "UndoStepMove";
 }

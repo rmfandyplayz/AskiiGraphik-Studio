@@ -819,6 +819,14 @@
   <data name="ToolHand" xml:space="preserve">
     <value>Hand</value>
   </data>
+  <data name="ToolMove" xml:space="preserve">
+    <value>Move</value>
+    <comment>The Move tool, which moves the selected cells, and its button on the Tools toolbar.</comment>
+  </data>
+  <data name="UndoStepMove" xml:space="preserve">
+    <value>Move</value>
+    <comment>History: moving the selected cells, or a copy of them, with the Move tool.</comment>
+  </data>
   <data name="ActionToggleToolOptionsToolbar" xml:space="preserve">
     <value>Tool O_ptions Toolbar</value>
     <comment>Window menu: shows or hides the toolbar with the chosen tool's options, such as the brush size.</comment>

@@ -37,3 +37,5 @@ Updated 2026-11-14: Esc outside a stroke now switches to the Hand tool (V), so f
 Updated 2026-11-14: B is the Brush. Its keys 1 and 2 are the Brush's own, which it takes as typed text, so they work only while it's chosen (ADR 0043).
 
 Updated 2026-11-16: the letters belong to tool groups now, and B brings back the brush used last. Number keys choose a tool of the active group: the canvas takes them as typed text that the tool didn't use, so they're no longer the Brush's own (ADR 0049).
+
+Updated 2026-11-21: V is the Move tool's letter now, and the Hand tool has none; Esc still picks it (ADR 0066).

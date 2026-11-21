@@ -55,7 +55,7 @@ public enum ToolKey
     /// <summary>A few cells down.</summary>
     JumpDown,
 
-    /// <summary>Many cells left (Alt+Left on Windows and Linux, Cmd+Option+Left on macOS).</summary>
+    /// <summary>Many cells left (Ctrl+Shift+Left on Windows and Linux, Cmd+Option+Left on macOS).</summary>
     LongJumpLeft,
 
     /// <summary>Many cells right.</summary>
@@ -66,6 +66,18 @@ public enum ToolKey
 
     /// <summary>Many cells down.</summary>
     LongJumpDown,
+
+    /// <summary>A big step left (Shift+Left), as a nudge of the Move tool takes.</summary>
+    FarLeft,
+
+    /// <summary>A big step right (Shift+Right).</summary>
+    FarRight,
+
+    /// <summary>A big step up (Shift+Up).</summary>
+    FarUp,
+
+    /// <summary>A big step down (Shift+Down).</summary>
+    FarDown,
 
     /// <summary>The start of the row (Home; also Cmd+Left on macOS).</summary>
     Home,

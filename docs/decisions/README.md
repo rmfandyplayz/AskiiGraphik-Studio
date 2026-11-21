@@ -72,3 +72,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0063](0063-the-magic-wand-and-selection-commands.md) | The Magic Wand and the selection commands | Accepted |
 | [0064](0064-zebra-hatching-and-brighter-dashes.md) | Zebra hatching and brighter dashes | Accepted |
 | [0065](0065-tools-clip-to-the-selection-and-delete-empties-it.md) | Tools clip to the selection, and Delete empties it | Accepted |
+| [0066](0066-the-move-tool-and-its-floating-move.md) | The Move tool and its floating move | Accepted |

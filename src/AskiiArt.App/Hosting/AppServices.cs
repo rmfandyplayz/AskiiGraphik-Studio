@@ -27,6 +27,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
@@ -93,6 +94,7 @@ internal static class AppServices
 
         // Tools register the way a future plugin would (ARCHITECTURE §8.1).
         services.AddSingleton(HandTool.Definition);
+        services.AddSingleton(MoveTool.Definition);
         services.AddSingleton(RectangleSelectTool.Definition);
         services.AddSingleton(EllipseSelectTool.Definition);
         services.AddSingleton(LassoTool.Definition);
@@ -107,6 +109,7 @@ internal static class AppServices
         services.AddSingleton(SoftEraserTool.Definition);
         services.AddSingleton(EraserTool.BackgroundDefinition);
         services.AddSingleton(BuiltInToolGroups.Hand);
+        services.AddSingleton(BuiltInToolGroups.Move);
         services.AddSingleton(BuiltInToolGroups.Select);
         services.AddSingleton(BuiltInToolGroups.Text);
         services.AddSingleton(BuiltInToolGroups.Brush);

@@ -38,3 +38,5 @@ Updated 2026-11-20: at the owner's request the outline's dashes now run clockwis
 Updated 2026-11-20: Rectangle Select now follows the combine modes and the keys that shape its drag (ADR 0060).
 
 Updated 2026-11-20: the canvas now also hatches what isn't selected, and a selection tool's preview shows faint and coloured outlines by its mode (ADR 0061).
+
+Updated 2026-11-21: at the owner's request the Hand tool has no letter after step 4.5, rather than H; Esc picks it, and the Move tool has V (ADR 0066).

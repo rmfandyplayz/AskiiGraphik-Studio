@@ -7,6 +7,7 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Text;
 using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Tests.Documents;
@@ -197,6 +198,7 @@ public sealed class DocumentActionsTests : IDisposable
 
     private void Type(string text)
     {
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         var tool = _canvas.ViewModel.ActiveTool;
         tool.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
         tool.TextEntered(text);

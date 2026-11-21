@@ -8,7 +8,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Footprints;
-using AskiiArt.Core.Tools.Text;
+using AskiiArt.Core.Tools.Hand;
 
 namespace AskiiArt.App.Tests.Canvas;
 
@@ -29,7 +29,7 @@ public sealed class RememberedToolStateTests : IDisposable
     }
 
     [Fact]
-    public void WhatWasSaved_ComesBackNextRun_StillOnTheTextTool()
+    public void WhatWasSaved_ComesBackNextRun_StillOnTheHandTool()
     {
         _canvas.ToolSettings.For(BrushTool.TipOptions).Set(BrushTipOptions.Size, 7);
         _canvas.ViewModel.SelectTool(SoftEraserTool.Id);
@@ -40,7 +40,7 @@ public sealed class RememberedToolStateTests : IDisposable
         new RememberedToolState(_settings).Save(_canvas.ViewModel);
         new RememberedToolState(_settings).Restore(_nextRun.ViewModel);
 
-        Assert.Equal(TextTool.Id, _nextRun.ViewModel.SelectedTool.Descriptor.Id);
+        Assert.Equal(HandTool.Id, _nextRun.ViewModel.SelectedTool.Descriptor.Id);
         Assert.Equal(7, _nextRun.ToolSettings.For(BrushTool.TipOptions).Get(BrushTipOptions.Size));
         Assert.Equal((foreground, background), (_nextRun.Colors.Foreground, _nextRun.Colors.Background));
 
@@ -68,7 +68,7 @@ public sealed class RememberedToolStateTests : IDisposable
 
         new RememberedToolState(_settings).Restore(_canvas.ViewModel);
 
-        Assert.Equal(TextTool.Id, _canvas.ViewModel.SelectedTool.Descriptor.Id);
+        Assert.Equal(HandTool.Id, _canvas.ViewModel.SelectedTool.Descriptor.Id);
         Assert.Empty(_canvas.ViewModel.LastToolOfGroup);
         Assert.Equal((CellColor.Unset, CellColor.Unset), (_canvas.Colors.Foreground, _canvas.Colors.Background));
     }

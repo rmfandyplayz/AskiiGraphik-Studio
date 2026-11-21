@@ -111,6 +111,7 @@ internal sealed record MenuLayout(
         var toolsMenu = new MenuDefinition(nameof(Strings.MenuTools),
         [
             new ActionMenuEntry(ToolActionIds.Hand),
+            new ActionMenuEntry(ToolActionIds.Move),
             new ActionMenuEntry(ToolActionIds.RectangleSelect),
             new ActionMenuEntry(ToolActionIds.EllipseSelect),
             new ActionMenuEntry(ToolActionIds.Lasso),

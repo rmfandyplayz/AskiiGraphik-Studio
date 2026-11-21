@@ -43,11 +43,23 @@ public sealed class ToolKeymapTests
     }
 
     [Theory]
-    [InlineData(ToolModifiers.Shift)]
+    [InlineData(ToolModifiers.Shift | ToolModifiers.Alt)]
     [InlineData(ToolModifiers.Command | ToolModifiers.Alt)]
-    public void OtherModifiers_DontMatch_SoShiftStaysFreeForSelection(ToolModifiers modifiers)
+    public void OtherModifiers_DontMatch(ToolModifiers modifiers)
     {
         Assert.Null(_windows.Find(Key.Left, modifiers));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShiftArrow_IsABigStep_OnEveryPlatform(bool isMacOS)
+    {
+        var keymap = ToolKeymap.CreateDefault(isMacOS);
+
+        Assert.Equal(
+            [ToolKey.FarLeft, ToolKey.FarRight, ToolKey.FarUp, ToolKey.FarDown],
+            new[] { Key.Left, Key.Right, Key.Up, Key.Down }.Select(key => keymap.Find(key, ToolModifiers.Shift)));
     }
 
     [Fact]

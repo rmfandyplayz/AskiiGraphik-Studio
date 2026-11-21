@@ -18,6 +18,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
@@ -46,6 +47,7 @@ internal sealed class TestCanvas : IDisposable
         var tools = new ToolRegistry(
             [
                 HandTool.Definition,
+                MoveTool.Definition,
                 RectangleSelectTool.Definition,
                 EllipseSelectTool.Definition,
                 LassoTool.Definition,

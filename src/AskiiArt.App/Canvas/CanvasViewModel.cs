@@ -13,7 +13,6 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
-using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -47,7 +46,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     // Each group's tool that was chosen last, by group id, so choosing the group brings it back (ADR 0049).
     private readonly Dictionary<string, string> _lastToolOfGroup = [];
-    private string _selectedToolId = TextTool.Id;
+    private string _selectedToolId = HandTool.Id;
     private double _cellWidthToHeight;
 
     public CanvasViewModel(ActiveDocument activeDocument, ToolRegistry tools, PaintColors colors,

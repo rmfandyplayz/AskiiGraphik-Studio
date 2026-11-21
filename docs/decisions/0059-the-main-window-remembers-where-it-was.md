@@ -28,3 +28,5 @@ After testing step 4.1 the owner (2026-11-20) asked for the main window to come 
 - On macOS a window opened from the Dock after the last one closed also comes back where that one was.
 
 Updated 2026-11-20: at the owner's request a window closed full screen opens full screen again. Placements saved before then read as not full screen.
+
+Updated 2026-11-21 (step 4.5): a maximized or full-screen window moved to another screen now notes that screen, so it reopens there. Its remembered normal size and place move onto that screen, keeping their distance from its corner where they fit, else centred, and shrinking to fit a smaller screen (`WindowPlacement.MovedOnto`). Before, they stayed on the screen it was maximized on.

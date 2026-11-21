@@ -114,6 +114,7 @@ public sealed class BrushCanvasTests : IDisposable
     [AvaloniaFact]
     public void Key2_TypesA2_WithTheTextTool()
     {
+        Canvas.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 1));
 
         PressKey(Key.D2, PhysicalKey.Digit2, "2");

@@ -15,6 +15,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
@@ -56,24 +57,24 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheTextTool_IsActiveAtFirst()
+    public void TheHandTool_IsActiveAtFirst()
     {
-        Assert.Equal(TextTool.Id, Canvas.ActiveTool.Descriptor.Id);
+        Assert.Equal(HandTool.Id, Canvas.ActiveTool.Descriptor.Id);
     }
 
     [AvaloniaFact]
     public void EachTool_HasAnAction_CheckedWhenItsActive()
     {
         var actions = new ToolActions(Canvas).CreateActions().ToDictionary(action => action.Id);
-        var text = actions[ToolActionIds.Text];
+        var hand = actions[ToolActionIds.Hand];
         var eraser = actions[ToolActionIds.Eraser];
-        Assert.True(text.CheckedState!.IsChecked);
+        Assert.True(hand.CheckedState!.IsChecked);
         Assert.False(eraser.CheckedState!.IsChecked);
 
         eraser.Command.Execute(null);
 
         Assert.Equal(EraserTool.Id, Canvas.ActiveTool.Descriptor.Id);
-        Assert.False(text.CheckedState!.IsChecked);
+        Assert.False(hand.CheckedState!.IsChecked);
         Assert.True(eraser.CheckedState!.IsChecked);
     }
 
@@ -96,8 +97,8 @@ public sealed class ToolSwitchingTests : IDisposable
         Assert.Equal(ColorBrushTool.BackgroundId, Canvas.ActiveTool.Descriptor.Id);
         Assert.Equal(
             [
-                ToolGroupActionIds.Hand, ToolGroupActionIds.Select, ToolGroupActionIds.Text, ToolGroupActionIds.Brush,
-                ToolGroupActionIds.Eraser
+                ToolGroupActionIds.Hand, ToolGroupActionIds.Move, ToolGroupActionIds.Select, ToolGroupActionIds.Text,
+                ToolGroupActionIds.Brush, ToolGroupActionIds.Eraser
             ],
             actions.Keys.Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal)));
     }
@@ -156,10 +157,10 @@ public sealed class ToolSwitchingTests : IDisposable
     {
         var actions = new ToolActions(Canvas).CreateActions().ToDictionary(action => action.Id);
         var notified = 0;
-        actions[ToolActionIds.Text].CheckedState!.Changed += (_, _) => notified++;
+        actions[ToolActionIds.Hand].CheckedState!.Changed += (_, _) => notified++;
         var tool = Canvas.ActiveTool;
 
-        actions[ToolActionIds.Text].Command.Execute(null);
+        actions[ToolActionIds.Hand].Command.Execute(null);
 
         Assert.Same(tool, Canvas.ActiveTool);
         Assert.Equal(1, notified);
@@ -168,6 +169,7 @@ public sealed class ToolSwitchingTests : IDisposable
     [AvaloniaFact]
     public void SwitchingTools_RemovesTheCaret()
     {
+        Canvas.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 1));
         var text = Assert.IsType<TextTool>(Canvas.ActiveTool);
         Assert.NotNull(text.Caret);
@@ -203,6 +205,7 @@ public sealed class ToolSwitchingTests : IDisposable
     [AvaloniaFact]
     public void LetterKeys_TypeText_WhileACaretIsPlaced_AndChooseToolsAfterEsc()
     {
+        Canvas.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 1));
 
         PressLetter(Key.E, PhysicalKey.E, "e");
@@ -220,6 +223,7 @@ public sealed class ToolSwitchingTests : IDisposable
     [AvaloniaFact]
     public void Esc_SwitchesToTheHandTool_StraightFromTyping()
     {
+        Canvas.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 1));
         var text = Assert.IsType<TextTool>(Canvas.ActiveTool);
 
@@ -264,10 +268,34 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void V_ChoosesTheHandTool()
+    public void V_ChoosesTheMoveTool_AndHChoosesNothing()
     {
         PressLetter(Key.V, PhysicalKey.V, "v");
+        Assert.IsType<MoveTool>(Canvas.ActiveTool);
 
+        PressLetter(Key.H, PhysicalKey.H, "h");
+        Assert.IsType<MoveTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void Esc_WithTheMoveTool_PutsAMoveBack_AndTheNextEscSwitchesToTheHandTool()
+    {
+        Canvas.SelectTool(MoveTool.Id);
+        SelectionEdits.Select(_canvas.Session,
+            SelectionMask.Rectangle(_canvas.Document.CanvasSize, new CellRect(0, 0, 2, 1)),
+            UndoStepNames.RectangleSelect);
+        var cells = new CellEditBuilder(_canvas.Document, Layer.Id);
+        cells.Set(new CellPoint(0, 0), Cell.FromGlyph(new Rune('a')));
+        _canvas.Session.History.Execute(cells.Build()!);
+        var move = Assert.IsType<MoveTool>(Canvas.ActiveTool);
+        move.KeyPressed(ToolKey.Right, ToolModifiers.None);
+        Assert.True(Layer.GetCell(new CellPoint(0, 0)).IsEmpty);
+
+        PressEscape();
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(0, 0)).Glyph);
+        Assert.Same(move, Canvas.ActiveTool);
+
+        PressEscape();
         Assert.IsType<HandTool>(Canvas.ActiveTool);
     }
 
@@ -383,6 +411,7 @@ public sealed class ToolSwitchingTests : IDisposable
     {
         var red = CellColor.FromAnsi(AnsiColor.Red);
         _canvas.Colors.Foreground = red;
+        Canvas.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 1));
 
         PressLetter(Key.X, PhysicalKey.X, "x");
@@ -397,7 +426,7 @@ public sealed class ToolSwitchingTests : IDisposable
     {
         _window.KeyPress(Key.E, RawInputModifiers.Control, PhysicalKey.E, "e");
 
-        Assert.Equal(TextTool.Id, Canvas.ActiveTool.Descriptor.Id);
+        Assert.Equal(HandTool.Id, Canvas.ActiveTool.Descriptor.Id);
     }
 
     [AvaloniaFact]
@@ -421,6 +450,33 @@ public sealed class ToolSwitchingTests : IDisposable
             Assert.True(Layer.GetCell(new CellPoint(x, 1)).IsEmpty);
 
         Assert.False(Layer.GetCell(new CellPoint(5, 1)).IsEmpty);
+        Assert.Equal(stepsBefore + 1, history.UndoCount);
+    }
+
+    [AvaloniaFact]
+    public void DraggingAndNudgingWithTheMoveTool_MovesTheSelectedCellsThroughTheCanvas_AsOneStep()
+    {
+        Canvas.SelectTool(MoveTool.Id);
+        Dispatcher.UIThread.RunJobs();
+        var history = _canvas.Session.History;
+        var cells = new CellEditBuilder(_canvas.Document, Layer.Id);
+        cells.Set(new CellPoint(1, 1), Cell.FromGlyph(new Rune('a')));
+        cells.Set(new CellPoint(3, 1), Cell.FromGlyph(new Rune('b')));
+        history.Execute(cells.Build()!);
+        SelectionEdits.Select(_canvas.Session,
+            SelectionMask.Rectangle(_canvas.Document.CanvasSize, new CellRect(1, 1, 1, 1)),
+            UndoStepNames.RectangleSelect);
+        var stepsBefore = history.UndoCount;
+
+        _window.MouseDown(CentreOf(new CellPoint(8, 5)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(10, 5)));
+        _window.MouseUp(CentreOf(new CellPoint(10, 5)), MouseButton.Left);
+        _window.KeyPress(Key.Right, RawInputModifiers.Shift, PhysicalKey.ArrowRight, null);
+
+        Assert.True(Layer.GetCell(new CellPoint(1, 1)).IsEmpty);
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(13, 1)).Glyph);
+        Assert.Equal(new Rune('b'), Layer.GetCell(new CellPoint(3, 1)).Glyph);
+        Assert.True(_canvas.Session.Selection.Mask.Contains(new CellPoint(13, 1)));
         Assert.Equal(stepsBefore + 1, history.UndoCount);
     }
 

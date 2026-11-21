@@ -217,6 +217,7 @@ public sealed class MenuLayoutTests
         Assert.Equal(
             [
                 ToolActionIds.Hand,
+                ToolActionIds.Move,
                 ToolActionIds.RectangleSelect,
                 ToolActionIds.EllipseSelect,
                 ToolActionIds.Lasso,

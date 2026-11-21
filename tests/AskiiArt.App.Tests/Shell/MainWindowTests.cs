@@ -180,6 +180,7 @@ public sealed class MainWindowTests : IDisposable
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
         window.Show();
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         var tool = _canvas.ViewModel.ActiveTool;
         tool.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
         tool.TextEntered("a");
@@ -839,6 +840,7 @@ public sealed class MainWindowTests : IDisposable
     {
         var window = BuildWindow(MenuLayout.CreateDefault(isMacOS: false, includeDebugMenu: false));
         window.Show();
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         var tool = _canvas.ViewModel.ActiveTool;
         tool.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
         tool.TextEntered("a");

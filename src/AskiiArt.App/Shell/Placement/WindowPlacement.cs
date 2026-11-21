@@ -74,19 +74,60 @@ internal sealed record WindowPlacement(PixelPoint Position, Size Size, bool IsMa
     {
         foreach (var screen in screens)
         {
-            var titleBar = new PixelPoint(Position.X + (int)(Size.Width * screen.Scaling / 2),
-                Position.Y + (int)(TitleBarDepth * screen.Scaling));
-            if (screen.WorkingArea.Contains(titleBar))
+            if (HasTitleBarOn(screen))
                 return this with { Size = SizeWithin(screen) };
         }
 
         return null;
     }
 
+    /// <summary>
+    /// This placement when its title bar is on <paramref name="screen"/>. Otherwise it's moved there, no bigger than
+    /// that screen, as far from its top-left corner as it was from the corner of the screen it was on among
+    /// <paramref name="screens"/>, or in its middle when it was on none of them or that wouldn't leave its title bar
+    /// there.
+    /// </summary>
+    public WindowPlacement MovedOnto(ScreenArea screen, IEnumerable<ScreenArea> screens)
+    {
+        ArgumentNullException.ThrowIfNull(screens);
+
+        if (HasTitleBarOn(screen))
+            return this;
+
+        var fitted = this with { Size = SizeWithin(screen) };
+        foreach (var home in screens)
+        {
+            if (!HasTitleBarOn(home))
+                continue;
+
+            var moved = fitted with { Position = screen.WorkingArea.Position + (Position - home.WorkingArea.Position) };
+            if (moved.HasTitleBarOn(screen))
+                return moved;
+
+            break;
+        }
+
+        var area = screen.WorkingArea;
+        var width = (int)(fitted.Size.Width * screen.Scaling);
+        var height = (int)(fitted.Size.Height * screen.Scaling);
+        return fitted with
+        {
+            Position = new PixelPoint(area.X + (area.Width - width) / 2, area.Y + (area.Height - height) / 2)
+        };
+    }
+
     /// <summary>This placement's size, made no bigger than <paramref name="screen"/>'s room for windows.</summary>
     public Size SizeWithin(ScreenArea screen) =>
         new(Math.Min(Size.Width, screen.WorkingArea.Width / screen.Scaling),
             Math.Min(Size.Height, screen.WorkingArea.Height / screen.Scaling));
+
+    // Its title bar is on the screen when its top middle, a little way down, is in the screen's room for windows.
+    private bool HasTitleBarOn(ScreenArea screen)
+    {
+        var titleBar = new PixelPoint(Position.X + (int)(Size.Width * screen.Scaling / 2),
+            Position.Y + (int)(TitleBarDepth * screen.Scaling));
+        return screen.WorkingArea.Contains(titleBar);
+    }
 
     private static bool IsALength(double? value) => value is { } length && double.IsFinite(length) && length > 0;
 }

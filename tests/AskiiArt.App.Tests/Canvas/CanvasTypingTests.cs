@@ -4,6 +4,7 @@
 using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -25,6 +26,7 @@ public sealed class CanvasTypingTests : IDisposable
 
     public CanvasTypingTests()
     {
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         _control = new CanvasControl
         {
             Composite = _canvas.ViewModel.Composite,

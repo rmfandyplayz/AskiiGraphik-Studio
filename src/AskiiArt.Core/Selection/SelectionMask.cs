@@ -119,6 +119,28 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     }
 
     /// <summary>
+    /// The same cells moved by <paramref name="offset"/> on the same canvas, without any that the move takes off it.
+    /// </summary>
+    public SelectionMask Moved(CellPoint offset)
+    {
+        var kept = Bounds.Offset(offset).Intersect(CanvasSize.Bounds);
+        if (kept.IsEmpty)
+            return Empty(CanvasSize);
+
+        if (_bits is null)
+            return new SelectionMask(CanvasSize, kept, bits: null);
+
+        var builder = new SelectionMaskBuilder(CanvasSize, kept);
+        for (var y = kept.Top; y < kept.Bottom; y++)
+        {
+            foreach (var (start, length) in BitRow.Runs(Row(y - offset.Y - Bounds.Top), Bounds.Width))
+                builder.AddRun(y, Bounds.Left + start + offset.X, length);
+        }
+
+        return builder.Build();
+    }
+
+    /// <summary>
     /// The selection after combining <paramref name="shape"/> with this one by <paramref name="mode"/>: the shape
     /// alone, both, this without the shape, or only what both have.
     /// </summary>

@@ -221,6 +221,36 @@ public sealed class SelectionMaskTests
     }
 
     [Fact]
+    public void Moved_MovesARaggedSelection_OnTheSameCanvas()
+    {
+        var mask = TestMasks.Parse("#···", "##··", "····");
+
+        var moved = mask.Moved(new CellPoint(2, 1));
+
+        Assert.Equal(mask.CanvasSize, moved.CanvasSize);
+        Assert.Equal(["····", "··#·", "··##"], TestMasks.Describe(moved));
+    }
+
+    [Fact]
+    public void Moved_PartlyOffTheCanvas_LosesTheCellsOffIt()
+    {
+        Assert.Equal(["#···", "····"], TestMasks.Describe(TestMasks.Parse("##··", "····").Moved(new CellPoint(-1, 0))));
+        Assert.Equal(["····", "··#·"], TestMasks.Describe(TestMasks.Parse("·#··", "·##·").Moved(new CellPoint(1, 1))));
+    }
+
+    [Fact]
+    public void Moved_WhollyOffTheCanvas_IsEmpty() =>
+        Assert.True(TestMasks.Parse("##", "··").Moved(new CellPoint(0, 2)).IsEmpty);
+
+    [Fact]
+    public void Moved_ByNothing_IsTheSame()
+    {
+        var mask = TestMasks.Parse("#·#", "·#·");
+
+        Assert.Equal(mask, mask.Moved(default));
+    }
+
+    [Fact]
     public void Resized_Bigger_AroundTheCentre_LeavesTheNewEdgesUnselected()
     {
         var mask = TestMasks.Parse("#·", "##");

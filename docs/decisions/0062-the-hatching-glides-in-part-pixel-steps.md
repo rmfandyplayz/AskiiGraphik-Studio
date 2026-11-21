@@ -36,3 +36,5 @@ Each jump moved every line on the canvas at once by its full width. The jumps al
 - **Easy comparisons:** the step count, thickness and spacing are tokens. The owner can compare the old jumps (steps set to 1) and thin lines (thickness 1, spacing 8) by editing `Tokens.axaml`.
 
 Updated 2026-11-20 (step 4.3): the owner confirmed the flicker is gone. The lines became a zebra of dark and light stripes, 12 logical pixels each, set by one token, `AppCanvasSelectionHatchBandWidth`, in place of the thickness and spacing (ADR 0064). The part-pixel steps are unchanged. An idle selection measured 1 to 1.5% CPU on the owner's i9-14900F, and 0.1% with nothing selected.
+
+Updated 2026-11-21 (step 4.5): after 4.4's testing the owner set `AppCanvasSelectionHatchStepsPerPixel` to 2, so the hatching moves half a device pixel at a time.

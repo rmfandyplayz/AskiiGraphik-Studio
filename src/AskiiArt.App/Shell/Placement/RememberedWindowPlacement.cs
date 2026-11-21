@@ -4,6 +4,7 @@
 using AskiiArt.App.Settings;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using Avalonia.Threading;
 
 namespace AskiiArt.App.Shell.Placement;
@@ -54,9 +55,7 @@ internal sealed class RememberedWindowPlacement
         if (_settings.GetText(SettingKey) is not { } text || WindowPlacement.FromJson(text) is not { } saved)
             return;
 
-        var screens = _window.Screens.All
-            .Select(screen => new ScreenArea(screen.WorkingArea, screen.Scaling, screen.IsPrimary))
-            .ToList();
+        var screens = _window.Screens.All.Select(ToArea).ToList();
 
         Size size;
         if (saved.OnScreens(screens) is { } placed)
@@ -120,10 +119,12 @@ internal sealed class RememberedWindowPlacement
         {
             case WindowState.FullScreen:
                 _isFullScreen = true;
+                KeepOnTheWindowsScreen();
                 break;
             case WindowState.Maximized:
                 _isMaximized = true;
                 _isFullScreen = false;
+                KeepOnTheWindowsScreen();
                 break;
             case WindowState.Normal:
                 _position = _window.Position;
@@ -134,6 +135,23 @@ internal sealed class RememberedWindowPlacement
                 break;
         }
     }
+
+    // A maximized or full-screen window can reach another screen without ever being un-maximized there: Win+Shift+arrow
+    // sends it, and one dragged to a screen's top edge in one go may be maximized before it's noted there. Its noted
+    // place moves onto that screen, so it comes back on the screen it was closed on.
+    private void KeepOnTheWindowsScreen()
+    {
+        if (!_isKnown || _window.Screens.ScreenFromWindow(_window) is not { } screen)
+            return;
+
+        var screens = _window.Screens.All.Select(ToArea).ToList();
+        var moved =
+            new WindowPlacement(_position, _size, _isMaximized, _isFullScreen).MovedOnto(ToArea(screen), screens);
+        _position = moved.Position;
+        _size = moved.Size;
+    }
+
+    private static ScreenArea ToArea(Screen screen) => new(screen.WorkingArea, screen.Scaling, screen.IsPrimary);
 
     private void Save()
     {

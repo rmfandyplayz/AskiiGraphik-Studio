@@ -10,6 +10,7 @@ using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Selection;
+using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Text;
 using Avalonia;
 using Avalonia.Controls;
@@ -73,7 +74,7 @@ public sealed class DeleteSelectedCellsTests : IDisposable
     [InlineData(Key.Back, PhysicalKey.Backspace)]
     public void TheKey_EmptiesTheSelectedCells_WhenTheToolTakesNoText(Key key, PhysicalKey physicalKey)
     {
-        Assert.True(_canvas.ViewModel.TrySwitchToHandTool());
+        Assert.IsType<HandTool>(_canvas.ViewModel.ActiveTool);
         var selection = Session.Selection.Mask;
 
         Press(key, physicalKey);
@@ -88,6 +89,7 @@ public sealed class DeleteSelectedCellsTests : IDisposable
     [InlineData(Key.Back, PhysicalKey.Backspace)]
     public void WhileTheTextToolsCaretShows_TheKeyEditsTheText_NotTheSelection(Key key, PhysicalKey physicalKey)
     {
+        _canvas.ViewModel.SelectTool(TextTool.Id);
         Click(new CellPoint(2, 0));
         Assert.IsType<TextTool>(_canvas.ViewModel.ActiveTool);
 

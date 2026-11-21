@@ -83,4 +83,46 @@ public sealed class WindowPlacementTests
 
         Assert.Equal(new Size(800, 600), placement.SizeWithin(_left));
     }
+
+    [Fact]
+    public void MovedOntoTheScreenItIsOn_ItStaysPut()
+    {
+        var placement = new WindowPlacement(new PixelPoint(3000, 100), new Size(1000, 700), IsMaximized: true);
+
+        Assert.Equal(placement, placement.MovedOnto(_right, [_left, _right]));
+    }
+
+    [Fact]
+    public void MovedOntoAnotherScreen_ItKeepsItsDistanceFromTheScreensCorner()
+    {
+        // As when a window maximized on the left screen is sent to the right one with Win+Shift+Right.
+        var placement = new WindowPlacement(new PixelPoint(200, 100), new Size(1000, 700), IsMaximized: true);
+
+        Assert.Equal(placement with { Position = new PixelPoint(2760, 100) },
+            placement.MovedOnto(_right, [_left, _right]));
+    }
+
+    [Fact]
+    public void MovedOntoAScreenTooSmallForThatDistance_ItGoesInTheMiddle()
+    {
+        var placement = new WindowPlacement(new PixelPoint(2560 + 3000, 1500), new Size(600, 400), IsMaximized: true);
+
+        Assert.Equal(new PixelPoint(980, 500), placement.MovedOnto(_left, [_left, _right]).Position);
+    }
+
+    [Fact]
+    public void MovedOntoASmallerScreen_ItShrinksToFit()
+    {
+        var placement = new WindowPlacement(new PixelPoint(2600, 0), new Size(2400, 1500), IsMaximized: true);
+
+        Assert.Equal(new Size(2400, 1400), placement.MovedOnto(_left, [_left, _right]).Size);
+    }
+
+    [Fact]
+    public void MovedFromNoScreen_ItGoesInTheMiddle()
+    {
+        var placement = new WindowPlacement(new PixelPoint(-5000, -5000), new Size(1000, 600), IsMaximized: true);
+
+        Assert.Equal(new PixelPoint(780, 400), placement.MovedOnto(_left, [_left, _right]).Position);
+    }
 }

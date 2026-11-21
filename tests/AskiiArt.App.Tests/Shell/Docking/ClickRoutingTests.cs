@@ -61,8 +61,9 @@ public sealed class ClickRoutingTests : IDisposable
             _canvas.CreateToolOptionsViewModel(), ramps, characters, new RememberedToolState(settings));
 
         _window = builder.Build(KeyModifiers.Control);
-        // Wide enough for the default layout's bottom row, which doesn't fit the smallest window.
-        _window.Width = 1920;
+        // Wide enough for the default layout's bottom row, which doesn't fit the smallest window. Since the Move tool's
+        // button (step 4.5) it needs more than 1920, so this is the owner's screen: 2560 pixels at 125%.
+        _window.Width = 2048;
         _window.Height = 800;
         _window.Show();
         Pump();

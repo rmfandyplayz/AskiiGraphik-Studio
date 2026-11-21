@@ -28,3 +28,5 @@ After step 4.2c the owner confirmed the flicker was gone (ADR 0062) and asked fo
 - The motion is unchanged: the tile still glides in part-pixel steps (ADR 0062).
 
 Updated 2026-11-21 (step 4.4): after the owner's 4.3 testing, every stripe is 8 logical pixels wide, and the black and white stripes are 15%. The coloured hatching stays at 40%.
+
+Updated 2026-11-21 (step 4.5): after 4.4's testing the owner set the stripes themselves. In light mode the black is 33% and the white 4%, and in dark mode both are 6%. In light mode the Subtract dashes are #CC4444, the Intersect dashes #9999F2, and the coloured hatching's stripes are at 87% within its 40%.

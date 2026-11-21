@@ -27,3 +27,5 @@ ARCHITECTURE §10 says every drawing tool clips to the selection when there is o
 
 - A new tool that writes through `EditCellsInSelection` clips for free. One that makes its own `CellEditBuilder` doesn't, so tool code should always ask the session.
 - 4.5's Move tool and 4.6's Cut can build on `SelectionContents` for taking the selected cells away.
+
+Updated 2026-11-21: the Move tool (step 4.5, ADR 0066) is the one tool that writes outside the selection, since moving the selected cells is its point. It takes the cells itself rather than through `SelectionContents`.

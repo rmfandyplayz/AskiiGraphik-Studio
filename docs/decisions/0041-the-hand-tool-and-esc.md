@@ -30,3 +30,5 @@ Until step 2b.3a, Esc removed the text caret or cancelled an eraser stroke, and 
 
 Updated 2026-11-14: Avalonia's Hand cursor is the pointing finger of links. The pan cursor is now `DragMove` on a Mac, which is the system's open hand, and `SizeAll` (the four-way move arrows) on Windows and Linux, where `DragMove` is a drag-and-drop arrow (`PanCursor`).
 Updated 2026-11-19: the selection tools don't replace the Hand tool. The owner chose M for the shape selection tools and W for the Magic Wand; the Move tool takes V in step 4.5, the Hand tool moves to H, and Esc keeps switching to the Hand tool (ADR 0055).
+
+Updated 2026-11-21: in step 4.5 the Hand tool lost its letter instead of moving to H, so Esc is the key that picks it, and it's the tool at launch. The Move tool has V, and while it's moving, Esc puts the cells back before the next Esc picks the Hand tool (ADR 0066).
