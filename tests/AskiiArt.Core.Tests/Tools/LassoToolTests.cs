@@ -101,6 +101,33 @@ public sealed class LassoToolTests
     }
 
     [Fact]
+    public void APathOfTwoPoints_CountsAsAClick_SoIntersectingChangesNothing()
+    {
+        SelectionEdits.SelectAll(_session);
+
+        _tool.PointerPressed(Input(1.5, 1.5, ToolModifiers.Shift | ToolModifiers.Alt));
+        Move(2.5, 1.5);
+        Release(2.5, 1.5);
+
+        Assert.Equal(1, _session.History.UndoCount);
+        Assert.Equal(SelectionMask.All(_session.Document.CanvasSize), _session.Selection.Mask);
+    }
+
+    [Fact]
+    public void ALoopWhollyOffTheCanvas_DeselectsEverything_WhenIntersecting()
+    {
+        SelectionEdits.SelectAll(_session);
+
+        _tool.PointerPressed(Input(-3, -3, ToolModifiers.Shift | ToolModifiers.Alt));
+        Move(-1, -3);
+        Move(-1, -1);
+        Move(-3, -1);
+        Release(-3, -1);
+
+        Assert.True(_session.Selection.IsEmpty);
+    }
+
+    [Fact]
     public void AClick_ChangesNothing_WhenAdding()
     {
         SelectionEdits.SelectAll(_session);

@@ -13,12 +13,16 @@ namespace AskiiArt.Core.Tools.Selecting;
 /// last one. Clicking the first corner's marker, double-clicking or pressing Enter selects every cell whose centre the
 /// shape goes round, combined with the selection by the mode, as one undo step. Backspace takes the last corner away,
 /// and Esc cancels. While it's drawn, the canvas shows a marker on each corner, faintly how the shape would close, and
-/// what a double-click where the pointer is would select (ADR 0061).
+/// what a double-click where the pointer is would select (ADR 0061). A shape of fewer than three corners goes round
+/// nothing and counts as a click, which deselects when replacing.
 /// </summary>
 public sealed class PolygonalLassoTool : ITool
 {
     /// <summary>The tool's id.</summary>
     public const string Id = "askiiart.select.polygon";
+
+    // A shape needs this many corners to go round anything; one with fewer is a click.
+    private const int FewestCornersOfAShape = 3;
 
     private readonly EditingSession _session;
     private readonly SelectionCombiner _combiner;
@@ -70,7 +74,7 @@ public sealed class PolygonalLassoTool : ITool
 
     // True when a click now would finish the shape on its first corner: there are enough corners to make one, and the
     // pointer is on the first corner's marker.
-    private bool IsPointerOnFinish => _corners.Count > 2 && _reach.Covers(_corners[0], _pointer);
+    private bool IsPointerOnFinish => _corners.Count >= FewestCornersOfAShape && _reach.Covers(_corners[0], _pointer);
 
     /// <summary>
     /// Adds a corner where the pointer is, starting a shape if there's none. The second click of a double-click, or a
@@ -148,7 +152,7 @@ public sealed class PolygonalLassoTool : ITool
 
     private void Finish()
     {
-        var shape = SelectionShapes.Polygon(_session.Document.CanvasSize, _corners);
+        var shape = ShapeOf(_session.Document.CanvasSize, _corners);
         Cancel();
         _combiner.Finish(shape, UndoStepNames.PolygonalLasso);
     }
@@ -173,10 +177,18 @@ public sealed class PolygonalLassoTool : ITool
         IReadOnlyList<CanvasPoint> outline = isClosing ? [.. _corners] : [.. _corners, _pointer];
         var canvasSize = _session.Document.CanvasSize;
         SetOverlay(new ToolOverlay(Caret: null,
-            SelectionPreview: _combiner.Preview(() => SelectionShapes.Polygon(canvasSize, outline)),
+            SelectionPreview: _combiner.Preview(() => ShapeOf(canvasSize, outline)),
             Path: isClosing ? [.. _corners, _corners[0]] : outline,
             ShowsPathClosing: !isClosing && outline.Count > 2,
             Markers: Markers(isClosing)));
+    }
+
+    private static SelectionMask? ShapeOf(CanvasSize canvasSize, IReadOnlyList<CanvasPoint> corners)
+    {
+        if (corners.Count < FewestCornersOfAShape)
+            return null;
+
+        return SelectionShapes.Polygon(canvasSize, corners);
     }
 
     private ToolMarker[] Markers(bool isClosing)

@@ -19,7 +19,7 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// </param>
 /// <param name="SelectionThickness">The selection outline's thickness, in device pixels.</param>
 /// <param name="SelectionDashLength">The length of each dash of the selection outline, in device pixels.</param>
-/// <param name="SelectionDashOffset">How far the bright outlines' dashes have run, in device pixels.</param>
+/// <param name="SelectionMotion">How far the bright outlines' dashes and the hatching have moved.</param>
 /// <param name="ToolPath">
 /// A line the tool shows through these points in cells, such as a lasso's path, or null for none. It's drawn as
 /// thick as the selection outline.
@@ -36,7 +36,7 @@ internal readonly record struct CanvasOverlays(
     SelectionDisplay? Selection = null,
     int SelectionThickness = 1,
     int SelectionDashLength = 4,
-    int SelectionDashOffset = 0,
+    SelectionMotion SelectionMotion = default,
     IReadOnlyList<CanvasPoint>? ToolPath = null,
     bool ShowsToolPathClosing = false,
     IReadOnlyList<ToolMarker>? ToolMarkers = null,

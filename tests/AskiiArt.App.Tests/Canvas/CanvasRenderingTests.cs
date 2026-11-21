@@ -474,7 +474,8 @@ public sealed class CanvasRenderingTests : IDisposable
         int selectionDashOffset = 0) =>
         _builder.Build(_canvas.ViewModel.Composite, _atlas, viewport, _colors,
             new CanvasOverlays(isGridVisible, hoveredCell, caret, CaretThickness: 2, brush,
-                SelectionDisplay.For(selection, null), SelectionDashOffset: selectionDashOffset));
+                SelectionDisplay.For(selection, null),
+                SelectionMotion: new SelectionMotion(selectionDashOffset, 0, 0)));
 
     private SKBitmap Paint(CanvasViewport viewport, bool isGridVisible = false)
     {

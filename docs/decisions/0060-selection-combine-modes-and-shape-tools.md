@@ -15,7 +15,7 @@ Step 4.2 completes the M group with Ellipse Select, the Lasso and the Polygonal 
 - **Keys at the press pick the mode** for that gesture: Shift adds, Alt (Option) subtracts, both intersect. Otherwise the mode is the **Mode** tool option, four buttons shared by every selection tool (`SelectionToolOptions.Group`) and remembered like other options. Alt+click picking stays with the brushes, where Alt has no selection meaning.
 - **Keys pressed during a drag shape the box** of Rectangle and Ellipse Select: Shift makes it look square on screen, using the cell's width-to-height ratio as the Brush's perceptual proportions do (ADR 0047), and Alt grows it from the first cell outwards, with odd sides so it stays centred. A key held since the press only picks the mode until it's let go and pressed again. The canvas tells the tool when Shift or Alt goes down or up (`ITool.ModifiersChanged`), so the shape changes without the pointer moving.
 - **A cell is in a shape when its centre is**, on the edge included. A lasso's path counts by the nonzero winding rule, so every loop it goes round is inside, also where it crosses itself.
-- **A click** (a press that never reaches another cell, or a lasso with no area) deselects in Replace mode and changes nothing in the others.
+- **A click** (a press that never reaches another cell, or a lasso or Polygonal Lasso with fewer than three points) deselects in Replace mode and changes nothing in the others. Any other shape combines, even one with no cells (ADR 0061).
 - **The Lasso** takes a point whenever the pointer has moved a fifth of a cell, and joins its end to its start on release. **The Polygonal Lasso** takes a corner per click, with a line from the last one to the pointer, and finishes on a click on the first corner's marker (once there are three corners; ADR 0061), a double-click (`ToolPointerInput.ClickCount`) or Enter. Backspace removes the last corner, and Esc or switching tools cancels. Both show their line through `ToolOverlay.Path`.
 - Every gesture is one undo step, named after its tool, made through `SelectionEdits.Select` (ADR 0055).
 - Alt pressed during a drag on the canvas counts as used, as an Alt+click does, so letting it go doesn't open the menu bar (ADR 0043).
@@ -34,3 +34,5 @@ Step 4.2 completes the M group with Ellipse Select, the Lasso and the Polygonal 
 - `ChoiceToolOption.IsShownAsButtons` lets an option with more than two choices show as buttons.
 
 Updated 2026-11-20: the Polygonal Lasso finishes on a click on its first corner's marker, not in its cell, as decided with the selection overlay (ADR 0061).
+
+Updated 2026-11-20: a shape with no cells, such as one drawn off the canvas, no longer counts as a click: it combines like any other, so Intersect with it deselects everything (ADR 0061).

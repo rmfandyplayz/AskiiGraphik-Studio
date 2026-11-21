@@ -11,8 +11,9 @@ namespace AskiiArt.Core.Tools.Selecting;
 /// <summary>
 /// The Lasso (ARCHITECTURE §10, ADR 0060): dragging draws a freehand path, and releasing selects every cell whose
 /// centre it goes round, the end joined back to the start, combined with the selection by the mode. While it's drawn,
-/// the canvas shows the path, faintly how it would close, and what letting go now would select (ADR 0061). A click
-/// without a path deselects when replacing, and Esc during the drag cancels it.
+/// the canvas shows the path, faintly how it would close, and what letting go now would select (ADR 0061). A path of
+/// fewer than three points goes round nothing and counts as a click, which deselects when replacing. Esc during the
+/// drag cancels it.
 /// </summary>
 public sealed class LassoTool : ITool
 {
@@ -21,6 +22,9 @@ public sealed class LassoTool : ITool
 
     // How far, in cells, the pointer moves before the path takes another point, which keeps a long path small.
     private const double PointSpacing = 0.2;
+
+    // A path needs this many points to go round anything; one with fewer is a click.
+    private const int FewestPointsOfAShape = 3;
 
     private readonly EditingSession _session;
     private readonly SelectionCombiner _combiner;
@@ -94,7 +98,7 @@ public sealed class LassoTool : ITool
             return;
 
         PointerMoved(input);
-        var shape = SelectionShapes.Polygon(_session.Document.CanvasSize, _path);
+        var shape = ShapeOf(_session.Document.CanvasSize, _path);
         End();
         _combiner.Finish(shape, UndoStepNames.Lasso);
     }
@@ -123,9 +127,17 @@ public sealed class LassoTool : ITool
         IReadOnlyList<CanvasPoint> path = [.. _path];
         var canvasSize = _session.Document.CanvasSize;
         SetOverlay(new ToolOverlay(Caret: null,
-            SelectionPreview: _combiner.Preview(() => SelectionShapes.Polygon(canvasSize, path)),
+            SelectionPreview: _combiner.Preview(() => ShapeOf(canvasSize, path)),
             Path: path,
             ShowsPathClosing: path.Count > 2));
+    }
+
+    private static SelectionMask? ShapeOf(CanvasSize canvasSize, IReadOnlyList<CanvasPoint> path)
+    {
+        if (path.Count < FewestPointsOfAShape)
+            return null;
+
+        return SelectionShapes.Polygon(canvasSize, path);
     }
 
     private void End()

@@ -24,24 +24,21 @@ internal sealed class SelectionCombiner(EditingSession session, ToolOptionValues
 
     /// <summary>
     /// What the shape <paramref name="makeShape"/> makes would do to the selection, working the shape out only if the
-    /// canvas draws this preview.
+    /// canvas draws this preview. It makes null while there's no shape yet, as for a click.
     /// </summary>
-    public SelectionPreview Preview(Func<SelectionMask> makeShape) => new(session.Selection.Mask, Mode, makeShape);
+    public SelectionPreview Preview(Func<SelectionMask?> makeShape) => new(session.Selection.Mask, Mode, makeShape);
 
     /// <summary>
-    /// Ends the gesture with <paramref name="shape"/>, as one undo step named <paramref name="stepNameKey"/>. A shape
-    /// with no cells, as after a click, deselects when replacing, and otherwise changes nothing.
+    /// Ends the gesture with <paramref name="shape"/>, as one undo step named <paramref name="stepNameKey"/>, or named
+    /// Deselect when nothing would be left selected. A shape combines even when it has no cells, as when it was drawn
+    /// off the canvas. A null shape is a click's, which deselects when replacing and otherwise changes nothing.
     /// </summary>
     public void Finish(SelectionMask? shape, string stepNameKey)
     {
-        if (shape is null || shape.IsEmpty)
-        {
-            if (Mode == SelectionCombineMode.Replace)
-                SelectionEdits.Deselect(session);
-
-            return;
-        }
-
-        SelectionEdits.Select(session, SelectionPreview.ResultOf(session.Selection.Mask, shape, Mode), stepNameKey);
+        var result = SelectionPreview.ResultOf(session.Selection.Mask, shape, Mode);
+        if (result.IsEmpty)
+            SelectionEdits.Deselect(session);
+        else
+            SelectionEdits.Select(session, result, stepNameKey);
     }
 }

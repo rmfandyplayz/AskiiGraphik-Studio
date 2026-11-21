@@ -79,6 +79,9 @@ internal sealed class CanvasSceneBuilder
         var visibleBounds = new PixelRect(origin.X + visible.Left * cellSize.Width,
             origin.Y + visible.Top * cellSize.Height, visible.Width * cellSize.Width, visible.Height * cellSize.Height);
         var toolPath = PathOf(viewport, overlays.ToolPath);
+        GridShade? gridShade = null;
+        if (overlays.IsGridVisible)
+            gridShade = _hatches.BuildGridShade(viewport, overlays.Selection, overlays.Look);
 
         return new CanvasScene
         {
@@ -93,8 +96,11 @@ internal sealed class CanvasSceneBuilder
             Caret = BoundsOf(viewport, overlays.Caret),
             CaretThickness = overlays.CaretThickness,
             BrushOutline = OutlineOf(viewport, overlays.Brush, overlays.CaretThickness),
-            UnselectedHatch = _hatches.BuildUnselected(viewport, overlays.Selection, overlays.Look),
-            LostHatch = _hatches.BuildLost(viewport, overlays.Selection, overlays.Look, colors),
+            GridShade = gridShade,
+            UnselectedHatch = _hatches.BuildUnselected(viewport, overlays.Selection, overlays.Look,
+                overlays.SelectionMotion.UnselectedHatchShift),
+            LostHatch = _hatches.BuildLost(viewport, overlays.Selection, overlays.Look, colors,
+                overlays.SelectionMotion.LostHatchShift),
             SelectionOutlines = SelectionOutlinesOf(viewport, overlays, colors),
             SelectionDashLength = Math.Max(1, overlays.SelectionDashLength),
             ToolPath = toolPath,
@@ -148,8 +154,8 @@ internal sealed class CanvasSceneBuilder
         return new Point(origin.X + point.X * cell.Width, origin.Y + point.Y * cell.Height);
     }
 
-    // Each of the display's outlines that shows: a faint one in faded colours that stay still, a bright one in full
-    // colour with its dashes running.
+    // Each of the display's outlines that shows: a bright one in full colour with its dashes running, and a faint or
+    // vanishing one in colours faded by its strength, standing still.
     private static SelectionOutlinePass[] SelectionOutlinesOf(CanvasViewport viewport, CanvasOverlays overlays,
         CanvasColors colors)
     {
@@ -165,16 +171,17 @@ internal sealed class CanvasSceneBuilder
                 continue;
 
             var (line, backdrop) = look.ColoursOf(layer.Style, colors);
-            if (!layer.IsFaint)
+            if (layer.Strength == SelectionOutlineStrength.Bright)
             {
-                passes.Add(new SelectionOutlinePass(strips, line, backdrop, overlays.SelectionDashOffset));
+                passes.Add(new SelectionOutlinePass(strips, line, backdrop, overlays.SelectionMotion.DashRun));
                 continue;
             }
 
-            if (look.FaintOpacity > 0)
+            var opacity = layer.Strength == SelectionOutlineStrength.Faint ? look.FaintOpacity : look.VanishingOpacity;
+            if (opacity > 0)
             {
-                passes.Add(new SelectionOutlinePass(strips, SelectionLook.Faded(line, look.FaintOpacity),
-                    SelectionLook.Faded(backdrop, look.FaintOpacity), DashOffset: 0));
+                passes.Add(new SelectionOutlinePass(strips, SelectionLook.Faded(line, opacity),
+                    SelectionLook.Faded(backdrop, opacity), DashOffset: 0));
             }
         }
 

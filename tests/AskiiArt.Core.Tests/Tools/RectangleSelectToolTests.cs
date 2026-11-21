@@ -98,6 +98,32 @@ public sealed class RectangleSelectToolTests
     }
 
     [Fact]
+    public void AnIntersectingDragWhollyOffTheCanvas_DeselectsEverything_AsOneOverEmptyCellsWould()
+    {
+        SelectionEdits.SelectAll(_session);
+
+        _tool.PointerPressed(new ToolPointerInput(new CellPoint(-3, -3), 0.5, 0.5,
+            ToolModifiers.Shift | ToolModifiers.Alt));
+        Release(-1, -2);
+
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(UndoStepNames.Deselect, History.GetStepNameKey(1));
+    }
+
+    [Theory]
+    [InlineData(ToolModifiers.Shift)]
+    [InlineData(ToolModifiers.Alt)]
+    public void AnAddingOrSubtractingDragWhollyOffTheCanvas_ChangesNothing(ToolModifiers modifiers)
+    {
+        SelectionEdits.SelectAll(_session);
+
+        _tool.PointerPressed(new ToolPointerInput(new CellPoint(-3, -3), 0.5, 0.5, modifiers));
+        Release(-1, -2);
+
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
     public void AClick_SelectsNothing()
     {
         SelectionEdits.SelectAll(_session);

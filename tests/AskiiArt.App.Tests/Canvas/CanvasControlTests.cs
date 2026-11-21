@@ -233,20 +233,20 @@ public sealed class CanvasControlTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void TheSelectionOutline_RunsWhileThereIsASelection_AndStopsWithout()
+    public void TheSelectionOutlineAndHatching_MoveWhileThereIsASelection_AndStopWithout()
     {
         _control.Selection = _canvas.Session.Selection;
         Show();
         Render();
-        Assert.False(_control.AreAntsRunning);
+        Assert.False(_control.IsSelectionMoving);
 
         SelectionEdits.SelectAll(_canvas.Session);
         Render();
-        Assert.True(_control.AreAntsRunning);
+        Assert.True(_control.IsSelectionMoving);
 
         SelectionEdits.Deselect(_canvas.Session);
         Render();
-        Assert.False(_control.AreAntsRunning);
+        Assert.False(_control.IsSelectionMoving);
     }
 
     public void Dispose()

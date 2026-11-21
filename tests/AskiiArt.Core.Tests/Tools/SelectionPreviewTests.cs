@@ -36,13 +36,42 @@ public sealed class SelectionPreviewTests
     [Theory]
     [InlineData(SelectionCombineMode.Add)]
     [InlineData(SelectionCombineMode.Subtract)]
-    [InlineData(SelectionCombineMode.Intersect)]
-    public void AnEmptyShape_LeavesTheSelectionAlone_OtherwiseAsAClickDoes(SelectionCombineMode mode)
+    public void AnEmptyShape_LeavesTheSelectionAlone_WhenAddingOrSubtracting(SelectionCombineMode mode)
     {
         var preview = new SelectionPreview(_before, mode, Empty());
 
         Assert.Equal(_before, preview.Result);
         Assert.True(preview.Lost.IsEmpty);
+    }
+
+    [Fact]
+    public void AnEmptyShape_LeavesNothing_WhenIntersecting_AsAShapeDrawnOffTheCanvasDoes()
+    {
+        var preview = new SelectionPreview(_before, SelectionCombineMode.Intersect, Empty());
+
+        Assert.True(preview.Result.IsEmpty);
+        Assert.Equal(_before, preview.Lost);
+    }
+
+    [Theory]
+    [InlineData(SelectionCombineMode.Add)]
+    [InlineData(SelectionCombineMode.Subtract)]
+    [InlineData(SelectionCombineMode.Intersect)]
+    public void WithNoShapeYet_TheSelectionStaysAsAClickLeavesIt(SelectionCombineMode mode)
+    {
+        var preview = new SelectionPreview(_before, mode, () => null);
+
+        Assert.Equal(_before, preview.Result);
+        Assert.True(preview.Lost.IsEmpty);
+        Assert.True(preview.Shape.IsEmpty);
+    }
+
+    [Fact]
+    public void WithNoShapeYet_NothingIsLeft_WhenReplacing_AsAClickLeaves()
+    {
+        var preview = new SelectionPreview(_before, SelectionCombineMode.Replace, () => null);
+
+        Assert.True(preview.Result.IsEmpty);
     }
 
     [Fact]

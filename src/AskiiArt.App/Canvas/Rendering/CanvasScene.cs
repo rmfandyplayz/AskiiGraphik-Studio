@@ -40,6 +40,9 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The pieces of the brush tip's outline, each a filled strip along the inside of its cells.</summary>
     public required IReadOnlyList<PixelRect> BrushOutline { get; init; }
 
+    /// <summary>How strongly the grid shows over each visible cell, or null for full strength everywhere.</summary>
+    public GridShade? GridShade { get; init; }
+
     /// <summary>The hatching over the visible cells that aren't selected, or null for none.</summary>
     public SelectionHatch? UnselectedHatch { get; init; }
 
@@ -74,6 +77,7 @@ internal sealed class CanvasScene : IDisposable
     public void Dispose()
     {
         Backgrounds?.Dispose();
+        GridShade?.Dispose();
         UnselectedHatch?.Dispose();
         LostHatch?.Dispose();
         foreach (var batch in Glyphs)

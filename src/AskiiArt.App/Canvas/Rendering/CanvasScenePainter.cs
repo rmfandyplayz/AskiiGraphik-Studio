@@ -58,7 +58,7 @@ internal static class CanvasScenePainter
         }
 
         if (scene.IsGridVisible && viewport.CellSize.Width >= MinimumCellWidthForGrid)
-            DrawGrid(canvas, paint, viewport, colors.GridLine);
+            DrawGrid(canvas, paint, viewport, colors.GridLine, scene.GridShade);
 
         DrawHatch(canvas, paint, scene.UnselectedHatch, viewport);
         DrawHatch(canvas, paint, scene.LostHatch, viewport);
@@ -81,8 +81,9 @@ internal static class CanvasScenePainter
         canvas.Restore();
     }
 
-    // The tile's lines repeat from the canvas's corner, so they stay put on the art while it scrolls, and show only
-    // where the cell mask, stretched over the visible cells without smoothing, has a cell.
+    // The tile's lines repeat from the canvas's corner, moved along by how far they've gone, so they stay put on the
+    // art while it scrolls, and show only where the cell mask, stretched over the visible cells without smoothing, has
+    // a cell.
     private static void DrawHatch(SKCanvas canvas, SKPaint paint, SelectionHatch? hatch, CanvasViewport viewport)
     {
         if (hatch is null)
@@ -95,7 +96,7 @@ internal static class CanvasScenePainter
         using var cells = hatch.CellMask.ToShader(SKShaderTileMode.Decal, SKShaderTileMode.Decal, unsmoothed,
             SKMatrix.CreateScaleTranslation(cell.Width, cell.Height, bounds.X, bounds.Y));
         using var lines = hatch.Tile.ToShader(SKShaderTileMode.Repeat, SKShaderTileMode.Repeat, unsmoothed,
-            SKMatrix.CreateTranslation(origin.X, origin.Y));
+            SKMatrix.CreateTranslation(origin.X - hatch.Shift, origin.Y));
 
         // Keeps the lines (the destination) only where the cells (the source) are opaque.
         using var shader = SKShader.CreateBlend(SKBlendMode.DstIn, lines, cells);
@@ -106,8 +107,10 @@ internal static class CanvasScenePainter
     }
 
     // One line along the top and left edge of every visible cell, plus the canvas's right and
-    // bottom edges, each drawn inside the canvas.
-    private static void DrawGrid(SKCanvas canvas, SKPaint paint, CanvasViewport viewport, SKColor color)
+    // bottom edges, each drawn inside the canvas. With a shade, each line shows as strongly as the shade has the cell
+    // it lies in.
+    private static void DrawGrid(SKCanvas canvas, SKPaint paint, CanvasViewport viewport, SKColor color,
+        GridShade? shade)
     {
         var visible = viewport.VisibleCells;
         if (visible.IsEmpty)
@@ -118,7 +121,9 @@ internal static class CanvasScenePainter
         var bottom = Math.Min(canvasBounds.Bottom, viewport.ViewportSize.Height);
         var left = Math.Max(canvasBounds.X, 0);
         var right = Math.Min(canvasBounds.Right, viewport.ViewportSize.Width);
-        paint.Color = color;
+        using var shaded = GridShaderOf(color, shade, viewport);
+        paint.Color = shaded is null ? color : SKColors.White;
+        paint.Shader = shaded;
 
         for (var column = visible.Left; column <= visible.Right; column++)
         {
@@ -131,6 +136,24 @@ internal static class CanvasScenePainter
             var y = Math.Min(canvasBounds.Y + row * viewport.CellSize.Height, canvasBounds.Bottom - GridLineWidth);
             canvas.DrawRect(SKRect.Create(left, y, right - left, GridLineWidth), paint);
         }
+
+        paint.Shader = null;
+    }
+
+    // The grid's colour, kept (the destination) only as far as the shade (the source) is opaque over each cell. The
+    // shade is stretched over the visible cells without smoothing, and its edge cells carry on past them.
+    private static SKShader? GridShaderOf(SKColor color, GridShade? shade, CanvasViewport viewport)
+    {
+        if (shade is null)
+            return null;
+
+        var bounds = shade.Bounds;
+        var cell = viewport.CellSize;
+        using var colour = SKShader.CreateColor(color);
+        using var strengths = shade.Image.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp,
+            new SKSamplingOptions(SKFilterMode.Nearest),
+            SKMatrix.CreateScaleTranslation(cell.Width, cell.Height, bounds.X, bounds.Y));
+        return SKShader.CreateBlend(SKBlendMode.DstIn, colour, strengths);
     }
 
     // Each strip in the backdrop colour, with dashes of the line colour over it. The dashes are counted from the

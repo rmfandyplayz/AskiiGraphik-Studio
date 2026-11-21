@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Diagnostics.CodeAnalysis;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Selection;
 using Avalonia;
@@ -11,25 +12,29 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <summary>
 /// Builds a frame's <see cref="SelectionHatch"/>es on the UI thread (ADR 0061): one over the visible cells that aren't
 /// selected, its lines rising to the right, and one over the cells a gesture would deselect, its lines falling, in the
-/// mode's colours. Only visible cells are visited, a run of selected cells at a time, so a big selection costs what
-/// shows. The buffer is kept from frame to frame.
+/// mode's colours. It also builds the <see cref="GridShade"/> that shows the grid less under them. Only visible cells
+/// are visited, a run of selected cells at a time, so a big selection costs what shows. The buffer is kept from frame
+/// to frame.
 /// </summary>
 internal sealed class SelectionHatchBuilder
 {
     private const byte Hatched = byte.MaxValue;
     private const byte Clear = 0;
+    private const byte FullStrength = byte.MaxValue;
 
     private byte[] _cells = [];
 
     /// <summary>
     /// The hatching over the visible cells outside the display's selection and outside the cells it would deselect,
-    /// or null when there's none: nothing is selected, or the look draws no hatching.
+    /// its lines moved <paramref name="shift"/> device pixels to the left, or null when there's none: nothing is or
+    /// was selected, or the look draws no hatching.
     /// </summary>
-    public SelectionHatch? BuildUnselected(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look)
+    public SelectionHatch? BuildUnselected(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look,
+        int shift)
     {
         ArgumentNullException.ThrowIfNull(viewport);
         var visible = viewport.VisibleCells;
-        if (display is null || display.Selected.IsEmpty || !CanHatch(look) || visible.IsEmpty)
+        if (!HatchesUnselected(display, look, visible))
             return null;
 
         Start(visible, Hatched);
@@ -37,30 +42,74 @@ internal sealed class SelectionHatchBuilder
         if (display.Lost is { } lost)
             Mark(visible, lost, Clear);
 
-        return Complete(viewport, visible, look, rises: true, look.HatchLine, look.HatchBackdrop);
+        return Complete(viewport, visible, look, rises: true, look.HatchLine, look.HatchBackdrop, shift);
     }
 
     /// <summary>
-    /// The hatching over the visible cells the display's gesture would deselect, in its mode's colours, or null when
-    /// there's none.
+    /// The hatching over the visible cells the display's gesture would deselect, in its mode's colours, its lines
+    /// moved <paramref name="shift"/> device pixels to the left, or null when there's none.
     /// </summary>
     public SelectionHatch? BuildLost(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look,
-        CanvasColors colors)
+        CanvasColors colors, int shift)
     {
         ArgumentNullException.ThrowIfNull(viewport);
         var visible = viewport.VisibleCells;
-        if (display?.Lost is not { IsEmpty: false } lost || !CanHatch(look) || !lost.Bounds.Intersects(visible))
+        if (VisibleLostOf(display, look, visible) is not { } lost)
             return null;
 
         Start(visible, Clear);
         Mark(visible, lost, Hatched);
-        var (line, backdrop) = look.ColoursOf(display.LostStyle, colors);
+        var (line, backdrop) = look.ColoursOf(display!.LostStyle, colors);
         return Complete(viewport, visible, look, rises: false, SelectionLook.Faded(line, look.LostHatchOpacity),
-            SelectionLook.Faded(backdrop, look.LostHatchOpacity));
+            SelectionLook.Faded(backdrop, look.LostHatchOpacity), shift);
+    }
+
+    /// <summary>
+    /// How strongly the grid shows over each visible cell: less under the hatching over cells that aren't selected,
+    /// and a little less under the hatching over cells about to be deselected. Null when there's no hatching, so the
+    /// grid shows at full strength everywhere.
+    /// </summary>
+    public GridShade? BuildGridShade(CanvasViewport viewport, SelectionDisplay? display, SelectionLook look)
+    {
+        ArgumentNullException.ThrowIfNull(viewport);
+        var visible = viewport.VisibleCells;
+        var hatchesUnselected = HatchesUnselected(display, look, visible);
+        var lost = VisibleLostOf(display, look, visible);
+        if (!hatchesUnselected && lost is null)
+            return null;
+
+        if (hatchesUnselected)
+        {
+            Start(visible, Strength(look.GridUnderHatchOpacity));
+            Mark(visible, display!.Selected, FullStrength);
+        }
+        else
+        {
+            Start(visible, FullStrength);
+        }
+
+        if (lost is not null)
+            Mark(visible, lost, Strength(look.GridUnderLostHatchOpacity));
+
+        var image = CellImage(visible);
+        return image is null ? null : new GridShade(image, BoundsOf(viewport, visible));
+    }
+
+    private static bool HatchesUnselected([NotNullWhen(true)] SelectionDisplay? display, SelectionLook look,
+        CellRect visible) => display is { HatchesUnselected: true } && CanHatch(look) && !visible.IsEmpty;
+
+    private static SelectionMask? VisibleLostOf(SelectionDisplay? display, SelectionLook look, CellRect visible)
+    {
+        if (display?.Lost is not { IsEmpty: false } lost || !CanHatch(look) || !lost.Bounds.Intersects(visible))
+            return null;
+
+        return lost;
     }
 
     // Lines closer than two pixels apart would be a smear, and a look without tokens has none.
     private static bool CanHatch(SelectionLook look) => look.HatchPeriod >= 2;
+
+    private static byte Strength(double opacity) => (byte)Math.Round(byte.MaxValue * Math.Clamp(opacity, 0, 1));
 
     private void Start(CellRect visible, byte value)
     {
@@ -90,20 +139,29 @@ internal sealed class SelectionHatchBuilder
     }
 
     private SelectionHatch? Complete(CanvasViewport viewport, CellRect visible, SelectionLook look, bool rises,
-        SKColor line, SKColor backdrop)
+        SKColor line, SKColor backdrop, int shift)
     {
-        var info = new SKImageInfo(visible.Width, visible.Height, SKColorType.Alpha8, SKAlphaType.Premul);
-        var cellMask = SKImage.FromPixelCopy(info, _cells.AsSpan(0, visible.Width * visible.Height));
+        var cellMask = CellImage(visible);
         if (cellMask is null)
             return null;
 
+        var thickness = (float)Math.Max(1, Math.Round(look.HatchThickness));
+        var tile = CreateTile(look.HatchTilePeriod, thickness, rises, line, backdrop);
+        return new SelectionHatch(cellMask, tile, BoundsOf(viewport, visible), shift);
+    }
+
+    private SKImage? CellImage(CellRect visible)
+    {
+        var info = new SKImageInfo(visible.Width, visible.Height, SKColorType.Alpha8, SKAlphaType.Premul);
+        return SKImage.FromPixelCopy(info, _cells.AsSpan(0, visible.Width * visible.Height));
+    }
+
+    private static PixelRect BoundsOf(CanvasViewport viewport, CellRect visible)
+    {
         var cell = viewport.CellSize;
         var origin = viewport.CanvasOrigin;
-        var bounds = new PixelRect(origin.X + visible.Left * cell.Width, origin.Y + visible.Top * cell.Height,
+        return new PixelRect(origin.X + visible.Left * cell.Width, origin.Y + visible.Top * cell.Height,
             visible.Width * cell.Width, visible.Height * cell.Height);
-        var period = Math.Max(2, (int)Math.Round(look.HatchPeriod));
-        var thickness = (float)Math.Max(1, Math.Round(look.HatchThickness));
-        return new SelectionHatch(cellMask, CreateTile(period, thickness, rises, line, backdrop), bounds);
     }
 
     // A square tile with one diagonal line across it, plus the pieces of its neighbours that cross its corners, so the

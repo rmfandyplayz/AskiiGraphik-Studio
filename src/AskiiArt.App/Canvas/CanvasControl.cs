@@ -144,6 +144,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private readonly WheelGestureTracker _wheelGesture = new();
     private readonly AltClickMenuGuard _altClickMenuGuard = new();
     private readonly Stopwatch _antsClock = Stopwatch.StartNew();
+    private readonly PausableClock _unselectedHatchClock = new();
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
@@ -159,8 +160,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private double _horizontalOffset;
     private double _verticalOffset;
     private bool _isPublishingViewport;
-    private bool _isAntsFrameRequested;
-    private int _paintedAntsRun;
+    private bool _isMotionFrameRequested;
+    private SelectionMotion _paintedMotion;
     private SelectionLook? _look;
     private Avalonia.Styling.ThemeVariant? _lookTheme;
 
@@ -414,26 +415,28 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var caretThickness = Math.Max(1, (int)Math.Round(CaretThickness * _renderScaling));
         var overlay = Tool?.Overlay;
         var display = SelectionDisplay.For(Selection?.Mask, overlay?.SelectionPreview);
-        _paintedAntsRun = AntsRun();
+        _paintedMotion = MotionOf(display);
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
             BrushOutlineOf(overlay), display, ToDeviceLength(SelectionThickness),
-            ToDeviceLength(SelectionDashLength), _paintedAntsRun, overlay?.Path, overlay?.ShowsPathClosing ?? false,
+            ToDeviceLength(SelectionDashLength), _paintedMotion, overlay?.Path, overlay?.ShowsPathClosing ?? false,
             overlay?.Markers, Look.ScaledBy(_renderScaling));
         var buildStarted = Stopwatch.GetTimestamp();
         var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
 
-        if (display is { HasRunningOutline: true })
-            RequestAntsFrame();
+        if (display is { IsMoving: true })
+            RequestMotionFrame();
     }
 
-    /// <summary>True while the selection outline's dashes are running, which they do whenever there's one.</summary>
-    internal bool AreAntsRunning => _isAntsFrameRequested;
+    /// <summary>
+    /// True while the selection's outline dashes or hatching are moving, which they do whenever something is selected.
+    /// </summary>
+    internal bool IsSelectionMoving => _isMotionFrameRequested;
 
-    // The selection, or what a selection tool's gesture would leave, has a bright outline whose dashes run.
-    private bool HasRunningOutline =>
-        SelectionDisplay.For(Selection?.Mask, Tool?.Overlay.SelectionPreview) is { HasRunningOutline: true };
+    // What the canvas shows of the selection, or of what a selection tool's gesture would leave.
+    private SelectionDisplay? CurrentSelectionDisplay =>
+        SelectionDisplay.For(Selection?.Mask, Tool?.Overlay.SelectionPreview);
 
     // The hatching's, mode colours' and markers' look, in logical pixels, read from the theme's tokens once per theme.
     private SelectionLook Look
@@ -455,35 +458,37 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         }
     }
 
-    // How far the dashes have run within one dash and gap, in device pixels.
-    private int AntsRun()
+    // How far the dashes and the hatching have moved now, in device pixels. The hatching over cells that aren't
+    // selected moves only while the display says so, and carries on from where it stopped.
+    private SelectionMotion MotionOf(SelectionDisplay? display)
     {
-        var period = 2 * ToDeviceLength(SelectionDashLength);
-        var run = _antsClock.Elapsed.TotalSeconds * SelectionAntsSpeed * _renderScaling;
-        return (int)(run % period);
+        var now = _antsClock.Elapsed;
+        var hatchTime = _unselectedHatchClock.Elapsed(now, keepsRunning: display?.UnselectedHatchMoves ?? true);
+        return SelectionMotion.At(now, hatchTime, display, Look.ScaledBy(_renderScaling),
+            SelectionAntsSpeed * _renderScaling, ToDeviceLength(SelectionDashLength));
     }
 
-    private void RequestAntsFrame()
+    private void RequestMotionFrame()
     {
-        if (_isAntsFrameRequested || _topLevel is null)
+        if (_isMotionFrameRequested || _topLevel is null)
             return;
 
-        _isAntsFrameRequested = true;
-        _topLevel.RequestAnimationFrame(OnAntsFrame);
+        _isMotionFrameRequested = true;
+        _topLevel.RequestAnimationFrame(OnMotionFrame);
     }
 
-    // Repaints only once the dashes have moved a whole device pixel; Render then asks for the next frame. With no
-    // selection left to outline, the dashes stop until there's another.
-    private void OnAntsFrame(TimeSpan frameTime)
+    // Repaints only once the dashes or the hatching have moved a whole device pixel; Render then asks for the next
+    // frame. With nothing left that moves, they stop until there is something again.
+    private void OnMotionFrame(TimeSpan frameTime)
     {
-        _isAntsFrameRequested = false;
-        if (_topLevel is null || !HasRunningOutline)
+        _isMotionFrameRequested = false;
+        if (_topLevel is null || CurrentSelectionDisplay is not { IsMoving: true } display)
             return;
 
-        if (AntsRun() != _paintedAntsRun)
+        if (MotionOf(display) != _paintedMotion)
             InvalidateVisual();
         else
-            RequestAntsFrame();
+            RequestMotionFrame();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

@@ -22,7 +22,7 @@ public sealed class SelectionDisplayTests
     }
 
     [Fact]
-    public void WithNoGesture_TheSelectionHasARunningOutline()
+    public void WithNoGesture_TheSelectionHasARunningOutline_AndMovingHatchingAroundIt()
     {
         var display = SelectionDisplay.For(_before, null)!;
 
@@ -30,42 +30,49 @@ public sealed class SelectionDisplayTests
         Assert.Null(display.Lost);
         Assert.Equal([Bright(_before)], display.Outlines);
         Assert.True(display.HasRunningOutline);
+        Assert.True(display.HatchesUnselected);
+        Assert.True(display.UnselectedHatchMoves);
     }
 
     [Fact]
-    public void Replacing_ShowsOnlyTheShape()
+    public void Replacing_ShowsTheShape_OverTheOldOutlineVanishing()
     {
         var display = Preview(SelectionCombineMode.Replace);
 
         Assert.Equal(_shape, display.Selected);
         Assert.Null(display.Lost);
-        Assert.Equal([Bright(_shape)], display.Outlines);
+        Assert.Equal([Vanishing(_before), Bright(_shape)], display.Outlines);
+        Assert.True(display.UnselectedHatchMoves);
     }
 
     [Fact]
-    public void Adding_ShowsBothOutlinesFaintly_UnderTheResultsBrightOne()
+    public void Adding_ShowsTheResultsOutline_OverTheShapesFaintOne_AndTheOldOneVanishing()
     {
         var display = Preview(SelectionCombineMode.Add);
 
         var result = _before.CombinedWith(_shape, SelectionCombineMode.Add);
         Assert.Equal(result, display.Selected);
         Assert.Null(display.Lost);
-        Assert.Equal([Faint(_before), Faint(_shape), Bright(result)], display.Outlines);
+        Assert.Equal([Vanishing(_before), Faint(_shape), Bright(result)], display.Outlines);
+        Assert.True(display.UnselectedHatchMoves);
     }
 
     [Fact]
-    public void Subtracting_ShowsTheSelectionFaintly_TheShapeInSubtractsColours_AndWhatItWouldDeselect()
+    public void Subtracting_RunsTheShapeInSubtractsColours_OverTheOldOutline_FaintWhereItStays_VanishingWhereNot()
     {
         var display = Preview(SelectionCombineMode.Subtract);
 
-        Assert.Equal(_before.CombinedWith(_shape, SelectionCombineMode.Subtract), display.Selected);
-        Assert.Equal(Rectangle(1, 1, 1, 1), display.Lost);
+        var result = _before.CombinedWith(_shape, SelectionCombineMode.Subtract);
+        var lost = Rectangle(1, 1, 1, 1);
+        Assert.Equal(result, display.Selected);
+        Assert.Equal(lost, display.Lost);
         Assert.Equal(SelectionLineStyle.Subtract, display.LostStyle);
-        Assert.Equal([Faint(_before), Bright(_shape, SelectionLineStyle.Subtract)], display.Outlines);
+        Assert.Equal([Vanishing(lost), Faint(result), Bright(_shape, SelectionLineStyle.Subtract)], display.Outlines);
+        Assert.False(display.UnselectedHatchMoves);
     }
 
     [Fact]
-    public void Intersecting_ShowsTheShapeFaintly_WhatStaysBrightly_BothInIntersectsColours_AndWhatItWouldDeselect()
+    public void Intersecting_RunsWhatStays_OverTheShapesFaintOutline_BothInIntersectsColours_AndTheOldOneVanishing()
     {
         var display = Preview(SelectionCombineMode.Intersect);
 
@@ -74,12 +81,16 @@ public sealed class SelectionDisplayTests
         Assert.Equal(_before.CombinedWith(_shape, SelectionCombineMode.Subtract), display.Lost);
         Assert.Equal(SelectionLineStyle.Intersect, display.LostStyle);
         Assert.Equal(
-            [Faint(_shape, SelectionLineStyle.Intersect), Bright(result, SelectionLineStyle.Intersect)],
+            [
+                Vanishing(_before), Faint(_shape, SelectionLineStyle.Intersect),
+                Bright(result, SelectionLineStyle.Intersect)
+            ],
             display.Outlines);
+        Assert.False(display.UnselectedHatchMoves);
     }
 
     [Fact]
-    public void AnIntersectionThatLeavesNothing_HasNoRunningOutline()
+    public void AnIntersectionThatLeavesNothing_HasNoRunningOutline_ButStillHatchesTheRest_AndMoves()
     {
         var preview = new SelectionPreview(_before, SelectionCombineMode.Intersect, Rectangle(3, 3, 1, 1));
 
@@ -87,16 +98,35 @@ public sealed class SelectionDisplayTests
 
         Assert.True(display.Selected.IsEmpty);
         Assert.False(display.HasRunningOutline);
+        Assert.True(display.HatchesUnselected);
+        Assert.True(display.IsMoving);
+    }
+
+    [Theory]
+    [InlineData(SelectionCombineMode.Subtract)]
+    [InlineData(SelectionCombineMode.Intersect)]
+    public void AGestureWithNothingSelectedBeforeOrAfter_HatchesNothing(SelectionCombineMode mode)
+    {
+        var nothing = SelectionMask.Empty(_size);
+        var preview = new SelectionPreview(nothing, mode, _shape);
+
+        var display = SelectionDisplay.For(nothing, preview)!;
+
+        Assert.False(display.HatchesUnselected);
+        Assert.True(display.Lost is null || display.Lost.IsEmpty);
     }
 
     private static SelectionDisplay Preview(SelectionCombineMode mode) =>
         SelectionDisplay.For(_before, new SelectionPreview(_before, mode, _shape))!;
 
     private static SelectionOutlineLayer Bright(SelectionMask mask,
-        SelectionLineStyle style = SelectionLineStyle.Plain) => new(mask, style, IsFaint: false);
+        SelectionLineStyle style = SelectionLineStyle.Plain) => new(mask, style, SelectionOutlineStrength.Bright);
 
     private static SelectionOutlineLayer Faint(SelectionMask mask,
-        SelectionLineStyle style = SelectionLineStyle.Plain) => new(mask, style, IsFaint: true);
+        SelectionLineStyle style = SelectionLineStyle.Plain) => new(mask, style, SelectionOutlineStrength.Faint);
+
+    private static SelectionOutlineLayer Vanishing(SelectionMask mask) =>
+        new(mask, SelectionLineStyle.Plain, SelectionOutlineStrength.Vanishing);
 
     private static SelectionMask Rectangle(int left, int top, int width, int height) =>
         SelectionMask.Rectangle(_size, new CellRect(left, top, width, height));

@@ -226,6 +226,31 @@ public sealed class PolygonalLassoToolTests
     }
 
     [Fact]
+    public void FinishingWithFewerThanThreeCorners_ChangesNothing_WhenIntersecting()
+    {
+        SelectionEdits.SelectAll(_session);
+        _tool.PointerPressed(Input(0.25, 0.25, ToolModifiers.Shift | ToolModifiers.Alt));
+        Click(3.75, 0.25);
+
+        _tool.KeyPressed(ToolKey.Enter, ToolModifiers.None);
+
+        Assert.Equal(1, _session.History.UndoCount);
+    }
+
+    [Fact]
+    public void AShapeWhollyOffTheCanvas_DeselectsEverything_WhenIntersecting()
+    {
+        SelectionEdits.SelectAll(_session);
+        _tool.PointerPressed(Input(-3, -3, ToolModifiers.Shift | ToolModifiers.Alt));
+        Click(-1, -3);
+        Click(-1, -1);
+
+        _tool.KeyPressed(ToolKey.Enter, ToolModifiers.None);
+
+        Assert.True(_session.Selection.IsEmpty);
+    }
+
+    [Fact]
     public void TheKeysAtTheFirstClick_PickTheMode()
     {
         SelectionEdits.Select(_session, SelectionMask.Rectangle(_session.Document.CanvasSize, new CellRect(4, 3, 1, 1)),

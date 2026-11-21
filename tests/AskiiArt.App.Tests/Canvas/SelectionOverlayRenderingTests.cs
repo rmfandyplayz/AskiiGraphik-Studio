@@ -45,8 +45,14 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         IntersectBackdrop: new SKColor(0, 100, 0),
         HatchPeriod: 6,
         HatchThickness: 1,
+        HatchSpeed: 1,
+        SubtractHatchSpeed: 1,
+        IntersectHatchSpeed: 1,
         FaintOpacity: 0.5,
+        VanishingOpacity: 0.25,
         LostHatchOpacity: 1,
+        GridUnderHatchOpacity: 0.4,
+        GridUnderLostHatchOpacity: 0.7,
         ClosingLineOpacity: 1,
         CornerMarkerRadius: 3,
         FinishMarkerRadius: 10,
@@ -119,16 +125,86 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
     }
 
     [Fact]
-    public void AGestureThatWouldDeselectEverything_HatchesOnlyWhatItWouldDeselect()
+    public void AGestureThatWouldDeselectEverything_StillHatchesTheRest()
     {
         var preview = new SelectionPreview(Rectangle(0, 0, 2, 2), SelectionCombineMode.Subtract,
             SelectionMask.All(_size));
+        var viewport = CreateViewport();
 
-        using var scene = Build(CreateViewport(), new CanvasOverlays(false, null,
+        using var bitmap = Paint(viewport, new CanvasOverlays(false, null,
             Selection: SelectionDisplay.For(preview.Before, preview), Look: _look));
 
+        Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(3, 1)), IsBluish);
+        Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(0, 1)), pixel => pixel.Red > pixel.Blue + 40);
+    }
+
+    [Fact]
+    public void AGestureWithNothingSelectedBeforeOrAfter_HatchesNothing()
+    {
+        var nothing = SelectionMask.Empty(_size);
+        var preview = new SelectionPreview(nothing, SelectionCombineMode.Intersect, Rectangle(0, 0, 2, 2));
+
+        using var scene = Build(CreateViewport(), new CanvasOverlays(true, null,
+            Selection: SelectionDisplay.For(nothing, preview), Look: _look));
+
         Assert.Null(scene.UnselectedHatch);
-        Assert.NotNull(scene.LostHatch);
+        Assert.Null(scene.LostHatch);
+        Assert.Null(scene.GridShade);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheHatching_MovesAlongARowByItsShift(bool isLost)
+    {
+        var preview = new SelectionPreview(Rectangle(0, 0, 3, 2), SelectionCombineMode.Subtract,
+            Rectangle(0, 0, 1, 2));
+        var display = SelectionDisplay.For(preview.Before, preview);
+        var viewport = CreateViewport();
+        var cell = isLost ? new CellPoint(0, 1) : new CellPoint(3, 1);
+        var moved = isLost ? new SelectionMotion(0, 0, 2) : new SelectionMotion(0, 2, 0);
+
+        using var still = Paint(viewport, new CanvasOverlays(false, null, Selection: display, Look: _look));
+        using var shifted = Paint(viewport, new CanvasOverlays(false, null, Selection: display,
+            SelectionMotion: moved, Look: _look));
+
+        var rect = Inside(viewport, cell);
+        Assert.NotEqual(InsideOf(still, viewport, cell), InsideOf(shifted, viewport, cell));
+        for (var y = rect.Y; y < rect.Bottom; y++)
+        {
+            for (var x = rect.X; x < rect.Right - 2; x++)
+                Assert.Equal(still.GetPixel(x + 2, y), shifted.GetPixel(x, y));
+        }
+    }
+
+    [Fact]
+    public void TheGrid_ShowsLessUnderTheHatching_AndLessStillUnderTheHatchingOverCellsAboutToBeDeselected()
+    {
+        var preview = new SelectionPreview(Rectangle(0, 0, 3, 2), SelectionCombineMode.Subtract,
+            Rectangle(0, 0, 1, 2));
+        var unhatched = _look with
+        {
+            HatchLine = SKColors.Transparent,
+            HatchBackdrop = SKColors.Transparent,
+            SubtractLine = SKColors.Transparent,
+            SubtractBackdrop = SKColors.Transparent
+        };
+        var viewport = CreateViewport();
+
+        using var bitmap = Paint(viewport, new CanvasOverlays(true, null,
+            Selection: SelectionDisplay.For(preview.Before, preview), Look: unhatched));
+
+        // The grid line along the second row's top, half way across a cell, where no outline runs.
+        int GridAt(int column)
+        {
+            var bounds = viewport.GetCellBounds(new CellPoint(column, 1));
+            return 255 - bitmap.GetPixel(bounds.X + bounds.Width / 2, bounds.Y).Red;
+        }
+
+        var full = GridAt(1);
+        Assert.True(full > 200);
+        Assert.InRange(GridAt(0), full * 0.6, full * 0.8);
+        Assert.InRange(GridAt(3), full * 0.3, full * 0.5);
     }
 
     [Fact]
@@ -146,16 +222,16 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         var preview = new SelectionPreview(Rectangle(0, 0, 2, 1), SelectionCombineMode.Add, Rectangle(1, 0, 2, 2));
 
         using var scene = Build(CreateViewport(), new CanvasOverlays(false, null,
-            Selection: SelectionDisplay.For(preview.Before, preview), SelectionDashOffset: 3, Look: _look));
+            Selection: SelectionDisplay.For(preview.Before, preview), SelectionMotion: new SelectionMotion(3, 0, 0),
+            Look: _look));
 
         var passes = scene.SelectionOutlines;
         Assert.Equal(3, passes.Count);
-        Assert.All(passes.Take(2), pass =>
-        {
-            Assert.Equal(0, pass.DashOffset);
-            Assert.Equal(SKColors.Black.WithAlpha(128), pass.Line);
-            Assert.Equal(SKColors.Yellow.WithAlpha(128), pass.Backdrop);
-        });
+        Assert.All(passes.Take(2), pass => Assert.Equal(0, pass.DashOffset));
+        Assert.Equal(SKColors.Black.WithAlpha(64), passes[0].Line);
+        Assert.Equal(SKColors.Yellow.WithAlpha(64), passes[0].Backdrop);
+        Assert.Equal(SKColors.Black.WithAlpha(128), passes[1].Line);
+        Assert.Equal(SKColors.Yellow.WithAlpha(128), passes[1].Backdrop);
         Assert.Equal(3, passes[2].DashOffset);
         Assert.Equal(SKColors.Black, passes[2].Line);
     }
