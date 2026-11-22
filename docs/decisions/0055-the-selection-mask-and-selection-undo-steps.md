@@ -40,3 +40,5 @@ Updated 2026-11-20: Rectangle Select now follows the combine modes and the keys 
 Updated 2026-11-20: the canvas now also hatches what isn't selected, and a selection tool's preview shows faint and coloured outlines by its mode (ADR 0061).
 
 Updated 2026-11-21: at the owner's request the Hand tool has no letter after step 4.5, rather than H; Esc picks it, and the Move tool has V (ADR 0066).
+
+Updated 2026-11-22: since 4.9 (ADR 0071), a moved mask's bounds can reach past its canvas (`MovedWithin`); every other way of making a mask still crops to the canvas.

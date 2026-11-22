@@ -63,7 +63,8 @@ internal sealed class SelectionCombiner(EditingSession session, ToolOptionValues
     /// <summary>
     /// Ends the gesture with <paramref name="shape"/>, as one undo step named <paramref name="stepNameKey"/>, or named
     /// Deselect when nothing would be left selected. A shape combines even when it has no cells, as when it was drawn
-    /// off the canvas. A null shape is a click's, which deselects when replacing and otherwise changes nothing.
+    /// off the canvas. A null shape is a click's, which deselects when replacing and otherwise only drops the part of
+    /// the selection past the canvas (ADR 0071).
     /// </summary>
     public void Finish(SelectionMask? shape, string stepNameKey)
     {

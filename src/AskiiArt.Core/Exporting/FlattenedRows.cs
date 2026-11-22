@@ -13,9 +13,12 @@ namespace AskiiArt.Core.Exporting;
 /// </summary>
 internal static class FlattenedRows
 {
-    /// <summary>The cells a text export covers: the selection's bounds while anything is selected, else the canvas.</summary>
+    /// <summary>
+    /// The cells a text export covers: while anything is selected, the bounds of its cells on the canvas, which are
+    /// none when it all lies past the canvas's edges; else the canvas.
+    /// </summary>
     public static CellRect RegionOf(Document document, SelectionMask? selection) =>
-        selection is { IsEmpty: false } ? selection.Bounds : document.CanvasSize.Bounds;
+        selection is { IsEmpty: false } ? selection.CutToCanvas().Bounds : document.CanvasSize.Bounds;
 
     /// <summary>Flattens row <paramref name="y"/> of <paramref name="region"/> into <paramref name="row"/>.</summary>
     public static void Read(Document document, SelectionMask? selection, CellRect region, int y, Span<Cell> row)

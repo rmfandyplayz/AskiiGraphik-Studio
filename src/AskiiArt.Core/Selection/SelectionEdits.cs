@@ -47,7 +47,10 @@ public static class SelectionEdits
         return Select(session, SelectionMask.Empty(session.Document.CanvasSize), UndoStepNames.Deselect);
     }
 
-    /// <summary>Selects every cell that isn't selected, and none that is.</summary>
+    /// <summary>
+    /// Selects every cell of the canvas that isn't selected, and none that is. Like every selection command, it works
+    /// on the canvas only, so any part of the selection past its edges is dropped (ADR 0071).
+    /// </summary>
     /// <returns>True; inverting always changes the selection.</returns>
     public static bool Invert(EditingSession session)
     {
@@ -55,7 +58,10 @@ public static class SelectionEdits
         return Select(session, session.Selection.Mask.Inverted(), UndoStepNames.InvertSelection);
     }
 
-    /// <summary>Grows the selection by one cell all round, corners included (ADR 0063).</summary>
+    /// <summary>
+    /// Grows the selection's cells on the canvas by one cell all round, corners included (ADR 0063), dropping any part
+    /// past the canvas's edges.
+    /// </summary>
     /// <returns>
     /// True when the selection changed; false when nothing is selected or it already fills the canvas.
     /// </returns>
@@ -66,8 +72,8 @@ public static class SelectionEdits
     }
 
     /// <summary>
-    /// Shrinks the selection by one cell all round, corners included, leaving cells along the canvas's edges
-    /// (ADR 0063).
+    /// Shrinks the selection's cells on the canvas by one cell all round, corners included, leaving cells along the
+    /// canvas's edges (ADR 0063), and drops any part past them.
     /// </summary>
     /// <returns>True when the selection changed; false when nothing is selected or nothing would be left out.</returns>
     public static bool Shrink(EditingSession session)

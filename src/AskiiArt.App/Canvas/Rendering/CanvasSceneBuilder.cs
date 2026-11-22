@@ -6,6 +6,7 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Imaging.Glyphs;
 using Avalonia;
+using SkiaSharp;
 
 namespace AskiiArt.App.Canvas.Rendering;
 
@@ -155,7 +156,8 @@ internal sealed class CanvasSceneBuilder
     }
 
     // Each of the display's outlines that shows: a bright one in full colour with its dashes running, and a faint or
-    // vanishing one in colours faded by its strength, standing still.
+    // vanishing one in colours faded by its strength, standing still. Past the canvas's edges each is weaker, running
+    // as it does, or, while a gesture would drop that part, faint and still (ADR 0071).
     private static SelectionOutlinePass[] SelectionOutlinesOf(CanvasViewport viewport, CanvasOverlays overlays,
         CanvasColors colors)
     {
@@ -166,26 +168,33 @@ internal sealed class CanvasSceneBuilder
         var passes = new List<SelectionOutlinePass>(display.Outlines.Count);
         foreach (var layer in display.Outlines)
         {
-            var strips = SelectionOutlineOf(viewport, layer.Mask, overlays.SelectionThickness);
-            if (strips.Length == 0)
-                continue;
-
+            var (onCanvas, offCanvas) = SelectionOutlineOf(viewport, layer.Mask, overlays.SelectionThickness);
             var (line, backdrop) = look.ColoursOf(layer.Style, colors);
-            if (layer.Strength == SelectionOutlineStrength.Bright)
+            var isBright = layer.Strength == SelectionOutlineStrength.Bright;
+            var dashRun = isBright ? overlays.SelectionMotion.DashRun : 0;
+            AddPass(passes, onCanvas, line, backdrop, look.OpacityOf(layer.Strength), dashRun);
+            var offCanvasOpacity = look.OpacityOf(layer.Strength) * look.OffCanvasOpacity;
+            var offCanvasDashRun = dashRun;
+            if (display.OffCanvas == OffCanvasLines.Dropped)
             {
-                passes.Add(new SelectionOutlinePass(strips, line, backdrop, overlays.SelectionMotion.DashRun));
-                continue;
+                offCanvasOpacity = look.DroppedOffCanvasOpacity;
+                offCanvasDashRun = 0;
             }
 
-            var opacity = layer.Strength == SelectionOutlineStrength.Faint ? look.FaintOpacity : look.VanishingOpacity;
-            if (opacity > 0)
-            {
-                passes.Add(new SelectionOutlinePass(strips, SelectionLook.Faded(line, opacity),
-                    SelectionLook.Faded(backdrop, opacity), DashOffset: 0));
-            }
+            AddPass(passes, offCanvas, line, backdrop, offCanvasOpacity, offCanvasDashRun);
         }
 
         return [.. passes];
+    }
+
+    private static void AddPass(List<SelectionOutlinePass> passes, SelectionStrip[] strips, SKColor line,
+        SKColor backdrop, double opacity, int dashRun)
+    {
+        if (strips.Length == 0 || opacity <= 0)
+            return;
+
+        passes.Add(new SelectionOutlinePass(strips, SelectionLook.Faded(line, opacity),
+            SelectionLook.Faded(backdrop, opacity), dashRun));
     }
 
     // Each edge becomes a strip inside its cells, as the caret's outline is, so it lands on whole pixels. Edges off
@@ -220,41 +229,69 @@ internal sealed class CanvasSceneBuilder
         return strips;
     }
 
-    // The selection's edges that lie in the visible cells, cut to them, so a selection far bigger than the view costs
-    // only what shows. Each is a strip inside its cells, like the brush outline.
-    private static SelectionStrip[] SelectionOutlineOf(CanvasViewport viewport, SelectionMask? selection,
-        int thickness)
+    // The selection's edges that lie in the visible cells, on the canvas and past its edges, cut to them, so a
+    // selection far bigger than the view costs only what shows. Each is a strip inside its cells, like the brush
+    // outline, and lies on the canvas or past it as its cells do.
+    private static (SelectionStrip[] OnCanvas, SelectionStrip[] OffCanvas) SelectionOutlineOf(CanvasViewport viewport,
+        SelectionMask? selection, int thickness)
     {
-        var visible = viewport.VisibleCells;
+        var visible = viewport.VisibleCellsAroundCanvas;
         if (selection is null || selection.IsEmpty || !selection.Bounds.Intersects(visible))
-            return [];
+            return ([], []);
 
         var cell = viewport.CellSize;
         var width = Math.Clamp(thickness, 1, Math.Max(1, Math.Min(cell.Width, cell.Height) / 2));
-        var origin = viewport.CanvasOrigin;
-        var strips = new List<SelectionStrip>();
+        var canvas = viewport.CanvasSize.Bounds;
+        var onCanvas = new List<SelectionStrip>();
+        var offCanvas = new List<SelectionStrip>();
         foreach (var edge in selection.Edges)
         {
-            var cells = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom
+            var isAlongRow = edge.Side is CellEdgeSide.Top or CellEdgeSide.Bottom;
+            var cells = isAlongRow
                 ? new CellRect(edge.Column, edge.Row, edge.Length, 1)
                 : new CellRect(edge.Column, edge.Row, 1, edge.Length);
             var shown = cells.Intersect(visible);
             if (shown.IsEmpty)
                 continue;
 
-            var x = origin.X + shown.X * cell.Width;
-            var y = origin.Y + shown.Y * cell.Height;
-            var rect = edge.Side switch
+            var inside = shown.Intersect(canvas);
+            if (inside.IsEmpty)
             {
-                CellEdgeSide.Top => new PixelRect(x, y, shown.Width * cell.Width, width),
-                CellEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, shown.Width * cell.Width, width),
-                CellEdgeSide.Left => new PixelRect(x, y, width, shown.Height * cell.Height),
-                _ => new PixelRect(x + cell.Width - width, y, width, shown.Height * cell.Height)
-            };
-            strips.Add(new SelectionStrip(rect, edge.Side));
+                offCanvas.Add(StripOf(viewport, shown, edge.Side, width));
+                continue;
+            }
+
+            onCanvas.Add(StripOf(viewport, inside, edge.Side, width));
+            var (before, after) = isAlongRow
+                ? (CellRect.FromEdges(shown.Left, shown.Top, inside.Left, shown.Bottom),
+                    CellRect.FromEdges(inside.Right, shown.Top, shown.Right, shown.Bottom))
+                : (CellRect.FromEdges(shown.Left, shown.Top, shown.Right, inside.Top),
+                    CellRect.FromEdges(shown.Left, inside.Bottom, shown.Right, shown.Bottom));
+            if (!before.IsEmpty)
+                offCanvas.Add(StripOf(viewport, before, edge.Side, width));
+
+            if (!after.IsEmpty)
+                offCanvas.Add(StripOf(viewport, after, edge.Side, width));
         }
 
-        return [.. strips];
+        return ([.. onCanvas], [.. offCanvas]);
+    }
+
+    // A strip along one side of a row or column of cells, inside them.
+    private static SelectionStrip StripOf(CanvasViewport viewport, CellRect cells, CellEdgeSide side, int width)
+    {
+        var cell = viewport.CellSize;
+        var origin = viewport.CanvasOrigin;
+        var x = origin.X + cells.X * cell.Width;
+        var y = origin.Y + cells.Y * cell.Height;
+        var rect = side switch
+        {
+            CellEdgeSide.Top => new PixelRect(x, y, cells.Width * cell.Width, width),
+            CellEdgeSide.Bottom => new PixelRect(x, y + cell.Height - width, cells.Width * cell.Width, width),
+            CellEdgeSide.Left => new PixelRect(x, y, width, cells.Height * cell.Height),
+            _ => new PixelRect(x + cell.Width - width, y, width, cells.Height * cell.Height)
+        };
+        return new SelectionStrip(rect, side);
     }
 
     private static PixelRect? BoundsOf(CanvasViewport viewport, CellPoint? cell) =>

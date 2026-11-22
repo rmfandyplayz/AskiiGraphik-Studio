@@ -156,6 +156,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     private CanvasViewport? _viewport;
     private double _renderScaling = 1;
     private Point? _pointerPosition;
+
+    // The cell under the pointer, on the canvas or past its edges, where a moved selection can be (ADR 0071).
+    private CellPoint? _pointerCell;
     private CellPoint? _brushTopLeft;
     private Point? _panStart;
     private PixelPoint _panStartOffset;
@@ -863,17 +866,20 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         PointerCanvasPosition = _pointerPosition is { } pointer ? _viewport?.CanvasPointAt(pointer) : null;
 
+        var pointerCell = _pointerPosition is { } pointed ? ToToolInput(pointed, KeyModifiers.None)?.Cell : null;
+        if (pointerCell != _pointerCell)
+        {
+            _pointerCell = pointerCell;
+            UpdateCursor();
+        }
+
         var hovered = _pointerPosition is { } position ? _viewport?.CellAt(position) : null;
         var brushTopLeft = FindBrushTopLeft();
         if (hovered == HoveredCell && brushTopLeft == _brushTopLeft)
             return;
 
-        var hoveredChanged = hovered != HoveredCell;
         HoveredCell = hovered;
         _brushTopLeft = brushTopLeft;
-        if (hoveredChanged)
-            UpdateCursor();
-
         InvalidateVisual();
     }
 
@@ -893,11 +899,12 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         return new BrushOutline(footprint, topLeft);
     }
 
-    // The Move tool's cursor over the cells it would move is the same shape as the pan cursor (ADR 0067).
+    // The Move tool's cursor over the cells it would move, past the canvas's edges too, is the same shape as the pan
+    // cursor (ADRs 0067, 0071).
     private void UpdateCursor()
     {
         var pans = _panStart is not null || _isSpaceHeld || Tool?.PansWithPrimaryButton == true;
-        var moves = HoveredCell is { } cell && Tool?.ShowsMoveCursorAt(cell) == true;
+        var moves = _pointerCell is { } cell && Tool?.ShowsMoveCursorAt(cell) == true;
         if (pans || moves)
             Cursor = _panCursor ??= new Cursor(PanCursor.TypeFor(OperatingSystem.IsMacOS()));
         else

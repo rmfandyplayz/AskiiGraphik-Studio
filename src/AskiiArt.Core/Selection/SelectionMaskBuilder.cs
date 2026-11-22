@@ -22,12 +22,24 @@ public sealed class SelectionMaskBuilder
     /// Where cells may be added, which bounds the memory the builder takes. Defaults to the whole canvas.
     /// </param>
     public SelectionMaskBuilder(CanvasSize canvasSize, CellRect? area = null)
+        : this(canvasSize, area ?? canvasSize.Bounds, cutsToCanvas: true)
+    {
+    }
+
+    private SelectionMaskBuilder(CanvasSize canvasSize, CellRect area, bool cutsToCanvas)
     {
         _canvasSize = canvasSize;
-        _area = (area ?? canvasSize.Bounds).Intersect(canvasSize.Bounds);
+        _area = cutsToCanvas ? area.Intersect(canvasSize.Bounds) : area;
         _stride = BitRow.WordsFor(_area.Width);
         _bits = new ulong[_stride * _area.Height];
     }
+
+    /// <summary>
+    /// Starts an empty mask whose cells may lie anywhere in <paramref name="area"/>, also past the canvas's edges, as a
+    /// moved selection's can (ADR 0071).
+    /// </summary>
+    internal static SelectionMaskBuilder Within(CanvasSize canvasSize, CellRect area) =>
+        new(canvasSize, area, cutsToCanvas: false);
 
     /// <summary>Selects the cell at <paramref name="point"/>, if it's in the builder's area.</summary>
     public void Add(CellPoint point) => AddRun(point.Y, point.X, 1);

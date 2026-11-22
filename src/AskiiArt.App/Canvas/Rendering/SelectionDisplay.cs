@@ -34,6 +34,16 @@ internal enum SelectionOutlineStrength
     Vanishing
 }
 
+/// <summary>How the outlines' lines past the canvas's edges show (ADR 0071).</summary>
+internal enum OffCanvasLines
+{
+    /// <summary>Weaker than the rest of each outline, and running with it: the selection keeps them.</summary>
+    Kept,
+
+    /// <summary>Faint and still: the selection tool in use drops them.</summary>
+    Dropped
+}
+
 /// <summary>An outline around the cells of a mask, in a style and a strength.</summary>
 internal readonly record struct SelectionOutlineLayer(
     SelectionMask Mask,
@@ -44,7 +54,8 @@ internal readonly record struct SelectionOutlineLayer(
 /// What the canvas shows of the selection (ADR 0061). With no gesture, it's the selection, with a running outline and
 /// moving hatching over every cell outside it. During a selection tool's gesture, it's what the gesture would leave,
 /// with hatching the other way, in the mode's colour, over the cells it would deselect, and the outlines the mode
-/// shows. Later outlines are drawn over earlier ones, so where a line is both kept and not, it shows bright.
+/// shows. Later outlines are drawn over earlier ones, so where a line is both kept and not, it shows bright. Past the
+/// canvas's edges only the outlines show, weaker, and fainter still during a gesture, which drops that part (ADR 0071).
 /// </summary>
 /// <param name="Selected">The selection shown.</param>
 /// <param name="Lost">The cells the gesture would deselect, or null for none.</param>
@@ -57,13 +68,15 @@ internal readonly record struct SelectionOutlineLayer(
 /// <param name="UnselectedHatchMoves">
 /// True when that hatching moves. It stands still during Subtract and Intersect, so only their hatching moves.
 /// </param>
+/// <param name="OffCanvas">How the outlines' lines past the canvas's edges show.</param>
 internal sealed record SelectionDisplay(
     SelectionMask Selected,
     SelectionMask? Lost,
     SelectionLineStyle LostStyle,
     IReadOnlyList<SelectionOutlineLayer> Outlines,
     bool HatchesUnselected,
-    bool UnselectedHatchMoves)
+    bool UnselectedHatchMoves,
+    OffCanvasLines OffCanvas = OffCanvasLines.Kept)
 {
     /// <summary>True when an outline's dashes run.</summary>
     public bool HasRunningOutline =>
@@ -101,16 +114,17 @@ internal sealed record SelectionDisplay(
         return preview.Mode switch
         {
             SelectionCombineMode.Add => new SelectionDisplay(result, null, SelectionLineStyle.Plain,
-                [Vanishing(before), Faint(shape), Bright(result)], hatchesUnselected, UnselectedHatchMoves: true),
+                [Vanishing(before), Faint(shape), Bright(result)], hatchesUnselected, UnselectedHatchMoves: true,
+                OffCanvasLines.Dropped),
             SelectionCombineMode.Subtract => new SelectionDisplay(result, preview.Lost, SelectionLineStyle.Subtract,
                 [Vanishing(preview.Lost), Faint(result), Bright(shape, SelectionLineStyle.Subtract)],
-                hatchesUnselected, UnselectedHatchMoves: false),
+                hatchesUnselected, UnselectedHatchMoves: false, OffCanvasLines.Dropped),
             SelectionCombineMode.Intersect => new SelectionDisplay(result, preview.Lost, SelectionLineStyle.Intersect,
                 [Vanishing(before), Faint(shape, SelectionLineStyle.Intersect),
                     Bright(result, SelectionLineStyle.Intersect)],
-                hatchesUnselected, UnselectedHatchMoves: false),
+                hatchesUnselected, UnselectedHatchMoves: false, OffCanvasLines.Dropped),
             _ => new SelectionDisplay(result, null, SelectionLineStyle.Plain, [Vanishing(before), Bright(result)],
-                hatchesUnselected, UnselectedHatchMoves: true)
+                hatchesUnselected, UnselectedHatchMoves: true, OffCanvasLines.Dropped)
         };
     }
 

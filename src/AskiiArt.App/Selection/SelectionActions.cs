@@ -15,8 +15,9 @@ namespace AskiiArt.App.Selection;
 /// <summary>
 /// The Select menu's commands, for the active document's selection (ADR 0055, ADR 0063): Select All, Deselect, Invert,
 /// Grow, Shrink, and selecting the cells with glyphs or with a background colour, plus the Edit menu's Delete, which
-/// empties the selected cells of the active layer (ADR 0065). Each is an undo step. Deselect, Grow and Shrink are
-/// available only while something is selected, and Delete only while the active layer can be changed too.
+/// empties the selected cells of the active layer (ADR 0065). Each is an undo step. Deselect is available only while
+/// something is selected; Grow, Shrink and Delete only while some selected cell is on the canvas (ADR 0071), and Delete
+/// only while the active layer can be changed too.
 /// </summary>
 internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionProvider
 {
@@ -25,8 +26,8 @@ internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionP
         var selectAll = new RelayCommand(() => SelectionEdits.SelectAll(Session));
         var deselect = new RelayCommand(() => SelectionEdits.Deselect(Session), IsAnythingSelected);
         var invert = new RelayCommand(() => SelectionEdits.Invert(Session));
-        var grow = new RelayCommand(() => SelectionEdits.Grow(Session), IsAnythingSelected);
-        var shrink = new RelayCommand(() => SelectionEdits.Shrink(Session), IsAnythingSelected);
+        var grow = new RelayCommand(() => SelectionEdits.Grow(Session), IsAnythingSelectedOnCanvas);
+        var shrink = new RelayCommand(() => SelectionEdits.Shrink(Session), IsAnythingSelectedOnCanvas);
         var selectCellsWithGlyphs = new RelayCommand(() => SelectionEdits.SelectCellsWithGlyphs(Session));
         var selectCellsWithBackground = new RelayCommand(() => SelectionEdits.SelectCellsWithBackground(Session));
         var deleteSelectedCells = new RelayCommand(() => SelectionContents.Clear(Session),
@@ -92,6 +93,8 @@ internal sealed class SelectionActions(ActiveDocument activeDocument) : IActionP
     }
 
     private bool IsAnythingSelected() => !Session.Selection.IsEmpty;
+
+    private bool IsAnythingSelectedOnCanvas() => Session.Selection.Mask.HasCellsOnCanvas;
 
     private EditingSession Session => activeDocument.Session;
 }

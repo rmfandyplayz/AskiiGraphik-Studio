@@ -20,8 +20,9 @@ namespace AskiiArt.Core.Tools.Moving;
 /// float: over several drags and nudges, and undos and redos of them, they pass over other art without harming it.
 /// Enter ends the move and deselects, and another tool, another layer or any other change ends it too; then the cells
 /// replace what they're on, though empty ones don't. Esc during a drag puts the cells back where the drag found them.
-/// Cells moved off the canvas are kept while the move lasts, and lost when it ends. Moving the whole layer selects it
-/// as it moves. It does nothing on a locked or hidden layer.
+/// The selection can go past the canvas's edges into the zone around it (ADR 0071), where it stays when the move ends,
+/// while cells moved off the canvas are kept only while the move lasts. Moving the whole layer selects it as it moves.
+/// It does nothing on a locked or hidden layer.
 /// </para>
 /// </summary>
 public sealed class MoveTool : ITool
@@ -121,7 +122,7 @@ public sealed class MoveTool : ITool
         if (copies || _move is null)
         {
             EndMove();
-            _move = new FloatingMove(_session, copies);
+            _move = new FloatingMove(_session, copies, Zone());
         }
 
         _move.BeginGesture();
@@ -201,8 +202,8 @@ public sealed class MoveTool : ITool
         if (!_session.CanEditActiveLayer)
             return false;
 
-        _move ??= new FloatingMove(_session, isCopy: false);
-        var target = new CellPoint(_move.Offset.X + nudge.X, _move.Offset.Y + nudge.Y);
+        _move ??= new FloatingMove(_session, isCopy: false, Zone());
+        var target = _move.Limit(new CellPoint(_move.Offset.X + nudge.X, _move.Offset.Y + nudge.Y));
         if (IsFar(key))
         {
             _nudges.Stop();
@@ -239,7 +240,7 @@ public sealed class MoveTool : ITool
             return false;
 
         EndMove();
-        _move = FloatingMove.Paste(_session, clip, topLeft);
+        _move = FloatingMove.Paste(_session, clip, topLeft, Zone());
         return true;
     }
 
@@ -258,8 +259,11 @@ public sealed class MoveTool : ITool
 
         var distance = MoveConstraint.Apply(new CellPoint(_pointerCell.X - press.X, _pointerCell.Y - press.Y),
             _modifiers, _cellWidthToHeight());
-        _move.MoveTo(new CellPoint(_offsetAtPress.X + distance.X, _offsetAtPress.Y + distance.Y));
+        _move.MoveTo(_move.Limit(new CellPoint(_offsetAtPress.X + distance.X, _offsetAtPress.Y + distance.Y)));
     }
+
+    // The canvas and the zone around it as the cells look now (ADR 0071).
+    private CellRect Zone() => SelectionZone.Around(_session.Document.CanvasSize, _cellWidthToHeight());
 
     // The move's cells stay where they are, and stop floating.
     private void EndMove()

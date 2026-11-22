@@ -62,6 +62,9 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         FinishMarkerRadius: 10,
         CornerMarkerOpacity: 1);
 
+    private static readonly SelectionLook _offCanvasLook =
+        _look with { OffCanvasOpacity = 0.5, DroppedOffCanvasOpacity = 0.15 };
+
     private readonly TestCanvas _canvas = new(_size);
     private readonly CanvasSceneBuilder _builder = new();
     private readonly GlyphAtlas _atlas;
@@ -302,6 +305,54 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         Assert.Equal(SKColors.Black, passes[2].Line);
     }
 
+    [Fact]
+    public void AnOutlinePastTheCanvas_ShowsAtHalfStrength_RunningWithTheRest()
+    {
+        var viewport = CreateViewport();
+        var selection = PastTheLeftEdge();
+
+        using var scene = Build(viewport, new CanvasOverlays(false, null,
+            Selection: SelectionDisplay.For(selection, null), SelectionMotion: new SelectionMotion(3, 0, 0),
+            Look: _offCanvasLook));
+
+        var passes = scene.SelectionOutlines;
+        Assert.Equal(2, passes.Count);
+        Assert.Equal(SKColors.Black, passes[0].Line);
+        Assert.All(passes[0].Strips, strip => Assert.True(strip.Rect.X >= viewport.CanvasOrigin.X));
+        Assert.Equal(SKColors.Black.WithAlpha(128), passes[1].Line);
+        Assert.Equal(SKColors.Yellow.WithAlpha(128), passes[1].Backdrop);
+        Assert.Equal(3, passes[1].DashOffset);
+        Assert.All(passes[1].Strips, strip => Assert.True(strip.Rect.X < viewport.CanvasOrigin.X));
+        Assert.DoesNotContain(passes[0].Strips, strip => strip.Side == CellEdgeSide.Left);
+    }
+
+    [Fact]
+    public void DuringASelectionToolsGesture_ThePartPastTheCanvas_IsFainterAndStill()
+    {
+        var preview = new SelectionPreview(PastTheLeftEdge(), SelectionCombineMode.Add, Rectangle(2, 0, 1, 1));
+
+        using var scene = Build(CreateViewport(), new CanvasOverlays(false, null,
+            Selection: SelectionDisplay.For(preview.Before, preview), SelectionMotion: new SelectionMotion(3, 0, 0),
+            Look: _offCanvasLook));
+
+        var dropped = Assert.Single(scene.SelectionOutlines, pass => pass.Line == SKColors.Black.WithAlpha(38));
+        Assert.Equal(0, dropped.DashOffset);
+        Assert.Equal(SKColors.Black, scene.SelectionOutlines[^1].Line);
+    }
+
+    [Fact]
+    public void ASelectionAllPastTheCanvas_HatchesTheWholeCanvas()
+    {
+        var viewport = CreateViewport();
+        var selection = Rectangle(0, 0, 1, 1).MovedWithin(_size, new CellPoint(-2, 0), SelectionZone.Around(_size, 1));
+
+        using var bitmap = Paint(viewport, new CanvasOverlays(false, null,
+            Selection: SelectionDisplay.For(selection, null), Look: _offCanvasLook));
+
+        Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(0, 0)), IsBluish);
+        Assert.Contains(InsideOf(bitmap, viewport, new CellPoint(3, 1)), IsBluish);
+    }
+
     [Theory]
     [InlineData(SelectionCombineMode.Subtract, 255, 0, 0)]
     [InlineData(SelectionCombineMode.Intersect, 0, 128, 0)]
@@ -370,6 +421,10 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
     }
 
     private static bool IsBluish(SKColor pixel) => pixel.Blue > pixel.Red + 40;
+
+    // The top row's first two cells moved one column left, so one is past the canvas's left edge.
+    private static SelectionMask PastTheLeftEdge() =>
+        Rectangle(0, 0, 2, 1).MovedWithin(_size, new CellPoint(-1, 0), SelectionZone.Around(_size, 1));
 
     private static int Halfway(byte first, byte second) => (first + second) / 2;
 

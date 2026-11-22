@@ -95,6 +95,27 @@ internal sealed record CanvasViewport
     }
 
     /// <summary>
+    /// The cells at least partly inside the viewport, also those past the canvas's edges, where a moved selection's
+    /// outline can show (ADR 0071); empty if none are.
+    /// </summary>
+    public CellRect VisibleCellsAroundCanvas
+    {
+        get
+        {
+            var origin = CanvasOrigin;
+            var left = FloorDivide(-origin.X, CellSize.Width);
+            var top = FloorDivide(-origin.Y, CellSize.Height);
+            var right = CeilingDivide(ViewportSize.Width - origin.X, CellSize.Width);
+            var bottom = CeilingDivide(ViewportSize.Height - origin.Y, CellSize.Height);
+
+            if (right <= left || bottom <= top)
+                return CellRect.Empty;
+
+            return CellRect.FromEdges(left, top, right, bottom);
+        }
+    }
+
+    /// <summary>
     /// The spot of the canvas under <paramref name="point"/> (relative to the viewport), in cells from its top-left
     /// corner, with the fraction of a cell. Outside the canvas too.
     /// </summary>

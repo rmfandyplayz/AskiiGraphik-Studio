@@ -9,7 +9,9 @@ namespace AskiiArt.Core.Selection;
 /// <summary>
 /// Which cells of a canvas are selected (ARCHITECTURE §10): any set of them, not only a rectangle. Immutable, so undo
 /// steps share masks rather than copy them. Only the cells inside <see cref="Bounds"/> are stored, a bit each, and a
-/// rectangle stores no bits at all, so a small selection on a big canvas stays small (ADR 0055).
+/// rectangle stores no bits at all, so a small selection on a big canvas stays small (ADR 0055). Cells can lie past the
+/// canvas's edges only where a move has taken them (<see cref="MovedWithin"/>, ADR 0071); everything else that makes a
+/// selection keeps to the canvas.
 /// </summary>
 public sealed class SelectionMask : IEquatable<SelectionMask>
 {
@@ -21,6 +23,7 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     private readonly ulong[]? _bits;
     private readonly int _stride;
     private CellEdge[]? _edges;
+    private SelectionMask? _onCanvas;
 
     private SelectionMask(CanvasSize canvasSize, CellRect bounds, ulong[]? bits)
     {
@@ -36,8 +39,14 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     /// <summary>The smallest rect holding every selected cell, or <see cref="CellRect.Empty"/> when none is.</summary>
     public CellRect Bounds { get; }
 
-    /// <summary>True when no cell is selected.</summary>
+    /// <summary>True when no cell is selected, on the canvas or past its edges.</summary>
     public bool IsEmpty => Bounds.IsEmpty;
+
+    /// <summary>True when some selected cell lies on the canvas.</summary>
+    public bool HasCellsOnCanvas => !CutToCanvas().IsEmpty;
+
+    /// <summary>True when some selected cell lies past the canvas's edges.</summary>
+    public bool ReachesPastCanvas => !IsEmpty && !CanvasSize.Bounds.Contains(Bounds);
 
     /// <summary>True when the selected cells are exactly those of <see cref="Bounds"/>, and there are some.</summary>
     public bool IsRectangle => !IsEmpty && _bits is null;
@@ -62,7 +71,10 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     public static SelectionMask Rectangle(CanvasSize canvasSize, CellRect rect) =>
         new(canvasSize, rect.Intersect(canvasSize.Bounds), bits: null);
 
-    /// <summary>True when the cell at <paramref name="point"/> is selected. A point off the canvas never is.</summary>
+    /// <summary>
+    /// True when the cell at <paramref name="point"/> is selected. A point off the canvas is only when a move has taken
+    /// the selection there.
+    /// </summary>
     public bool Contains(CellPoint point)
     {
         if (!Bounds.Contains(point))
@@ -73,7 +85,7 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
 
     /// <summary>
     /// The runs of selected cells in <paramref name="row"/>, left to right, each as the column of its first cell and
-    /// how many cells it has. A row with none, or off the canvas, has no runs.
+    /// how many cells it has. A row with none has no runs.
     /// </summary>
     public SelectionRowRuns RunsInRow(int row)
     {
@@ -127,16 +139,24 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     /// The same cells moved by <paramref name="offset"/> onto a canvas of <paramref name="canvasSize"/>, without any
     /// that land off it. A paste places the shape it copied this way (ADR 0067).
     /// </summary>
-    public SelectionMask MovedOnto(CanvasSize canvasSize, CellPoint offset)
+    public SelectionMask MovedOnto(CanvasSize canvasSize, CellPoint offset) =>
+        MovedWithin(canvasSize, offset, canvasSize.Bounds);
+
+    /// <summary>
+    /// The same cells moved by <paramref name="offset"/>, for a canvas of <paramref name="canvasSize"/>, without any
+    /// that land outside <paramref name="area"/>, which can reach past the canvas's edges. The Move tool takes the
+    /// selection into the zone around the canvas this way (ADR 0071).
+    /// </summary>
+    public SelectionMask MovedWithin(CanvasSize canvasSize, CellPoint offset, CellRect area)
     {
-        var kept = Bounds.Offset(offset).Intersect(canvasSize.Bounds);
+        var kept = Bounds.Offset(offset).Intersect(area);
         if (kept.IsEmpty)
             return Empty(canvasSize);
 
         if (_bits is null)
             return new SelectionMask(canvasSize, kept, bits: null);
 
-        var builder = new SelectionMaskBuilder(canvasSize, kept);
+        var builder = SelectionMaskBuilder.Within(canvasSize, kept);
         for (var y = kept.Top; y < kept.Bottom; y++)
         {
             foreach (var (start, length) in BitRow.Runs(Row(y - offset.Y - Bounds.Top), Bounds.Width))
@@ -148,7 +168,8 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
 
     /// <summary>
     /// The selection after combining <paramref name="shape"/> with this one by <paramref name="mode"/>: the shape
-    /// alone, both, this without the shape, or only what both have.
+    /// alone, both, this without the shape, or only what both have. Cells past the canvas's edges count like any
+    /// other, so a selection tool cuts the selection to the canvas first (ADR 0071).
     /// </summary>
     /// <exception cref="ArgumentException">The shape belongs to a canvas of another size.</exception>
     public SelectionMask CombinedWith(SelectionMask shape, SelectionCombineMode mode)
@@ -171,7 +192,7 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
                 if (shape.IsEmpty || (IsRectangle && Bounds.Contains(shape.Bounds)))
                     return this;
 
-                var union = new SelectionMaskBuilder(CanvasSize, Bounds.Union(shape.Bounds));
+                var union = SelectionMaskBuilder.Within(CanvasSize, Bounds.Union(shape.Bounds));
                 AddTo(union);
                 shape.AddTo(union);
                 return union.Build();
@@ -179,7 +200,7 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
                 if (!Bounds.Intersects(shape.Bounds))
                     return this;
 
-                var difference = new SelectionMaskBuilder(CanvasSize, Bounds);
+                var difference = SelectionMaskBuilder.Within(CanvasSize, Bounds);
                 AddTo(difference);
                 shape.RemoveFrom(difference);
                 return difference.Build();
@@ -188,9 +209,9 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
                 if (shared.IsEmpty)
                     return Empty(CanvasSize);
 
-                var mine = new SelectionMaskBuilder(CanvasSize, shared);
+                var mine = SelectionMaskBuilder.Within(CanvasSize, shared);
                 AddTo(mine);
-                var theirs = new SelectionMaskBuilder(CanvasSize, shared);
+                var theirs = SelectionMaskBuilder.Within(CanvasSize, shared);
                 shape.AddTo(theirs);
                 mine.IntersectWith(theirs);
                 return mine.Build();
@@ -199,15 +220,30 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
         }
     }
 
+    /// <summary>
+    /// Only the selected cells on the canvas, leaving out any past its edges, as every selection tool and command
+    /// works on the canvas only (ADR 0071).
+    /// </summary>
+    public SelectionMask CutToCanvas()
+    {
+        if (!ReachesPastCanvas)
+            return this;
+
+        return _onCanvas ??= MovedOnto(CanvasSize, default);
+    }
+
     /// <summary>Every cell of the canvas this mask doesn't select, and none that it does.</summary>
-    public SelectionMask Inverted() => All(CanvasSize).CombinedWith(this, SelectionCombineMode.Subtract);
+    public SelectionMask Inverted() => All(CanvasSize).CombinedWith(CutToCanvas(), SelectionCombineMode.Subtract);
 
     /// <summary>
-    /// The selection grown by one cell all round: every cell that touches a selected one, along a side or at a
-    /// corner, is selected too (ADR 0063).
+    /// The selection's cells on the canvas grown by one cell all round: every cell that touches a selected one, along
+    /// a side or at a corner, is selected too (ADR 0063). Cells past the canvas's edges are left out (ADR 0071).
     /// </summary>
     public SelectionMask Grown()
     {
+        if (ReachesPastCanvas)
+            return CutToCanvas().Grown();
+
         if (IsEmpty)
             return this;
 

@@ -56,17 +56,19 @@ public sealed class SelectionPreview
     /// </summary>
     public SelectionMask Result => _result ??= ResultOf(Before, MadeShape(), Mode);
 
-    /// <summary>The cells selected before that the gesture would deselect.</summary>
+    /// <summary>The cells selected before that the gesture would deselect, past the canvas's edges too.</summary>
     public SelectionMask Lost => _lost ??= Before.CombinedWith(Result, SelectionCombineMode.Subtract);
 
     // The one rule for what a gesture leaves, shared with SelectionCombiner.Finish so the preview always matches it.
-    // A null shape is a click's.
+    // A null shape is a click's. Selection tools work on the canvas only, so in every mode the part of the selection
+    // past its edges is dropped (ADR 0071).
     internal static SelectionMask ResultOf(SelectionMask before, SelectionMask? shape, SelectionCombineMode mode)
     {
+        var onCanvas = before.CutToCanvas();
         if (shape is not null)
-            return before.CombinedWith(shape, mode);
+            return onCanvas.CombinedWith(shape.CutToCanvas(), mode);
 
-        return mode == SelectionCombineMode.Replace ? SelectionMask.Empty(before.CanvasSize) : before;
+        return mode == SelectionCombineMode.Replace ? SelectionMask.Empty(before.CanvasSize) : onCanvas;
     }
 
     private SelectionMask? MadeShape()

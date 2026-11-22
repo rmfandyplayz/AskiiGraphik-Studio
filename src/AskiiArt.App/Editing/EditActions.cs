@@ -15,7 +15,8 @@ namespace AskiiArt.App.Editing;
 
 /// <summary>
 /// Undo and Redo, for the active document's history, and Copy as Text and Copy as ANSI, which flatten the visible layers:
-/// the selection's bounds while anything is selected, else the whole canvas (ADR 0067).
+/// the bounds of the selection's cells on the canvas while anything is selected, else the whole canvas (ADR 0067). While
+/// the selection lies all past the canvas's edges they have nothing to copy, so they're greyed out (ADR 0071).
 /// </summary>
 internal sealed class EditActions(
     ActiveDocument activeDocument, TextExporter textExporter, AnsiExporter ansiExporter, IAppShell shell)
@@ -25,16 +26,19 @@ internal sealed class EditActions(
     {
         var undo = new RelayCommand(() => History.Undo(), () => History.CanUndo);
         var redo = new RelayCommand(() => History.Redo(), () => History.CanRedo);
+        var copyAsText = new AsyncRelayCommand(CopyAsTextAsync, HasSomethingToCopyAsText);
+        var copyAsAnsi = new AsyncRelayCommand(CopyAsAnsiAsync, HasSomethingToCopyAsText);
 
-        // New brings a new history, so the commands follow whichever history is current.
-        var followedHistory = History;
-        followedHistory.StateChanged += OnHistoryChanged;
+        // New brings a new session and history, so the commands follow whichever are current.
+        var followedSession = activeDocument.Session;
+        Follow(followedSession);
         activeDocument.SessionChanged += (_, _) =>
         {
-            followedHistory.StateChanged -= OnHistoryChanged;
-            followedHistory = History;
-            followedHistory.StateChanged += OnHistoryChanged;
+            Unfollow(followedSession);
+            followedSession = activeDocument.Session;
+            Follow(followedSession);
             OnHistoryChanged(this, EventArgs.Empty);
+            OnSelectionChanged(this, EventArgs.Empty);
         };
 
         yield return new AppAction(EditActionIds.Undo, nameof(Strings.ActionUndo), undo,
@@ -48,18 +52,37 @@ internal sealed class EditActions(
             new ActionShortcut(Key.Y, ShortcutModifiers.Command)
         ]);
 
-        yield return new AppAction(EditActionIds.CopyAsText, nameof(Strings.ActionCopyAsText),
-            new AsyncRelayCommand(CopyAsTextAsync),
+        yield return new AppAction(EditActionIds.CopyAsText, nameof(Strings.ActionCopyAsText), copyAsText,
             [new ActionShortcut(Key.C, ShortcutModifiers.Command | ShortcutModifiers.Shift)]);
-        yield return new AppAction(EditActionIds.CopyAsAnsi, nameof(Strings.ActionCopyAsAnsi),
-            new AsyncRelayCommand(CopyAsAnsiAsync));
+        yield return new AppAction(EditActionIds.CopyAsAnsi, nameof(Strings.ActionCopyAsAnsi), copyAsAnsi);
+
+        void Follow(EditingSession session)
+        {
+            session.History.StateChanged += OnHistoryChanged;
+            session.Selection.Changed += OnSelectionChanged;
+        }
+
+        void Unfollow(EditingSession session)
+        {
+            session.History.StateChanged -= OnHistoryChanged;
+            session.Selection.Changed -= OnSelectionChanged;
+        }
 
         void OnHistoryChanged(object? sender, EventArgs e)
         {
             undo.NotifyCanExecuteChanged();
             redo.NotifyCanExecuteChanged();
         }
+
+        void OnSelectionChanged(object? sender, EventArgs e)
+        {
+            copyAsText.NotifyCanExecuteChanged();
+            copyAsAnsi.NotifyCanExecuteChanged();
+        }
     }
+
+    // With nothing selected they copy the whole canvas; with a selection, its cells on the canvas.
+    private bool HasSomethingToCopyAsText() => Session.Selection.IsEmpty || Session.Selection.Mask.HasCellsOnCanvas;
 
     private CommandHistory History => activeDocument.Session.History;
 

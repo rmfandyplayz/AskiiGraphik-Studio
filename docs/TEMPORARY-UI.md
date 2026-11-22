@@ -344,7 +344,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Shift+arrow nudges by 10 cells. During a drag the arrow keys do nothing | `Core/Tools/Moving/MoveTool.cs` (`FarStep`), `Canvas/ToolKeymap.cs` | 4.5 |
 | The step is called Move, for a copy too. A drag that ends where it began, or a click on a selected cell, makes no step. A click on an unselected cell is a Deselect step | `Strings.resx` (`UndoStepMove`), `Core/Tools/Moving/FloatingMove.cs`, `MoveTool.cs` | 4.5, 4.8 |
 | Alt at the press copies, and always starts a new move, so each Alt-drag during a move leaves another copy behind | `MoveTool.cs` | 4.5 |
-| Cells moved off the canvas come back if they're moved back on before the move ends, and are lost when it ends. The outline is cut to the canvas as it moves | `FloatingMove.cs`, `Core/Selection/SelectionMask.cs` (`Moved`) | 4.5 |
+| Cells moved off the canvas come back if they're moved back on before the move ends, and are lost when it ends. Since 4.9 the outline follows them past the canvas and stays there (see below) | `FloatingMove.cs`, `Core/Selection/SelectionMask.cs` (`MovedWithin`) | 4.5, 4.9 |
 | A save doesn't end a move, and nor does an undo or redo of its own steps. Enter, another tool, another active layer, or any other edit, undo or selection change does | `MoveTool.cs` | 4.5, 4.8 |
 | On a locked or hidden layer the Move tool does nothing, and the arrow keys aren't used | `MoveTool.cs` | 4.5 |
 | Not built: moving only the outline without the cells | | 4.5, 4.8 |
@@ -392,6 +392,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Enter with no move under way still deselects. Undoing Enter's Deselect step brings the selection back, but the cells no longer float | `Core/Tools/Moving/MoveTool.cs` | 4.8 |
 | Esc during a drag puts the cells back where that drag found them. Any other Esc picks the Hand tool and leaves the cells where they are, so a paste stays; undo takes it away | `MoveTool.cs` | 4.8 |
 | An undo or redo during a drag or a run of presses ends it, keeping its step, and the rest of the drag does nothing | `MoveTool.cs`, `FloatingMove.cs` | 4.8 |
+
+### Selections past the canvas edge (step 4.9, ADR 0071)
+
+| Choice | Where | Step |
+|---|---|---|
+| The outline past the canvas is drawn at 50% of its strength, and the part a selection tool's gesture would drop at 15%. Hatching stays on the canvas | `Theme/Tokens.axaml` (`AppCanvasSelectionOffCanvasOpacity`, `AppCanvasSelectionDroppedOffCanvasOpacity`) | 4.9 |
+| Past the canvas the outline's dashes run with the rest; the part a gesture would drop stands still | `Canvas/Rendering/CanvasSceneBuilder.cs` | 4.9 |
+| The zone's rows above and below are 10 columns' width on screen, rounded, and at least 1 | `Core/Selection/SelectionZone.cs` | 4.9 |
+| A shape wider or taller than the zone, such as a big paste, can move only as far as it still covers the zone, and only the part inside the zone stays selected | `Core/Tools/Moving/FloatingMove.cs` (`Limit`) | 4.9 |
+| A Shift or Alt click with a selection tool, which otherwise leaves the selection alone, still drops the part past the canvas | `Core/Tools/Selecting/SelectionPreview.cs` | 4.9 |
+| Grow, Shrink, Copy as Text and Copy as ANSI are greyed out too while nothing selected is on the canvas. Invert then selects the whole canvas | `Selection/SelectionActions.cs`, `Editing/EditActions.cs` | 4.9 |
+| Resizing the canvas keeps the selected cells that land on the new canvas, including ones that were past the old one, and drops the rest | `Core/Selection/SelectionMask.cs` (`Resized`) | 4.9 |
+| The Move tool's cursor shows over selected cells past the canvas too | `Canvas/CanvasControl.cs` | 4.9 |
+| The space round the canvas stays 32 pixels, so on a canvas bigger than the window the zone can't all be scrolled into view (open question) | `Canvas/CanvasControl.cs` (`CanvasMargin`) | 4.9 |
 
 ## Ideas to revisit
 

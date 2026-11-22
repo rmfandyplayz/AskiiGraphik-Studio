@@ -43,14 +43,20 @@ public sealed class CellClip
     /// <summary>True when any of the clip's cells holds something.</summary>
     public bool HasContent => Array.Exists(_cells, cell => !cell.IsEmpty);
 
-    /// <summary>Copies the cells of <paramref name="layer"/> in <paramref name="selection"/>.</summary>
-    /// <exception cref="ArgumentException">Nothing is selected, or the selection isn't the layer's size.</exception>
+    /// <summary>
+    /// Copies the cells of <paramref name="layer"/> in <paramref name="selection"/>, leaving out any part of it past
+    /// the canvas's edges.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Nothing on the canvas is selected, or the selection isn't the layer's size.
+    /// </exception>
     public static CellClip Copy(Layer layer, SelectionMask selection)
     {
         ArgumentNullException.ThrowIfNull(layer);
         ArgumentNullException.ThrowIfNull(selection);
+        selection = selection.CutToCanvas();
         if (selection.IsEmpty)
-            throw new ArgumentException("There's nothing selected to copy.", nameof(selection));
+            throw new ArgumentException("There's nothing on the canvas selected to copy.", nameof(selection));
 
         if (selection.CanvasSize != layer.Size)
             throw new ArgumentException($"The selection isn't the layer's size, {layer.Size}.", nameof(selection));

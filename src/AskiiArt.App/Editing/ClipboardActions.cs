@@ -82,8 +82,9 @@ internal sealed class ClipboardActions(ActiveDocument activeDocument, CanvasView
 
     private EditingSession Session => activeDocument.Session;
 
-    // A hidden layer's cells aren't on screen, so copying them would copy what the user can't see.
-    private bool CanCopy() => !Session.Selection.IsEmpty && Session.ActiveLayer.Properties.IsVisible;
+    // A hidden layer's cells aren't on screen, so copying them would copy what the user can't see. Only cells on the
+    // canvas are copied (ADR 0071).
+    private bool CanCopy() => Session.Selection.Mask.HasCellsOnCanvas && Session.ActiveLayer.Properties.IsVisible;
 
     private Task CopyAsync()
     {

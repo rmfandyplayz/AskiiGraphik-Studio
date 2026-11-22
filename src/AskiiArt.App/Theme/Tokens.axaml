@@ -127,6 +127,8 @@
   <x:Double x:Key="AppCanvasGridUnderLostHatchOpacity">0.7</x:Double>
   <x:Double x:Key="AppCanvasSelectionFaintOpacity">0.35</x:Double>
   <x:Double x:Key="AppCanvasSelectionVanishingOpacity">0.15</x:Double>
+  <x:Double x:Key="AppCanvasSelectionOffCanvasOpacity">0.5</x:Double>
+  <x:Double x:Key="AppCanvasSelectionDroppedOffCanvasOpacity">0.15</x:Double>
   <x:Double x:Key="AppCanvasSelectionClosingLineOpacity">0.35</x:Double>
   <x:Double x:Key="AppCanvasCornerMarkerRadius">3.5</x:Double>
   <x:Double x:Key="AppCanvasFinishMarkerRadius">8</x:Double>

@@ -77,3 +77,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0068](0068-the-pats-brush.md) | The PATS brush (perceptually accurate text-based shapes) | Accepted |
 | [0069](0069-move-tool-clicks-constraints-and-whole-layer-selection.md) | Move tool clicks, constraints and whole-layer selection | Accepted |
 | [0070](0070-each-move-tool-gesture-is-its-own-step.md) | Each Move-tool gesture is its own undo step | Accepted |
+| [0071](0071-selections-past-the-canvas-edge.md) | Selections past the canvas edge | Accepted |

@@ -92,13 +92,14 @@ public sealed class SelectionToolCanvasTests : IDisposable
         var (key, physicalKey, modifier) = CommandKey();
         _window.MouseDown(CentreOf(5, 5), MouseButton.Left);
         _window.MouseMove(CentreOf(6, 9));
-        Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
+        var movedStraight = new CellRect(1, 4, 20, 10);
+        Assert.Equal(movedStraight, _canvas.Session.Selection.Mask.Bounds);
 
         _window.KeyPress(key, modifier, physicalKey, null);
-        Assert.NotEqual(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
+        Assert.NotEqual(movedStraight, _canvas.Session.Selection.Mask.Bounds);
 
         _window.KeyRelease(key, RawInputModifiers.None, physicalKey, null);
-        Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
+        Assert.Equal(movedStraight, _canvas.Session.Selection.Mask.Bounds);
         _window.MouseUp(CentreOf(6, 9), MouseButton.Left);
     }
 

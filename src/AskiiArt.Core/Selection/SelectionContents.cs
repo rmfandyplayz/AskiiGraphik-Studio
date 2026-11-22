@@ -11,13 +11,13 @@ namespace AskiiArt.Core.Selection;
 public static class SelectionContents
 {
     /// <summary>
-    /// True when there are selected cells to clear: something is selected, and the active layer is neither locked
-    /// nor hidden.
+    /// True when there are selected cells to clear: some selected cell is on the canvas, and the active layer is
+    /// neither locked nor hidden.
     /// </summary>
     public static bool CanClear(EditingSession session)
     {
         ArgumentNullException.ThrowIfNull(session);
-        return !session.Selection.IsEmpty && session.CanEditActiveLayer;
+        return session.Selection.Mask.HasCellsOnCanvas && session.CanEditActiveLayer;
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public static class SelectionContents
         if (!CanClear(session))
             return false;
 
-        var mask = session.Selection.Mask;
+        var mask = session.Selection.Mask.CutToCanvas();
         var layer = session.ActiveLayer;
         var cells = session.EditCellsInSelection(layer.Id);
         for (var row = mask.Bounds.Top; row < mask.Bounds.Bottom; row++)

@@ -48,3 +48,5 @@ Updated 2026-11-21: Paste floats its cells this way (ADR 0067); that step is nam
 Updated 2026-11-22: since 4.8 (ADR 0069), every move sets the selection in its step, so moving the whole layer selects it; a click on an unselected cell deselects; and Shift, Ctrl and Ctrl+Shift keep a drag to a few directions.
 
 Updated 2026-11-22: ADR 0070 makes each drag or run of arrow presses its own step, keeps the cells floating across undos and redos of them, and changes Enter and Esc. What the Decision and Consequences say about one step per move, an undo ending the move, and Esc no longer holds.
+
+Updated 2026-11-22: since 4.9 (ADR 0071), the moved selection can reach into a zone past the canvas, where the move stops, and stays there when the move ends; only the cells off the canvas are lost.

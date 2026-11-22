@@ -241,6 +241,29 @@ public sealed class CanvasControlTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void TheMoveTool_ShowsTheMoveCursor_OverSelectedCellsPastTheCanvas()
+    {
+        _control.CanvasMargin = 64;
+        Show();
+        _canvas.ViewModel.SelectTool(MoveTool.Id);
+        _control.Tool = _canvas.ViewModel.ActiveTool;
+        _control.Selection = _canvas.Session.Selection;
+        var size = _canvas.Document.CanvasSize;
+        var pastTheLeftEdge = SelectionMask.Rectangle(size, new CellRect(0, 0, 1, 1))
+            .MovedWithin(size, new CellPoint(-1, 0), SelectionZone.Around(size, 1));
+        _canvas.Session.History.Execute(
+            new SetSelectionCommand(_canvas.Session.Selection, pastTheLeftEdge, UndoStepNames.Move));
+        var cellSize = Viewport.CellSize;
+        var origin = Viewport.CanvasOrigin;
+
+        _window.MouseMove(new Point(origin.X - cellSize.Width * 0.5, origin.Y + cellSize.Height * 0.5));
+        Assert.NotNull(_control.Cursor);
+
+        _window.MouseMove(new Point(origin.X + cellSize.Width * 0.5, origin.Y + cellSize.Height * 0.5));
+        Assert.Null(_control.Cursor);
+    }
+
+    [AvaloniaFact]
     public void ZoomFactorSetFromOutside_ZoomsAroundTheCentre()
     {
         Show();

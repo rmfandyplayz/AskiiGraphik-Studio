@@ -413,7 +413,7 @@ public sealed class MoveToolTests
         Press(3, 0);
         Move(0, 0);
         Assert.Equal(["··cdef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
-        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(new CellRect(-3, 0, 2, 1), _session.Selection.Mask.Bounds);
 
         Move(4, 0);
         Release(4, 0);

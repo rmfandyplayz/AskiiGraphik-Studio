@@ -41,6 +41,12 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <param name="CornerMarkerRadius">The radius of the dot on each corner of a shape being drawn.</param>
 /// <param name="FinishMarkerRadius">The radius of the marker that finishes a shape when clicked.</param>
 /// <param name="CornerMarkerOpacity">How strongly the corners' dots show.</param>
+/// <param name="OffCanvasOpacity">
+/// How strongly an outline's lines past the canvas's edges show, times its own strength (ADR 0071).
+/// </param>
+/// <param name="DroppedOffCanvasOpacity">
+/// How strongly the selection's lines past the canvas's edges show while a selection tool would drop them.
+/// </param>
 internal readonly record struct SelectionLook(
     SKColor HatchLine,
     SKColor HatchBackdrop,
@@ -65,7 +71,9 @@ internal readonly record struct SelectionLook(
     double ClosingLineOpacity,
     double CornerMarkerRadius,
     double FinishMarkerRadius,
-    double CornerMarkerOpacity)
+    double CornerMarkerOpacity,
+    double OffCanvasOpacity = 0,
+    double DroppedOffCanvasOpacity = 0)
 {
     /// <summary>The look with its lengths in device pixels, <paramref name="scaling"/> to a logical pixel.</summary>
     public SelectionLook ScaledBy(double scaling) => this with
@@ -100,6 +108,14 @@ internal readonly record struct SelectionLook(
         SelectionLineStyle.Subtract => (SubtractHatchLine, SubtractHatchBackdrop),
         SelectionLineStyle.Intersect => (IntersectHatchLine, IntersectHatchBackdrop),
         _ => (HatchLine, HatchBackdrop)
+    };
+
+    /// <summary>How strongly an outline of <paramref name="strength"/> shows on the canvas, from 0 to 1.</summary>
+    public double OpacityOf(SelectionOutlineStrength strength) => strength switch
+    {
+        SelectionOutlineStrength.Faint => FaintOpacity,
+        SelectionOutlineStrength.Vanishing => VanishingOpacity,
+        _ => 1
     };
 
     /// <summary>The dashes' and the backdrop's colours for <paramref name="style"/>.</summary>
@@ -140,7 +156,9 @@ internal readonly record struct SelectionLook(
         Token(resources, "AppCanvasSelectionClosingLineOpacity", theme),
         Token(resources, "AppCanvasCornerMarkerRadius", theme),
         Token(resources, "AppCanvasFinishMarkerRadius", theme),
-        Token(resources, "AppCanvasCornerMarkerOpacity", theme));
+        Token(resources, "AppCanvasCornerMarkerOpacity", theme),
+        Token(resources, "AppCanvasSelectionOffCanvasOpacity", theme),
+        Token(resources, "AppCanvasSelectionDroppedOffCanvasOpacity", theme));
 
     private static SKColor Colour(IResourceNode resources, string key, ThemeVariant? theme)
     {

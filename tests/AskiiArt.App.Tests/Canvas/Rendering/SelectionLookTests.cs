@@ -29,6 +29,8 @@ public sealed class SelectionLookTests
             Assert.True(look.FinishMarkerRadius > look.CornerMarkerRadius);
             Assert.InRange(look.FaintOpacity, 0.01, 0.99);
             Assert.InRange(look.VanishingOpacity, 0.01, look.FaintOpacity);
+            Assert.InRange(look.OffCanvasOpacity, 0.01, 0.99);
+            Assert.InRange(look.DroppedOffCanvasOpacity, 0.01, look.OffCanvasOpacity);
             Assert.InRange(look.ClosingLineOpacity, 0.01, 0.99);
             Assert.InRange(look.GridUnderHatchOpacity, 0, 1);
             Assert.InRange(look.GridUnderLostHatchOpacity, 0, 1);
