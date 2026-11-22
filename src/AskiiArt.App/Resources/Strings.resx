@@ -505,9 +505,21 @@
   <data name="StatusFontNotAvailableFormat" xml:space="preserve">
     <value>{0} (not available)</value>
   </data>
+  <data name="ActionCut" xml:space="preserve">
+    <value>Cu_t</value>
+    <comment>Edit menu: copies the active layer's selected cells to the clipboard, as Copy does, and empties them, as one undo step. The selection stays.</comment>
+  </data>
+  <data name="ActionCopy" xml:space="preserve">
+    <value>_Copy</value>
+    <comment>Edit menu: copies the active layer's selected cells to the clipboard, as plain text for other apps and with their colours, shape and place for pasting back into this app.</comment>
+  </data>
+  <data name="ActionPaste" xml:space="preserve">
+    <value>_Paste</value>
+    <comment>Edit menu: pastes what's on the clipboard centred on the pointer, floating and selected with the Move tool until Enter or another edit ends it. At the Text tool's caret it types the clipboard's text in instead.</comment>
+  </data>
   <data name="ActionCopyAsText" xml:space="preserve">
-    <value>Copy as _Text</value>
-    <comment>Copies the visible art to the clipboard as plain text.</comment>
+    <value>Copy as Te_xt</value>
+    <comment>Copies the visible art to the clipboard as plain text: the selection's bounds while anything is selected, else the whole canvas.</comment>
   </data>
   <data name="ActionExportAsText" xml:space="preserve">
     <value>_Export as Text…</value>
@@ -518,7 +530,7 @@
   </data>
   <data name="ActionCopyAsAnsi" xml:space="preserve">
     <value>Copy as _ANSI</value>
-    <comment>Copies the visible art to the clipboard with the escape codes terminals use for colour.</comment>
+    <comment>Copies the visible art to the clipboard with the escape codes terminals use for colour: the selection's bounds while anything is selected, else the whole canvas.</comment>
   </data>
   <data name="ActionDeleteSelectedCells" xml:space="preserve">
     <value>_Delete</value>
@@ -822,6 +834,14 @@
   <data name="ToolMove" xml:space="preserve">
     <value>Move</value>
     <comment>The Move tool, which moves the selected cells, and its button on the Tools toolbar.</comment>
+  </data>
+  <data name="UndoStepCut" xml:space="preserve">
+    <value>Cut</value>
+    <comment>History: cutting the selected cells with Edit, Cut.</comment>
+  </data>
+  <data name="UndoStepPaste" xml:space="preserve">
+    <value>Paste</value>
+    <comment>History: pasting with Edit, Paste, and moving the pasted cells until the paste ends; or typing pasted text in at the Text tool's caret.</comment>
   </data>
   <data name="UndoStepMove" xml:space="preserve">
     <value>Move</value>

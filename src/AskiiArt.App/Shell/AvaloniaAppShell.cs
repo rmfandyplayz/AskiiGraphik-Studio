@@ -3,9 +3,11 @@
 
 using AskiiArt.App.Hosting;
 using AskiiArt.App.Shell.Dialogs;
+using AskiiArt.Core.Clipboard;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
@@ -18,6 +20,10 @@ namespace AskiiArt.App.Shell;
 /// </summary>
 internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogger<AvaloniaAppShell> logger) : IAppShell
 {
+    // The app's own clipboard format for copied cells. Other apps see only the text beside it.
+    private static readonly DataFormat<string> _cellsFormat =
+        DataFormat.CreateStringApplicationFormat(CellClipFormat.Name);
+
     private static Window? MainWindow => AppWindows.Main;
 
     public bool CanShowDialogs => MainWindow is { IsVisible: true };
@@ -38,6 +44,32 @@ internal sealed partial class AvaloniaAppShell(AppDataLocations locations, ILogg
             return;
 
         await clipboard.SetTextAsync(text);
+    }
+
+    public async Task CopyCellsAsync(string text, string cells)
+    {
+        if (MainWindow?.Clipboard is not { } clipboard)
+            return;
+
+        // One item in both formats, so a paste anywhere gets the same copy. The clipboard disposes of it.
+        var item = new DataTransferItem();
+        item.SetText(text);
+        item.Set(_cellsFormat, cells);
+        var data = new DataTransfer();
+        data.Add(item);
+        await clipboard.SetDataAsync(data);
+    }
+
+    public async Task<ClipboardContents> ReadClipboardAsync()
+    {
+        if (MainWindow?.Clipboard is not { } clipboard)
+            return ClipboardContents.Nothing;
+
+        using var data = await clipboard.TryGetDataAsync();
+        if (data is null)
+            return ClipboardContents.Nothing;
+
+        return new ClipboardContents(await data.TryGetValueAsync(_cellsFormat), await data.TryGetTextAsync());
     }
 
     public async Task OpenFolderAsync(string folderPath)

@@ -28,6 +28,7 @@ internal static class TestActions
         new CanvasActions(canvas.ViewModel, includeDebugActions),
         new ToolActions(canvas.ViewModel),
         new EditActions(canvas.ActiveDocument, canvas.TextExporter, canvas.AnsiExporter, shell),
+        new ClipboardActions(canvas.ActiveDocument, canvas.ViewModel, shell),
         new SelectionActions(canvas.ActiveDocument),
         new WindowMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),
         new ToolbarMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),

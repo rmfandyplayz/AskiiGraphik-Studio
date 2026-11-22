@@ -121,16 +121,22 @@ public sealed class SelectionMask : IEquatable<SelectionMask>
     /// <summary>
     /// The same cells moved by <paramref name="offset"/> on the same canvas, without any that the move takes off it.
     /// </summary>
-    public SelectionMask Moved(CellPoint offset)
+    public SelectionMask Moved(CellPoint offset) => MovedOnto(CanvasSize, offset);
+
+    /// <summary>
+    /// The same cells moved by <paramref name="offset"/> onto a canvas of <paramref name="canvasSize"/>, without any
+    /// that land off it. A paste places the shape it copied this way (ADR 0067).
+    /// </summary>
+    public SelectionMask MovedOnto(CanvasSize canvasSize, CellPoint offset)
     {
-        var kept = Bounds.Offset(offset).Intersect(CanvasSize.Bounds);
+        var kept = Bounds.Offset(offset).Intersect(canvasSize.Bounds);
         if (kept.IsEmpty)
-            return Empty(CanvasSize);
+            return Empty(canvasSize);
 
         if (_bits is null)
-            return new SelectionMask(CanvasSize, kept, bits: null);
+            return new SelectionMask(canvasSize, kept, bits: null);
 
-        var builder = new SelectionMaskBuilder(CanvasSize, kept);
+        var builder = new SelectionMaskBuilder(canvasSize, kept);
         for (var y = kept.Top; y < kept.Bottom; y++)
         {
             foreach (var (start, length) in BitRow.Runs(Row(y - offset.Y - Bounds.Top), Bounds.Width))

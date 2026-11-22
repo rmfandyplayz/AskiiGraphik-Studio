@@ -5,7 +5,10 @@ using Avalonia.Input;
 
 namespace AskiiArt.App.Canvas;
 
-/// <summary>The pointer's shape while the canvas pans, or while the chosen tool pans with a left-drag.</summary>
+/// <summary>
+/// The pointer's shape while the canvas pans, or while the chosen tool pans with a left-drag, and over the cells the
+/// Move tool would move (ADR 0067).
+/// </summary>
 internal static class PanCursor
 {
     /// <summary>

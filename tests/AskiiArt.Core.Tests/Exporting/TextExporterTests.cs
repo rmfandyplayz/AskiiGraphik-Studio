@@ -4,6 +4,7 @@
 using System.Text;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Exporting;
+using AskiiArt.Core.Tests.Selection;
 
 namespace AskiiArt.Core.Tests.Exporting;
 
@@ -81,6 +82,21 @@ public sealed class TextExporterTests
     }
 
     // Bottom to top: art, art on top of it, and a hidden layer that mustn't show.
+    [Fact]
+    public void ToText_WithASelection_IsItsBounds_WithUnselectedCellsAsSpaces()
+    {
+        var document = CreateLayeredDocument();
+        var selection = TestMasks.Parse("·##·", "··#·");
+
+        Assert.Equal("X \n é", _exporter.ToText(document, "\n", selection));
+    }
+
+    [Fact]
+    public void ToText_WithAnEmptySelection_IsTheWholeCanvas()
+    {
+        Assert.Equal("aX  \n  é ", _exporter.ToText(CreateLayeredDocument(), "\n", TestMasks.Parse("····", "····")));
+    }
+
     private static Document CreateLayeredDocument()
     {
         var document = TestCells.CreateDocument(4, 2);

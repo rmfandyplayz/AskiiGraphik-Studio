@@ -243,6 +243,15 @@ public sealed class SelectionMaskTests
         Assert.True(TestMasks.Parse("##", "··").Moved(new CellPoint(0, 2)).IsEmpty);
 
     [Fact]
+    public void MovedOnto_PlacesTheCellsOnACanvasOfAnotherSize_WithoutAnyOffIt()
+    {
+        var moved = TestMasks.Parse("##", "·#").MovedOnto(new CanvasSize(4, 2), new CellPoint(2, 1));
+
+        Assert.Equal(new CanvasSize(4, 2), moved.CanvasSize);
+        Assert.Equal(["····", "··##"], TestMasks.Describe(moved));
+    }
+
+    [Fact]
     public void Moved_ByNothing_IsTheSame()
     {
         var mask = TestMasks.Parse("#·#", "·#·");

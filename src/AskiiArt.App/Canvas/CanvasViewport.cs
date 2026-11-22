@@ -94,6 +94,16 @@ internal sealed record CanvasViewport
         }
     }
 
+    /// <summary>
+    /// The spot of the canvas under <paramref name="point"/> (relative to the viewport), in cells from its top-left
+    /// corner, with the fraction of a cell. Outside the canvas too.
+    /// </summary>
+    public CanvasPoint CanvasPointAt(Point point)
+    {
+        var origin = CanvasOrigin;
+        return new CanvasPoint((point.X - origin.X) / CellSize.Width, (point.Y - origin.Y) / CellSize.Height);
+    }
+
     /// <summary>The cell under <paramref name="point"/> (relative to the viewport), or null outside the canvas.</summary>
     public CellPoint? CellAt(Point point)
     {

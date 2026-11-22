@@ -21,13 +21,13 @@ public static class SelectionContents
     }
 
     /// <summary>
-    /// Empties the active layer's selected cells, glyph, colours and background alike, as one Delete step. The
-    /// selection stays.
+    /// Empties the active layer's selected cells, glyph, colours and background alike, as one step, a Delete unless
+    /// <paramref name="stepNameKey"/> names another, as Cut does. The selection stays.
     /// </summary>
     /// <returns>
     /// True when a cell changed; false when they were all empty already, or <see cref="CanClear"/> is false.
     /// </returns>
-    public static bool Clear(EditingSession session)
+    public static bool Clear(EditingSession session, string stepNameKey = UndoStepNames.DeleteSelectedCells)
     {
         if (!CanClear(session))
             return false;
@@ -48,7 +48,7 @@ public static class SelectionContents
             }
         }
 
-        if (cells.Build(UndoStepNames.DeleteSelectedCells) is not { } command)
+        if (cells.Build(stepNameKey) is not { } command)
             return false;
 
         session.History.Execute(command);

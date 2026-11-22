@@ -104,4 +104,10 @@ public static class UndoStepNames
 
     /// <summary>Moving the selected cells with the Move tool, or a copy of them, from its first drag or nudge on.</summary>
     public const string Move = "UndoStepMove";
+
+    /// <summary>Cutting the selected cells: copying them, then emptying them.</summary>
+    public const string Cut = "UndoStepCut";
+
+    /// <summary>Pasting cells, whether they float and are moved or are typed in at the Text tool's caret.</summary>
+    public const string Paste = "UndoStepPaste";
 }

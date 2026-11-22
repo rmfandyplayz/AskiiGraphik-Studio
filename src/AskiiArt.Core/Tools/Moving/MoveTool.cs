@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Clipboard;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 
@@ -74,6 +75,19 @@ public sealed class MoveTool : ITool
     public bool IsMoving => _move is { HasStep: true };
 
     /// <summary>
+    /// Over the selected cells, which a drag moves, or anywhere on the canvas while nothing is selected, as a drag then
+    /// moves the whole layer. Never while the active layer is locked or hidden (ADR 0067).
+    /// </summary>
+    public bool ShowsMoveCursorAt(CellPoint cell)
+    {
+        if (!_session.CanEditActiveLayer)
+            return false;
+
+        var selection = _session.Selection;
+        return selection.IsEmpty ? _session.Document.CanvasSize.Contains(cell) : selection.Mask.Contains(cell);
+    }
+
+    /// <summary>
     /// Starts a drag that carries on the move under way, or starts one. With Alt it always starts one that moves a
     /// copy, which ends the move before it where its cells are.
     /// </summary>
@@ -137,6 +151,24 @@ public sealed class MoveTool : ITool
 
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
+
+    /// <summary>
+    /// Pastes <paramref name="clip"/> with its top-left corner at <paramref name="topLeft"/> (ADR 0067). Its cells
+    /// float on the active layer, selected, as a move's do, so drags and nudges carry them on as one Paste step until
+    /// the move ends, and Esc takes the paste away. A move under way ends first.
+    /// </summary>
+    /// <returns>False, pasting nothing, when the active layer is locked or hidden.</returns>
+    public bool Paste(CellClip clip, CellPoint topLeft)
+    {
+        ArgumentNullException.ThrowIfNull(clip);
+
+        if (!_session.CanEditActiveLayer)
+            return false;
+
+        EndMove();
+        _move = FloatingMove.Paste(_session, clip, topLeft);
+        return true;
+    }
 
     /// <summary>Ends the move where its cells are.</summary>
     public void Deactivate()

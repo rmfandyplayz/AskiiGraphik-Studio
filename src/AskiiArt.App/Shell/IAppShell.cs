@@ -28,6 +28,16 @@ internal interface IAppShell
     /// <summary>Puts <paramref name="text"/> on the clipboard. Does nothing when no window is open.</summary>
     Task CopyTextAsync(string text);
 
+    /// <summary>
+    /// Puts copied cells on the clipboard twice over: as <paramref name="text"/> for other apps, and as
+    /// <paramref name="cells"/>, the app's own format, which keeps their colours, shape and place (ADR 0067). Does
+    /// nothing when no window is open.
+    /// </summary>
+    Task CopyCellsAsync(string text, string cells);
+
+    /// <summary>What's on the clipboard. Nothing when no window is open.</summary>
+    Task<ClipboardContents> ReadClipboardAsync();
+
     Task OpenFolderAsync(string folderPath);
 
     Task ShowAboutAsync();
@@ -51,4 +61,13 @@ internal enum UnexpectedErrorChoice
     Continue = 0,
 
     Quit = 1,
+}
+
+/// <summary>What's on the clipboard, each part null when it isn't there.</summary>
+/// <param name="Cells">Cells in the app's own format (ADR 0067).</param>
+/// <param name="Text">Plain text.</param>
+internal sealed record ClipboardContents(string? Cells, string? Text)
+{
+    /// <summary>An empty clipboard.</summary>
+    public static ClipboardContents Nothing { get; } = new(null, null);
 }

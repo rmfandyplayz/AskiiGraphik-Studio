@@ -39,8 +39,21 @@ internal sealed class FakeAppShell : IAppShell
     public Task CopyTextAsync(string text)
     {
         CopiedTexts.Add(text);
+        Clipboard = new ClipboardContents(null, text);
         return Task.CompletedTask;
     }
+
+    /// <summary>What's on the fake clipboard: what was copied last, or what a test put there.</summary>
+    public ClipboardContents Clipboard { get; set; } = ClipboardContents.Nothing;
+
+    public Task CopyCellsAsync(string text, string cells)
+    {
+        CopiedTexts.Add(text);
+        Clipboard = new ClipboardContents(cells, text);
+        return Task.CompletedTask;
+    }
+
+    public Task<ClipboardContents> ReadClipboardAsync() => Task.FromResult(Clipboard);
 
     public Task OpenFolderAsync(string folderPath)
     {

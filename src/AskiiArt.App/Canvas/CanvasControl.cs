@@ -111,6 +111,14 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         AvaloniaProperty.RegisterDirect<CanvasControl, CellPoint?>(nameof(HoveredCell),
             control => control.HoveredCell, (control, value) => control.HoveredCell = value);
 
+    public static readonly DirectProperty<CanvasControl, CanvasPoint?> PointerCanvasPositionProperty =
+        AvaloniaProperty.RegisterDirect<CanvasControl, CanvasPoint?>(nameof(PointerCanvasPosition),
+            control => control.PointerCanvasPosition, (control, value) => control.PointerCanvasPosition = value);
+
+    public static readonly DirectProperty<CanvasControl, CanvasPoint> ViewCentreProperty =
+        AvaloniaProperty.RegisterDirect<CanvasControl, CanvasPoint>(nameof(ViewCentre),
+            control => control.ViewCentre, (control, value) => control.ViewCentre = value);
+
     public static readonly DirectProperty<CanvasControl, double> HorizontalOffsetProperty =
         AvaloniaProperty.RegisterDirect<CanvasControl, double>(nameof(HorizontalOffset),
             control => control.HorizontalOffset, (control, value) => control.ScrollTo(value, control.VerticalOffset),
@@ -357,6 +365,23 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         get;
         set => SetAndRaise(HoveredCellProperty, ref field, value);
+    }
+
+    /// <summary>
+    /// Where the pointer is over the control, in cells from the canvas's top-left corner, or null when it's elsewhere: in
+    /// a menu, over a window or part window, or outside the app. Paste centres on it (ADR 0067).
+    /// </summary>
+    public CanvasPoint? PointerCanvasPosition
+    {
+        get;
+        set => SetAndRaise(PointerCanvasPositionProperty, ref field, value);
+    }
+
+    /// <summary>The spot of the canvas in the middle of the view, in cells, where a paste goes when nothing else fits.</summary>
+    public CanvasPoint ViewCentre
+    {
+        get;
+        set => SetAndRaise(ViewCentreProperty, ref field, value);
     }
 
     public double HorizontalOffset
@@ -819,6 +844,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             VerticalViewport = viewport?.UsableSize.Height ?? 0;
             SetAndRaise(HorizontalOffsetProperty, ref _horizontalOffset, viewport?.ScrollOffset.X ?? 0);
             SetAndRaise(VerticalOffsetProperty, ref _verticalOffset, viewport?.ScrollOffset.Y ?? 0);
+            ViewCentre = viewport?.CanvasPointAt(viewport.UsableCentre) ?? default;
         }
         finally
         {
@@ -833,13 +859,19 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     // too, because a big tip still paints the cells it overlaps.
     private void UpdateHoveredCell()
     {
+        PointerCanvasPosition = _pointerPosition is { } pointer ? _viewport?.CanvasPointAt(pointer) : null;
+
         var hovered = _pointerPosition is { } position ? _viewport?.CellAt(position) : null;
         var brushTopLeft = FindBrushTopLeft();
         if (hovered == HoveredCell && brushTopLeft == _brushTopLeft)
             return;
 
+        var hoveredChanged = hovered != HoveredCell;
         HoveredCell = hovered;
         _brushTopLeft = brushTopLeft;
+        if (hoveredChanged)
+            UpdateCursor();
+
         InvalidateVisual();
     }
 
@@ -859,9 +891,12 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         return new BrushOutline(footprint, topLeft);
     }
 
+    // The Move tool's cursor over the cells it would move is the same shape as the pan cursor (ADR 0067).
     private void UpdateCursor()
     {
-        if (_panStart is not null || _isSpaceHeld || Tool?.PansWithPrimaryButton == true)
+        var pans = _panStart is not null || _isSpaceHeld || Tool?.PansWithPrimaryButton == true;
+        var moves = HoveredCell is { } cell && Tool?.ShowsMoveCursorAt(cell) == true;
+        if (pans || moves)
             Cursor = _panCursor ??= new Cursor(PanCursor.TypeFor(OperatingSystem.IsMacOS()));
         else
             Cursor = null;
@@ -903,7 +938,12 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         InvalidateVisual();
     }
 
-    private void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e) => InvalidateVisual();
+    // The Move tool's cursor follows the selection, which a move or a paste takes away from under the pointer.
+    private void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e)
+    {
+        UpdateCursor();
+        InvalidateVisual();
+    }
 
     private void FollowTool(ITool? oldTool, ITool? newTool)
     {

@@ -13,7 +13,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 
 | Choice | Where | Step |
 |---|---|---|
-| Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo, Copy as Text, Copy as ANSI; Delete), Select (Select All, Deselect, Invert; Grow by 1 Cell, Shrink by 1 Cell; Select Cells with Glyphs, Select Cells with Background Color), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4, 4.1, 4.3, 4.4 |
+| Menus: File (New, Open, Save, Save As, Export as Text, Export as ANSI, Quit), Edit (Undo, Redo; Cut, Copy, Paste; Copy as Text, Copy as ANSI; Delete), Select (Select All, Deselect, Invert; Grow by 1 Cell, Shrink by 1 Cell; Select Cells with Glyphs, Select Cells with Background Color), Document (Resize Canvas, Font, ASCII Only, then Monochrome, ANSI Colors and RGB Colors), Layer (see the Layers panel), View (Zoom In, Zoom Out, Actual Size, Show Grid), Help (Open Log Folder, About). On macOS: About and Quit in the app menu, so File has no Quit, and File has Close between Open and Save | `Shell/Menus/MenuLayout.cs` | 0.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2b.3a, 2b.4, 4.1, 4.3, 4.4, 4.6 |
 | Four toolbars of plain text buttons: File (New, Open, Save), Tools (one toggle per tool group: Hand, Move, Select, Text, Brush, Eraser), Edit (Undo, Redo; Resize Canvas, Font) and View (Zoom Out, Zoom In, Actual Size, Show Grid, a toggle). The owner asked for the first two, and Edit and View hold the rest until the toolbar customizer (M8). The buttons never take keyboard focus. Two more toolbars, Colors (called Brush Options until 3.2) and Tool Options, have their own rows below | `Shell/Toolbars/ToolbarLayout.cs`, `ShellToolbars.cs` | 1.6, 1.7, 2.1, 2.4, 2.5b, 2b.3a, 4.1, 4.5 |
 | A Tools menu between Layer and View: Hand, Move, Rectangle Select, Ellipse Select, Lasso, Polygonal Lasso, Magic Wand, Text, Brush, FG Brush, BG Brush, Character Brush, Eraser, Soft Eraser and BG Eraser, every tool rather than every group, with a check mark on the active one | `MenuLayout.cs`, `Canvas/ToolActions.cs` | 2.4, 2b.3a, 2b.3b, 3.3, 3.4, 4.1, 4.2, 4.3, 4.5 |
 | A Window menu between View and Help: Layers, History, Color, Swatches, Ramps, Characters, then the five toolbars (all check-marked), then Reset Layout. It shows on a Mac too | `MenuLayout.cs`, `Shell/Docking/WindowMenuActions.cs` | 2.1, 2.5b, 2b.3a, 3.5, 3.6 |
@@ -66,7 +66,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | A Debug menu (Open Sample Document, Open Color Sample, Open ANSI Test Sample, Open RGB Test Sample, Open Density Sample, Throw Test Exception, Show Frame Rate, Mouse Acts as a Pen at Half Pressure) in Debug builds only | `MenuLayout.cs`, `ShellActions.cs`, `DocumentActions.cs`, `Canvas/CanvasActions.cs`, `Ramps/RampActions.cs` | 0.3, 1.7, 2b.2, 2b.2b, 3.1, 3.7 |
 | Debug → Mouse Acts as a Pen at Half Pressure: while ticked, the mouse presses like a pen at half pressure, to try pen pressure without a tablet. It's off at every start and isn't remembered | `Canvas/PointerPressure.cs`, `Canvas/CanvasActions.cs` | 3.7 |
 | Debug → Show Frame Rate: at the right of the status bar, plain text such as "144 fps · 1% low 120 · slowest draw 1.2 ms", from the last 2 seconds and refreshed twice a second, or "Canvas idle". It's off at every start and isn't remembered | `Canvas/FrameRate/FrameRateReadout.cs`, `Shell/StatusBarView.axaml`, `AppStatusBarFrameRateMargin` | 2b.2b |
-| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Copy as Text Ctrl+Shift+C; Select All Ctrl+A; Deselect Ctrl+D; Invert Ctrl+Shift+I (for now; the owner may move it); Close Cmd+W (macOS only). Export as Text, Export as ANSI, Copy as ANSI, Grow, Shrink and the two Select Cells commands have none. Delete shows none either: the Delete and Backspace keys do it from the canvas (see "Clipping and Delete") | each feature's `*Actions.cs` | 0.3–1.8, 4.1, 4.3, 4.4 |
+| Shortcuts (Cmd on macOS): New Ctrl+N; Open Ctrl+O; Save Ctrl+S; Save As Ctrl+Shift+S; Quit Ctrl+Q; Undo Ctrl+Z; Redo Ctrl+Shift+Z or Ctrl+Y; Zoom In Ctrl+= (also Ctrl+Shift+= and keypad +); Zoom Out Ctrl+- (keypad -); Actual Size Ctrl+0; Show Grid Ctrl+'; Cut Ctrl+X; Copy Ctrl+C; Paste Ctrl+V; Copy as Text Ctrl+Shift+C; Select All Ctrl+A; Deselect Ctrl+D; Invert Ctrl+Shift+I (for now; the owner may move it); Close Cmd+W (macOS only). Export as Text, Export as ANSI, Copy as ANSI, Grow, Shrink and the two Select Cells commands have none. Delete shows none either: the Delete and Backspace keys do it from the canvas (see "Clipping and Delete") | each feature's `*Actions.cs` | 0.3–1.8, 4.1, 4.3, 4.4, 4.6 |
 | The menu shows only an action's first shortcut, so Redo shows Ctrl+Shift+Z on Windows too | `NativeMenuBuilder.cs` | 1.5 |
 | About window and unexpected-error dialog (Open Log Folder, Quit, Continue) | `Shell/Dialogs/` | 0.3 |
 | A plain yes-or-cancel dialog, with Cancel as the default button | `Shell/Dialogs/ConfirmWindow.axaml` | 1.5 |
@@ -107,6 +107,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 | Export as Text writes UTF-8 text with `\n` after every row, the last included. It suggests the document's name, starts in its folder, and adds `.txt` to a name without an extension. The document keeps its file, title and unsaved changes. No options yet (line breaks, trimming) | `DocumentFiles.ExportAsTextAsync` | 1.8 |
 | Export as ANSI and Copy as ANSI work like their Text versions, with the colours as escape codes (ADR 0044). The save dialog says "Export as ANSI" and offers one file type, "ANSI art" (.ans). Both still work in a monochrome document, writing the art with no codes, as the owner chose | `DocumentFiles.ExportAsAnsiAsync`, `Editing/EditActions.cs`, `AnsiExporter` | 2b.4 |
 | Access keys: Ex**p**ort as ANSI (E, A, N and S were taken in the File menu) and Copy as **A**NSI | `Strings.resx` | 2b.4 |
+| Access keys: Cu**t**, **C**opy, **P**aste, and Copy as Te**x**t, moved from T, which Cut took as most apps have it | `Strings.resx` | 4.6 |
 | On a Mac, closing the window (its close button, or File → Close) closes the document, after asking about unsaved changes, and the app keeps running. A click on the Dock icon then opens a window with a new empty 80 × 25 ASCII-only document | `Shell/MainWindowLifetime.cs` | 1.8 |
 | On a Mac, the Dock icon's menu has New and Open. With no window open they open one first; cancelling their dialog leaves that window open with an empty document. With no window, Cmd+N and Cmd+O do nothing | `MenuLayout.DockMenu`, `MainWindowLifetime.RunInWindow` | 1.8 |
 | On a Mac, the close button shows a dot while there are unsaved changes, and the title keeps its `*` as well | `Shell/MacOSDocumentEdited.cs` | 1.8 |
@@ -338,7 +339,8 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| The Move tool is on V, after Hand in the Tools menu and on the Tools toolbar. The pointer is the normal arrow, and the button's label is "Move" | `Core/Tools/BuiltInToolGroups.cs`, `Strings.resx` (`ToolMove`) | 4.5 |
+| The Move tool is on V, after Hand in the Tools menu and on the Tools toolbar. The button's label is "Move" | `Core/Tools/BuiltInToolGroups.cs`, `Strings.resx` (`ToolMove`) | 4.5 |
+| Over the cells a drag would move (the selected ones, or anywhere on the canvas when nothing is selected) the pointer is the pan cursor's shape: the four-way arrows on Windows and Linux, the open hand on macOS. Elsewhere, and on a locked or hidden layer, it's the normal arrow | `MoveTool.ShowsMoveCursorAt`, `Canvas/CanvasControl.cs` (`UpdateCursor`), `Canvas/PanCursor.cs` | 4.6 |
 | Shift+arrow nudges by 10 cells. During a drag the arrow keys do nothing | `Core/Tools/Moving/MoveTool.cs` (`FarStep`), `Canvas/ToolKeymap.cs` | 4.5 |
 | The step is called Move, for a copy too. A move that ends where it began, or a click, makes no step | `Strings.resx` (`UndoStepMove`), `Core/Tools/Moving/FloatingMove.cs` | 4.5 |
 | Alt at the press copies, and always starts a new move, so each Alt-drag during a move leaves another copy behind | `MoveTool.cs` | 4.5 |
@@ -347,6 +349,19 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | On a locked or hidden layer the Move tool does nothing, and the arrow keys aren't used | `MoveTool.cs` | 4.5 |
 | Not built: moving only the outline without the cells, and Shift during a drag to keep it straight | | 4.5 |
 | The Tools toolbar's text buttons now need about 590 pixels, about 50 more than it gets in a window 1920 wide, so there it scrolls until the icon buttons arrive | `Shell/Toolbars/ToolbarLayout.cs` | 4.5 |
+
+### Cut, Copy and Paste (step 4.6, ADR 0067)
+
+| Choice | Where | Step |
+|---|---|---|
+| Edit → Cut, Copy and Paste sit between Redo and Copy as Text, with separators around them | `Shell/Menus/MenuLayout.cs` | 4.6 |
+| Copy and Cut are greyed out with nothing selected. Copy works on a locked layer; on a hidden one all three are greyed out, and Cut and Paste are on a locked one too. Paste stays available with nothing usable on the clipboard and then does nothing | `Editing/ClipboardActions.cs` | 4.6 |
+| The steps are called Cut and Paste. Typing pasted text at the Text caret is a Paste step of its own, not part of the typing around it | `Strings.resx` (`UndoStepCut`, `UndoStepPaste`) | 4.6 |
+| A paste centres on the pointer, rounding to the nearer cell. With the pointer off the canvas view, or so far off the canvas that nothing pasted would land on it, it goes where it was copied from; text from another app, or a copy whose place lands nothing on this canvas, goes in the middle of the view | `Core/Clipboard/PastePlacement.cs` | 4.6 |
+| A paste chooses the Move tool, even from the Hand tool or a brush, and stays on it afterwards | `ClipboardActions.PasteAsync` | 4.6 |
+| Text from other apps: a tab moves to the next multiple of 8 columns, escape codes (ANSI colours included) and other control characters are dropped, and blank lines at the end are left out. Each side is cut to the biggest canvas (4096) | `Core/Clipboard/PastedText.cs` | 4.6 |
+| At the Text caret, pasted text runs from the caret with each line starting under the first; what goes past the right or bottom edge is dropped, and the caret ends after the last character | `Core/Tools/Text/TextTool.cs` (`PasteText`) | 4.6 |
+| Copy as Text and Copy as ANSI keep their names and shortcuts; with a selection they copy only its bounding rectangle | `Editing/EditActions.cs` | 4.6 |
 
 ## Ideas to revisit
 

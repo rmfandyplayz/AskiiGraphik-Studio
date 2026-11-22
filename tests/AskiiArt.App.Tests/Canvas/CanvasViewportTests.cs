@@ -132,6 +132,17 @@ public sealed class CanvasViewportTests
         Assert.Null(viewport.CellAt(new Point(x, y)));
     }
 
+    [Theory]
+    [InlineData(115, 100, 1.5, 2.5)]
+    [InlineData(95, 40, -0.5, -0.5)]
+    public void CanvasPointAt_IsTheSpotInCells_FractionsAndOffTheCanvasToo(double x, double y, double expectedX,
+        double expectedY)
+    {
+        var viewport = Create(new CanvasSize(10, 5), new PixelSize(300, 200));
+
+        Assert.Equal(new CanvasPoint(expectedX, expectedY), viewport.CanvasPointAt(new Point(x, y)));
+    }
+
     [Fact]
     public void GetCellBounds_IsTheCellsRectangleInTheViewport()
     {

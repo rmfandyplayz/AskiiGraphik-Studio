@@ -144,6 +144,15 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Where the pointer is over the canvas view, in cells, or null when it's elsewhere, reported by the canvas control.
+    /// Paste centres on it (ADR 0067). Nothing watches it, so it raises no change.
+    /// </summary>
+    public CanvasPoint? PointerCanvasPosition { get; set; }
+
+    /// <summary>The spot of the canvas in the middle of the view, in cells, reported by the canvas control.</summary>
+    public CanvasPoint ViewCentre { get; set; }
+
     public bool CanZoomIn => ZoomLevels.StepIn(ZoomFactor) > ZoomFactor;
 
     public bool CanZoomOut => ZoomLevels.StepOut(ZoomFactor) < ZoomFactor;

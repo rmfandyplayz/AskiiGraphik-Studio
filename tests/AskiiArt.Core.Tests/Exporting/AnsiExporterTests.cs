@@ -4,6 +4,7 @@
 using System.Text;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Exporting;
+using AskiiArt.Core.Tests.Selection;
 
 namespace AskiiArt.Core.Tests.Exporting;
 
@@ -129,6 +130,19 @@ public sealed class AnsiExporterTests
         document.ActiveFrame.Layers[0].SetCell(new CellPoint(0, 0), Cell.FromGlyph(new Rune(0x1F600)));
 
         Assert.Equal([0xF0, 0x9F, 0x98, 0x80, (byte)'\n'], _exporter.Export(document));
+    }
+
+    [Fact]
+    public void ToText_WithASelection_IsItsBounds_WithUnselectedCellsAsPlainSpaces()
+    {
+        var document = TestCells.CreateDocument(3, 2, ColorMode.Ansi);
+        var layer = document.ActiveFrame.Layers[0];
+        TestCells.Paint(layer, "abc", "def");
+        layer.SetCell(new CellPoint(2, 0), Cell.FromBackground(TestCells.Ansi(AnsiColor.Red)));
+
+        var text = _exporter.ToText(document, "\n", TestMasks.Parse("·#·", "··#"));
+
+        Assert.Equal("b \n f", Readable(text));
     }
 
     private static string Readable(string text) => text.Replace(Escape, "ESC", StringComparison.Ordinal);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Clipboard;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
@@ -12,15 +13,19 @@ namespace AskiiArt.Core.Tools.Moving;
 /// One move of the Move tool (ADR 0066): the selected cells of the active layer, or the whole layer when nothing is
 /// selected, taken from where they were when the move began. The document always shows the move. Each new place takes
 /// back the step the last one made and makes a new one from the cells as they were before the move, so the cells pass
-/// over other art without harming it until the move ends, and the whole move is one undo step.
+/// over other art without harming it until the move ends, and the whole move is one undo step. A paste floats the same
+/// way, with cells it brings rather than ones it takes, and makes its step at once (ADR 0067).
 /// </summary>
 internal sealed class FloatingMove
 {
     private readonly EditingSession _session;
 
-    // The cells that move, where they were; the selection moves with them unless nothing was selected.
+    // The cells that move, where they were; the selection moves with them unless nothing was selected. A paste's
+    // shape is the clip's, so it's placed at the paste's corner, onto the canvas.
     private readonly SelectionMask _mask;
+    private readonly CellPoint _maskCorner;
     private readonly bool _movesSelection;
+    private readonly bool _isPaste;
 
     // The cells with something in them, where they were. Empty ones don't cover what they land on.
     private readonly MovingCell[] _cells;
@@ -42,6 +47,32 @@ internal sealed class FloatingMove
         _mask = _movesSelection ? session.Selection.Mask : SelectionMask.All(session.Document.CanvasSize);
         _cells = TakeCells(session.ActiveLayer, _mask);
         _historyAsLeft = HistoryNow();
+    }
+
+    private FloatingMove(EditingSession session, CellClip clip, CellPoint topLeft)
+    {
+        _session = session;
+        _isPaste = true;
+        IsCopy = true;
+        LayerId = session.ActiveLayer.Id;
+        _movesSelection = true;
+        var fitted = clip.FittedTo(session.Document.CharacterSet, session.Document.ColorMode);
+        _mask = fitted.Shape;
+        _maskCorner = topLeft;
+        _cells = BringCells(fitted, topLeft);
+        _historyAsLeft = HistoryNow();
+    }
+
+    /// <summary>
+    /// Pastes <paramref name="clip"/> with its top-left corner at <paramref name="topLeft"/>: its cells, fitted to
+    /// the document, float on the active layer with its shape selected, as one Paste step from the start. Cells off
+    /// the canvas are kept while the paste floats, as a move's are.
+    /// </summary>
+    public static FloatingMove Paste(EditingSession session, CellClip clip, CellPoint topLeft)
+    {
+        var paste = new FloatingMove(session, clip, topLeft);
+        paste.Change(paste.ShowStep);
+        return paste;
     }
 
     /// <summary>The layer whose cells move.</summary>
@@ -78,15 +109,12 @@ internal sealed class FloatingMove
         {
             TakeBackStep();
             Offset = offset;
-            if (offset == default || BuildStep(offset) is not { } step)
-                return;
-
-            _session.History.Execute(step);
-            _step = step;
+            if (offset != default || _isPaste)
+                ShowStep();
         });
     }
 
-    /// <summary>Puts the cells back where they began, leaving no step.</summary>
+    /// <summary>Puts the cells back where they began, leaving no step. A paste goes altogether.</summary>
     public void Cancel()
     {
         Change(TakeBackStep);
@@ -107,6 +135,15 @@ internal sealed class FloatingMove
         }
     }
 
+    private void ShowStep()
+    {
+        if (BuildStep(Offset) is not { } step)
+            return;
+
+        _session.History.Execute(step);
+        _step = step;
+    }
+
     private void TakeBackStep()
     {
         if (_step is null)
@@ -118,14 +155,19 @@ internal sealed class FloatingMove
 
     private CompositeCommand? BuildStep(CellPoint offset)
     {
+        var name = _isPaste ? UndoStepNames.Paste : UndoStepNames.Move;
         List<IDocumentCommand> commands = [];
         if (_cells.Length > 0)
-            commands.Add(new MoveCellsCommand(LayerId, _cells, Landings(offset), IsCopy));
+            commands.Add(new MoveCellsCommand(LayerId, _cells, Landings(offset), IsCopy, name));
 
         if (_movesSelection)
-            commands.Add(new SetSelectionCommand(_session.Selection, _mask.Moved(offset), UndoStepNames.Move));
+        {
+            var corner = new CellPoint(_maskCorner.X + offset.X, _maskCorner.Y + offset.Y);
+            var selection = _mask.MovedOnto(_session.Document.CanvasSize, corner);
+            commands.Add(new SetSelectionCommand(_session.Selection, selection, name));
+        }
 
-        return commands.Count == 0 ? null : new CompositeCommand(commands, UndoStepNames.Move);
+        return commands.Count == 0 ? null : new CompositeCommand(commands, name);
     }
 
     // Where each cell lands, as a cell index, or -1 off the canvas.
@@ -159,6 +201,28 @@ internal sealed class FloatingMove
                     var cell = layer.GetCell(index);
                     if (!cell.IsEmpty)
                         cells.Add(new MovingCell(index, point, cell));
+                }
+            }
+        }
+
+        return [.. cells];
+    }
+
+    // The clip's cells with something in them, where they land at the paste's corner. They come from no cell of the
+    // layer, so they have no index.
+    private static MovingCell[] BringCells(CellClip clip, CellPoint topLeft)
+    {
+        List<MovingCell> cells = [];
+        for (var row = clip.Shape.Bounds.Top; row < clip.Shape.Bounds.Bottom; row++)
+        {
+            foreach (var (column, length) in clip.Shape.RunsInRow(row))
+            {
+                for (var x = column; x < column + length; x++)
+                {
+                    var cell = clip.GetCell(new CellPoint(x, row));
+                    var landing = new CellPoint(topLeft.X + x, topLeft.Y + row);
+                    if (!cell.IsEmpty)
+                        cells.Add(new MovingCell(MovingCell.NoIndex, landing, cell));
                 }
             }
         }

@@ -22,22 +22,25 @@ internal sealed class MoveCellsCommand : IDocumentCommand
     private readonly int[] _landings;
     private readonly bool _isCopy;
     private readonly Cell[] _covered;
+    private readonly string _stepNameKey;
 
     /// <param name="layerId">The layer the cells are on.</param>
     /// <param name="cells">The cells that move, with something in each, where they were. They aren't changed.</param>
     /// <param name="landings">Where each cell lands, as a cell index, or -1 when it lands off the canvas.</param>
-    /// <param name="isCopy">True to leave the cells where they were as well.</param>
-    public MoveCellsCommand(Guid layerId, MovingCell[] cells, int[] landings, bool isCopy)
+    /// <param name="isCopy">True to leave the cells where they were as well, and for cells that come from no cell.</param>
+    /// <param name="stepNameKey">The step's name: a Move, or a Paste.</param>
+    public MoveCellsCommand(Guid layerId, MovingCell[] cells, int[] landings, bool isCopy, string stepNameKey)
     {
         _layerId = layerId;
         _cells = cells;
         _landings = landings;
         _isCopy = isCopy;
         _covered = new Cell[cells.Length];
+        _stepNameKey = stepNameKey;
     }
 
     /// <inheritdoc/>
-    public string StepNameKey => UndoStepNames.Move;
+    public string StepNameKey => _stepNameKey;
 
     /// <summary>The cells, where they land, and what they cover there.</summary>
     public long EstimatedMemoryInBytes =>
@@ -121,5 +124,12 @@ internal sealed class MoveCellsCommand : IDocumentCommand
     }
 }
 
-/// <summary>A cell that moves, and its index on the layer where it was.</summary>
-internal readonly record struct MovingCell(int Index, CellPoint Point, Cell Cell);
+/// <summary>
+/// A cell that moves, its index on the layer where it was, or <see cref="NoIndex"/> for a pasted cell, and where it
+/// was, or where a pasted one lands at first.
+/// </summary>
+internal readonly record struct MovingCell(int Index, CellPoint Point, Cell Cell)
+{
+    /// <summary>The index of a pasted cell, which comes from no cell of the layer.</summary>
+    public const int NoIndex = -1;
+}

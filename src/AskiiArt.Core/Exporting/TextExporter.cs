@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 
 namespace AskiiArt.Core.Exporting;
 
@@ -14,10 +16,11 @@ namespace AskiiArt.Core.Exporting;
 /// </summary>
 public sealed class TextExporter : IExporter
 {
+    // Exporters are injected as instances (ADR 0022), so ToText stays one like Export, though it needs no state.
+    private const string InjectedJustification = "Exporters are injected instances, like IExporter.Export.";
+
     /// <summary>The line break in exported files, as for every file the app writes.</summary>
     public const string FileLineBreak = "\n";
-
-    private const char EmptyCellCharacter = ' ';
 
     /// <inheritdoc />
     public string Id => "askiiart.export.text";
@@ -29,39 +32,32 @@ public sealed class TextExporter : IExporter
     /// UTF-8 without a byte-order mark, with <see cref="FileLineBreak"/> after every row, the last included.
     /// </summary>
     public byte[] Export(Document document) =>
-        Encoding.UTF8.GetBytes(Flatten(document, FileLineBreak, lineBreakAfterLastRow: true));
+        Encoding.UTF8.GetBytes(Flatten(document, selection: null, FileLineBreak, lineBreakAfterLastRow: true));
 
     /// <summary>
     /// The rows joined by <paramref name="lineBreak"/>, with none after the last: the form for the
-    /// clipboard, where a final line break would add an empty line wherever it's pasted.
+    /// clipboard, where a final line break would add an empty line wherever it's pasted. With a
+    /// <paramref name="selection"/>, only the rows and columns of its bounds, and the cells in them
+    /// that aren't selected as spaces (ADR 0067).
     /// </summary>
-    public string ToText(Document document, string lineBreak) =>
-        Flatten(document, lineBreak, lineBreakAfterLastRow: false);
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = InjectedJustification)]
+    public string ToText(Document document, string lineBreak, SelectionMask? selection = null) =>
+        Flatten(document, selection, lineBreak, lineBreakAfterLastRow: false);
 
-    private string Flatten(Document document, string lineBreak, bool lineBreakAfterLastRow)
+    private static string Flatten(Document document, SelectionMask? selection, string lineBreak,
+        bool lineBreakAfterLastRow)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrEmpty(lineBreak);
 
-        var size = document.CanvasSize;
-        var text = new StringBuilder((size.Width + lineBreak.Length) * size.Height);
-        var row = new Cell[size.Width];
-        Span<char> glyph = stackalloc char[2];
-        for (var y = 0; y < size.Height; y++)
+        var region = FlattenedRows.RegionOf(document, selection);
+        var text = new StringBuilder((region.Width + lineBreak.Length) * region.Height);
+        var row = new Cell[region.Width];
+        for (var y = region.Top; y < region.Bottom; y++)
         {
-            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, y, size.Width, 1), row);
-            foreach (var cell in row)
-            {
-                if (!cell.HasGlyph)
-                {
-                    text.Append(EmptyCellCharacter);
-                    continue;
-                }
-
-                text.Append(glyph[..cell.Glyph.EncodeToUtf16(glyph)]);
-            }
-
-            if (y < size.Height - 1 || lineBreakAfterLastRow)
+            FlattenedRows.Read(document, selection, region, y, row);
+            PlainTextRows.Append(text, row);
+            if (y < region.Bottom - 1 || lineBreakAfterLastRow)
                 text.Append(lineBreak);
         }
 

@@ -9,6 +9,7 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Moving;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -189,6 +190,54 @@ public sealed class CanvasControlTests : IDisposable
 
         _window.MouseMove(new Point(-5, -5));
         Assert.Null(_control.HoveredCell);
+    }
+
+    [AvaloniaFact]
+    public void PointerOverTheControl_ReportsWhereItIsInCells_AndLeavingClearsIt()
+    {
+        Show();
+        var cellSize = Viewport.CellSize;
+
+        _window.MouseMove(new Point(cellSize.Width * 3.5, cellSize.Height * 2.25));
+        Assert.Equal(new CanvasPoint(3.5, 2.25), _control.PointerCanvasPosition);
+
+        _window.MouseMove(new Point(-5, -5));
+        Assert.Null(_control.PointerCanvasPosition);
+    }
+
+    [AvaloniaFact]
+    public void TheViewCentre_IsTheSpotOfTheCanvasInTheMiddleOfTheView_AndFollowsScrolling()
+    {
+        Show();
+        var cellWidth = (double)Viewport.CellSize.Width;
+        Assert.Equal(Viewport.CanvasPointAt(Viewport.UsableCentre), _control.ViewCentre);
+        var before = _control.ViewCentre;
+
+        _control.HorizontalOffset = 50;
+
+        Assert.Equal(before.X + (50 / cellWidth), _control.ViewCentre.X, 6);
+    }
+
+    [AvaloniaFact]
+    public void TheMoveTool_ShowsTheMoveCursor_OverTheCellsItWouldMove()
+    {
+        Show();
+        _canvas.ViewModel.SelectTool(MoveTool.Id);
+        _control.Tool = _canvas.ViewModel.ActiveTool;
+        _control.Selection = _canvas.Session.Selection;
+        SelectionEdits.Select(_canvas.Session, SelectionMask.Rectangle(_canvas.Document.CanvasSize,
+            new CellRect(3, 2, 1, 1)), UndoStepNames.RectangleSelect);
+        var cellSize = Viewport.CellSize;
+
+        _window.MouseMove(new Point(cellSize.Width * 3.5, cellSize.Height * 2.5));
+        Assert.NotNull(_control.Cursor);
+
+        _window.MouseMove(new Point(cellSize.Width * 5.5, cellSize.Height * 2.5));
+        Assert.Null(_control.Cursor);
+
+        // With nothing selected a drag moves the whole layer, so the cursor shows anywhere on the canvas.
+        SelectionEdits.Deselect(_canvas.Session);
+        Assert.NotNull(_control.Cursor);
     }
 
     [AvaloniaFact]

@@ -18,6 +18,8 @@
                           IsGridVisible="{Binding IsGridVisible}"
                           IsMouseActingAsPen="{Binding IsMouseActingAsPen}"
                           HoveredCell="{Binding HoveredCell, Mode=OneWayToSource}"
+                          PointerCanvasPosition="{Binding PointerCanvasPosition, Mode=OneWayToSource}"
+                          ViewCentre="{Binding ViewCentre, Mode=OneWayToSource}"
                           Tool="{Binding ActiveTool}"
                           Selection="{Binding Selection}"
                           FrameTimings="{Binding FrameRate.Timings}"

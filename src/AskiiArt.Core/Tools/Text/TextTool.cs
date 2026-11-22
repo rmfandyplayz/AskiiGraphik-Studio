@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Clipboard;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
@@ -205,6 +206,65 @@ public sealed class TextTool : ITool
         _backspaceErasesCaretCell = isStuckAtRightEdge;
         Execute(cells.Build(UndoStepNames.Typing));
         SetCaret(caret);
+        return true;
+    }
+
+    /// <summary>
+    /// Types <paramref name="text"/> in at the caret as one Paste step (ADR 0067): each line as typing writes it, in
+    /// the current colours and kept to the selection, and each line break going on to the next row under where the
+    /// text began, as Enter does. Tabs become spaces (<see cref="PastedText.Lines"/>). Unlike typing, a character the
+    /// document can't hold, or one past the canvas's edge, still takes up its place, so the text keeps its shape:
+    /// that cell is left as it was.
+    /// </summary>
+    /// <returns>False when there's no caret, so the paste isn't the Text tool's.</returns>
+    public bool PasteText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        if (CurrentCaret() is not { } caret)
+            return false;
+
+        if (!CanEdit())
+            return true;
+
+        var layer = _session.ActiveLayer;
+        var cells = _session.EditCellsInSelection(layer.Id);
+        var foreground = _colors.ForegroundIn(Document.ColorMode);
+        var background = _colors.BackgroundIn(Document.ColorMode);
+        var size = Document.CanvasSize;
+        var block = BlockAround(caret);
+        var lines = PastedText.Lines(text);
+        var (column, row) = (caret.X, caret.Y);
+        for (var index = 0; index < lines.Count; index++)
+        {
+            if (index > 0)
+                (column, row) = (block.LineStart, row + 1);
+
+            if (row >= size.Height)
+                break;
+
+            block = block.WithRow(row);
+            foreach (var rune in lines[index])
+            {
+                var point = new CellPoint(column, row);
+                column++;
+                if (point.X >= size.Width || !Document.CharacterSet.Allows(rune))
+                    continue;
+
+                var cellBackground = background.IsUnset ? layer.GetCell(point).Background : background;
+                cells.Set(point, Cell.FromGlyph(rune, foreground, cellBackground));
+                block = block.WithTyped(point);
+            }
+        }
+
+        // A paste is a step of its own, not part of the typing around it.
+        _typingBurst = null;
+        if (cells.Build(UndoStepNames.Paste) is { } command)
+            _session.History.Execute(command);
+
+        _block = block;
+        _backspaceErasesCaretCell = column >= size.Width;
+        SetCaret(ClampToCanvas(new CellPoint(column, row)));
         return true;
     }
 

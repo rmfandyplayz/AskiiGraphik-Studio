@@ -6,13 +6,17 @@ using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
 using AskiiArt.Core.Commands;
+using AskiiArt.Core.Editing;
 using AskiiArt.Core.Exporting;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Editing;
 
-/// <summary>Undo and Redo, for the active document's history, and Copy as Text and Copy as ANSI.</summary>
+/// <summary>
+/// Undo and Redo, for the active document's history, and Copy as Text and Copy as ANSI, which flatten the visible layers:
+/// the selection's bounds while anything is selected, else the whole canvas (ADR 0067).
+/// </summary>
 internal sealed class EditActions(
     ActiveDocument activeDocument, TextExporter textExporter, AnsiExporter ansiExporter, IAppShell shell)
     : IActionProvider
@@ -60,9 +64,11 @@ internal sealed class EditActions(
     private CommandHistory History => activeDocument.Session.History;
 
     // With this platform's line breaks, which is what other apps expect from the clipboard (ADR 0022).
-    private Task CopyAsTextAsync() =>
-        shell.CopyTextAsync(textExporter.ToText(activeDocument.Session.Document, Environment.NewLine));
+    private Task CopyAsTextAsync() => shell.CopyTextAsync(
+        textExporter.ToText(Session.Document, Environment.NewLine, Session.Selection.Mask));
 
-    private Task CopyAsAnsiAsync() =>
-        shell.CopyTextAsync(ansiExporter.ToText(activeDocument.Session.Document, Environment.NewLine));
+    private Task CopyAsAnsiAsync() => shell.CopyTextAsync(
+        ansiExporter.ToText(Session.Document, Environment.NewLine, Session.Selection.Mask));
+
+    private EditingSession Session => activeDocument.Session;
 }

@@ -67,6 +67,7 @@ internal static class AppServices
             includeDebugActions: BuildInfo.IsDebugBuild));
         services.AddSingleton<IActionProvider, ToolActions>();
         services.AddSingleton<IActionProvider, EditActions>();
+        services.AddSingleton<IActionProvider, ClipboardActions>();
         services.AddSingleton<IActionProvider, SelectionActions>();
         services.AddSingleton<IActionProvider, WindowMenuActions>();
         services.AddSingleton<IActionProvider, ToolbarMenuActions>();

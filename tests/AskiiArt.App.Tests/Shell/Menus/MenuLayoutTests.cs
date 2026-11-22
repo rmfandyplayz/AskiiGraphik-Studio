@@ -168,8 +168,8 @@ public sealed class MenuLayoutTests
         Assert.Equal(nameof(Strings.MenuEdit), edit.LabelKey);
         Assert.Equal(
             [
-                EditActionIds.Undo, EditActionIds.Redo, EditActionIds.CopyAsText, EditActionIds.CopyAsAnsi,
-                SelectionActionIds.DeleteSelectedCells
+                EditActionIds.Undo, EditActionIds.Redo, EditActionIds.Cut, EditActionIds.Copy, EditActionIds.Paste,
+                EditActionIds.CopyAsText, EditActionIds.CopyAsAnsi, SelectionActionIds.DeleteSelectedCells
             ],
             ActionIdsIn(edit.Entries));
     }

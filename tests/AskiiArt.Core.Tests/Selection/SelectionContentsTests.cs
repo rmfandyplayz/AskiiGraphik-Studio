@@ -29,6 +29,16 @@ public sealed class SelectionContentsTests
     private CommandHistory History => _session.History;
 
     [Fact]
+    public void Clear_ForCut_NamesTheStepCut()
+    {
+        TestTools.Select(_session, "#···", "····");
+
+        Assert.True(SelectionContents.Clear(_session, UndoStepNames.Cut));
+
+        Assert.Equal(UndoStepNames.Cut, History.GetStepNameKey(History.UndoCount - 1));
+    }
+
+    [Fact]
     public void Clear_EmptiesEverySelectedCell_ColoursAndBackgroundsToo_AndKeepsTheSelection()
     {
         TestTools.Select(_session, "·##·", "·#··");

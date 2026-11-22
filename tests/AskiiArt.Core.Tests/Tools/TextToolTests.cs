@@ -600,6 +600,74 @@ public sealed class TextToolTests
         Assert.Equal(new CellPoint(1, 0), _tool.Caret);
     }
 
+    [Fact]
+    public void PasteText_TypesEachLine_UnderWhereItBegan_AsOnePasteStep()
+    {
+        Click(1, 0);
+
+        Assert.True(_tool.PasteText("ab\r\ncd"));
+
+        Assert.Equal(["·ab···", "·cd···", "······"], TestCells.Read(Layer));
+        Assert.Equal(1, History.UndoCount);
+        Assert.Equal(UndoStepNames.Paste, History.GetStepNameKey(0));
+        Assert.Equal(new CellPoint(3, 1), _tool.Caret);
+    }
+
+    [Fact]
+    public void PasteText_IsAStepOfItsOwn_BetweenTypedOnes()
+    {
+        Click(0, 0);
+        Type("a");
+        _tool.PasteText("b");
+        Type("c");
+
+        Assert.Equal(["abc···", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(3, History.UndoCount);
+    }
+
+    [Fact]
+    public void PasteText_DropsWhatsPastTheRightAndBottomEdges()
+    {
+        TestCells.Paint(Layer, "xxxxxx");
+        Click(3, 0);
+
+        _tool.PasteText("abcde\nf\ng\nh");
+
+        Assert.Equal(["xxxabc", "···f··", "···g··"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void PasteText_SkipsCharactersTheDocumentCantHold_ButKeepsTheirPlaces()
+    {
+        var session = new EditingSession(Document.Create(new CanvasSize(6, 3), "Layer", CharacterSet.Ascii), _clock);
+        var tool = new TextTool(session);
+        TestCells.Paint(session.Document.ActiveFrame.Layers[0], "xxxxxx");
+        tool.PointerPressed(PointerAt(0, 0));
+
+        tool.PasteText("aéb");
+
+        Assert.Equal(["axbxxx", "······", "······"], TestCells.Read(session.Document.ActiveFrame.Layers[0]));
+    }
+
+    [Fact]
+    public void PasteText_KeepsToTheSelection()
+    {
+        TestTools.Select(_session, "·#····", "······", "······");
+        Click(0, 0);
+
+        _tool.PasteText("abc");
+
+        Assert.Equal(["·b····", "······", "······"], TestCells.Read(Layer));
+        Assert.Equal(new CellPoint(3, 0), _tool.Caret);
+    }
+
+    [Fact]
+    public void PasteText_WithoutACaret_IsntTheTools()
+    {
+        Assert.False(_tool.PasteText("abc"));
+        Assert.Equal(0, History.UndoCount);
+    }
+
     private static ToolPointerInput PointerAt(int x, int y) => new(new CellPoint(x, y), 0.5, 0.5, ToolModifiers.None);
 
     private void Click(int x, int y) => _tool.PointerPressed(PointerAt(x, y));

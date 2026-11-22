@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Documents;
+
 namespace AskiiArt.Core.Tools;
 
 /// <summary>
@@ -36,6 +38,12 @@ public interface ITool
 
     /// <summary>True while typed characters go to this tool, so letter keys can't pick another tool.</summary>
     bool IsTakingText { get; }
+
+    /// <summary>
+    /// Whether the pointer shows the move cursor over <paramref name="cell"/>, as it does over the cells a drag of the
+    /// Move tool would move (ADR 0067).
+    /// </summary>
+    bool ShowsMoveCursorAt(CellPoint cell) => false;
 
     /// <summary>What the canvas draws on top of the document for this tool.</summary>
     ToolOverlay Overlay { get; }

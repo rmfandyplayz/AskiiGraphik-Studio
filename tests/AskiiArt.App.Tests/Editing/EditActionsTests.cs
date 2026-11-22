@@ -8,6 +8,7 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Text;
 using Avalonia.Input;
@@ -45,6 +46,26 @@ public sealed class EditActionsTests : IDisposable
         Assert.Equal("a " + Environment.NewLine + " b", Assert.Single(_shell.CopiedTexts));
         Assert.Equal([new ActionShortcut(Key.C, ShortcutModifiers.Command | ShortcutModifiers.Shift)],
             copyAsText.DefaultShortcuts);
+    }
+
+    [Fact]
+    public void CopyAsText_WithASelection_CopiesItsBounds_WithUnselectedCellsAsSpaces()
+    {
+        var document = Document.Create(new CanvasSize(3, 2), "Layer");
+        var cells = new CellEditBuilder(document, document.ActiveFrame.Layers[0].Id);
+        cells.Set(new CellPoint(0, 0), Cell.FromGlyph(new Rune('a')));
+        cells.Set(new CellPoint(1, 0), Cell.FromGlyph(new Rune('b')));
+        cells.Set(new CellPoint(2, 1), Cell.FromGlyph(new Rune('c')));
+        cells.Build()!.Apply(document);
+        var session = new EditingSession(document);
+        _canvas.ActiveDocument.Replace(session);
+        SelectionEdits.Select(session, SelectionMask.Rectangle(document.CanvasSize, new CellRect(1, 0, 2, 2))
+            .CombinedWith(SelectionMask.Rectangle(document.CanvasSize, new CellRect(2, 0, 1, 1)),
+                SelectionCombineMode.Subtract), UndoStepNames.RectangleSelect);
+
+        _actions[EditActionIds.CopyAsText].Command.Execute(null);
+
+        Assert.Equal("b " + Environment.NewLine + " c", Assert.Single(_shell.CopiedTexts));
     }
 
     [Fact]

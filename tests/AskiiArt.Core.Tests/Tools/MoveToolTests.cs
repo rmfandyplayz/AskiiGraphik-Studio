@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Clipboard;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
@@ -375,6 +376,133 @@ public sealed class MoveToolTests
 
         Assert.False(_tool.KeyPressed(key, ToolModifiers.None));
     }
+
+    [Fact]
+    public void APaste_FloatsItsCellsOnTheLayer_Selected_AsOnePasteStep()
+    {
+        Assert.True(_tool.Paste(Clip("xy"), new CellPoint(2, 1)));
+
+        Assert.Equal(["abcdef", "ghxykl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(["······", "··##··", "······"], Selected);
+        Assert.Equal(1, History.UndoCount);
+        Assert.Equal(UndoStepNames.Paste, History.GetStepNameKey(0));
+        Assert.True(_tool.IsMoving);
+    }
+
+    [Fact]
+    public void DragsAndNudges_CarryAPasteOn_OverArtUnharmed_InTheSameStep()
+    {
+        _tool.Paste(Clip("xy"), new CellPoint(2, 1));
+
+        Drag((0, 0), (1, 1));
+        _tool.KeyPressed(ToolKey.Left, ToolModifiers.None);
+
+        Assert.Equal(["abcdef", "ghijkl", "mnxyqr"], TestCells.Read(Layer));
+        Assert.Equal(["······", "······", "··##··"], Selected);
+        Assert.Equal(1, History.UndoCount);
+        Assert.Equal(UndoStepNames.Paste, History.GetStepNameKey(0));
+    }
+
+    [Fact]
+    public void Esc_TakesAPasteAway_AndPutsTheSelectionBack()
+    {
+        SelectTheFirstTwoCells();
+        _tool.Paste(Clip("xy"), new CellPoint(2, 1));
+        Drag((0, 0), (1, 0));
+
+        Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+
+        Assert.Equal(_art, TestCells.Read(Layer));
+        Assert.Equal(["##····", "······", "······"], Selected);
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void Enter_EndsAPaste_SoTheNextDragMovesItsCellsAsAMove()
+    {
+        _tool.Paste(Clip("xy"), new CellPoint(2, 1));
+
+        Assert.True(_tool.KeyPressed(ToolKey.Enter, ToolModifiers.None));
+        Drag((0, 0), (0, 1));
+
+        Assert.Equal(["abcdef", "gh··kl", "mnxyqr"], TestCells.Read(Layer));
+        Assert.Equal(UndoStepNames.Move, History.GetStepNameKey(1));
+    }
+
+    [Fact]
+    public void PastedCellsOffTheCanvas_AreKeptWhileThePasteFloats()
+    {
+        _tool.Paste(Clip("xy"), new CellPoint(5, 0));
+        Assert.Equal(["abcdex", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(["·····#", "······", "······"], Selected);
+
+        _tool.KeyPressed(ToolKey.Left, ToolModifiers.None);
+
+        Assert.Equal(["abcdxy", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(["····##", "······", "······"], Selected);
+    }
+
+    [Fact]
+    public void APaste_EndsAMoveUnderWay_WhereItsCellsAre()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+
+        _tool.Paste(Clip("z"), new CellPoint(0, 2));
+        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(2, History.UndoCount);
+    }
+
+    [Fact]
+    public void APaste_OnALockedLayer_IsntMade()
+    {
+        History.Execute(new SetLayerPropertiesCommand(Layer.Id, Layer.Properties with { IsLocked = true }));
+
+        Assert.False(_tool.Paste(Clip("xy"), new CellPoint(0, 0)));
+
+        Assert.Equal(_art, TestCells.Read(Layer));
+        Assert.Equal(1, History.UndoCount);
+    }
+
+    [Fact]
+    public void APaste_LeavesOutCharactersTheDocumentCantHold_ButKeepsThemSelected()
+    {
+        var session = new EditingSession(Document.Create(new CanvasSize(4, 1), "Layer", CharacterSet.Ascii));
+        var tool = new MoveTool(TestTools.Context(session));
+
+        tool.Paste(Clip("aéb"), default);
+
+        Assert.Equal(["a·b·"], TestCells.Read(session.Document.ActiveFrame.Layers[0]));
+        Assert.Equal(["###·"], TestMasks.Describe(session.Selection.Mask));
+    }
+
+    [Fact]
+    public void TheMoveCursor_ShowsOverTheSelectedCells()
+    {
+        SelectTheFirstTwoCells();
+
+        Assert.True(_tool.ShowsMoveCursorAt(new CellPoint(1, 0)));
+        Assert.False(_tool.ShowsMoveCursorAt(new CellPoint(2, 0)));
+    }
+
+    [Fact]
+    public void WithNothingSelected_TheMoveCursorShowsAnywhereOnTheCanvas()
+    {
+        Assert.True(_tool.ShowsMoveCursorAt(new CellPoint(5, 2)));
+        Assert.False(_tool.ShowsMoveCursorAt(new CellPoint(6, 2)));
+    }
+
+    [Fact]
+    public void OnALockedLayer_TheMoveCursorDoesntShow()
+    {
+        History.Execute(new SetLayerPropertiesCommand(Layer.Id, Layer.Properties with { IsLocked = true }));
+
+        Assert.False(_tool.ShowsMoveCursorAt(new CellPoint(0, 0)));
+    }
+
+    private static CellClip Clip(string text) => PastedText.ToClip(text)!;
 
     private void SelectTheFirstTwoCells() => Select("##····", "······", "······");
 

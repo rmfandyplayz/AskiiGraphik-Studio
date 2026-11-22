@@ -34,3 +34,5 @@ Step 1.8 adds Copy as Text and Export .txt. ARCHITECTURE §16 says text output f
 - The `\r\n` and trimming options in §16 aren't built yet. They need an export options UI, which comes with PNG and HTML export (M7).
 - Exporting a 4096 × 4096 canvas pauses briefly while it's flattened, as Save does.
 - Wide characters, once allowed, will need a rule here, because one glyph will cover two cells.
+
+Updated 2026-11-21: while anything is selected, Copy as Text copies only the selection's bounding rectangle, with unselected cells as spaces (ADR 0067).

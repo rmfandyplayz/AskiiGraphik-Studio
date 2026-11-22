@@ -30,3 +30,5 @@ Step 2b.4 adds File → Export as ANSI… and Edit → Copy as ANSI, so art in c
 - The 16 colours look as each terminal's own palette shows them, not as the canvas's VGA palette does. 24-bit colours look the same everywhere that supports them; macOS Terminal does from macOS 26.
 - Pasting Copy as ANSI at a shell prompt doesn't show colours: the shell takes it as typing. It's for apps and files that read the codes.
 - These `.ans` files are UTF-8, for terminals. Old ANSI art viewers expect CP437 and a SAUCE record, which M7's classic export adds, so both exports will use `.ans` and the menu names will have to tell them apart.
+
+Updated 2026-11-21: while anything is selected, Copy as ANSI copies only the selection's bounding rectangle, with unselected cells as plain spaces (ADR 0067).

@@ -40,3 +40,5 @@ The owner also asked for the Hand tool to be the tool at launch, with Esc as its
 - 4.6's Paste can float its cells the same way, from cells it brings rather than ones it takes.
 - The Tools toolbar has one more button. At 1920 logical pixels its text buttons need about 50 more than the toolbar gets, so it scrolls until the icon buttons arrive.
 - Moving just the outline, without the cells, is parked.
+
+Updated 2026-11-21: Paste floats its cells this way (ADR 0067); that step is named Paste rather than Move.

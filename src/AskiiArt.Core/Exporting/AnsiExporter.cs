@@ -3,8 +3,8 @@
 
 using System.Globalization;
 using System.Text;
-using AskiiArt.Core.Compositing;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Selection;
 
 namespace AskiiArt.Core.Exporting;
 
@@ -24,7 +24,6 @@ public sealed class AnsiExporter : IExporter
     private const string ControlSequenceIntroducer = "\u001b[";
     private const char SelectGraphicRenditionEnd = 'm';
     private const string ResetColors = ControlSequenceIntroducer + "0m";
-    private const char EmptyCellCharacter = ' ';
 
     // The codes for ANSI colours 0–7 and 8–15; a background's is 10 more than the text colour's.
     private const int FirstTextColorCode = 30;
@@ -46,27 +45,29 @@ public sealed class AnsiExporter : IExporter
     /// included.
     /// </summary>
     public byte[] Export(Document document) =>
-        Encoding.UTF8.GetBytes(Write(document, TextExporter.FileLineBreak, lineBreakAfterLastRow: true));
+        Encoding.UTF8.GetBytes(Write(document, selection: null, TextExporter.FileLineBreak, lineBreakAfterLastRow: true));
 
     /// <summary>
     /// The rows joined by <paramref name="lineBreak"/>, with none after the last: the form for the clipboard, as
-    /// <see cref="TextExporter.ToText"/> gives.
+    /// <see cref="TextExporter.ToText"/> gives, and with a <paramref name="selection"/>, only its bounds, the cells
+    /// that aren't selected as plain spaces.
     /// </summary>
-    public string ToText(Document document, string lineBreak) =>
-        Write(document, lineBreak, lineBreakAfterLastRow: false);
+    public string ToText(Document document, string lineBreak, SelectionMask? selection = null) =>
+        Write(document, selection, lineBreak, lineBreakAfterLastRow: false);
 
-    private string Write(Document document, string lineBreak, bool lineBreakAfterLastRow)
+    private string Write(Document document, SelectionMask? selection, string lineBreak,
+        bool lineBreakAfterLastRow)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentException.ThrowIfNullOrEmpty(lineBreak);
 
-        var size = document.CanvasSize;
-        var text = new StringBuilder((size.Width + lineBreak.Length) * size.Height);
-        var row = new Cell[size.Width];
+        var region = FlattenedRows.RegionOf(document, selection);
+        var text = new StringBuilder((region.Width + lineBreak.Length) * region.Height);
+        var row = new Cell[region.Width];
         Span<char> glyph = stackalloc char[2];
-        for (var y = 0; y < size.Height; y++)
+        for (var y = region.Top; y < region.Bottom; y++)
         {
-            Compositor.CompositeRegion(document.ActiveFrame, new CellRect(0, y, size.Width, 1), row);
+            FlattenedRows.Read(document, selection, region, y, row);
 
             // What the terminal is set to: each row starts from its own colours.
             var textColor = CellColor.Unset;
@@ -81,13 +82,13 @@ public sealed class AnsiExporter : IExporter
                 if (cell.HasGlyph)
                     text.Append(glyph[..cell.Glyph.EncodeToUtf16(glyph)]);
                 else
-                    text.Append(EmptyCellCharacter);
+                    text.Append(PlainTextRows.EmptyCellCharacter);
             }
 
             if (!textColor.IsUnset || !background.IsUnset)
                 text.Append(ResetColors);
 
-            if (y < size.Height - 1 || lineBreakAfterLastRow)
+            if (y < region.Bottom - 1 || lineBreakAfterLastRow)
                 text.Append(lineBreak);
         }
 
