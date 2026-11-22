@@ -1026,8 +1026,18 @@ internal sealed class CanvasControl : Control, ICustomHitTest
     {
         Key.LeftShift or Key.RightShift => ToolModifiers.Shift,
         Key.LeftAlt or Key.RightAlt => ToolModifiers.Alt,
+        _ when IsCommandKey(key) => ToolModifiers.Command,
         _ => null
     };
+
+    // Ctrl, or Cmd on macOS: the key the platform's shortcuts use.
+    private static bool IsCommandKey(Key key)
+    {
+        if (PlatformCommandModifiers().HasFlag(KeyModifiers.Meta))
+            return key is Key.LWin or Key.RWin;
+
+        return key is Key.LeftCtrl or Key.RightCtrl;
+    }
 
     // A modifier tools don't know (Ctrl on a Mac, the Windows key) makes it a different shortcut.
     private ToolKey? FindToolKey(KeyEventArgs e)

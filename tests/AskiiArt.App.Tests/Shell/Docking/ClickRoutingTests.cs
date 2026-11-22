@@ -589,7 +589,7 @@ public sealed class ClickRoutingTests : IDisposable
         _window.MouseUp(onName, MouseButton.Left);
         Pump();
 
-        var box = Assert.IsType<TextBox>(_window.FocusManager!.GetFocusedElement());
+        var box = Assert.IsType<LayerNameBox>(_window.FocusManager!.GetFocusedElement());
         box.Text = "Sky";
         _window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
         _window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
@@ -608,7 +608,7 @@ public sealed class ClickRoutingTests : IDisposable
 
         layers.RenameActiveLayer();
         Pump();
-        var box = Assert.IsType<TextBox>(_window.FocusManager!.GetFocusedElement());
+        var box = Assert.IsType<LayerNameBox>(_window.FocusManager!.GetFocusedElement());
         box.Text = "Sky";
         _window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
         _window.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
@@ -625,7 +625,7 @@ public sealed class ClickRoutingTests : IDisposable
             (LayersPanelViewModel)_window.GetVisualDescendants().OfType<LayersPanelView>().Single().DataContext!;
         layers.RenameActiveLayer();
         Pump();
-        var box = Assert.IsType<TextBox>(_window.FocusManager!.GetFocusedElement());
+        var box = Assert.IsType<LayerNameBox>(_window.FocusManager!.GetFocusedElement());
         box.Text = "Sky";
 
         var onCanvas = new Point(300, 400);

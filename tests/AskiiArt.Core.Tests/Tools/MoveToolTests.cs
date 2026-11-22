@@ -263,24 +263,120 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void AClick_MakesNoStep()
+    public void AClickOnASelectedCell_MakesNoStep()
     {
         SelectTheFirstTwoCells();
 
-        Drag((1, 1), (1, 1));
+        Drag((1, 0), (1, 0));
 
         Assert.Equal(1, History.UndoCount);
+        Assert.Equal(["##····", "······", "······"], Selected);
         Assert.False(_tool.IsMoving);
     }
 
     [Fact]
-    public void WithNothingSelected_ADragMovesTheWholeLayer_AndSelectsNothing()
+    public void AClickOnAnUnselectedCell_Deselects_WhenTheButtonComesUp()
+    {
+        SelectTheFirstTwoCells();
+
+        Press(4, 2);
+        Assert.Equal(["##····", "······", "······"], Selected);
+        Release(4, 2);
+
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(UndoStepNames.Deselect, History.GetStepNameKey(History.UndoCount - 1));
+        Assert.Equal(_art, TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void AClickOnAnUnselectedCell_EndsTheMove_WhereItsCellsAre()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+
+        Drag((5, 2), (5, 2));
+
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.False(_tool.IsMoving);
+        Assert.Equal(3, History.UndoCount);
+        History.Undo();
+        Assert.Equal(["··##··", "······", "······"], Selected);
+    }
+
+    [Fact]
+    public void ADragFromAnUnselectedCell_ThatComesBackToIt_IsntAClick()
+    {
+        SelectTheFirstTwoCells();
+
+        Press(4, 2);
+        Move(5, 2);
+        Move(4, 2);
+        Release(4, 2);
+
+        Assert.Equal(["##····", "······", "······"], Selected);
+        Assert.Equal(_art, TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void WithNothingSelected_ADragMovesTheWholeLayer_AndSelectsIt_InTheMoveStep()
     {
         Drag((0, 0), (1, 1));
 
         Assert.Equal(["······", "·abcde", "·ghijk"], TestCells.Read(Layer));
-        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(["······", "·#####", "·#####"], Selected);
         Assert.Equal(1, History.UndoCount);
+        History.Undo();
+        Assert.True(_session.Selection.IsEmpty);
+    }
+
+    [Fact]
+    public void Esc_AfterMovingTheWholeLayer_SelectsNothingAgain()
+    {
+        Drag((0, 0), (1, 1));
+
+        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+
+        Assert.Equal(_art, TestCells.Read(Layer));
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void Shift_KeepsADragToTheAxisThePointerHasGoneFurtherAlong()
+    {
+        SelectTheFirstTwoCells();
+
+        Drag((0, 0), (3, 1), ToolModifiers.Shift);
+
+        Assert.Equal(["··cabf", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void ShiftGoingDownOrUpDuringADrag_MovesTheCellsAtOnce()
+    {
+        SelectTheFirstTwoCells();
+        Press(0, 0);
+        Move(2, 1);
+
+        _tool.ModifiersChanged(ToolModifiers.Shift);
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+
+        _tool.ModifiersChanged(ToolModifiers.None);
+        Assert.Equal(["··cdef", "ghabkl", "mnopqr"], TestCells.Read(Layer));
+        Release(2, 1);
+        Assert.Equal(2, History.UndoCount);
+    }
+
+    [Fact]
+    public void Ctrl_KeepsADragToTheAxesAndDiagonals_FromWhereThatDragBegan()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (1, 0));
+
+        Drag((3, 0), (5, 1), ToolModifiers.Command);
+
+        Assert.Equal(["··cdef", "ghijkl", "mnoabr"], TestCells.Read(Layer));
     }
 
     [Fact]

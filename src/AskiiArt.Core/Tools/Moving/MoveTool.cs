@@ -4,6 +4,7 @@
 using AskiiArt.Core.Clipboard;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Selection;
 
 namespace AskiiArt.Core.Tools.Moving;
 
@@ -11,11 +12,15 @@ namespace AskiiArt.Core.Tools.Moving;
 /// The Move tool (ARCHITECTURE §10, ADR 0066). A drag that starts anywhere on the canvas moves the selected cells of
 /// the active layer, or the whole layer when nothing is selected, a cell at a time, and the selection goes with them.
 /// The arrow keys nudge them one cell, and Shift and an arrow ten. Alt+drag (Option+drag on a Mac) moves a copy.
+/// During a drag, Shift keeps the move to left and right or up and down, Ctrl (Cmd on a Mac) to those and diagonals that
+/// look like 45°, and Ctrl+Shift to those and diagonals of one column per row (ADR 0069). A click that stays in an
+/// unselected cell deselects when the button comes up, as Rectangle Select's does.
 /// <para>
 /// The moved cells float: over several drags and nudges they pass over other art without harming it, and the whole
 /// move is one undo step. Enter, another tool, another layer or any other change ends the move, and then the cells
 /// replace what they're on, though empty ones don't. Esc puts the cells back where they began. Cells moved off the
-/// canvas are kept while the move lasts, and lost when it ends. It does nothing on a locked or hidden layer.
+/// canvas are kept while the move lasts, and lost when it ends. Moving the whole layer selects it as it moves. It does
+/// nothing on a locked or hidden layer.
 /// </para>
 /// </summary>
 public sealed class MoveTool : ITool
@@ -27,11 +32,21 @@ public sealed class MoveTool : ITool
     private const int FarStep = 10;
 
     private readonly EditingSession _session;
+    private readonly Func<double> _cellWidthToHeight;
     private FloatingMove? _move;
 
     // Where the drag started, and how far the cells had moved then; no cell while no drag is under way.
     private CellPoint? _pressCell;
     private CellPoint _offsetAtPress;
+
+    // Where the pointer is during the drag, and the modifiers held, which keep the move to a few directions.
+    private CellPoint _pointerCell;
+    private ToolModifiers _modifiers;
+
+    // Whether the drag has left its first cell, which makes it a drag rather than a click, and whether that cell was
+    // outside the selection, where a click deselects.
+    private bool _hasLeftPressCell;
+    private bool _pressedOutsideSelection;
 
     /// <summary>Creates the tool for <paramref name="context"/>'s session.</summary>
     public MoveTool(ToolContext context)
@@ -39,6 +54,7 @@ public sealed class MoveTool : ITool
         ArgumentNullException.ThrowIfNull(context);
 
         _session = context.Session;
+        _cellWidthToHeight = context.CellWidthToHeight;
         _session.History.StateChanged += OnHistoryChanged;
         _session.ActiveLayerChanged += OnActiveLayerChanged;
     }
@@ -103,23 +119,51 @@ public sealed class MoveTool : ITool
 
         _pressCell = input.Cell;
         _offsetAtPress = _move.Offset;
+        _pointerCell = input.Cell;
+        _modifiers = input.Modifiers;
+        _hasLeftPressCell = false;
+        _pressedOutsideSelection = !_session.Selection.IsEmpty && !_session.Selection.Mask.Contains(input.Cell);
     }
 
-    /// <summary>During a drag, moves the cells as far as the pointer has come from where the drag started.</summary>
+    /// <summary>
+    /// During a drag, moves the cells as far as the pointer has come from where the drag started, kept to a few
+    /// directions while Shift or Ctrl is held.
+    /// </summary>
     public void PointerMoved(ToolPointerInput input)
     {
-        if (_pressCell is not { } press || _move is null)
+        if (_pressCell is not { } press)
             return;
 
-        _move.MoveTo(new CellPoint(_offsetAtPress.X + input.Cell.X - press.X,
-            _offsetAtPress.Y + input.Cell.Y - press.Y));
+        _pointerCell = input.Cell;
+        _modifiers = input.Modifiers;
+        _hasLeftPressCell |= input.Cell != press;
+        FollowPointer();
     }
 
-    /// <summary>Ends the drag. The move goes on, so the next drag or nudge carries it on.</summary>
+    /// <summary>
+    /// Ends the drag. The move goes on, so the next drag or nudge carries it on. A click that stayed in an unselected
+    /// cell ends the move and deselects instead.
+    /// </summary>
     public void PointerReleased(ToolPointerInput input)
     {
         PointerMoved(input);
+        var deselects = _pressCell is not null && !_hasLeftPressCell && _pressedOutsideSelection;
         _pressCell = null;
+        if (!deselects)
+            return;
+
+        EndMove();
+        SelectionEdits.Deselect(_session);
+    }
+
+    /// <summary>Shift or Ctrl going down or up during a drag changes where the cells are at once.</summary>
+    public void ModifiersChanged(ToolModifiers modifiers)
+    {
+        if (_pressCell is null)
+            return;
+
+        _modifiers = modifiers;
+        FollowPointer();
     }
 
     /// <summary>
@@ -176,6 +220,16 @@ public sealed class MoveTool : ITool
         EndMove();
         _session.History.StateChanged -= OnHistoryChanged;
         _session.ActiveLayerChanged -= OnActiveLayerChanged;
+    }
+
+    private void FollowPointer()
+    {
+        if (_pressCell is not { } press || _move is null)
+            return;
+
+        var distance = MoveConstraint.Apply(new CellPoint(_pointerCell.X - press.X, _pointerCell.Y - press.Y),
+            _modifiers, _cellWidthToHeight());
+        _move.MoveTo(new CellPoint(_offsetAtPress.X + distance.X, _offsetAtPress.Y + distance.Y));
     }
 
     private bool EndMove()

@@ -342,12 +342,12 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | The Move tool is on V, after Hand in the Tools menu and on the Tools toolbar. The button's label is "Move" | `Core/Tools/BuiltInToolGroups.cs`, `Strings.resx` (`ToolMove`) | 4.5 |
 | Over the cells a drag would move (the selected ones, or anywhere on the canvas when nothing is selected) the pointer is the pan cursor's shape: the four-way arrows on Windows and Linux, the open hand on macOS. Elsewhere, and on a locked or hidden layer, it's the normal arrow | `MoveTool.ShowsMoveCursorAt`, `Canvas/CanvasControl.cs` (`UpdateCursor`), `Canvas/PanCursor.cs` | 4.6 |
 | Shift+arrow nudges by 10 cells. During a drag the arrow keys do nothing | `Core/Tools/Moving/MoveTool.cs` (`FarStep`), `Canvas/ToolKeymap.cs` | 4.5 |
-| The step is called Move, for a copy too. A move that ends where it began, or a click, makes no step | `Strings.resx` (`UndoStepMove`), `Core/Tools/Moving/FloatingMove.cs` | 4.5 |
+| The step is called Move, for a copy too. A move that ends where it began, or a click on a selected cell, makes no step. A click on an unselected cell is a Deselect step | `Strings.resx` (`UndoStepMove`), `Core/Tools/Moving/FloatingMove.cs`, `MoveTool.cs` | 4.5, 4.8 |
 | Alt at the press copies, and always starts a new move, so each Alt-drag during a move leaves another copy behind | `MoveTool.cs` | 4.5 |
 | Cells moved off the canvas come back if they're moved back on before the move ends, and are lost when it ends. The outline is cut to the canvas as it moves | `FloatingMove.cs`, `Core/Selection/SelectionMask.cs` (`Moved`) | 4.5 |
 | A save doesn't end a move. Enter, Esc, another tool, another active layer, an undo or any other edit or selection change does | `MoveTool.cs` | 4.5 |
 | On a locked or hidden layer the Move tool does nothing, and the arrow keys aren't used | `MoveTool.cs` | 4.5 |
-| Not built: moving only the outline without the cells, and Shift during a drag to keep it straight | | 4.5 |
+| Not built: moving only the outline without the cells | | 4.5, 4.8 |
 | The Tools toolbar's text buttons now need about 590 pixels, about 50 more than it gets in a window 1920 wide, so there it scrolls until the icon buttons arrive | `Shell/Toolbars/ToolbarLayout.cs` | 4.5 |
 
 ### Cut, Copy and Paste (step 4.6, ADR 0067)
@@ -372,6 +372,16 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Tips one or two cells tall (every cell an edge) paint as before, with no shaping, so the smallest tips don't get lighter | `Core/Tools/Footprints/BrushFalloff.cs` (`HasMiddle`) | 4.7 |
 | The cell or cells under the tip's middle paint at the weight at their middle, so a small fully soft tip's middle still reaches the full intensity in one stroke | `Core/Tools/Footprints/BrushFalloff.cs` (`HoldsMiddle`) | 4.7 |
 | A soft tip's other cells take their darkness from the tip's average weight over the cell, not the weight at its middle, so a fully soft 3-cell square now paints the middles of its sides darker and its corners lighter, where all eight edge cells were alike | `Core/Tools/RampStrokes/RampStroke.cs` | 4.7 |
+
+### Move tool follow-ups (step 4.8, ADR 0069)
+
+| Choice | Where | Step |
+|---|---|---|
+| Which way Shift keeps a drag, and which direction Ctrl and Ctrl+Shift pick, is judged by how the drag looks on screen, not by counting cells. A direction takes the angles nearer it than the next one, so with Ctrl the diagonal takes drags between 22.5° and 67.5° | `Core/Tools/Moving/MoveConstraint.cs` | 4.8 |
+| On a diagonal that looks like 45°, rows are rounded first and the columns follow, so with cells half as wide as they're tall the cells move two columns per row exactly | `MoveConstraint.cs` | 4.8 |
+| Alt+click on an unselected cell deselects too. On a locked or hidden layer a click does nothing, as the rest of the Move tool doesn't | `MoveTool.cs` | 4.8 |
+| Dragging the whole layer selects it even when the layer is empty, so the outline shows where it went | `FloatingMove.cs` | 4.8 |
+| The rename box keeps all four arrow keys, with Shift, Ctrl or Alt too, so none of them reaches the list | `Layers/LayerNameBox.cs` | 4.8 |
 
 ## Ideas to revisit
 

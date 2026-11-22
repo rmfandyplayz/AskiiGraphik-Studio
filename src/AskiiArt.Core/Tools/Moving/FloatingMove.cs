@@ -11,7 +11,8 @@ namespace AskiiArt.Core.Tools.Moving;
 
 /// <summary>
 /// One move of the Move tool (ADR 0066): the selected cells of the active layer, or the whole layer when nothing is
-/// selected, taken from where they were when the move began. The document always shows the move. Each new place takes
+/// selected, taken from where they were when the move began. The selection moves with them, so moving the whole layer
+/// selects it, as Select All would, as part of the step (ADR 0069). The document always shows the move. Each new place takes
 /// back the step the last one made and makes a new one from the cells as they were before the move, so the cells pass
 /// over other art without harming it until the move ends, and the whole move is one undo step. A paste floats the same
 /// way, with cells it brings rather than ones it takes, and makes its step at once (ADR 0067).
@@ -20,11 +21,10 @@ internal sealed class FloatingMove
 {
     private readonly EditingSession _session;
 
-    // The cells that move, where they were; the selection moves with them unless nothing was selected. A paste's
-    // shape is the clip's, so it's placed at the paste's corner, onto the canvas.
+    // The cells that move, where they were, which the selection becomes wherever they go: the whole canvas when
+    // nothing was selected. A paste's shape is the clip's, so it's placed at the paste's corner, onto the canvas.
     private readonly SelectionMask _mask;
     private readonly CellPoint _maskCorner;
-    private readonly bool _movesSelection;
     private readonly bool _isPaste;
 
     // The cells with something in them, where they were. Empty ones don't cover what they land on.
@@ -43,8 +43,7 @@ internal sealed class FloatingMove
         _session = session;
         IsCopy = isCopy;
         LayerId = session.ActiveLayer.Id;
-        _movesSelection = !session.Selection.IsEmpty;
-        _mask = _movesSelection ? session.Selection.Mask : SelectionMask.All(session.Document.CanvasSize);
+        _mask = session.Selection.IsEmpty ? SelectionMask.All(session.Document.CanvasSize) : session.Selection.Mask;
         _cells = TakeCells(session.ActiveLayer, _mask);
         _historyAsLeft = HistoryNow();
     }
@@ -55,7 +54,6 @@ internal sealed class FloatingMove
         _isPaste = true;
         IsCopy = true;
         LayerId = session.ActiveLayer.Id;
-        _movesSelection = true;
         var fitted = clip.FittedTo(session.Document.CharacterSet, session.Document.ColorMode);
         _mask = fitted.Shape;
         _maskCorner = topLeft;
@@ -137,9 +135,7 @@ internal sealed class FloatingMove
 
     private void ShowStep()
     {
-        if (BuildStep(Offset) is not { } step)
-            return;
-
+        var step = BuildStep(Offset);
         _session.History.Execute(step);
         _step = step;
     }
@@ -153,21 +149,17 @@ internal sealed class FloatingMove
         _step = null;
     }
 
-    private CompositeCommand? BuildStep(CellPoint offset)
+    private CompositeCommand BuildStep(CellPoint offset)
     {
         var name = _isPaste ? UndoStepNames.Paste : UndoStepNames.Move;
         List<IDocumentCommand> commands = [];
         if (_cells.Length > 0)
             commands.Add(new MoveCellsCommand(LayerId, _cells, Landings(offset), IsCopy, name));
 
-        if (_movesSelection)
-        {
-            var corner = new CellPoint(_maskCorner.X + offset.X, _maskCorner.Y + offset.Y);
-            var selection = _mask.MovedOnto(_session.Document.CanvasSize, corner);
-            commands.Add(new SetSelectionCommand(_session.Selection, selection, name));
-        }
-
-        return commands.Count == 0 ? null : new CompositeCommand(commands, name);
+        var corner = new CellPoint(_maskCorner.X + offset.X, _maskCorner.Y + offset.Y);
+        var selection = _mask.MovedOnto(_session.Document.CanvasSize, corner);
+        commands.Add(new SetSelectionCommand(_session.Selection, selection, name));
+        return new CompositeCommand(commands, name);
     }
 
     // Where each cell lands, as a cell index, or -1 off the canvas.

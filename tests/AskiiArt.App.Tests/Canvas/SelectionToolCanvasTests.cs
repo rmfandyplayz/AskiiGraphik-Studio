@@ -5,6 +5,7 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Selection;
+using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
 using Avalonia;
 using Avalonia.Controls;
@@ -79,6 +80,26 @@ public sealed class SelectionToolCanvasTests : IDisposable
 
         _window.MouseUp(CentreOf(6, 6), MouseButton.Left);
         Assert.Equal(Rectangle(5, 5, 2, 2), _canvas.Session.Selection.Mask);
+    }
+
+    // A drag with nothing selected moves the whole layer and selects it, so the selection shows where it went. On
+    // screen the drag goes down much further than across, so Ctrl keeps it straight down.
+    [AvaloniaFact]
+    public void CtrlPressedAndLetGoDuringAMoveToolDrag_KeepsTheMoveToADirectionAtOnce()
+    {
+        Canvas.SelectTool(MoveTool.Id);
+        Dispatcher.UIThread.RunJobs();
+        var (key, physicalKey, modifier) = CommandKey();
+        _window.MouseDown(CentreOf(5, 5), MouseButton.Left);
+        _window.MouseMove(CentreOf(6, 9));
+        Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
+
+        _window.KeyPress(key, modifier, physicalKey, null);
+        Assert.Equal(Rectangle(0, 4, 20, 6), _canvas.Session.Selection.Mask);
+
+        _window.KeyRelease(key, RawInputModifiers.None, physicalKey, null);
+        Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
+        _window.MouseUp(CentreOf(6, 9), MouseButton.Left);
     }
 
     [AvaloniaFact]
@@ -174,6 +195,15 @@ public sealed class SelectionToolCanvasTests : IDisposable
         _window.MouseDown(from, MouseButton.Left, modifiers);
         _window.MouseMove(to, modifiers);
         _window.MouseUp(to, MouseButton.Left, modifiers);
+    }
+
+    // Ctrl, or Cmd where the platform's shortcuts use it.
+    private static (Key Key, PhysicalKey PhysicalKey, RawInputModifiers Modifier) CommandKey()
+    {
+        if (Application.Current!.PlatformSettings!.HotkeyConfiguration.CommandModifiers.HasFlag(KeyModifiers.Meta))
+            return (Key.LWin, PhysicalKey.MetaLeft, RawInputModifiers.Meta);
+
+        return (Key.LeftCtrl, PhysicalKey.ControlLeft, RawInputModifiers.Control);
     }
 
     private void Click(Point point)

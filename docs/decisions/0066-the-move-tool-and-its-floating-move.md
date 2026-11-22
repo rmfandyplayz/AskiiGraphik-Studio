@@ -42,3 +42,5 @@ The owner also asked for the Hand tool to be the tool at launch, with Esc as its
 - Moving just the outline, without the cells, is parked.
 
 Updated 2026-11-21: Paste floats its cells this way (ADR 0067); that step is named Paste rather than Move.
+
+Updated 2026-11-22: since 4.8 (ADR 0069), every move sets the selection in its step, so moving the whole layer selects it; a click on an unselected cell deselects; and Shift, Ctrl and Ctrl+Shift keep a drag to a few directions.

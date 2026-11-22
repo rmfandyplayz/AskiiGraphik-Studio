@@ -3,6 +3,8 @@
 
 # Step 4.7: The PATS brush, manual test
 
+**Voided 2026-11-22:** the owner skipped these tests after a first look. Faint, soft strokes kept backticks along their tops, with a gap below them. Step 4.10 revisits the brush.
+
 **Build:** the commit that adds this file
 **Test on:** Windows (Linux is covered by CI only; no test needs macOS, since glyphs are measured off-screen the same way on every platform)
 **Time needed:** about 25 min

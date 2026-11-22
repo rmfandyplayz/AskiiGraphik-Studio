@@ -45,9 +45,9 @@
                        Text="{Binding Name}"
                        Classes.hidden="{Binding !IsShown}"
                        IsVisible="{Binding !IsRenaming}" />
-            <TextBox Grid.Column="3"
-                     Text="{Binding NameBeingEdited}"
-                     IsVisible="{Binding IsRenaming}" />
+            <layers:LayerNameBox Grid.Column="3"
+                                 Text="{Binding NameBeingEdited}"
+                                 IsVisible="{Binding IsRenaming}" />
           </Grid>
         </DataTemplate>
       </ListBox.ItemTemplate>

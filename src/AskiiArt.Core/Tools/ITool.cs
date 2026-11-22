@@ -64,8 +64,9 @@ public interface ITool
     bool KeyPressed(ToolKey key, ToolModifiers modifiers);
 
     /// <summary>
-    /// Shift or Alt went down or up, so <paramref name="modifiers"/> are held now, though the pointer hasn't moved. A
-    /// tool whose gesture follows them, such as a selection drag that Shift makes square, uses it.
+    /// Shift, Alt or Ctrl (Cmd on macOS) went down or up, so <paramref name="modifiers"/> are held now, though the
+    /// pointer hasn't moved. A tool whose gesture follows them, such as a selection drag that Shift makes square or a
+    /// move that Shift keeps to an axis, uses it.
     /// </summary>
     void ModifiersChanged(ToolModifiers modifiers)
     {
