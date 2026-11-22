@@ -45,7 +45,7 @@ ADRs and ARCHITECTURE.md must always describe how the code works **now**. A stal
 - **Status:** every ADR starts with `Status: Accepted`, `Status: Superseded by NNNN` or `Status: Deprecated`. Only `Accepted` ADRs describe current practice.
 - **When a decision changes,** write a new ADR, set the old one to `Superseded by NNNN`, and add a one-line pointer at the top of the old ADR. Don't delete old ADRs; the history of *why* things changed is useful.
 - **Small corrections** that don't change the decision (a renamed type, an updated number) can be edited in place, with a dated `Updated YYYY-MM-DD: ...` line at the bottom.
-- **Same-step sync:** any step that changes, replaces or invalidates a decision updates the affected ADRs, ARCHITECTURE.md (with the owner's OK) and CLAUDE.md in that same step. Never leave the sync for later. Whenever you ask for that OK, or tell the owner ARCHITECTURE.md changed, list what you added, changed and removed, section by section, in plain words.
+- **Same-step sync:** any step that changes, replaces or invalidates a decision updates the affected ADRs, ARCHITECTURE.md and CLAUDE.md in that same step. Never leave the sync for later. Whenever ARCHITECTURE.md changed, the step summary lists what you added, changed and removed, section by section, in plain words. Don't ask for an OK on it: the owner reads the list and says if something looks wrong, and silence means it's fine.
 - **Index:** `docs/decisions/README.md` lists every ADR with its title and status. Keep it current.
 - **Conflicts:** if existing code contradicts an `Accepted` ADR or ARCHITECTURE.md, or you notice a doc is outdated, don't quietly follow either one. Point out the conflict in your summary and ask which is correct.
 - **Step-end check:** before marking a step `[~]`, confirm that nothing you changed made an ADR or architecture section untrue.
@@ -139,4 +139,4 @@ A JetBrains Rider MCP server may be connected, and you can use it when it helps.
 
 - Implement reserved features (ARCHITECTURE §18) beyond their hooks.
 - Use anything from the original ASCII Art Studio: no code, icons, text or name.
-- Change ARCHITECTURE.md or the roadmap's scope or order without the owner's OK.
+- Change the roadmap's scope or order without the owner's OK. (ARCHITECTURE.md changes that record a step's decisions need no separate OK, as long as the summary lists them.)
