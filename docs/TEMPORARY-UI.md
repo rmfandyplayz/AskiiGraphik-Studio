@@ -352,6 +352,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 The owner's ideas, parked until the stage they belong to.
 
+- **Custom cursors** (raised after 4.5's testing; **for M8**): the owner wants cursors of their own that show what each tool will do. Avalonia can make a cursor from a bitmap on every platform. Until then the tools use the system's: Avalonia has no move cursor on a Mac (its four-way arrows are the crosshair there), and on Windows the four-way arrows are also the Hand tool's pan cursor.
 - **Esc as a default-tool key** (raised in 4.5's planning; **for M8**): Esc picks the Hand tool today. It could become a "default tool" setting, so users bind it to the tool they please.
 - **Tool groups by keybind** (raised in 4.3's planning): the owner may rework tool groups so that each tool has a key of its own instead of the number keys choosing within a group. W for the Magic Wand is the first such key (ADR 0063).
 - **Grow and Shrink dialogs** (raised in 4.3's planning): choosing how many cells to grow or shrink by, and perhaps whether Shrink eats into the canvas's edges.
