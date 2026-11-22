@@ -725,6 +725,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _altClickMenuGuard.OnKeyUp(this, e.Key);
         if (ModifierOf(e.Key) is { } released && Tool is { } tool)
             tool.ModifiersChanged(ToToolModifiers(e.KeyModifiers) & ~released);
+        if (ArrowOf(e.Key) is { } arrow && Tool is { } letGo)
+            letGo.ArrowReleased(arrow);
         if (e.Key != Key.Space || !_isSpaceHeld)
             return;
 
@@ -1027,6 +1029,16 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         Key.LeftShift or Key.RightShift => ToolModifiers.Shift,
         Key.LeftAlt or Key.RightAlt => ToolModifiers.Alt,
         _ when IsCommandKey(key) => ToolModifiers.Command,
+        _ => null
+    };
+
+    // An arrow key as tools know it, whatever modifiers are held, or null for any other key.
+    private static ToolKey? ArrowOf(Key key) => key switch
+    {
+        Key.Left => ToolKey.Left,
+        Key.Right => ToolKey.Right,
+        Key.Up => ToolKey.Up,
+        Key.Down => ToolKey.Down,
         _ => null
     };
 

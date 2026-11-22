@@ -31,3 +31,5 @@ Step 4.6 adds Cut, Copy and Paste to the Edit menu. ARCHITECTURE §10 left them 
 - Copying between two open windows of the app, or between documents, keeps colours and shape.
 - A clip's JSON grows with the selection: the compressed cells plus a third for Base64.
 - Paste at the pointer needs the pointer over the canvas; Edit → Paste from the menu bar always uses the fallback.
+
+Updated 2026-11-22: since ADR 0070, a paste is a Paste step, and each later drag or run of arrow presses is a Move step of its own. Esc no longer takes a paste away; undoing the Paste step does.

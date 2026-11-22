@@ -64,6 +64,15 @@ public interface ITool
     bool KeyPressed(ToolKey key, ToolModifiers modifiers);
 
     /// <summary>
+    /// An arrow key went up, reported as <see cref="ToolKey.Left"/>, <see cref="ToolKey.Right"/>,
+    /// <see cref="ToolKey.Up"/> or <see cref="ToolKey.Down"/> whatever modifiers are held. A tool that groups presses by
+    /// how they're held, as the Move tool's arrow presses are (ADR 0070), uses it.
+    /// </summary>
+    void ArrowReleased(ToolKey arrow)
+    {
+    }
+
+    /// <summary>
     /// Shift, Alt or Ctrl (Cmd on macOS) went down or up, so <paramref name="modifiers"/> are held now, though the
     /// pointer hasn't moved. A tool whose gesture follows them, such as a selection drag that Shift makes square or a
     /// move that Shift keeps to an axis, uses it.

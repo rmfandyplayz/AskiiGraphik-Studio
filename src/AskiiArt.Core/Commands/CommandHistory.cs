@@ -60,6 +60,9 @@ public sealed class CommandHistory
     /// <summary>The number of steps in the history, undoable and redoable together.</summary>
     public int StepCount => _entries.Count;
 
+    /// <summary>The command of the newest step that's applied, the one an undo would take back, or null when none is.</summary>
+    public IDocumentCommand? NewestStep => _position > 0 ? _entries[_position - 1].Command : null;
+
     /// <summary>True when there's a step to undo.</summary>
     public bool CanUndo => UndoCount > 0;
 

@@ -10,29 +10,35 @@ using AskiiArt.Core.Selection;
 namespace AskiiArt.Core.Tools.Moving;
 
 /// <summary>
-/// One move of the Move tool (ADR 0066): the selected cells of the active layer, or the whole layer when nothing is
-/// selected, taken from where they were when the move began. The selection moves with them, so moving the whole layer
-/// selects it, as Select All would, as part of the step (ADR 0069). The document always shows the move. Each new place takes
-/// back the step the last one made and makes a new one from the cells as they were before the move, so the cells pass
-/// over other art without harming it until the move ends, and the whole move is one undo step. A paste floats the same
-/// way, with cells it brings rather than ones it takes, and makes its step at once (ADR 0067).
+/// One floating move of the Move tool (ADRs 0066, 0070): the selected cells of the active layer, or the whole layer when
+/// nothing is selected, taken from where they were when the move began. Each gesture, such as a drag or a run of arrow
+/// presses, is a Move step of its own, from where the gesture found the cells to where it leaves them. The cells float:
+/// each step puts back what lay under them before they go on, so while the move lasts, also across undos and redos of
+/// its own steps, they pass over other art without harming it. The selection moves with them, so moving the whole layer
+/// selects it (ADR 0069). A paste floats the same way, with cells it brings, from a Paste step of its own (ADR 0067).
 /// </summary>
 internal sealed class FloatingMove
 {
     private readonly EditingSession _session;
+    private readonly bool _isPaste;
 
     // The cells that move, where they were, which the selection becomes wherever they go: the whole canvas when
     // nothing was selected. A paste's shape is the clip's, so it's placed at the paste's corner, onto the canvas.
     private readonly SelectionMask _mask;
     private readonly CellPoint _maskCorner;
-    private readonly bool _isPaste;
 
     // The cells with something in them, where they were. Empty ones don't cover what they land on.
     private readonly MovingCell[] _cells;
 
-    // The step showing the move, or null while the cells are where they began.
-    private IDocumentCommand? _step;
-    private (int UndoCount, int StepCount) _historyAsLeft;
+    // Where the cells are, and what lies under them there, after each of the move's steps, oldest first. A move's first
+    // is where they began, after no step of its own; a paste's is after its Paste step. Undos and redos go back and
+    // forth among them.
+    private readonly List<FloatState> _states = [];
+    private int _stateIndex;
+
+    // The step of the gesture under way, once it has moved the cells, and what it leaves under them.
+    private IDocumentCommand? _gestureStep;
+    private Cell[] _gestureCovered = [];
 
     /// <summary>
     /// Takes the selected cells of <paramref name="session"/>'s active layer, or all of its cells when nothing is
@@ -41,82 +47,146 @@ internal sealed class FloatingMove
     public FloatingMove(EditingSession session, bool isCopy)
     {
         _session = session;
-        IsCopy = isCopy;
         LayerId = session.ActiveLayer.Id;
         _mask = session.Selection.IsEmpty ? SelectionMask.All(session.Document.CanvasSize) : session.Selection.Mask;
         _cells = TakeCells(session.ActiveLayer, _mask);
-        _historyAsLeft = HistoryNow();
+
+        // A cell that moves leaves an empty one where it was; under a copied cell lies the cell itself.
+        var under = new Cell[_cells.Length];
+        if (isCopy)
+        {
+            for (var index = 0; index < _cells.Length; index++)
+                under[index] = _cells[index].Cell;
+        }
+
+        _states.Add(new FloatState(session.History.NewestStep, default, under));
     }
 
     private FloatingMove(EditingSession session, CellClip clip, CellPoint topLeft)
     {
         _session = session;
         _isPaste = true;
-        IsCopy = true;
         LayerId = session.ActiveLayer.Id;
         var fitted = clip.FittedTo(session.Document.CharacterSet, session.Document.ColorMode);
         _mask = fitted.Shape;
         _maskCorner = topLeft;
         _cells = BringCells(fitted, topLeft);
-        _historyAsLeft = HistoryNow();
     }
 
     /// <summary>
     /// Pastes <paramref name="clip"/> with its top-left corner at <paramref name="topLeft"/>: its cells, fitted to
-    /// the document, float on the active layer with its shape selected, as one Paste step from the start. Cells off
-    /// the canvas are kept while the paste floats, as a move's are.
+    /// the document, float on the active layer with its shape selected, as a Paste step. Cells off the canvas are kept
+    /// while the paste floats, as a move's are.
     /// </summary>
     public static FloatingMove Paste(EditingSession session, CellClip clip, CellPoint topLeft)
     {
         var paste = new FloatingMove(session, clip, topLeft);
-        paste.Change(paste.ShowStep);
+        paste.Change(() =>
+        {
+            var (step, covered) = paste.BuildStep(null, default, UndoStepNames.Paste);
+            session.History.Execute(step);
+            paste._states.Add(new FloatState(step, default, covered));
+        });
         return paste;
     }
 
     /// <summary>The layer whose cells move.</summary>
     public Guid LayerId { get; }
 
-    /// <summary>True when the cells are also left where they were.</summary>
-    public bool IsCopy { get; }
-
     /// <summary>How far the cells are from where they began, in cells.</summary>
     public CellPoint Offset { get; private set; }
 
-    /// <summary>True when the move has made a step: the cells are somewhere other than where they began.</summary>
-    public bool HasStep => _step is not null;
+    /// <summary>
+    /// True when the document shows a step of the move's own: the cells are somewhere other than where they began, or
+    /// they're a paste.
+    /// </summary>
+    public bool HasStep => _isPaste || _stateIndex > 0 || _gestureStep is not null;
+
+    /// <summary>True while a gesture is under way, whose step <see cref="MoveTo"/> changes.</summary>
+    public bool IsInGesture { get; private set; }
 
     /// <summary>True while the move is changing the history itself.</summary>
     public bool IsChanging { get; private set; }
 
-    /// <summary>
-    /// True when the history is as the move left it, so nothing else has changed the document or the selection since.
-    /// A save doesn't count.
-    /// </summary>
-    public bool IsHistoryAsLeft => HistoryNow() == _historyAsLeft;
+    private FloatState Current => _states[_stateIndex];
+
+    /// <summary>Starts a gesture from where the cells are. Its moves make one step.</summary>
+    public void BeginGesture()
+    {
+        EndGesture();
+        IsInGesture = true;
+    }
 
     /// <summary>
-    /// Shows the cells <paramref name="offset"/> from where they began. Cells that go off the canvas aren't written,
-    /// but come back if a later offset brings them back on.
+    /// During a gesture, shows the cells <paramref name="offset"/> from where they began, as the gesture's step. Cells
+    /// that go off the canvas aren't written, but come back if a later offset brings them back on. Back where the
+    /// gesture began, it has no step.
     /// </summary>
     public void MoveTo(CellPoint offset)
     {
-        if (offset == Offset)
+        if (!IsInGesture || offset == Offset)
             return;
 
         Change(() =>
         {
-            TakeBackStep();
+            TakeBackGestureStep();
             Offset = offset;
-            if (offset != default || _isPaste)
-                ShowStep();
+            if (offset == Current.Offset)
+                return;
+
+            var (step, covered) = BuildStep(Current, offset, UndoStepNames.Move);
+            _session.History.Execute(step);
+            _gestureStep = step;
+            _gestureCovered = covered;
         });
     }
 
-    /// <summary>Puts the cells back where they began, leaving no step. A paste goes altogether.</summary>
-    public void Cancel()
+    /// <summary>Ends the gesture under way, keeping its step.</summary>
+    public void EndGesture()
     {
-        Change(TakeBackStep);
-        Offset = default;
+        IsInGesture = false;
+        if (_gestureStep is null)
+            return;
+
+        // Steps undone and then replaced by this one can't come back.
+        _states.RemoveRange(_stateIndex + 1, _states.Count - _stateIndex - 1);
+        _states.Add(new FloatState(_gestureStep, Offset, _gestureCovered));
+        _stateIndex = _states.Count - 1;
+        _gestureStep = null;
+        _gestureCovered = [];
+    }
+
+    /// <summary>Ends the gesture under way, putting the cells back where it found them, and leaving no step.</summary>
+    public void CancelGesture()
+    {
+        IsInGesture = false;
+        Change(TakeBackGestureStep);
+        Offset = Current.Offset;
+    }
+
+    /// <summary>
+    /// After a change to the history that the move didn't make, carries the move on where the history has put its
+    /// cells, as after an undo or a redo of one of its own steps. A gesture under way ends, keeping its step, unless
+    /// the change left its step as it was, as a save does.
+    /// </summary>
+    /// <returns>
+    /// False when the history is at none of the move's steps, so the move is over: something else changed the document
+    /// or the selection, or the step before the move began was undone.
+    /// </returns>
+    public bool FollowHistory()
+    {
+        var newest = _session.History.NewestStep;
+        if (ReferenceEquals(newest, _gestureStep ?? Current.Step))
+            return true;
+
+        EndGesture();
+        var index = _states.FindLastIndex(state => ReferenceEquals(state.Step, newest));
+        if (index < 0)
+            return false;
+
+        _stateIndex = index;
+        Offset = Current.Offset;
+        return true;
     }
 
     private void Change(Action change)
@@ -129,37 +199,36 @@ internal sealed class FloatingMove
         finally
         {
             IsChanging = false;
-            _historyAsLeft = HistoryNow();
         }
     }
 
-    private void ShowStep()
+    private void TakeBackGestureStep()
     {
-        var step = BuildStep(Offset);
-        _session.History.Execute(step);
-        _step = step;
-    }
-
-    private void TakeBackStep()
-    {
-        if (_step is null)
+        if (_gestureStep is null)
             return;
 
         _session.History.CancelNewestStep();
-        _step = null;
+        _gestureStep = null;
+        _gestureCovered = [];
     }
 
-    private CompositeCommand BuildStep(CellPoint offset)
+    // A step that takes the cells from where they are in from, or from off the layer, to offset, with the selection.
+    private (CompositeCommand Step, Cell[] Covered) BuildStep(FloatState? from, CellPoint offset, string name)
     {
-        var name = _isPaste ? UndoStepNames.Paste : UndoStepNames.Move;
         List<IDocumentCommand> commands = [];
+        Cell[] covered = [];
         if (_cells.Length > 0)
-            commands.Add(new MoveCellsCommand(LayerId, _cells, Landings(offset), IsCopy, name));
+        {
+            var liftedFrom = from is null ? null : Landings(from.Offset);
+            var cells = new MoveCellsCommand(LayerId, _cells, liftedFrom, from?.Under, Landings(offset), name);
+            commands.Add(cells);
+            covered = cells.Covered;
+        }
 
         var corner = new CellPoint(_maskCorner.X + offset.X, _maskCorner.Y + offset.Y);
         var selection = _mask.MovedOnto(_session.Document.CanvasSize, corner);
         commands.Add(new SetSelectionCommand(_session.Selection, selection, name));
-        return new CompositeCommand(commands, name);
+        return (new CompositeCommand(commands, name), covered);
     }
 
     // Where each cell lands, as a cell index, or -1 off the canvas.
@@ -176,8 +245,6 @@ internal sealed class FloatingMove
 
         return landings;
     }
-
-    private (int UndoCount, int StepCount) HistoryNow() => (_session.History.UndoCount, _session.History.StepCount);
 
     private static MovingCell[] TakeCells(Layer layer, SelectionMask mask)
     {
@@ -221,4 +288,8 @@ internal sealed class FloatingMove
 
         return [.. cells];
     }
+
+    // Where the cells are after a step, and what lies under each of them there. The step is the history's newest
+    // applied one while the document is in this state: one of the move's own, or the one before the move began.
+    private sealed record FloatState(IDocumentCommand? Step, CellPoint Offset, Cell[] Under);
 }

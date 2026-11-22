@@ -278,25 +278,30 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Esc_WithTheMoveTool_PutsAMoveBack_AndTheNextEscSwitchesToTheHandTool()
+    public void Esc_WithTheMoveTool_PutsADragBack_AndOtherwiseSwitchesToTheHandTool_LeavingTheCellsMoved()
     {
         Canvas.SelectTool(MoveTool.Id);
+        Dispatcher.UIThread.RunJobs();
         SelectionEdits.Select(_canvas.Session,
-            SelectionMask.Rectangle(_canvas.Document.CanvasSize, new CellRect(0, 0, 2, 1)),
+            SelectionMask.Rectangle(_canvas.Document.CanvasSize, new CellRect(0, 0, 1, 1)),
             UndoStepNames.RectangleSelect);
         var cells = new CellEditBuilder(_canvas.Document, Layer.Id);
         cells.Set(new CellPoint(0, 0), Cell.FromGlyph(new Rune('a')));
         _canvas.Session.History.Execute(cells.Build()!);
         var move = Assert.IsType<MoveTool>(Canvas.ActiveTool);
         move.KeyPressed(ToolKey.Right, ToolModifiers.None);
-        Assert.True(Layer.GetCell(new CellPoint(0, 0)).IsEmpty);
 
+        _window.MouseDown(CentreOf(new CellPoint(1, 0)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(3, 0)));
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(3, 0)).Glyph);
         PressEscape();
-        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(0, 0)).Glyph);
+        _window.MouseUp(CentreOf(new CellPoint(3, 0)), MouseButton.Left);
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(1, 0)).Glyph);
         Assert.Same(move, Canvas.ActiveTool);
 
         PressEscape();
         Assert.IsType<HandTool>(Canvas.ActiveTool);
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(1, 0)).Glyph);
     }
 
     [AvaloniaFact]
@@ -454,7 +459,7 @@ public sealed class ToolSwitchingTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void DraggingAndNudgingWithTheMoveTool_MovesTheSelectedCellsThroughTheCanvas_AsOneStep()
+    public void DraggingAndNudgingWithTheMoveTool_MovesTheSelectedCellsThroughTheCanvas_AStepEach()
     {
         Canvas.SelectTool(MoveTool.Id);
         Dispatcher.UIThread.RunJobs();
@@ -477,7 +482,29 @@ public sealed class ToolSwitchingTests : IDisposable
         Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(13, 1)).Glyph);
         Assert.Equal(new Rune('b'), Layer.GetCell(new CellPoint(3, 1)).Glyph);
         Assert.True(_canvas.Session.Selection.Mask.Contains(new CellPoint(13, 1)));
-        Assert.Equal(stepsBefore + 1, history.UndoCount);
+        Assert.Equal(stepsBefore + 2, history.UndoCount);
+    }
+
+    [AvaloniaFact]
+    public void LettingGoOfAnArrow_ReachesTheMoveTool_SoAPressAfterAPauseIsANewStep()
+    {
+        Canvas.SelectTool(MoveTool.Id);
+        Dispatcher.UIThread.RunJobs();
+        var history = _canvas.Session.History;
+        var cells = new CellEditBuilder(_canvas.Document, Layer.Id);
+        cells.Set(new CellPoint(1, 1), Cell.FromGlyph(new Rune('a')));
+        history.Execute(cells.Build()!);
+        var stepsBefore = history.UndoCount;
+
+        // The Move tool reads the time from the system clock in the App, so the pause has to be a real one.
+        _window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        _window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        Thread.Sleep(TimeSpan.FromSeconds(0.45));
+        _window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        _window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+
+        Assert.Equal(new Rune('a'), Layer.GetCell(new CellPoint(3, 1)).Glyph);
+        Assert.Equal(stepsBefore + 2, history.UndoCount);
     }
 
     private void Click(CellPoint cell)

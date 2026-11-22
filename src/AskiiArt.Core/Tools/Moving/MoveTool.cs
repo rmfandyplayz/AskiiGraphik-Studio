@@ -16,11 +16,12 @@ namespace AskiiArt.Core.Tools.Moving;
 /// like 45°, and Ctrl+Shift to the diagonals of one column per row (ADR 0069). A click that stays in an
 /// unselected cell deselects when the button comes up, as Rectangle Select's does.
 /// <para>
-/// The moved cells float: over several drags and nudges they pass over other art without harming it, and the whole
-/// move is one undo step. Enter, another tool, another layer or any other change ends the move, and then the cells
-/// replace what they're on, though empty ones don't. Esc puts the cells back where they began. Cells moved off the
-/// canvas are kept while the move lasts, and lost when it ends. Moving the whole layer selects it as it moves. It does
-/// nothing on a locked or hidden layer.
+/// Each drag is an undo step, and so is each run of arrow presses and each Shift and arrow (ADR 0070). The moved cells
+/// float: over several drags and nudges, and undos and redos of them, they pass over other art without harming it.
+/// Enter ends the move and deselects, and another tool, another layer or any other change ends it too; then the cells
+/// replace what they're on, though empty ones don't. Esc during a drag puts the cells back where the drag found them.
+/// Cells moved off the canvas are kept while the move lasts, and lost when it ends. Moving the whole layer selects it
+/// as it moves. It does nothing on a locked or hidden layer.
 /// </para>
 /// </summary>
 public sealed class MoveTool : ITool
@@ -33,6 +34,7 @@ public sealed class MoveTool : ITool
 
     private readonly EditingSession _session;
     private readonly Func<double> _cellWidthToHeight;
+    private readonly NudgeRun _nudges;
     private FloatingMove? _move;
 
     // Where the drag started, and how far the cells had moved then; no cell while no drag is under way.
@@ -55,6 +57,7 @@ public sealed class MoveTool : ITool
 
         _session = context.Session;
         _cellWidthToHeight = context.CellWidthToHeight;
+        _nudges = new NudgeRun(_session.Clock);
         _session.History.StateChanged += OnHistoryChanged;
         _session.ActiveLayerChanged += OnActiveLayerChanged;
     }
@@ -87,7 +90,7 @@ public sealed class MoveTool : ITool
     /// <summary>Nothing: the document itself shows the move.</summary>
     public ToolOverlay Overlay => ToolOverlay.None;
 
-    /// <summary>True while a move is under way: the cells are somewhere other than where it began.</summary>
+    /// <summary>True while a move is under way and has made a step: its cells float, or a paste's do.</summary>
     public bool IsMoving => _move is { HasStep: true };
 
     /// <summary>
@@ -110,13 +113,18 @@ public sealed class MoveTool : ITool
     public void PointerPressed(ToolPointerInput input)
     {
         _pressCell = null;
+        _nudges.Stop();
         if (!_session.CanEditActiveLayer)
             return;
 
         var copies = input.Modifiers.HasFlag(ToolModifiers.Alt);
         if (copies || _move is null)
+        {
+            EndMove();
             _move = new FloatingMove(_session, copies);
+        }
 
+        _move.BeginGesture();
         _pressCell = input.Cell;
         _offsetAtPress = _move.Offset;
         _pointerCell = input.Cell;
@@ -141,14 +149,18 @@ public sealed class MoveTool : ITool
     }
 
     /// <summary>
-    /// Ends the drag. The move goes on, so the next drag or nudge carries it on. A click that stayed in an unselected
-    /// cell ends the move and deselects instead.
+    /// Ends the drag and its step. The move goes on, so the next drag or nudge carries it on. A click that stayed in an
+    /// unselected cell ends the move and deselects instead.
     /// </summary>
     public void PointerReleased(ToolPointerInput input)
     {
+        if (_pressCell is null)
+            return;
+
         PointerMoved(input);
-        var deselects = _pressCell is not null && !_hasLeftPressCell && _pressedOutsideSelection;
+        var deselects = !_hasLeftPressCell && _pressedOutsideSelection;
         _pressCell = null;
+        _move?.EndGesture();
         if (!deselects)
             return;
 
@@ -167,16 +179,17 @@ public sealed class MoveTool : ITool
     }
 
     /// <summary>
-    /// The arrows nudge the cells, also when no move is under way; Enter ends the move; Esc puts the cells back. Esc
-    /// with no move under way isn't the tool's, so the App switches to the Hand tool (ADR 0041).
+    /// The arrows nudge the cells, also when no move is under way, a run of presses making one step and each Shift and
+    /// arrow its own. Enter ends the move and deselects. Esc during a drag puts the cells back where it found them;
+    /// otherwise it isn't the tool's, so the App switches to the Hand tool (ADR 0041).
     /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers)
     {
         if (key == ToolKey.Escape)
-            return CancelMove();
+            return CancelDrag();
 
         if (key == ToolKey.Enter)
-            return EndMove();
+            return FinishMove();
 
         if (NudgeOf(key) is not { } nudge)
             return false;
@@ -189,9 +202,25 @@ public sealed class MoveTool : ITool
             return false;
 
         _move ??= new FloatingMove(_session, isCopy: false);
-        _move.MoveTo(new CellPoint(_move.Offset.X + nudge.X, _move.Offset.Y + nudge.Y));
+        var target = new CellPoint(_move.Offset.X + nudge.X, _move.Offset.Y + nudge.Y);
+        if (IsFar(key))
+        {
+            _nudges.Stop();
+            _move.BeginGesture();
+            _move.MoveTo(target);
+            _move.EndGesture();
+            return true;
+        }
+
+        if (!_nudges.Continues(key, nudge) || !_move.IsInGesture)
+            _move.BeginGesture();
+
+        _move.MoveTo(target);
         return true;
     }
+
+    /// <summary>Notes when an arrow is let go, which decides whether the next press starts a new step.</summary>
+    public void ArrowReleased(ToolKey arrow) => _nudges.LetGo(arrow);
 
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
@@ -232,36 +261,57 @@ public sealed class MoveTool : ITool
         _move.MoveTo(new CellPoint(_offsetAtPress.X + distance.X, _offsetAtPress.Y + distance.Y));
     }
 
-    private bool EndMove()
+    // The move's cells stay where they are, and stop floating.
+    private void EndMove()
     {
-        var wasMoving = IsMoving;
+        _move?.EndGesture();
         _move = null;
         _pressCell = null;
-        return wasMoving;
+        _nudges.Stop();
     }
 
-    private bool CancelMove()
+    private bool FinishMove()
     {
-        if (!IsMoving)
-        {
-            EndMove();
-            return false;
-        }
-
-        _move!.Cancel();
+        var wasMoving = IsMoving;
         EndMove();
+        return SelectionEdits.Deselect(_session) || wasMoving;
+    }
+
+    private bool CancelDrag()
+    {
+        if (_pressCell is null || _move is null)
+            return false;
+
+        _move.CancelGesture();
+        _pressCell = null;
         return true;
     }
 
-    // An undo, a redo or any other change ends the move where its cells are, since they no longer stand on what the
-    // move took them from. A save leaves the history's steps as they were, so the move goes on.
+    // An undo or redo of the move's own steps carries it on from where they put its cells, ending a drag or run of
+    // nudges under way. Any other change ends the move where its cells are, since they no longer stand on what the move
+    // took them from. A save leaves the history's steps as they were, so the move goes on.
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
-        if (_move is { IsChanging: false, IsHistoryAsLeft: false })
+        if (_move is null || _move.IsChanging)
+            return;
+
+        if (!_move.FollowHistory())
+        {
             EndMove();
+            return;
+        }
+
+        if (_move.IsInGesture)
+            return;
+
+        _pressCell = null;
+        _nudges.Stop();
     }
 
     private void OnActiveLayerChanged(object? sender, EventArgs e) => EndMove();
+
+    private static bool IsFar(ToolKey key) =>
+        key is ToolKey.FarLeft or ToolKey.FarRight or ToolKey.FarUp or ToolKey.FarDown;
 
     private static CellPoint? NudgeOf(ToolKey key) => key switch
     {

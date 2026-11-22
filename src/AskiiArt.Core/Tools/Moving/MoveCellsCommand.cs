@@ -8,10 +8,11 @@ using AskiiArt.Core.Documents;
 namespace AskiiArt.Core.Tools.Moving;
 
 /// <summary>
-/// The cells of a move at one place (ADR 0066): each moving cell is emptied where it was, unless the move is a copy,
-/// and written where it lands, replacing what was there. It works on plain arrays rather than a
-/// <see cref="CellEditBuilder"/>, and reports the cells it changes together as the rect that holds them, because a
-/// move of a whole 500 × 500 layer makes a new one every time the pointer reaches another cell.
+/// One step of a floating move (ADRs 0066, 0070): each moving cell is lifted from where it is, putting back what lies
+/// under it there, and written where it lands, replacing what was there, which the command keeps to put back in turn.
+/// It works on plain arrays rather than a <see cref="CellEditBuilder"/>, and reports the cells it changes together as
+/// the rect that holds them, because a move of a whole 500 × 500 layer makes a new one every time the pointer reaches
+/// another cell.
 /// </summary>
 internal sealed class MoveCellsCommand : IDocumentCommand
 {
@@ -19,22 +20,29 @@ internal sealed class MoveCellsCommand : IDocumentCommand
 
     private readonly Guid _layerId;
     private readonly MovingCell[] _cells;
+    private readonly int[]? _liftedFrom;
+    private readonly Cell[]? _under;
     private readonly int[] _landings;
-    private readonly bool _isCopy;
     private readonly Cell[] _covered;
     private readonly string _stepNameKey;
 
     /// <param name="layerId">The layer the cells are on.</param>
-    /// <param name="cells">The cells that move, with something in each, where they were. They aren't changed.</param>
+    /// <param name="cells">The cells that move, with something in each. They aren't changed.</param>
+    /// <param name="liftedFrom">
+    /// Where each cell is before the step, as a cell index, or -1 when it's off the canvas; null when the cells aren't
+    /// on the layer yet, as before a paste.
+    /// </param>
+    /// <param name="under">What lies under each cell where it is before the step, put back as it's lifted.</param>
     /// <param name="landings">Where each cell lands, as a cell index, or -1 when it lands off the canvas.</param>
-    /// <param name="isCopy">True to leave the cells where they were as well, and for cells that come from no cell.</param>
     /// <param name="stepNameKey">The step's name: a Move, or a Paste.</param>
-    public MoveCellsCommand(Guid layerId, MovingCell[] cells, int[] landings, bool isCopy, string stepNameKey)
+    public MoveCellsCommand(Guid layerId, MovingCell[] cells, int[]? liftedFrom, Cell[]? under, int[] landings,
+        string stepNameKey)
     {
         _layerId = layerId;
         _cells = cells;
+        _liftedFrom = liftedFrom;
+        _under = under;
         _landings = landings;
-        _isCopy = isCopy;
         _covered = new Cell[cells.Length];
         _stepNameKey = stepNameKey;
     }
@@ -42,22 +50,27 @@ internal sealed class MoveCellsCommand : IDocumentCommand
     /// <inheritdoc/>
     public string StepNameKey => _stepNameKey;
 
-    /// <summary>The cells, where they land, and what they cover there.</summary>
+    /// <summary>
+    /// What lies under each cell where it lands, once the step is applied: what the next step puts back as it lifts the
+    /// cell from there.
+    /// </summary>
+    public Cell[] Covered => _covered;
+
+    /// <summary>The cells, where they're lifted from and land, and what they cover there.</summary>
     public long EstimatedMemoryInBytes =>
-        FixedOverheadInBytes + (long)_cells.Length * (Unsafe.SizeOf<MovingCell>() + sizeof(int) + Unsafe.SizeOf<Cell>());
+        FixedOverheadInBytes +
+        ((long)_cells.Length * (Unsafe.SizeOf<MovingCell>() + (2 * sizeof(int)) + Unsafe.SizeOf<Cell>()));
 
     /// <inheritdoc/>
     public void Apply(Document document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
+        // Every cell is lifted before any lands, since a cell can land where another one was.
         var layer = document.GetLayer(_layerId);
         var changed = new ChangedCells(layer.Size.Width);
-        if (!_isCopy)
-        {
-            foreach (var cell in _cells)
-                changed.Set(layer, cell.Index, Cell.Empty);
-        }
+        if (_liftedFrom is not null)
+            PutBack(layer, ref changed, _liftedFrom, _under!);
 
         for (var index = 0; index < _cells.Length; index++)
         {
@@ -77,23 +90,29 @@ internal sealed class MoveCellsCommand : IDocumentCommand
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        // What each cell covered is put back first, since a cell can land where another one was.
         var layer = document.GetLayer(_layerId);
         var changed = new ChangedCells(layer.Size.Width);
-        for (var index = 0; index < _cells.Length; index++)
+        PutBack(layer, ref changed, _landings, _covered);
+        if (_liftedFrom is not null)
         {
-            var landing = _landings[index];
-            if (landing >= 0)
-                changed.Set(layer, landing, _covered[index]);
-        }
-
-        if (!_isCopy)
-        {
-            foreach (var cell in _cells)
-                changed.Set(layer, cell.Index, cell.Cell);
+            for (var index = 0; index < _cells.Length; index++)
+            {
+                var from = _liftedFrom[index];
+                if (from >= 0)
+                    changed.Set(layer, from, _cells[index].Cell);
+            }
         }
 
         changed.Report(layer);
+    }
+
+    private static void PutBack(Layer layer, ref ChangedCells changed, int[] places, Cell[] under)
+    {
+        for (var index = 0; index < places.Length; index++)
+        {
+            if (places[index] >= 0)
+                changed.Set(layer, places[index], under[index]);
+        }
     }
 
     // Sets cells without reporting each, and keeps the rect that holds the ones that changed, to report once.

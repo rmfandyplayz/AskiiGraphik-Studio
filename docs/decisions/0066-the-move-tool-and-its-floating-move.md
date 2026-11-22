@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0070](0070-each-move-tool-gesture-is-its-own-step.md): each drag or run of arrow presses is now its own Move step, an undo or redo of them doesn't end the move, Enter also deselects, and Esc puts back only a drag under way. The rest still stands.
+
 ## Context
 
 Step 4.5 adds the Move tool on V. ARCHITECTURE §10 left the details for this step. Before it began, the owner chose:
@@ -44,3 +46,5 @@ The owner also asked for the Hand tool to be the tool at launch, with Esc as its
 Updated 2026-11-21: Paste floats its cells this way (ADR 0067); that step is named Paste rather than Move.
 
 Updated 2026-11-22: since 4.8 (ADR 0069), every move sets the selection in its step, so moving the whole layer selects it; a click on an unselected cell deselects; and Shift, Ctrl and Ctrl+Shift keep a drag to a few directions.
+
+Updated 2026-11-22: ADR 0070 makes each drag or run of arrow presses its own step, keeps the cells floating across undos and redos of them, and changes Enter and Esc. What the Decision and Consequences say about one step per move, an undo ending the move, and Esc no longer holds.

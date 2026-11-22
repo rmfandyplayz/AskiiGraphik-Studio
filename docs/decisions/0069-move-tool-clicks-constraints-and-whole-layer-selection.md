@@ -22,7 +22,7 @@ These are measured from where that drag began, and change the moment the keys do
   - On a diagonal that looks like 45°, they move by the average of how far the pointer has gone across and down on screen. The side whose cells are bigger on screen is rounded first, and the other follows, so the cells stay as near the line as whole cells can.
   - On a diagonal of one column per row, they move by the pointer's distance along that diagonal on screen, rounded to whole steps.
 - **The canvas reports Ctrl, or Cmd on macOS, going down or up** through `ITool.ModifiersChanged`, as it already did for Shift and Alt (ADR 0060). The Move tool then moves the cells at once, from the pointer's last cell.
-- **Every move sets the selection** in its step. With nothing selected, the selection is the whole canvas, moved with the cells and cut to the canvas. So moving the whole layer selects it as the cells first move, and Undo or Esc takes the selection away again. A drag on an empty layer selects too, so it shows where the layer went.
+- **Every move sets the selection** in its step. With nothing selected, the selection is the whole canvas, moved with the cells and cut to the canvas. So moving the whole layer selects it as the cells first move, and Undo, or Esc during the drag, takes the selection away again. A drag on an empty layer selects too, so it shows where the layer went.
 - **The rename box is a `LayerNameBox`,** a `TextBox` that marks any arrow key handled after the box has had its turn. An arrow the box used has moved the caret. One it couldn't use no longer goes on to the list, which would have picked another row and ended the rename.
 
 ## Alternatives
@@ -39,3 +39,5 @@ These are measured from where that drag began, and change the moment the keys do
 - After moving the whole layer, the next drag moves just what's selected, which is the whole layer where it now is.
 
 Updated 2026-11-22: after the owner's testing, Ctrl and Ctrl+Shift keep a drag to their diagonals only, without left and right or up and down, which had been a misreading of the owner's answer.
+
+Updated 2026-11-22: Esc takes the selection away only during the drag now, since ADR 0070 limits Esc to the drag under way.

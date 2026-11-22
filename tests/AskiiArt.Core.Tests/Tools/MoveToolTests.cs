@@ -15,12 +15,13 @@ public sealed class MoveToolTests
 {
     private static readonly string[] _art = ["abcdef", "ghijkl", "mnopqr"];
 
+    private readonly FakeClock _clock = new();
     private readonly EditingSession _session;
     private readonly MoveTool _tool;
 
     public MoveToolTests()
     {
-        _session = new EditingSession(TestCells.CreateDocument(6, 3));
+        _session = new EditingSession(TestCells.CreateDocument(6, 3), _clock);
         TestCells.Paint(Layer, _art);
         _tool = new MoveTool(TestTools.Context(_session));
     }
@@ -86,7 +87,7 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void SeveralDragsAndNudges_AreOneStep_ThatOneUndoTakesBack()
+    public void EachDragAndRunOfNudges_IsAMoveStepOfItsOwn_ThatUndoAndRedoGoThrough()
     {
         SelectTheFirstTwoCells();
 
@@ -95,12 +96,64 @@ public sealed class MoveToolTests
         _tool.KeyPressed(ToolKey.Down, ToolModifiers.None);
 
         Assert.Equal(["··cdef", "ghabkl", "mnopqr"], TestCells.Read(Layer));
-        Assert.Equal(2, History.UndoCount);
+        Assert.Equal(4, History.UndoCount);
+        Assert.Equal(UndoStepNames.Move, History.GetStepNameKey(3));
 
         History.Undo();
-
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(["··##··", "······", "······"], Selected);
+        History.Undo();
+        Assert.Equal(["·abdef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        History.Undo();
         Assert.Equal(_art, TestCells.Read(Layer));
         Assert.Equal(["##····", "······", "······"], Selected);
+
+        History.Redo();
+        History.Redo();
+        History.Redo();
+        Assert.Equal(["··cdef", "ghabkl", "mnopqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void AnUndoOfTheMovesOwnStep_KeepsTheCellsFloating()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+        Drag((0, 0), (2, 0));
+
+        History.Undo();
+        Drag((0, 0), (1, 0));
+
+        Assert.Equal(["··cabf", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.True(_tool.IsMoving);
+        Assert.Equal(3, History.UndoCount);
+    }
+
+    [Fact]
+    public void ARedoOfTheMovesOwnStep_KeepsTheCellsFloating()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+        Drag((0, 0), (2, 0));
+
+        History.Undo();
+        History.Redo();
+        Drag((1, 0), (0, 0));
+
+        Assert.Equal(["··cabf", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void UndoingTheStepBeforeTheMove_EndsIt()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+
+        History.Undo();
+        History.Undo();
+
+        Assert.False(_tool.IsMoving);
+        Assert.Equal(_art, TestCells.Read(Layer));
     }
 
     [Fact]
@@ -116,17 +169,15 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void Esc_PutsTheCellsBack_AndLeavesNoStep_ThenIsntTheTools()
+    public void EscAfterADrag_IsntTheTools_AndLeavesTheCellsWhereTheyAre()
     {
         SelectTheFirstTwoCells();
         Drag((0, 0), (2, 1));
 
-        Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
-
-        Assert.Equal(_art, TestCells.Read(Layer));
-        Assert.Equal(["##····", "······", "······"], Selected);
-        Assert.Equal(1, History.UndoCount);
         Assert.False(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+
+        Assert.Equal(["··cdef", "ghabkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(2, History.UndoCount);
     }
 
     [Fact]
@@ -145,16 +196,72 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void Enter_EndsTheMove_SoTheCellsReplaceWhatTheyreOn()
+    public void EscDuringALaterDrag_PutsTheCellsBackWhereThatDragFoundThem()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+        Press(2, 0);
+        Move(2, 1);
+
+        Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+        Release(2, 1);
+
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(["··##··", "······", "······"], Selected);
+        Assert.Equal(2, History.UndoCount);
+        Assert.True(_tool.IsMoving);
+    }
+
+    [Fact]
+    public void EscDuringADragOfTheWholeLayer_SelectsNothingAgain()
+    {
+        Press(0, 0);
+        Move(1, 1);
+
+        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+
+        Assert.Equal(_art, TestCells.Read(Layer));
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(0, History.UndoCount);
+    }
+
+    [Fact]
+    public void Enter_EndsTheMove_AndDeselects_AsADeselectStep()
     {
         SelectTheFirstTwoCells();
         Drag((0, 0), (2, 0));
 
         Assert.True(_tool.KeyPressed(ToolKey.Enter, ToolModifiers.None));
+
+        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.False(_tool.IsMoving);
+        Assert.Equal(UndoStepNames.Deselect, History.GetStepNameKey(2));
+    }
+
+    [Fact]
+    public void AfterEnter_TheCellsNoLongerFloat_SoTheyReplaceWhatTheyreOn()
+    {
+        SelectTheFirstTwoCells();
+        Drag((0, 0), (2, 0));
+        _tool.KeyPressed(ToolKey.Enter, ToolModifiers.None);
+
+        History.Undo();
+        Assert.Equal(["··##··", "······", "······"], Selected);
         Drag((0, 0), (2, 0));
 
         Assert.Equal(["····ab", "ghijkl", "mnopqr"], TestCells.Read(Layer));
-        Assert.Equal(3, History.UndoCount);
+    }
+
+    [Fact]
+    public void Enter_WithNoMoveUnderWay_Deselects()
+    {
+        SelectTheFirstTwoCells();
+
+        Assert.True(_tool.KeyPressed(ToolKey.Enter, ToolModifiers.None));
+
+        Assert.True(_session.Selection.IsEmpty);
+        Assert.Equal(_art, TestCells.Read(Layer));
     }
 
     [Fact]
@@ -181,7 +288,7 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void TheArrows_NudgeTheSelectedCellsOneCell_AsOneMove()
+    public void TheArrows_NudgeTheSelectedCellsOneCell()
     {
         Select("··#···", "······", "······");
 
@@ -190,21 +297,100 @@ public sealed class MoveToolTests
 
         Assert.Equal(["ab·def", "ghickl", "mnopqr"], TestCells.Read(Layer));
         Assert.Equal(["······", "···#··", "······"], Selected);
+    }
+
+    [Fact]
+    public void ArrowsPressedInTurn_AreOneStep()
+    {
+        Select("#·····", "······", "······");
+
+        Nudge(ToolKey.Right, ToolKey.Down, ToolKey.Right, ToolKey.Down);
+
+        Assert.Equal(["·bcdef", "ghijkl", "mnapqr"], TestCells.Read(Layer));
         Assert.Equal(2, History.UndoCount);
     }
 
     [Fact]
-    public void ShiftAndAnArrow_NudgesTenCells()
+    public void TwoPressesOneWayAndThenATurn_AreOneStep()
     {
-        var session = new EditingSession(TestCells.CreateDocument(12, 1));
+        Select("#·····", "······", "······");
+
+        Nudge(ToolKey.Right, ToolKey.Right, ToolKey.Down);
+
+        Assert.Equal(2, History.UndoCount);
+    }
+
+    [Fact]
+    public void ThreePressesOneWayAndThenATurn_AreTwoSteps()
+    {
+        Select("#·····", "······", "······");
+
+        Nudge(ToolKey.Right, ToolKey.Right, ToolKey.Right, ToolKey.Down);
+
+        Assert.Equal(3, History.UndoCount);
+        History.Undo();
+        Assert.Equal(["·bcaef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void APressFourTenthsOfASecondAfterTheLastArrowWasLetGo_StartsANewStep()
+    {
+        Select("#·····", "······", "······");
+        Nudge(ToolKey.Right);
+
+        _clock.Advance(TimeSpan.FromSeconds(0.39));
+        Nudge(ToolKey.Right);
+        Assert.Equal(2, History.UndoCount);
+
+        _clock.Advance(TimeSpan.FromSeconds(0.4));
+        Nudge(ToolKey.Right);
+        Assert.Equal(3, History.UndoCount);
+    }
+
+    [Fact]
+    public void AnArrowHeldDown_IsOneStep_HoweverLongItsHeld()
+    {
+        Select("#·····", "······", "······");
+
+        _tool.KeyPressed(ToolKey.Right, ToolModifiers.None);
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        _tool.KeyPressed(ToolKey.Right, ToolModifiers.None);
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        _tool.KeyPressed(ToolKey.Right, ToolModifiers.None);
+        _tool.ArrowReleased(ToolKey.Right);
+
+        Assert.Equal(["·bcaef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
+        Assert.Equal(2, History.UndoCount);
+    }
+
+    [Fact]
+    public void ADrag_EndsARunOfNudges()
+    {
+        Select("#·····", "······", "······");
+        Nudge(ToolKey.Right);
+
+        Drag((1, 0), (1, 1));
+        Nudge(ToolKey.Right);
+
+        Assert.Equal(4, History.UndoCount);
+    }
+
+    [Fact]
+    public void ShiftAndAnArrow_NudgesTenCells_AsAStepOfItsOwn()
+    {
+        var session = new EditingSession(TestCells.CreateDocument(23, 1), _clock);
         var layer = session.Document.ActiveFrame.Layers[0];
-        TestCells.Paint(layer, "a···········");
-        TestTools.Select(session, "#···········");
+        TestCells.Paint(layer, "a······················");
+        TestTools.Select(session, "#······················");
         var tool = new MoveTool(TestTools.Context(session));
 
+        Assert.True(tool.KeyPressed(ToolKey.Right, ToolModifiers.None));
         Assert.True(tool.KeyPressed(ToolKey.FarRight, ToolModifiers.None));
+        Assert.True(tool.KeyPressed(ToolKey.FarRight, ToolModifiers.None));
+        Assert.True(tool.KeyPressed(ToolKey.Right, ToolModifiers.None));
 
-        Assert.Equal(["··········a·"], TestCells.Read(layer));
+        Assert.Equal(["······················a"], TestCells.Read(layer));
+        Assert.Equal(5, session.History.UndoCount);
     }
 
     [Fact]
@@ -243,6 +429,7 @@ public sealed class MoveToolTests
         Drag((1, 0), (0, 0));
 
         _tool.KeyPressed(ToolKey.Enter, ToolModifiers.None);
+        History.Undo();
         Drag((0, 0), (1, 0));
 
         Assert.Equal(["·bcdef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
@@ -331,18 +518,6 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void Esc_AfterMovingTheWholeLayer_SelectsNothingAgain()
-    {
-        Drag((0, 0), (1, 1));
-
-        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
-
-        Assert.Equal(_art, TestCells.Read(Layer));
-        Assert.True(_session.Selection.IsEmpty);
-        Assert.Equal(0, History.UndoCount);
-    }
-
-    [Fact]
     public void Shift_KeepsADragToTheAxisThePointerHasGoneFurtherAlong()
     {
         SelectTheFirstTwoCells();
@@ -380,7 +555,7 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void AnUndo_EndsTheMove()
+    public void AnUndoOfAMovesOnlyStep_PutsTheCellsWhereTheyBegan()
     {
         SelectTheFirstTwoCells();
         Drag((0, 0), (2, 0));
@@ -414,7 +589,7 @@ public sealed class MoveToolTests
         Drag((0, 0), (2, 0));
 
         Assert.Equal(["··cdab", "ghijkl", "mnopqr"], TestCells.Read(Layer));
-        Assert.Equal(2, History.UndoCount);
+        Assert.Equal(3, History.UndoCount);
         Assert.True(History.HasUnsavedChanges);
     }
 
@@ -465,7 +640,7 @@ public sealed class MoveToolTests
     [Theory]
     [InlineData(ToolKey.Escape)]
     [InlineData(ToolKey.Enter)]
-    public void EscAndEnter_WithNoMoveUnderWay_ArentTheTools(ToolKey key)
+    public void EscAndEnter_WithNoMoveUnderWayAndNothingSelected_ArentTheTools(ToolKey key)
     {
         SelectTheFirstTwoCells();
         Drag((1, 1), (1, 1));
@@ -486,7 +661,7 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void DragsAndNudges_CarryAPasteOn_OverArtUnharmed_InTheSameStep()
+    public void DragsAndNudges_CarryAPasteOn_OverArtUnharmed_AsMoveSteps()
     {
         _tool.Paste(Clip("xy"), new CellPoint(2, 1));
 
@@ -495,31 +670,48 @@ public sealed class MoveToolTests
 
         Assert.Equal(["abcdef", "ghijkl", "mnxyqr"], TestCells.Read(Layer));
         Assert.Equal(["······", "······", "··##··"], Selected);
-        Assert.Equal(1, History.UndoCount);
+        Assert.Equal(3, History.UndoCount);
         Assert.Equal(UndoStepNames.Paste, History.GetStepNameKey(0));
+        Assert.Equal(UndoStepNames.Move, History.GetStepNameKey(1));
+        Assert.Equal(UndoStepNames.Move, History.GetStepNameKey(2));
     }
 
     [Fact]
-    public void Esc_TakesAPasteAway_AndPutsTheSelectionBack()
+    public void AnUndoOfAPastesMoveStep_KeepsThePasteFloating()
+    {
+        _tool.Paste(Clip("xy"), new CellPoint(2, 1));
+        Drag((0, 0), (1, 0));
+
+        History.Undo();
+        Drag((0, 0), (0, 1));
+
+        Assert.Equal(["abcdef", "ghijkl", "mnxyqr"], TestCells.Read(Layer));
+    }
+
+    [Fact]
+    public void AnUndoOfThePaste_TakesItAway_AndPutsTheSelectionBack()
     {
         SelectTheFirstTwoCells();
         _tool.Paste(Clip("xy"), new CellPoint(2, 1));
         Drag((0, 0), (1, 0));
 
-        Assert.True(_tool.KeyPressed(ToolKey.Escape, ToolModifiers.None));
+        History.Undo();
+        History.Undo();
 
         Assert.Equal(_art, TestCells.Read(Layer));
         Assert.Equal(["##····", "······", "······"], Selected);
-        Assert.Equal(1, History.UndoCount);
+        Assert.False(_tool.IsMoving);
     }
 
     [Fact]
-    public void Enter_EndsAPaste_SoTheNextDragMovesItsCellsAsAMove()
+    public void Enter_EndsAPaste_SoItsCellsReplaceWhatTheyreOn()
     {
         _tool.Paste(Clip("xy"), new CellPoint(2, 1));
 
         Assert.True(_tool.KeyPressed(ToolKey.Enter, ToolModifiers.None));
-        Drag((0, 0), (0, 1));
+        Assert.True(_session.Selection.IsEmpty);
+        History.Undo();
+        Drag((2, 1), (2, 2));
 
         Assert.Equal(["abcdef", "gh··kl", "mnxyqr"], TestCells.Read(Layer));
         Assert.Equal(UndoStepNames.Move, History.GetStepNameKey(1));
@@ -545,10 +737,10 @@ public sealed class MoveToolTests
         Drag((0, 0), (2, 0));
 
         _tool.Paste(Clip("z"), new CellPoint(0, 2));
-        _tool.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+        History.Undo();
+        Drag((2, 0), (3, 0));
 
-        Assert.Equal(["··abef", "ghijkl", "mnopqr"], TestCells.Read(Layer));
-        Assert.Equal(2, History.UndoCount);
+        Assert.Equal(["···abf", "ghijkl", "mnopqr"], TestCells.Read(Layer));
     }
 
     [Fact]
@@ -609,6 +801,16 @@ public sealed class MoveToolTests
         _tool.PointerPressed(Input(from.X, from.Y, modifiers));
         _tool.PointerMoved(Input(to.X, to.Y, modifiers));
         _tool.PointerReleased(Input(to.X, to.Y, modifiers));
+    }
+
+    // Presses and lets go of each arrow in turn, with no time between.
+    private void Nudge(params ToolKey[] arrows)
+    {
+        foreach (var arrow in arrows)
+        {
+            _tool.KeyPressed(arrow, ToolModifiers.None);
+            _tool.ArrowReleased(arrow);
+        }
     }
 
     private void Press(int x, int y) => _tool.PointerPressed(Input(x, y));
