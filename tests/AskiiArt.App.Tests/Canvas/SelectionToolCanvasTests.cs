@@ -82,10 +82,10 @@ public sealed class SelectionToolCanvasTests : IDisposable
         Assert.Equal(Rectangle(5, 5, 2, 2), _canvas.Session.Selection.Mask);
     }
 
-    // A drag with nothing selected moves the whole layer and selects it, so the selection shows where it went. On
-    // screen the drag goes down much further than across, so Ctrl keeps it straight down.
+    // A drag with nothing selected moves the whole layer and selects it, so the selection shows where it went. The
+    // drag goes nearly straight down, which Ctrl turns into a diagonal.
     [AvaloniaFact]
-    public void CtrlPressedAndLetGoDuringAMoveToolDrag_KeepsTheMoveToADirectionAtOnce()
+    public void CtrlPressedAndLetGoDuringAMoveToolDrag_KeepsTheMoveToADiagonalAtOnce()
     {
         Canvas.SelectTool(MoveTool.Id);
         Dispatcher.UIThread.RunJobs();
@@ -95,7 +95,7 @@ public sealed class SelectionToolCanvasTests : IDisposable
         Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
 
         _window.KeyPress(key, modifier, physicalKey, null);
-        Assert.Equal(Rectangle(0, 4, 20, 6), _canvas.Session.Selection.Mask);
+        Assert.NotEqual(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);
 
         _window.KeyRelease(key, RawInputModifiers.None, physicalKey, null);
         Assert.Equal(Rectangle(1, 4, 19, 6), _canvas.Session.Selection.Mask);

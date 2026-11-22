@@ -377,7 +377,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| Which way Shift keeps a drag, and which direction Ctrl and Ctrl+Shift pick, is judged by how the drag looks on screen, not by counting cells. A direction takes the angles nearer it than the next one, so with Ctrl the diagonal takes drags between 22.5° and 67.5° | `Core/Tools/Moving/MoveConstraint.cs` | 4.8 |
+| Which way Shift keeps a drag, and how far Ctrl and Ctrl+Shift take it along a diagonal, is judged by how the drag looks on screen, not by counting cells. With Ctrl, a drag straight across or straight up or down is as near two diagonals, and takes the one to the right or down | `Core/Tools/Moving/MoveConstraint.cs` | 4.8 |
 | On a diagonal that looks like 45°, rows are rounded first and the columns follow, so with cells half as wide as they're tall the cells move two columns per row exactly | `MoveConstraint.cs` | 4.8 |
 | Alt+click on an unselected cell deselects too. On a locked or hidden layer a click does nothing, as the rest of the Move tool doesn't | `MoveTool.cs` | 4.8 |
 | Dragging the whole layer selects it even when the layer is empty, so the outline shows where it went | `FloatingMove.cs` | 4.8 |

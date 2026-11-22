@@ -9,7 +9,7 @@
 
 ## What changed
 
-With the **Move tool**, clicking a cell outside the selection now deselects, as Rectangle Select's click does. While you drag, Shift keeps the move straight across or straight up and down. Ctrl (Cmd on a Mac) also allows diagonals that look like 45°, and Ctrl+Shift diagonals of one column per row. Moving the whole layer now selects it. In the **Layers** window, arrow keys no longer end a rename.
+With the **Move tool**, clicking a cell outside the selection now deselects, as Rectangle Select's click does. While you drag, Shift keeps the move straight across or straight up and down. Ctrl (Cmd on a Mac) keeps it to diagonals that look like 45°, and Ctrl+Shift to diagonals of one column per row. Moving the whole layer now selects it. In the **Layers** window, arrow keys no longer end a rename.
 
 ## Setup
 
@@ -68,7 +68,7 @@ Checks dragging with Shift, and Shift pressed or let go mid-drag.
 | 4 | Let go of **Shift**, still without moving the mouse | The letters jump back under the pointer. Then let go of the button |
 | 5 | Press **Shift+Right** a few times, without dragging | Each press moves the letters 10 cells right, as before |
 
-### T4: Ctrl and Ctrl+Shift allow diagonals
+### T4: Ctrl and Ctrl+Shift keep to diagonals
 
 Checks the two kinds of diagonal. On a Mac, use **Cmd** instead of Ctrl.
 
@@ -77,9 +77,9 @@ Checks the two kinds of diagonal. On a Mac, use **Cmd** instead of Ctrl.
 | # | Do this | Expected result |
 |---|---|---|
 | 1 | Select a few letters. Hold **Ctrl** and drag down and to the right at about 45° on screen | The letters move along a line that looks like 45°: about two columns for every row |
-| 2 | Still holding Ctrl and the button, move the pointer to go mostly sideways, then mostly up or down | The letters move straight sideways, then straight up or down |
+| 2 | Still holding Ctrl and the button, move the pointer to go mostly sideways, then mostly up or down | The letters still move along a diagonal, never straight sideways or straight up or down |
 | 3 | Let go. Hold **Ctrl+Shift** and drag down and to the right at about 45° | The letters move one column for every row, so their line looks steeper than in step 1 |
-| 4 | Drag diagonally without keys, and while still dragging press **Ctrl**, then let go of it, without moving the mouse | The letters jump onto the nearest allowed direction at once, then back under the pointer |
+| 4 | Drag diagonally without keys, and while still dragging press **Ctrl**, then let go of it, without moving the mouse | The letters jump onto the nearest diagonal at once, then back under the pointer |
 | 5 | Let go of the button. Then Ctrl+drag again, starting somewhere else | The direction is judged from where this new drag started |
 
 ### T5: Moving the whole layer selects it

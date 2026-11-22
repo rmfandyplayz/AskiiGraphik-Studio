@@ -9,15 +9,15 @@ Status: Accepted
 
 After testing 4.6, the owner asked for four follow-ups (step 4.8). A click with the Move tool on an unselected cell should deselect, when the button comes up, as Rectangle Select's click does, while a drag from there still moves the selection. During a drag:
 - Shift keeps the move to left and right or up and down, whichever the pointer has gone further;
-- Ctrl (Cmd on a Mac) allows those and diagonals that look like 45°;
-- Ctrl+Shift allows those and diagonals of one column per row.
+- Ctrl (Cmd on a Mac) keeps it to the diagonals that look like 45°;
+- Ctrl+Shift keeps it to the diagonals of one column per row.
 
 These are measured from where that drag began, and change the moment the keys do. Moving the whole layer should select it. In the Layers window's rename box, arrow keys the box can't use should do nothing rather than end the rename.
 
 ## Decision
 
 - **A click deselects** when the press was on an unselected cell while something was selected, and the pointer never left that cell. When the button comes up, the move under way ends where its cells are, and a Deselect step follows, as Rectangle Select's click makes. Like the rest of the Move tool, it does nothing on a locked or hidden layer.
-- **`MoveConstraint` keeps a drag to a few directions.** It takes the drag's distance in whole cells, as an unconstrained drag does. The direction is whichever allowed one the drag is nearest as it looks on screen, using the cell's width-to-height ratio (ADR 0047). Each direction takes the angles nearer it than the next one.
+- **`MoveConstraint` keeps a drag to a few directions.** It takes the drag's distance in whole cells, as an unconstrained drag does. The direction is whichever allowed one the drag is nearest as it looks on screen, using the cell's width-to-height ratio (ADR 0047). With Ctrl that's the diagonal in the drag's quarter; a drag straight along one side takes the one to the right or down.
   - Along an axis, the cells move as far as the pointer has gone along it.
   - On a diagonal that looks like 45°, they move by the average of how far the pointer has gone across and down on screen. The side whose cells are bigger on screen is rounded first, and the other follows, so the cells stay as near the line as whole cells can.
   - On a diagonal of one column per row, they move by the pointer's distance along that diagonal on screen, rounded to whole steps.
@@ -37,3 +37,5 @@ These are measured from where that drag began, and change the moment the keys do
 - The Move tool's clicks now behave like Rectangle Select's, so clicking away from a selection with either tool clears it.
 - Tools that follow modifiers during a gesture now also hear about Ctrl and Cmd. Rectangle and Ellipse Select ignore them.
 - After moving the whole layer, the next drag moves just what's selected, which is the whole layer where it now is.
+
+Updated 2026-11-22: after the owner's testing, Ctrl and Ctrl+Shift keep a drag to their diagonals only, without left and right or up and down, which had been a misreading of the owner's answer.

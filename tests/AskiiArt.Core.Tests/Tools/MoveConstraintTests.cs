@@ -33,15 +33,15 @@ public sealed class MoveConstraintTests
             Apply(across, down, ToolModifiers.Shift, cellWidthToHeight));
     }
 
-    // Four columns look as long as two rows, so (4, 2) looks like 45°.
+    // Four columns look as long as two rows, so (4, 2) looks like 45°. A drag mostly along one side still goes along
+    // a diagonal, as far as it has come along it.
     [Theory]
     [InlineData(5, 2, 4, 2)]
     [InlineData(-4, -2, -4, -2)]
     [InlineData(-3, 2, -4, 2)]
-    [InlineData(6, 0, 6, 0)]
-    [InlineData(9, 1, 9, 0)]
-    [InlineData(1, 5, 0, 5)]
-    public void Ctrl_AlsoAllowsDiagonalsThatLookLike45Degrees(int across, int down, int expectedAcross,
+    [InlineData(9, 1, 6, 3)]
+    [InlineData(-1, -5, -6, -3)]
+    public void Ctrl_KeepsADragToTheDiagonalsThatLookLike45Degrees(int across, int down, int expectedAcross,
         int expectedDown)
     {
         Assert.Equal(new CellPoint(expectedAcross, expectedDown),
@@ -51,13 +51,25 @@ public sealed class MoveConstraintTests
     [Theory]
     [InlineData(3, 2, 2, 2)]
     [InlineData(-2, 3, -3, 3)]
-    [InlineData(4, 1, 4, 0)]
-    [InlineData(1, 6, 0, 6)]
-    public void CtrlAndShift_AlsoAllowDiagonalsOfOneColumnPerRow(int across, int down, int expectedAcross,
+    [InlineData(4, 1, 2, 2)]
+    [InlineData(-1, -6, -5, -5)]
+    public void CtrlAndShift_KeepADragToTheDiagonalsOfOneColumnPerRow(int across, int down, int expectedAcross,
         int expectedDown)
     {
         Assert.Equal(new CellPoint(expectedAcross, expectedDown),
             Apply(across, down, ToolModifiers.Command | ToolModifiers.Shift, HalfAsWide));
+    }
+
+    // As near the diagonals one way as the other, so it goes to the right or down.
+    [Theory]
+    [InlineData(6, 0, 4, 2)]
+    [InlineData(-6, 0, -4, 2)]
+    [InlineData(0, -4, 4, -2)]
+    public void ACtrlDragStraightAlongOneSide_TakesTheDiagonalToTheRightOrDown(int across, int down,
+        int expectedAcross, int expectedDown)
+    {
+        Assert.Equal(new CellPoint(expectedAcross, expectedDown),
+            Apply(across, down, ToolModifiers.Command, HalfAsWide));
     }
 
     [Fact]

@@ -12,8 +12,8 @@ namespace AskiiArt.Core.Tools.Moving;
 /// The Move tool (ARCHITECTURE §10, ADR 0066). A drag that starts anywhere on the canvas moves the selected cells of
 /// the active layer, or the whole layer when nothing is selected, a cell at a time, and the selection goes with them.
 /// The arrow keys nudge them one cell, and Shift and an arrow ten. Alt+drag (Option+drag on a Mac) moves a copy.
-/// During a drag, Shift keeps the move to left and right or up and down, Ctrl (Cmd on a Mac) to those and diagonals that
-/// look like 45°, and Ctrl+Shift to those and diagonals of one column per row (ADR 0069). A click that stays in an
+/// During a drag, Shift keeps the move to left and right or up and down, Ctrl (Cmd on a Mac) to the diagonals that look
+/// like 45°, and Ctrl+Shift to the diagonals of one column per row (ADR 0069). A click that stays in an
 /// unselected cell deselects when the button comes up, as Rectangle Select's does.
 /// <para>
 /// The moved cells float: over several drags and nudges they pass over other art without harming it, and the whole

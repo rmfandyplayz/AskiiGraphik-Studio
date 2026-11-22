@@ -369,7 +369,7 @@ public sealed class MoveToolTests
     }
 
     [Fact]
-    public void Ctrl_KeepsADragToTheAxesAndDiagonals_FromWhereThatDragBegan()
+    public void Ctrl_KeepsADragToTheDiagonals_FromWhereThatDragBegan()
     {
         SelectTheFirstTwoCells();
         Drag((0, 0), (1, 0));

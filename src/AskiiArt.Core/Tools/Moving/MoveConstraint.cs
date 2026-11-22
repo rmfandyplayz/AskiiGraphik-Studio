@@ -7,14 +7,12 @@ namespace AskiiArt.Core.Tools.Moving;
 
 /// <summary>
 /// How Shift and Ctrl (Cmd on a Mac) keep a Move-tool drag to a few directions (ADR 0069). Shift keeps it to left and
-/// right or up and down; Ctrl adds diagonals that look like 45° on screen; Ctrl+Shift adds diagonals of one column per
-/// row instead. The pointer's distance from where the drag began goes the way it's nearest to as it looks on screen,
-/// by as far as it has come that way.
+/// right or up and down, Ctrl to the diagonals that look like 45° on screen, and Ctrl+Shift to the diagonals of one
+/// column per row. The pointer's distance from where the drag began goes whichever of those ways is nearest as it
+/// looks on screen, by as far as it has come that way.
 /// </summary>
 internal static class MoveConstraint
 {
-    private const double RightAngle = Math.PI / 2;
-
     /// <summary>
     /// The distance the cells move for a drag that has come <paramref name="distance"/> cells from where it began,
     /// with <paramref name="modifiers"/> held, in a font whose cells are <paramref name="cellWidthToHeight"/> as wide
@@ -22,31 +20,26 @@ internal static class MoveConstraint
     /// </summary>
     public static CellPoint Apply(CellPoint distance, ToolModifiers modifiers, double cellWidthToHeight)
     {
-        var keepsToAxes = modifiers.HasFlag(ToolModifiers.Shift);
-        var allowsDiagonals = modifiers.HasFlag(ToolModifiers.Command);
-        if (!keepsToAxes && !allowsDiagonals)
+        var isShiftHeld = modifiers.HasFlag(ToolModifiers.Shift);
+        var isCtrlHeld = modifiers.HasFlag(ToolModifiers.Command);
+        if (!isShiftHeld && !isCtrlHeld)
             return distance;
 
         // On screen, measured in cell heights.
         var across = Math.Abs(distance.X * cellWidthToHeight);
         var down = Math.Abs(distance.Y);
-        if (!allowsDiagonals)
+        if (!isCtrlHeld)
             return across >= down ? distance with { Y = 0 } : distance with { X = 0 };
 
-        // A direction takes the angles nearer it than the next one, so the diagonal's reach ends halfway to each axis.
-        var angle = Math.Atan2(down, across);
-        var diagonalAngle = keepsToAxes ? Math.Atan2(1, cellWidthToHeight) : RightAngle / 2;
-        if (angle <= diagonalAngle / 2)
-            return distance with { Y = 0 };
-
-        if (angle > (diagonalAngle + RightAngle) / 2)
-            return distance with { X = 0 };
-
-        var (columns, rows) = keepsToAxes
+        var (columns, rows) = isShiftHeld
             ? OneColumnPerRow(across, down, cellWidthToHeight)
             : LookingDiagonal(across, down, cellWidthToHeight);
-        return new CellPoint(Math.Sign(distance.X) * columns, Math.Sign(distance.Y) * rows);
+        return new CellPoint(SideOf(distance.X) * columns, SideOf(distance.Y) * rows);
     }
+
+    // Which way a diagonal goes along one side. A drag straight along the other side is as near the diagonals either
+    // way, so it takes the one to the right or down.
+    private static int SideOf(int distance) => distance < 0 ? -1 : 1;
 
     // As far along the diagonal as the pointer has come, in whole steps of one column and one row.
     private static (int Columns, int Rows) OneColumnPerRow(double across, double down, double cellWidthToHeight)
