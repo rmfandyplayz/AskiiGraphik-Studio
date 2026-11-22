@@ -7,13 +7,14 @@ namespace AskiiArt.Core.Tools.Footprints;
 
 /// <summary>
 /// Gives a sized tool its current footprint: the tip from the group's option values, in the shape of the document's
-/// cells. The footprint is made again only when either changes.
+/// cells. The footprint is made again only when either changes, and so is a soft tool's falloff.
 /// </summary>
 public sealed class BrushTipSource
 {
     private readonly Func<double> _cellWidthToHeight;
     private BrushFootprint? _footprint;
     private double _footprintCellWidthToHeight;
+    private BrushFalloff? _falloff;
 
     /// <summary>Creates a source for the tip <paramref name="values"/> describe.</summary>
     /// <param name="values">The tool group's option values, made from <see cref="BrushTipOptions"/>.</param>
@@ -45,5 +46,19 @@ public sealed class BrushTipSource
 
             return _footprint;
         }
+    }
+
+    /// <summary>
+    /// The current footprint weighed with <paramref name="softness"/>. Weighing a big soft tip takes a moment, so it's
+    /// weighed again only when the footprint or the softness changes.
+    /// </summary>
+    /// <param name="softness">How much of the radius fades, from 0 (a hard tip) to 1.</param>
+    public BrushFalloff FalloffWith(double softness)
+    {
+        var footprint = Footprint;
+        if (_falloff is null || _falloff.Footprint != footprint || !_falloff.Softness.Equals(softness))
+            _falloff = BrushFalloff.Create(footprint, softness);
+
+        return _falloff;
     }
 }

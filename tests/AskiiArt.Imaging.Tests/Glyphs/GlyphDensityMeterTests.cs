@@ -102,5 +102,62 @@ public sealed class GlyphDensityMeterTests
         meter.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => meter.GetDensity(new Rune('.')));
+        Assert.Throws<ObjectDisposedException>(() => meter.GetShape(new Rune('.')));
+    }
+
+    [Theory]
+    [MemberData(nameof(TestFonts.BundledFamilyNames), MemberType = typeof(TestFonts))]
+    public void ADotsInk_LiesInTheBottomHalf_AndAnApostrophesInTheTop(string familyName)
+    {
+        using var font = TestFonts.Load(familyName);
+        using var meter = new GlyphDensityMeter(font, FixedFallbackFontProvider.None);
+
+        var dot = meter.GetShape(new Rune('.'));
+        var apostrophe = meter.GetShape(new Rune('\''));
+
+        Assert.True(InkInRows(dot, 0, GlyphShape.Rows / 2) < InkInRows(dot, GlyphShape.Rows / 2, GlyphShape.Rows));
+        Assert.True(InkInRows(apostrophe, 0, GlyphShape.Rows / 2) >
+                    InkInRows(apostrophe, GlyphShape.Rows / 2, GlyphShape.Rows));
+    }
+
+    [Theory]
+    [MemberData(nameof(FontsWithBlocks))]
+    public void BlockCharacters_InkThePartsTheyCover(string familyName)
+    {
+        using var font = TestFonts.Load(familyName);
+        using var meter = new GlyphDensityMeter(font, FixedFallbackFontProvider.None);
+
+        var full = meter.GetShape(new Rune('█'));
+        var upperHalf = meter.GetShape(new Rune('▀'));
+        var leftHalf = meter.GetShape(new Rune('▌'));
+
+        Assert.All([.. full.Parts], part => Assert.Equal(1, part, 0.001));
+        Assert.Equal(1, upperHalf.InkAt(1, 0), 0.02);
+        Assert.Equal(0, upperHalf.InkAt(1, GlyphShape.Rows - 1), 0.02);
+        Assert.Equal(1, leftHalf.InkAt(0, 3), 0.02);
+        Assert.Equal(0, leftHalf.InkAt(GlyphShape.Columns - 1, 3), 0.02);
+    }
+
+    [Theory]
+    [MemberData(nameof(TestFonts.BundledFamilyNames), MemberType = typeof(TestFonts))]
+    public void AShapesInk_IsTheGlyphsDensity(string familyName)
+    {
+        using var font = TestFonts.Load(familyName);
+        using var meter = new GlyphDensityMeter(font, FixedFallbackFontProvider.None);
+
+        Assert.All(" .@W|".EnumerateRunes(),
+            glyph => Assert.Equal(meter.GetDensity(glyph), meter.GetShape(glyph).Ink, 0.001));
+    }
+
+    private static double InkInRows(GlyphShape shape, int fromRow, int toRow)
+    {
+        var total = 0.0;
+        for (var row = fromRow; row < toRow; row++)
+        {
+            for (var column = 0; column < GlyphShape.Columns; column++)
+                total += shape.InkAt(column, row);
+        }
+
+        return total;
     }
 }

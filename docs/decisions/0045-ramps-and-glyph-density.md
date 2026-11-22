@@ -33,3 +33,5 @@ Step 3.1 starts M3 with the two things its brushes, soft eraser and ramp editor 
 Updated 2026-11-16: `Ramp.NearestLevel` gives any glyph's level: its own if it's in the ramp, otherwise the level with the nearest measured density, for the Brush (ADR 0049).
 
 Updated 2026-11-18: user ramps are kept by `RampLibrary`, which gives them their ids and names (ADR 0052).
+
+Updated 2026-11-22: `IGlyphDensityProvider` also gives each glyph's shape, where in its cell its ink lies, which `GlyphDensityMeter` measures in the same drawing (ADR 0068).

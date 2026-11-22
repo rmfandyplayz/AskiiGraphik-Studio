@@ -28,3 +28,5 @@ Step 3.7 makes a drawing tablet's pen pressure count. The roadmap said pressure 
 - Nothing changes for a mouse: every existing stroke paints as before.
 - A pen whose driver reports no pressure gets Avalonia's 0.5 and paints at half strength. Checking real tablets on each platform is part of M10.
 - Choosing what pressure controls (size, strength, a curve) and the eraser end are parked in `docs/TEMPORARY-UI.md`.
+
+Updated 2026-11-22: on a cell the tip weighs unevenly, pressure scales each part's weight, and each part moves once by the greatest that has reached it (ADR 0068).

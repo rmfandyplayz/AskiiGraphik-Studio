@@ -73,3 +73,5 @@ Updated 2026-11-19: the Character Brush joined the group on key 4 (ADR 0053). Th
 Updated 2026-11-19: a pen's pressure scales how strongly the Brush covers each cell (ADR 0054).
 
 Updated 2026-11-20: a group can also give one of its tools a letter of its own (`ToolGroup.ToolLetters`), as W picks the Magic Wand in the Select group on M (ADR 0063).
+
+Updated 2026-11-22: where the weight changes across a cell, as at a tip's edge, each part of the cell moves by its own weight and the cell gets the glyph whose ink best lies where the tip painted (ADR 0068). So a soft tip's edge cells take their tone from the average weight over the cell, not the weight at its middle; the cells the tip's middle touches still use the weight at their middle.

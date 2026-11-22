@@ -363,6 +363,16 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | At the Text caret, pasted text runs from the caret with each line starting under the first; what goes past the right or bottom edge is dropped, and the caret ends after the last character | `Core/Tools/Text/TextTool.cs` (`PasteText`) | 4.6 |
 | Copy as Text and Copy as ANSI keep their names and shortcuts; with a selection they copy only its bounding rectangle | `Editing/EditActions.cs` | 4.6 |
 
+### The PATS brush (step 4.7, ADR 0068)
+
+| Choice | Where | Step |
+|---|---|---|
+| How much where the ink lies counts against how dark a glyph is: 4 to 1, part for part, tuned by eye on Fine and Standard | `Core/Ramps/RampShapeMatcher.cs` (`ShapeWeight`) | 4.7 |
+| Where no glyph near the right darkness has its ink on the shape's side, the cell gets the one nearest in darkness, whichever side its ink is on; a glyph inked the wrong way counts as no worse than an even one | `Core/Ramps/RampShapeMatcher.cs` | 4.7 |
+| Tips one or two cells tall (every cell an edge) paint as before, with no shaping, so the smallest tips don't get lighter | `Core/Tools/Footprints/BrushFalloff.cs` (`HasMiddle`) | 4.7 |
+| The cell or cells under the tip's middle paint at the weight at their middle, so a small fully soft tip's middle still reaches the full intensity in one stroke | `Core/Tools/Footprints/BrushFalloff.cs` (`HoldsMiddle`) | 4.7 |
+| A soft tip's other cells take their darkness from the tip's average weight over the cell, not the weight at its middle, so a fully soft 3-cell square now paints the middles of its sides darker and its corners lighter, where all eight edge cells were alike | `Core/Tools/RampStrokes/RampStroke.cs` | 4.7 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.

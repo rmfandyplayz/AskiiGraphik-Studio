@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools.Footprints;
 
 namespace AskiiArt.Core.Tests.Tools.Footprints;
@@ -99,6 +100,90 @@ public sealed class BrushFalloffTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => BrushFalloff.Create(footprint, softness));
     }
+
+    [Fact]
+    public void AHardSquare_PaintsEveryCellEvenly()
+    {
+        var falloff = BrushFalloff.Create(Footprint(5, BrushShape.Square), softness: 0);
+
+        Assert.False(falloff.HasShapedCells);
+        Assert.All(Cells(falloff.Footprint), cell => Assert.True(falloff.PartWeightsAt(cell.Column, cell.Row).IsEmpty));
+    }
+
+    // The circle's edge passes through the top of its top middle cell, so the parts above it get nothing.
+    [Fact]
+    public void AHardCircle_ShapesItsEdgeCells_TowardsTheMiddle()
+    {
+        var falloff = BrushFalloff.Create(Footprint(9, BrushShape.Circle), softness: 0);
+
+        var parts = falloff.PartWeightsAt(4, 0);
+
+        Assert.True(falloff.HasShapedCells);
+        Assert.Equal(GlyphShape.PartCount, parts.Length);
+        Assert.Equal(0, PartAt(parts, 1, 0));
+        Assert.Equal(1, PartAt(parts, 1, GlyphShape.Rows - 1));
+        Assert.True(falloff.PartWeightsAt(4, 4).IsEmpty);
+    }
+
+    [Fact]
+    public void ASoftTip_ShapesTheCellsItsFadeChangesAcross()
+    {
+        var falloff = BrushFalloff.Create(Footprint(7, BrushShape.Square), softness: 1);
+
+        // The left side's middle cell, fading towards the tip's left edge.
+        var parts = falloff.PartWeightsAt(0, 3);
+
+        Assert.True(PartAt(parts, 0, 4) < PartAt(parts, GlyphShape.Columns - 1, 4));
+        Assert.Equal(PartAt(parts, 0, 3), PartAt(parts, 0, 4), Tolerance);
+    }
+
+    // Each of these tips' cells is on its edge: none has all four neighbours in the footprint.
+    [Theory]
+    [InlineData(1, BrushShape.Square)]
+    [InlineData(2, BrushShape.Square)]
+    [InlineData(2, BrushShape.Circle)]
+    public void ATipWithNoMiddleCell_PaintsEveryCellEvenly(int size, BrushShape shape)
+    {
+        var falloff = BrushFalloff.Create(Footprint(size, shape), softness: 1);
+
+        Assert.False(falloff.HasShapedCells);
+    }
+
+    [Fact]
+    public void TheCellsTheMiddleTouches_PaintEvenly_SoTheMiddlePaintsFully()
+    {
+        var odd = BrushFalloff.Create(Footprint(3, BrushShape.Square), softness: 1);
+        var even = BrushFalloff.Create(Footprint(4, BrushShape.Square), softness: 1);
+
+        Assert.True(odd.PartWeightsAt(1, 1).IsEmpty);
+        Assert.Equal(1, odd.WeightAt(1, 1));
+        Assert.False(odd.PartWeightsAt(0, 1).IsEmpty);
+        Assert.All([(1, 1), (2, 1), (1, 2), (2, 2)],
+            cell => Assert.True(even.PartWeightsAt(cell.Item1, cell.Item2).IsEmpty));
+        Assert.False(even.PartWeightsAt(0, 1).IsEmpty);
+    }
+
+    [Fact]
+    public void ACellsPeakWeight_IsItsHeaviestPart_OrItsWeightWhenEven()
+    {
+        var falloff = BrushFalloff.Create(Footprint(7, BrushShape.Square), softness: 1);
+
+        Assert.Equal(falloff.PartWeightsAt(0, 3).ToArray().Max(), falloff.PeakWeightAt(0, 3));
+        Assert.Equal((float)falloff.WeightAt(3, 3), falloff.PeakWeightAt(3, 3));
+        Assert.Equal(0, falloff.PeakWeightAt(-1, 3));
+    }
+
+    [Fact]
+    public void ACellTheFootprintDoesntCover_HasNoParts()
+    {
+        var falloff = BrushFalloff.Create(Footprint(9, BrushShape.Circle), softness: 1);
+
+        Assert.True(falloff.PartWeightsAt(0, 0).IsEmpty);
+        Assert.True(falloff.PartWeightsAt(9, 4).IsEmpty);
+    }
+
+    private static float PartAt(ReadOnlySpan<float> parts, int column, int row) =>
+        parts[row * GlyphShape.Columns + column];
 
     private static BrushFootprint Footprint(int size, BrushShape shape) =>
         BrushFootprint.Create(new BrushTip(size, shape, BrushProportions.Mathematical), 1);

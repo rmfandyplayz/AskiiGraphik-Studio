@@ -131,8 +131,8 @@ public sealed class SoftEraserToolTests
         Assert.Equal(["···@@@", "···@@@", "···@@@"], TestCells.Read(Layer));
     }
 
-    // At full softness the edge ring of a 3-cell square gets about a quarter of the weight, which takes '@' down two
-    // levels.
+    // At full softness a 3-cell square lightens the cells along its sides about 30% of the way, on average over each
+    // cell, and its corners about 16%, which takes '@' down three levels and one (ADR 0068).
     [Fact]
     public void ASoftTip_LightensLessTowardsItsEdge()
     {
@@ -140,7 +140,7 @@ public sealed class SoftEraserToolTests
 
         Click(1, 1);
 
-        Assert.Equal(["###@@@", "#·#@@@", "###@@@"], TestCells.Read(Layer));
+        Assert.Equal(["%*%@@@", "*·*@@@", "%*%@@@"], TestCells.Read(Layer));
     }
 
     [Fact]

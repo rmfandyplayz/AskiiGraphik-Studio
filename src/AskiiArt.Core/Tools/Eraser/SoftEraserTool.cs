@@ -113,7 +113,7 @@ public sealed class SoftEraserTool : ITool
         // The stroke keeps the settings it starts with, so it erases along one ramp with one tip and one strength.
         var ramp = _ramp.Ramp;
         _stroke = new RampStroke(_session, ramp,
-            BrushFalloff.Create(_tip.Footprint, _options.Get(SoftEraserOptions.Softness) / 100.0),
+            _tip.FalloffWith(_options.Get(SoftEraserOptions.Softness) / 100.0),
             target: 0, strength: _options.Get(SoftEraserOptions.Strength) / 100.0, movesAtLeastOneLevel: true,
             _densities,
             (before, levelBefore, level) => Lighten(ramp, before, levelBefore, level),

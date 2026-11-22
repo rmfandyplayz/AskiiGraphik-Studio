@@ -74,3 +74,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0065](0065-tools-clip-to-the-selection-and-delete-empties-it.md) | Tools clip to the selection, and Delete empties it | Accepted |
 | [0066](0066-the-move-tool-and-its-floating-move.md) | The Move tool and its floating move | Accepted |
 | [0067](0067-cut-copy-and-paste.md) | Cut, Copy and Paste | Accepted |
+| [0068](0068-the-pats-brush.md) | The PATS brush (perceptually accurate text-based shapes) | Accepted |

@@ -86,6 +86,18 @@ public sealed class BrushFootprint
     }
 
     /// <summary>
+    /// Whether the point (<paramref name="x"/>, <paramref name="y"/>), in cells from the footprint's top-left, lies
+    /// inside the tip's shape: anywhere in a square, and inside the ellipse a circle's cells are chosen by (ADR 0068).
+    /// </summary>
+    public bool ShapeContains(double x, double y)
+    {
+        if (x < 0 || y < 0 || x > Width || y > Height)
+            return false;
+
+        return Tip.Shape == BrushShape.Square || IsInsideCircle(x, y, Width, Height);
+    }
+
+    /// <summary>
     /// Where the footprint's top-left goes when the pointer is in <paramref name="cell"/>, at
     /// (<paramref name="subCellX"/>, <paramref name="subCellY"/>) within it. The footprint is centred on the pointer
     /// as nearly as whole cells allow: an odd size centres on the pointer's cell, and an even size leans towards the
@@ -108,18 +120,14 @@ public sealed class BrushFootprint
         return (int)Math.Clamp(height, BrushTip.MinimumSize, BrushTip.MaximumSize);
     }
 
-    // The cells whose centres lie inside the ellipse that fills the footprint. The ellipse shrinks by a quarter of a
-    // cell at the widest point, so small sizes look round: size 3 is a plus rather than a full square.
+    // The cells whose centres lie inside the circle's ellipse.
     private static FootprintRow CircleRow(int width, int height, int row)
     {
-        var limit = 1 - 1.0 / (2 * Math.Max(width, height));
-        var y = (row + 0.5 - height / 2.0) / (height / 2.0);
         var start = width;
         var end = 0;
         for (var column = 0; column < width; column++)
         {
-            var x = (column + 0.5 - width / 2.0) / (width / 2.0);
-            if (x * x + y * y > limit)
+            if (!IsInsideCircle(column + 0.5, row + 0.5, width, height))
                 continue;
 
             start = Math.Min(start, column);
@@ -127,6 +135,16 @@ public sealed class BrushFootprint
         }
 
         return end > start ? new FootprintRow(start, end - start) : new FootprintRow(width / 2, 1);
+    }
+
+    // Whether a point lies inside the ellipse that fills the footprint, shrunk by a quarter of a cell at the widest
+    // point so small sizes look round: size 3 is a plus rather than a full square.
+    private static bool IsInsideCircle(double x, double y, int width, int height)
+    {
+        var limit = 1 - 1.0 / (2 * Math.Max(width, height));
+        var across = (x - width / 2.0) / (width / 2.0);
+        var down = (y - height / 2.0) / (height / 2.0);
+        return across * across + down * down <= limit;
     }
 
     private CellEdge[] FindEdges()

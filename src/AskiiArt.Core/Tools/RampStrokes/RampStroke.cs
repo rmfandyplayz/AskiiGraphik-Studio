@@ -25,6 +25,12 @@ internal delegate Cell RampCellPaint(Cell before, int levelBefore, int level);
 /// further. The new level is the nearest one, unless the stroke moves at least a level: then any
 /// move short of a level still takes the cell one level towards the target. Its edits show as it goes and coalesce
 /// into one undo step.
+/// <para>
+/// Where the tip's weight changes across a cell, as at its edge, each part of the cell moves by its own weight, and
+/// the cell gets the level, between where it was and the target, whose glyph best shows those parts
+/// (<see cref="RampShapeMatcher"/>, ADR 0068), so the ink lies where the tip painted. A part moves once too, by the
+/// greatest weight that has reached it.
+/// </para>
 /// </summary>
 internal sealed class RampStroke
 {
@@ -42,6 +48,9 @@ internal sealed class RampStroke
 
     // Each glyph's level, measured once per stroke.
     private readonly Dictionary<Rune, int> _levels = [];
+
+    // Matches the ramp's glyphs to cells the tip weighs unevenly; made when the stroke first reaches one.
+    private RampShapeMatcher? _matcher;
 
     private CellPoint _lastTopLeft;
 
@@ -131,19 +140,18 @@ internal sealed class RampStroke
         var document = _session.Document;
         var layer = _session.ActiveLayer;
         var cells = _session.EditCellsInSelection(layer.Id);
-        foreach (var (point, tipWeight) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
+        foreach (var (point, tipWeight, tipParts) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
                      document.CanvasSize))
         {
-            var weight = tipWeight * pressure;
             var now = layer.GetCell(point);
             if (!_reached.TryGetValue(point, out var before))
-                before = new ReachedCell(now, 0);
+                before = new ReachedCell(now, 0, null);
 
-            if (weight <= before.Weight)
+            if (!TryRaise(before, tipWeight * pressure, tipParts, pressure, out var reached))
                 continue;
 
-            _reached[point] = before with { Weight = weight };
-            var moved = MoveCell(before.Cell, weight);
+            _reached[point] = reached;
+            var moved = MoveCell(reached);
             if (moved != now)
                 cells.Set(point, moved);
         }
@@ -155,18 +163,90 @@ internal sealed class RampStroke
         _undoCountAfterLastEdit = _session.History.UndoCount;
     }
 
-    private Cell MoveCell(Cell before, double weight)
+    // The cell with its weights raised to those of a stamp, or false when the stamp raises none of them. Parts left
+    // too nearly even to matter become a weight for the whole cell, their average.
+    private static bool TryRaise(ReachedCell before, double weight, float[]? parts, double pressure,
+        out ReachedCell raised)
     {
+        var newWeight = Math.Max(before.Weight, weight);
+        raised = before with { Weight = newWeight };
+        if (parts is null && before.Parts is null)
+            return newWeight > before.Weight;
+
+        var floor = (float)newWeight;
+        var isRaised = false;
+        for (var part = 0; part < GlyphShape.PartCount; part++)
+            isRaised |= RaisedPart(before, weight, parts, pressure, part, floor) > OldPart(before, part);
+
+        if (!isRaised)
+            return newWeight > before.Weight;
+
+        // Only the stroke holds a cell's parts, and it replaces them with these, so they can be raised where they are.
+        var newParts = before.Parts ?? new float[GlyphShape.PartCount];
+        var lightest = float.PositiveInfinity;
+        var heaviest = float.NegativeInfinity;
+        for (var part = 0; part < newParts.Length; part++)
+        {
+            newParts[part] = RaisedPart(before, weight, parts, pressure, part, floor);
+            lightest = Math.Min(lightest, newParts[part]);
+            heaviest = Math.Max(heaviest, newParts[part]);
+        }
+
+        raised = heaviest - lightest <= BrushFalloff.EvenSpread
+            ? new ReachedCell(before.Cell, newParts.Average(), null)
+            : new ReachedCell(before.Cell, newWeight, newParts);
+        return true;
+    }
+
+    private static float OldPart(ReachedCell cell, int part) => cell.Parts?[part] ?? (float)cell.Weight;
+
+    private static float RaisedPart(ReachedCell before, double weight, float[]? parts, double pressure, int part,
+        float floor)
+    {
+        var stamped = parts is null ? (float)weight : parts[part] * (float)pressure;
+        return Math.Max(Math.Max(OldPart(before, part), stamped), floor);
+    }
+
+    private Cell MoveCell(ReachedCell reached)
+    {
+        var before = reached.Cell;
         var levelBefore = LevelOf(before);
         var darknessBefore = _ramp.IntensityOf(levelBefore);
-        var change = (_target - darknessBefore) * weight * _strength;
-        var level = _ramp.LevelAt(darknessBefore + change);
+        int level;
+        double change;
+        if (reached.Parts is null)
+        {
+            change = (_target - darknessBefore) * reached.Weight * _strength;
+            level = _ramp.LevelAt(darknessBefore + change);
+        }
+        else
+        {
+            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, out change);
+        }
 
         // A cell short of the target's level is always on the target's side of it, so one level can't overshoot.
         if (_movesAtLeastOneLevel && level == levelBefore && level != _targetLevel && change != 0)
             level += Math.Sign(change);
 
         return _paint(before, levelBefore, level);
+    }
+
+    // The level, between the cell's and the target's, whose glyph best shows each part moved by its own weight.
+    // Change is how far the parts moved on average.
+    private int MatchedLevel(float[] parts, int levelBefore, double darknessBefore, out double change)
+    {
+        Span<double> target = stackalloc double[GlyphShape.PartCount];
+        var totalChange = 0.0;
+        for (var part = 0; part < target.Length; part++)
+        {
+            var partChange = (_target - darknessBefore) * parts[part] * _strength;
+            target[part] = darknessBefore + partChange;
+            totalChange += partChange;
+        }
+
+        change = totalChange / target.Length;
+        _matcher ??= new RampShapeMatcher(_ramp, _densities());
+        return _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel));
     }
 
     // A pressure the device can't tell counts as full, as a mouse's does.
@@ -186,6 +266,7 @@ internal sealed class RampStroke
         return level;
     }
 
-    // A cell the stroke has reached: as it was before the stroke, and the greatest weight that has reached it.
-    private readonly record struct ReachedCell(Cell Cell, double Weight);
+    // A cell the stroke has reached: as it was before the stroke, the greatest weight that has reached it as a whole,
+    // and where the tip weighed it unevenly, the greatest weight of each part, each at least Weight; else null.
+    private readonly record struct ReachedCell(Cell Cell, double Weight, float[]? Parts);
 }
