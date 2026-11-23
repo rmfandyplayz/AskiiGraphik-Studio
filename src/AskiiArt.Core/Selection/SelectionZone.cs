@@ -6,8 +6,9 @@ using AskiiArt.Core.Documents;
 namespace AskiiArt.Core.Selection;
 
 /// <summary>
-/// The zone around the canvas that the Move tool can take the selection into (ADR 0071): 10 columns past the left and
-/// right edges, and as far on screen past the top and bottom, which is 5 rows when cells are twice as tall as wide.
+/// The zone around the canvas (ADRs 0071, 0072): 10 columns past the left and right edges, and as far on screen past the
+/// top and bottom, which is 5 rows when cells are twice as tall as wide. A selection the Move tool takes past the canvas
+/// must still touch it, and the view can scroll to all of it, and as far around a selection that goes past it.
 /// </summary>
 public static class SelectionZone
 {
@@ -26,10 +27,17 @@ public static class SelectionZone
     }
 
     /// <summary>The canvas and the zone around it, for cells <paramref name="cellWidthToHeight"/> as wide as tall.</summary>
-    public static CellRect Around(CanvasSize canvasSize, double cellWidthToHeight)
+    public static CellRect Around(CanvasSize canvasSize, double cellWidthToHeight) =>
+        Around(canvasSize.Bounds, cellWidthToHeight);
+
+    /// <summary>
+    /// <paramref name="cells"/> with as much room around them as the zone has around the canvas, for cells
+    /// <paramref name="cellWidthToHeight"/> as wide as tall.
+    /// </summary>
+    public static CellRect Around(CellRect cells, double cellWidthToHeight)
     {
         var rows = RowsPastCanvas(cellWidthToHeight);
-        return CellRect.FromEdges(-ColumnsPastCanvas, -rows, canvasSize.Width + ColumnsPastCanvas,
-            canvasSize.Height + rows);
+        return CellRect.FromEdges(cells.Left - ColumnsPastCanvas, cells.Top - rows, cells.Right + ColumnsPastCanvas,
+            cells.Bottom + rows);
     }
 }

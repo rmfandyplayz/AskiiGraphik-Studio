@@ -5,6 +5,7 @@ using AskiiArt.App.Actions;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Errors;
 using AskiiArt.App.Resources;
+using AskiiArt.App.Settings;
 using AskiiArt.App.Shell;
 using AskiiArt.App.Shell.Menus;
 using Avalonia;
@@ -55,6 +56,10 @@ internal sealed partial class App : Application
     {
         var errors = services.GetRequiredService<UnexpectedErrorHandler>();
         Dispatcher.UIThread.UnhandledException += (_, e) => e.Handled = errors.HandleUiThreadException(e.Exception);
+
+        // Before any window exists, so everything that moves reads the stilled tokens.
+        if (ReducedMotion.IsOn(services.GetRequiredService<IAppSettings>()))
+            ReducedMotion.Apply(Resources);
 
         // Mac apps keep running with no window open (ADR 0023).
         var keepsRunningWithoutWindow = OperatingSystem.IsMacOS();

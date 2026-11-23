@@ -126,8 +126,8 @@ internal sealed class ClipboardActions(ActiveDocument activeDocument, CanvasView
         var topLeft = PastePlacement.TopLeft(clip, Session.Document.CanvasSize, canvas.PointerCanvasPosition,
             canvas.ViewCentre);
         canvas.SelectTool(MoveTool.Id);
-        if (canvas.ActiveTool is MoveTool moveTool)
-            moveTool.Paste(clip, topLeft);
+        if (canvas.ActiveTool is MoveTool moveTool && moveTool.Paste(clip, topLeft))
+            canvas.NotePasted(Session.Selection.Mask.Bounds);
     }
 
     // The app's own cells when they're there, since they keep colours, shape and place; else the plain text.

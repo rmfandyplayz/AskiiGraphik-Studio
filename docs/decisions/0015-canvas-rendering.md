@@ -49,3 +49,5 @@ Updated 2026-11-01: the control fills the window under the docked widgets, with 
 Updated 2026-11-01: the scrollbars are off unless `CanvasView.ShowScrollBars` is set (ADR 0029). The control and its bindings stay as described.
 Updated 2026-11-04: what the control sits under is now `DockingHost` (ADR 0035).
 Updated 2026-11-14: the pages are still alpha-only, but each glyph is now tinted by its own colour in the same `DrawAtlas` call, with the cell backgrounds drawn under the glyphs (ADR 0038).
+
+Updated 2026-11-22: since 4.9b (ADR 0072), the scrolled content is the canvas, the zone around it and any selection past that zone with room around it, plus a 64-pixel margin; a canvas whose content fits is centred, shifted only as far as it must be to show it all.

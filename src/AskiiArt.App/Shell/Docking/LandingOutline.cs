@@ -78,6 +78,8 @@ internal sealed class LandingOutline : Control
             InvalidateVisual();
         }
 
-        RequestNextFrame();
+        // With motion reduced the dashes stand still, so one frame is enough.
+        if (_metrics.LandingAntsSpeed > 0)
+            RequestNextFrame();
     }
 }

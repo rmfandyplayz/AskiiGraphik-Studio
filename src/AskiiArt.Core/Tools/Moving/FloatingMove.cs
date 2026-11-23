@@ -15,15 +15,15 @@ namespace AskiiArt.Core.Tools.Moving;
 /// presses, is a Move step of its own, from where the gesture found the cells to where it leaves them. The cells float:
 /// each step puts back what lay under them before they go on, so while the move lasts, also across undos and redos of
 /// its own steps, they pass over other art without harming it. The selection moves with them, so moving the whole layer
-/// selects it (ADR 0069), and it can go past the canvas's edges into the zone around it (ADR 0071). A paste floats the
-/// same way, with cells it brings, from a Paste step of its own (ADR 0067).
+/// selects it (ADR 0069), and it can go past the canvas's edges for as long as it still touches the zone around it
+/// (ADRs 0071, 0072). A paste floats the same way, with cells it brings, from a Paste step of its own (ADR 0067).
 /// </summary>
 internal sealed class FloatingMove
 {
     private readonly EditingSession _session;
     private readonly bool _isPaste;
 
-    // The canvas and the zone around it, where the selection can go (ADR 0071).
+    // The canvas and the zone around it, which the selection must still touch (ADR 0072).
     private readonly CellRect _zone;
 
     // The cells that move, where they were, which the selection becomes wherever they go: the whole canvas when
@@ -47,7 +47,7 @@ internal sealed class FloatingMove
 
     /// <summary>
     /// Takes the selected cells of <paramref name="session"/>'s active layer, or all of its cells when nothing is
-    /// selected. A copy leaves the cells where they were as well. The selection can go anywhere in
+    /// selected. A copy leaves the cells where they were as well. The selection can go anywhere that it still touches
     /// <paramref name="zone"/>.
     /// </summary>
     public FloatingMove(EditingSession session, bool isCopy, CellRect zone)
@@ -83,8 +83,8 @@ internal sealed class FloatingMove
 
     /// <summary>
     /// Pastes <paramref name="clip"/> with its top-left corner at <paramref name="topLeft"/>: its cells, fitted to
-    /// the document, float on the active layer with its shape selected, as far as <paramref name="zone"/> reaches, as a
-    /// Paste step. Cells off the canvas are kept while the paste floats, as a move's are.
+    /// the document, float on the active layer with its shape selected, as a Paste step. Cells off the canvas are kept
+    /// while the paste floats, as a move's are, and it can go anywhere that it still touches <paramref name="zone"/>.
     /// </summary>
     public static FloatingMove Paste(EditingSession session, CellClip clip, CellPoint topLeft, CellRect zone)
     {
@@ -119,9 +119,9 @@ internal sealed class FloatingMove
     private FloatState Current => _states[_stateIndex];
 
     /// <summary>
-    /// <paramref name="offset"/>, kept to where the selection stays in the zone (ADR 0071): each side of the cells'
-    /// shape stops at the zone's outer edge, so a drag past it slides along it. A shape too big for the zone can only
-    /// go as far as it still covers it. Where the gesture began is always within reach, so nothing jumps.
+    /// <paramref name="offset"/>, kept to where the box round the cells' shape still touches the zone, sharing at least
+    /// an edge or a corner with it (ADR 0072). Its nearest side stops at the zone's outer edge, so a drag past it slides
+    /// along it. Where the gesture began is always within reach, so nothing jumps.
     /// </summary>
     public CellPoint Limit(CellPoint offset)
     {
@@ -131,8 +131,8 @@ internal sealed class FloatingMove
 
         var start = Current.Offset;
         return new CellPoint(
-            LimitAlong(offset.X, start.X, _zone.Left - shape.Left, _zone.Right - shape.Right),
-            LimitAlong(offset.Y, start.Y, _zone.Top - shape.Top, _zone.Bottom - shape.Bottom));
+            LimitAlong(offset.X, start.X, _zone.Left - shape.Right, _zone.Right - shape.Left),
+            LimitAlong(offset.Y, start.Y, _zone.Top - shape.Bottom, _zone.Bottom - shape.Top));
     }
 
     /// <summary>Starts a gesture from where the cells are. Its moves make one step.</summary>
@@ -251,7 +251,7 @@ internal sealed class FloatingMove
         }
 
         var corner = new CellPoint(_maskCorner.X + offset.X, _maskCorner.Y + offset.Y);
-        var selection = _mask.MovedWithin(_session.Document.CanvasSize, corner, _zone);
+        var selection = _mask.MovedWithin(_session.Document.CanvasSize, corner, _mask.Bounds.Offset(corner));
         commands.Add(new SetSelectionCommand(_session.Selection, selection, name));
         return (new CompositeCommand(commands, name), covered);
     }
@@ -273,12 +273,9 @@ internal sealed class FloatingMove
 
     // The offset along one axis kept between the two that put the shape's sides at the zone's, and never further from
     // where the gesture began than it already is.
-    private static int LimitAlong(int offset, int start, int toFirstSide, int toSecondSide)
-    {
-        var lowest = Math.Min(Math.Min(toFirstSide, toSecondSide), start);
-        var highest = Math.Max(Math.Max(toFirstSide, toSecondSide), start);
-        return Math.Clamp(offset, lowest, highest);
-    }
+    // Keeps an offset between the farthest it can go back and forth along one axis, or wherever the gesture began.
+    private static int LimitAlong(int offset, int start, int farthestBack, int farthestOn) =>
+        Math.Clamp(offset, Math.Min(farthestBack, start), Math.Max(farthestOn, start));
 
     private static MovingCell[] TakeCells(Layer layer, SelectionMask mask)
     {

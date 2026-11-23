@@ -37,3 +37,5 @@ They agreed to measure the 0.4 s from when the last arrow key was let go, so hol
 - History shows one Move step per drag or run, so a long move takes several undos to take back.
 - The 0.4 s and the three presses are guesses (TEMPORARY-UI).
 - In the App the pause is timed with the system clock, so the one App test of it waits a real 0.45 s.
+
+Updated 2026-11-22: since 4.9b (ADR 0073), the runs of arrow presses live in `CellMover`, and the selection tools' arrows make the same steps.

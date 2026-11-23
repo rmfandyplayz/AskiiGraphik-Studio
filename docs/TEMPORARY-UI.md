@@ -118,7 +118,7 @@ Everything the user sees is the owner's to design (CLAUDE.md). Until the owner's
 |---|---|---|
 | 100% zoom means a 16-pixel font; zoom steps from 25% to 800% | `CanvasViewModel.DefaultFontSize`, `ZoomLevels.cs` | 1.4 |
 | Colours: grey pasteboard, white or dark paper, black or light ink, faint grid lines, translucent blue hover, following light and dark mode | `AppCanvas*Brush` tokens | 1.4 |
-| 32-pixel margin around the canvas | `AppCanvasMargin` token | 1.4 |
+| 64-pixel margin past the zone around the canvas (32 until 4.9b, round the canvas itself) | `AppCanvasMargin` token | 1.4, 4.9b |
 | Grid off by default, and not drawn when cells are under 4 device pixels wide (so it depends on display scaling) | `CanvasViewModel`, `CanvasScenePainter.MinimumCellWidthForGrid` | 1.4 |
 | Missing glyphs: an orange cell for "drawn with another font", a red cell and a hollow box for "no font has it" | `AppCanvasFallbackGlyphBrush`, `AppCanvasPlaceholderGlyphBrush`, `GlyphRasterizer` | 1.3, 1.4 |
 | A wide glyph from the document's font is squeezed sideways to fit its cell; box-drawing and block characters are clipped instead | `GlyphRasterizer` | 1.4 |
@@ -345,7 +345,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | The step is called Move, for a copy too. A drag that ends where it began, or a click on a selected cell, makes no step. A click on an unselected cell is a Deselect step | `Strings.resx` (`UndoStepMove`), `Core/Tools/Moving/FloatingMove.cs`, `MoveTool.cs` | 4.5, 4.8 |
 | Alt at the press copies, and always starts a new move, so each Alt-drag during a move leaves another copy behind | `MoveTool.cs` | 4.5 |
 | Cells moved off the canvas come back if they're moved back on before the move ends, and are lost when it ends. Since 4.9 the outline follows them past the canvas and stays there (see below) | `FloatingMove.cs`, `Core/Selection/SelectionMask.cs` (`MovedWithin`) | 4.5, 4.9 |
-| A save doesn't end a move, and nor does an undo or redo of its own steps. Enter, another tool, another active layer, or any other edit, undo or selection change does | `MoveTool.cs` | 4.5, 4.8 |
+| A save doesn't end a move, and nor does an undo or redo of its own steps. Enter, another tool, another active layer, or any other edit, undo or selection change does | `Core/Tools/Moving/CellMover.cs` | 4.5, 4.8 |
 | On a locked or hidden layer the Move tool does nothing, and the arrow keys aren't used | `MoveTool.cs` | 4.5 |
 | Not built: moving only the outline without the cells | | 4.5, 4.8 |
 | The Tools toolbar's text buttons now need about 590 pixels, about 50 more than it gets in a window 1920 wide, so there it scrolls until the icon buttons arrive | `Shell/Toolbars/ToolbarLayout.cs` | 4.5 |
@@ -387,9 +387,9 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| A run of arrow presses ends when a press comes 0.4 s or more after the last arrow was let go, timed from the key-up so a held key stays one step | `Core/Tools/Moving/NudgeRun.cs` (`_pause`) | 4.8 |
+| A run of arrow presses ends when a press comes 0.4 s or more after the last arrow was let go, timed from the key-up so a held key stays one step | `Core/Tools/Moving/NudgeRun.cs` (`Pause`) | 4.8 |
 | A turn starts a new run after three or more presses one way; after one or two it's taken as a slip and carries the run on | `NudgeRun.cs` (`PressesBeforeATurnCounts`) | 4.8 |
-| Enter with no move under way still deselects. Undoing Enter's Deselect step brings the selection back, but the cells no longer float | `Core/Tools/Moving/MoveTool.cs` | 4.8 |
+| Enter with no move under way still deselects in the Move tool. Undoing Enter's Deselect step brings the selection back, but the cells no longer float | `Core/Tools/Moving/MoveTool.cs`, `CellMover.cs` | 4.8 |
 | Esc during a drag puts the cells back where that drag found them. Any other Esc picks the Hand tool and leaves the cells where they are, so a paste stays; undo takes it away | `MoveTool.cs` | 4.8 |
 | An undo or redo during a drag or a run of presses ends it, keeping its step, and the rest of the drag does nothing | `MoveTool.cs`, `FloatingMove.cs` | 4.8 |
 
@@ -400,16 +400,32 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | The outline past the canvas is drawn at 50% of its strength, and the part a selection tool's gesture would drop at 15%. Hatching stays on the canvas | `Theme/Tokens.axaml` (`AppCanvasSelectionOffCanvasOpacity`, `AppCanvasSelectionDroppedOffCanvasOpacity`) | 4.9 |
 | Past the canvas the outline's dashes run with the rest; the part a gesture would drop stands still | `Canvas/Rendering/CanvasSceneBuilder.cs` | 4.9 |
 | The zone's rows above and below are 10 columns' width on screen, rounded, and at least 1 | `Core/Selection/SelectionZone.cs` | 4.9 |
-| A shape wider or taller than the zone, such as a big paste, can move only as far as it still covers the zone, and only the part inside the zone stays selected | `Core/Tools/Moving/FloatingMove.cs` (`Limit`) | 4.9 |
+| A shape wider or taller than the zone, such as a big paste, is all selected, and moves until its far side touches the zone (until 4.9b only the part inside the zone stayed selected) | `Core/Tools/Moving/FloatingMove.cs` (`Limit`) | 4.9, 4.9b |
 | A Shift or Alt click with a selection tool, which otherwise leaves the selection alone, still drops the part past the canvas | `Core/Tools/Selecting/SelectionPreview.cs` | 4.9 |
 | Grow, Shrink, Copy as Text and Copy as ANSI are greyed out too while nothing selected is on the canvas. Invert then selects the whole canvas | `Selection/SelectionActions.cs`, `Editing/EditActions.cs` | 4.9 |
 | Resizing the canvas keeps the selected cells that land on the new canvas, including ones that were past the old one, and drops the rest | `Core/Selection/SelectionMask.cs` (`Resized`) | 4.9 |
 | The Move tool's cursor shows over selected cells past the canvas too | `Canvas/CanvasControl.cs` | 4.9 |
-| The space round the canvas stays 32 pixels, so on a canvas bigger than the window the zone can't all be scrolled into view (open question) | `Canvas/CanvasControl.cs` (`CanvasMargin`) | 4.9 |
+
+### Moving past the zone, scrolling round it, and arrows in the selection tools (step 4.9b, ADRs 0072, 0073)
+
+| Choice | Where | Step |
+|---|---|---|
+| A move goes as far as the selection's bounding box still shares an edge or a corner with the zone, so the whole selection, or a whole layer, can go off the canvas | `Core/Tools/Moving/FloatingMove.cs` (`Limit`) | 4.9b |
+| Around a selection past the zone, the view can scroll as far again as the zone reaches past the canvas: 10 columns, and 10 columns' width on screen in rows | `Canvas/CanvasReach.cs` | 4.9b |
+| While the canvas, its zone and any selection past it all fit in the window, the canvas stays centred, shifted only as far as it must be to show them | `Canvas/CanvasViewport.cs` (`OriginAlong`) | 4.9b |
+| The view keeps still during a drag or click, while an arrow is held and for 0.4 s after the last one is let go, the same pause that ends a run of presses | `Canvas/CanvasControl.Reach.cs` | 4.9b |
+| Then it glides out of space nothing needs any more in 0.15 s, easing out; scrolling, panning or zooming stops the glide where it is | `AppCanvasViewGlideMilliseconds` token, `Canvas/ViewGlide.cs` | 4.9b |
+| A paste that's partly out of view but would fit glides to the middle of the view; a paste that's all in view, or too big to fit, leaves the view as it is | `Canvas/CanvasControl.Reach.cs` (`CentreOnIfPartlyHidden`) | 4.9b |
+| In every selection tool, with something selected and no gesture under way, the arrows move the selected cells as the Move tool's do, staying in the tool; with nothing selected they do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
+| During a selection tool's drag, while the Polygonal Lasso has corners down, or while the Magic Wand's button is held, the arrows do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
+| In a selection tool Enter ends a move the arrows made and deselects; with no such move it does nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
+| Reduce motion is a setting in the settings file only (`"reduceMotion": "true"`), off by default, read at start-up; it stills the selection's dashes and hatching, the landing outline, the docking animations and fades, and the view's glide | `Settings/ReducedMotion.cs` | 4.9b |
 
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
+
+- **Follow the system's reduce-motion setting** (raised in 4.9b's planning; **for the Preferences window**): the app's own switch could start from the operating system's (Windows' animation effects, macOS's Reduce motion), and get a checkbox under Accessibility. Whether Avalonia can read the system's on every platform is still to be checked.
 
 - **Custom cursors** (raised after 4.5's testing; **for M8**): the owner wants cursors of their own that show what each tool will do. Avalonia can make a cursor from a bitmap on every platform. Until then the tools use the system's: Avalonia has no move cursor on a Mac (its four-way arrows are the crosshair there), and on Windows the four-way arrows are also the Hand tool's pan cursor.
 - **Esc as a default-tool key** (raised in 4.5's planning; **for M8**): Esc picks the Hand tool today. It could become a "default tool" setting, so users bind it to the tool they please.

@@ -26,6 +26,7 @@ public sealed class PolygonalLassoTool : ITool
 
     private readonly EditingSession _session;
     private readonly SelectionCombiner _combiner;
+    private readonly SelectionArrows _arrows;
     private readonly List<CanvasPoint> _corners = [];
     private CanvasPoint _pointer;
     private ToolMarkerReach _reach;
@@ -38,6 +39,7 @@ public sealed class PolygonalLassoTool : ITool
         _session = context.Session;
         _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
             ShowPreview);
+        _arrows = new SelectionArrows(context);
     }
 
     /// <summary>
@@ -88,6 +90,7 @@ public sealed class PolygonalLassoTool : ITool
         _reach = input.MarkerReach;
         if (!IsDrawing)
         {
+            _arrows.EndMove();
             _combiner.Start(input.Modifiers);
             _corners.Add(_pointer);
             ShowPath();
@@ -123,11 +126,13 @@ public sealed class PolygonalLassoTool : ITool
     /// <summary>
     /// While drawing, Enter finishes the shape, Backspace takes the last corner away (the first, too, which cancels)
     /// and Esc cancels. Otherwise none of them is the tool's, so Esc switches to the Hand tool (ADR 0041).
+    /// With something selected and no shape being drawn, the arrows move the selected cells as the Move tool's do, and
+    /// Enter ends that move and deselects (ADR 0073).
     /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers)
     {
         if (!IsDrawing)
-            return false;
+            return _arrows.KeyPressed(key, isGestureUnderWay: false);
 
         switch (key)
         {
@@ -142,15 +147,22 @@ public sealed class PolygonalLassoTool : ITool
                 Cancel();
                 return true;
             default:
-                return false;
+                return _arrows.KeyPressed(key, isGestureUnderWay: true);
         }
     }
+
+    /// <summary>Notes when an arrow is let go, which decides whether the next press starts a new step.</summary>
+    public void ArrowReleased(ToolKey arrow) => _arrows.ArrowReleased(arrow);
 
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
 
-    /// <summary>Cancels a shape in progress, leaving the selection as it was.</summary>
-    public void Deactivate() => Cancel();
+    /// <summary>Cancels a shape in progress, leaving the selection as it was, and ends a move the arrows made.</summary>
+    public void Deactivate()
+    {
+        Cancel();
+        _arrows.Detach();
+    }
 
     private void Finish()
     {

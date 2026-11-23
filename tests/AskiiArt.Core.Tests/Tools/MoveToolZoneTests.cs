@@ -10,7 +10,10 @@ using AskiiArt.Core.Tools.Moving;
 
 namespace AskiiArt.Core.Tests.Tools;
 
-/// <summary>The Move tool taking the selection past the canvas's edges, into the zone around it (ADR 0071).</summary>
+/// <summary>
+/// The Move tool taking the selection past the canvas's edges, as far as it still touches the zone around it (ADRs 0071,
+/// 0072).
+/// </summary>
 public sealed class MoveToolZoneTests
 {
     private readonly EditingSession _session;
@@ -29,22 +32,22 @@ public sealed class MoveToolZoneTests
     private CellRect SelectedBounds => _session.Selection.Mask.Bounds;
 
     [Fact]
-    public void ADrag_StopsAtTheZonesOuterEdge_AndThenSlidesAlongIt()
+    public void ADrag_StopsWhereTheSelectionWouldStopTouchingTheZone_AndThenSlidesAlongIt()
     {
         TestTools.Select(_session, "##····", "······", "······");
 
         Press(0, 0);
         Move(-20, 1);
-        Assert.Equal(new CellRect(-10, 1, 2, 1), SelectedBounds);
+        Assert.Equal(new CellRect(-12, 1, 2, 1), SelectedBounds);
 
         Move(-20, 20);
         Release(-20, 20);
 
-        Assert.Equal(new CellRect(-10, 7, 2, 1), SelectedBounds);
+        Assert.Equal(new CellRect(-12, 8, 2, 1), SelectedBounds);
     }
 
     [Fact]
-    public void TheArrows_StopAtTheZonesOuterEdge()
+    public void TheArrows_StopWhereTheSelectionWouldStopTouchingTheZone()
     {
         TestTools.Select(_session, "#·····", "······", "······");
 
@@ -53,15 +56,15 @@ public sealed class MoveToolZoneTests
         for (var press = 0; press < 8; press++)
             _tool.KeyPressed(ToolKey.Up, ToolModifiers.None);
 
-        Assert.Equal(new CellRect(-10, -5, 1, 1), SelectedBounds);
+        Assert.Equal(new CellRect(-11, -6, 1, 1), SelectedBounds);
     }
 
     [Fact]
-    public void WithNothingSelected_TheWholeLayerGoesAtMostTenColumnsPastTheCanvas()
+    public void WithNothingSelected_TheWholeLayerCanGoOffTheCanvas_AsFarAsItStillTouchesTheZone()
     {
         Drag((0, 0), (30, 0));
 
-        Assert.Equal(new CellRect(10, 0, 6, 3), SelectedBounds);
+        Assert.Equal(new CellRect(16, 0, 6, 3), SelectedBounds);
         Assert.Equal(["······", "······", "······"], TestCells.Read(Layer));
     }
 
@@ -97,7 +100,7 @@ public sealed class MoveToolZoneTests
     }
 
     [Fact]
-    public void APaste_KeepsItsCellsInTheZoneSelected()
+    public void APaste_IsSelected_PastTheCanvasToo()
     {
         _tool.Paste(PastedText.ToClip("xy")!, new CellPoint(5, 0));
 
@@ -106,19 +109,23 @@ public sealed class MoveToolZoneTests
     }
 
     [Fact]
-    public void APasteWiderThanTheZone_MovesOnlyAsFarAsItStillCoversIt_AndIsSelectedAsFarAsTheZoneReaches()
+    public void APasteWiderThanTheZone_IsAllSelected_AndGoesUntilItsFarSideTouchesTheZone()
     {
         // 30 cells, from 12 columns left of the canvas to 12 right of it, where the zone is 26 wide.
         _tool.Paste(PastedText.ToClip("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123")!, new CellPoint(-12, 0));
         Assert.Equal(new Rune('M'), Layer.GetCell(new CellPoint(0, 0)).Glyph);
+        Assert.Equal(new CellRect(-12, 0, 30, 1), SelectedBounds);
+
+        for (var press = 0; press < 4; press++)
+            _tool.KeyPressed(ToolKey.FarRight, ToolModifiers.None);
+
+        Assert.Equal(new CellRect(16, 0, 30, 1), SelectedBounds);
+        Assert.Equal("abcdef", TestCells.Read(Layer)[0]);
 
         _tool.KeyPressed(ToolKey.FarLeft, ToolModifiers.None);
+        _tool.KeyPressed(ToolKey.FarLeft, ToolModifiers.None);
+        _tool.KeyPressed(ToolKey.FarLeft, ToolModifiers.None);
         Assert.Equal(new Rune('O'), Layer.GetCell(new CellPoint(0, 0)).Glyph);
-
-        _tool.KeyPressed(ToolKey.FarRight, ToolModifiers.None);
-        _tool.KeyPressed(ToolKey.FarRight, ToolModifiers.None);
-        Assert.Equal(new Rune('K'), Layer.GetCell(new CellPoint(0, 0)).Glyph);
-        Assert.Equal(new CellRect(-10, 0, 26, 1), SelectedBounds);
     }
 
     private void Drag((int X, int Y) from, (int X, int Y) to)

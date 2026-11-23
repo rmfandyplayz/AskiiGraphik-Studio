@@ -50,3 +50,5 @@ Updated 2026-11-22: since 4.8 (ADR 0069), every move sets the selection in its s
 Updated 2026-11-22: ADR 0070 makes each drag or run of arrow presses its own step, keeps the cells floating across undos and redos of them, and changes Enter and Esc. What the Decision and Consequences say about one step per move, an undo ending the move, and Esc no longer holds.
 
 Updated 2026-11-22: since 4.9 (ADR 0071), the moved selection can reach into a zone past the canvas, where the move stops, and stays there when the move ends; only the cells off the canvas are lost.
+
+Updated 2026-11-22: since 4.9b (ADR 0072), the move stops only where the selection would no longer touch the zone, so it can go wholly off the canvas. The floating move and the arrows now live in `CellMover`, which the selection tools' arrows use too (ADR 0073).

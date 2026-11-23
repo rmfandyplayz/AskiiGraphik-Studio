@@ -69,12 +69,19 @@ public sealed class EllipseSelectTool : ITool
     /// <summary>Reshapes the ellipse as Shift or Alt go down or up during a drag.</summary>
     public void ModifiersChanged(ToolModifiers modifiers) => _gesture.ModifiersChanged(modifiers);
 
-    /// <summary>Esc during a drag cancels it; otherwise Esc isn't the tool's (ADR 0041).</summary>
+    /// <summary>
+    /// Esc during a drag cancels it; otherwise Esc isn't the tool's (ADR 0041).
+    /// With something selected and no drag under way, the arrows move the selected cells as the Move tool's do, and
+    /// Enter ends that move and deselects (ADR 0073).
+    /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers) => _gesture.KeyPressed(key);
+
+    /// <summary>Notes when an arrow is let go, which decides whether the next press starts a new step.</summary>
+    public void ArrowReleased(ToolKey arrow) => _gesture.ArrowReleased(arrow);
 
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
 
-    /// <summary>Cancels a drag in progress, leaving the selection as it was.</summary>
+    /// <summary>Cancels a drag in progress, leaving the selection as it was, and ends a move the arrows made.</summary>
     public void Deactivate() => _gesture.Deactivate();
 }

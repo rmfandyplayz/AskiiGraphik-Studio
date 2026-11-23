@@ -26,7 +26,7 @@ namespace AskiiArt.App.Canvas;
 /// and the hover highlight, and passes everything else to the active tool in cell terms.
 /// Scrollbars bind to its offset properties, which are in device pixels.
 /// </summary>
-internal sealed class CanvasControl : Control, ICustomHitTest
+internal sealed partial class CanvasControl : Control, ICustomHitTest
 {
     public static readonly StyledProperty<CompositeCache?> CompositeProperty =
         AvaloniaProperty.Register<CanvasControl, CompositeCache?>(nameof(Composite));
@@ -51,7 +51,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         AvaloniaProperty.Register<CanvasControl, bool>(nameof(IsMouseActingAsPen));
 
     public static readonly StyledProperty<double> CanvasMarginProperty =
-        AvaloniaProperty.Register<CanvasControl, double>(nameof(CanvasMargin), 32);
+        AvaloniaProperty.Register<CanvasControl, double>(nameof(CanvasMargin), 64);
 
     public static readonly StyledProperty<Thickness> SafeAreaProperty =
         AvaloniaProperty.Register<CanvasControl, Thickness>(nameof(SafeArea));
@@ -230,7 +230,10 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         set => SetValue(IsMouseActingAsPenProperty, value);
     }
 
-    /// <summary>The empty space around the canvas when scrolled to an edge, in logical pixels.</summary>
+    /// <summary>
+    /// The empty space past the zone around the canvas, or past the room around a selection beyond it, when scrolled
+    /// to an edge, in logical pixels (ADR 0072).
+    /// </summary>
     public double CanvasMargin
     {
         get => GetValue(CanvasMarginProperty);
@@ -453,7 +456,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
 
-        if (display is { IsMoving: true })
+        // With motion reduced the dashes and hatching have no speed, so there's no frame to ask for.
+        if (display is { IsMoving: true } && SelectionAntsSpeed > 0)
             RequestMotionFrame();
     }
 
@@ -540,7 +544,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         }
         else if (change.Property == CompositeProperty || change.Property == FontProperty ||
                  change.Property == AtlasesProperty || change.Property == BaseFontSizeProperty ||
-                 change.Property == CanvasMarginProperty || change.Property == SafeAreaProperty)
+                 change.Property == CanvasMarginProperty || change.Property == SafeAreaProperty ||
+                 change.Property == CellWidthToHeightProperty)
         {
             UpdateViewport();
         }
@@ -584,6 +589,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
 
         if (_panStart is { } start && _viewport is not null)
         {
+            StopGlide();
             var current = _pointerPosition.Value;
             var offset = new PixelPoint(
                 _panStartOffset.X - (int)Math.Round(current.X - start.X),
@@ -656,6 +662,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             }
 
             e.Handled = true;
+            SettleView();
         }
     }
 
@@ -670,6 +677,8 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             _isToolGestureActive = false;
             if (Tool is { } tool && ToToolInput(_pointerPosition ?? default, KeyModifiers.None) is { } input)
                 tool.PointerReleased(input);
+
+            SettleView();
         }
 
         UpdateCursor();
@@ -689,12 +698,12 @@ internal sealed class CanvasControl : Control, ICustomHitTest
                 ZoomByWheel(e);
                 break;
             case WheelAction.Scroll:
-                ScrollByWheel(e.Delta, _viewport);
+                ScrollByWheel(e.Delta);
                 break;
             case WheelAction.ScrollSideways:
                 // Shift turns a vertical wheel into a horizontal one, as in most apps. macOS does
                 // that itself, so a delta that's already sideways is left alone.
-                ScrollByWheel(e.Delta.X == 0 ? new Vector(e.Delta.Y, 0) : e.Delta, _viewport);
+                ScrollByWheel(e.Delta.X == 0 ? new Vector(e.Delta.Y, 0) : e.Delta);
                 break;
         }
 
@@ -707,6 +716,9 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _altClickMenuGuard.OnKeyDown(this, e.Key, _isToolGestureActive);
         if (ModifierOf(e.Key) is { } pressed && Tool is { } shaped)
             shaped.ModifiersChanged(ToToolModifiers(e.KeyModifiers) | pressed);
+
+        if (ArrowOf(e.Key) is { } arrowDown)
+            HoldForArrow(arrowDown);
 
         // A text tool wants Space as a typed space, so it isn't handled here: on macOS a handled
         // key never reaches text input.
@@ -728,8 +740,12 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         _altClickMenuGuard.OnKeyUp(this, e.Key);
         if (ModifierOf(e.Key) is { } released && Tool is { } tool)
             tool.ModifiersChanged(ToToolModifiers(e.KeyModifiers) & ~released);
-        if (ArrowOf(e.Key) is { } arrow && Tool is { } letGo)
-            letGo.ArrowReleased(arrow);
+        if (ArrowOf(e.Key) is { } arrow)
+        {
+            Tool?.ArrowReleased(arrow);
+            LetGoOfArrow(arrow);
+        }
+
         if (e.Key != Key.Space || !_isSpaceHeld)
             return;
 
@@ -750,6 +766,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         base.OnLostFocus(e);
         _altClickMenuGuard.OnLostFocus();
         _isSpaceHeld = false;
+        LetGoOfAllArrows();
         UpdateCursor();
     }
 
@@ -770,10 +787,14 @@ internal sealed class CanvasControl : Control, ICustomHitTest
             ZoomAt(ToDevicePixels(e.GetPosition(this)), steps);
     }
 
-    private void ScrollByWheel(Vector delta, CanvasViewport viewport)
+    private void ScrollByWheel(Vector delta)
     {
+        StopGlide();
+        if (_viewport is null)
+            return;
+
         var distance = WheelScrollDistance * _renderScaling;
-        SetViewport(viewport.ScrolledBy(-(int)Math.Round(delta.X * distance), -(int)Math.Round(delta.Y * distance)));
+        SetViewport(_viewport.ScrolledBy(-(int)Math.Round(delta.X * distance), -(int)Math.Round(delta.Y * distance)));
     }
 
     // Zooms in by positive steps and out by negative ones.
@@ -800,6 +821,7 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (_viewport is null || _isPublishingViewport)
             return;
 
+        StopGlide();
         SetViewport(_viewport.ScrolledTo(new PixelPoint((int)Math.Round(horizontal), (int)Math.Round(vertical))));
     }
 
@@ -822,14 +844,18 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         var insets = new CanvasInsets(ToDevicePixels(SafeArea.Left), ToDevicePixels(SafeArea.Top),
             ToDevicePixels(SafeArea.Right), ToDevicePixels(SafeArea.Bottom));
 
+        StopGlide();
+        var reach = CurrentReach();
         if (_viewport is null)
         {
-            SetViewport(new CanvasViewport(Composite.Size, cellSize, viewportSize, margin, default, insets));
+            // A canvas too big for the view starts with its top-left corner in view, a margin in.
+            var first = new CanvasViewport(Composite.Size, cellSize, viewportSize, margin, default, insets, reach);
+            SetViewport(first.HeldAt(new PixelPoint(insets.Left + margin, insets.Top + margin)).Released());
             return;
         }
 
         var resized = _viewport.WithCanvasSize(Composite.Size).WithViewportSize(viewportSize).WithMargin(margin)
-            .WithInsets(insets);
+            .WithInsets(insets).WithReach(reach);
         SetViewport(cellSize == resized.CellSize ? resized : resized.Zoomed(cellSize, zoomAnchor ?? ViewportCentre()));
     }
 
@@ -944,12 +970,15 @@ internal sealed class CanvasControl : Control, ICustomHitTest
         if (newSelection is not null)
             newSelection.Changed += OnSelectionChanged;
 
+        UpdateReach();
         InvalidateVisual();
     }
 
-    // The Move tool's cursor follows the selection, which a move or a paste takes away from under the pointer.
+    // The Move tool's cursor follows the selection, which a move or a paste takes away from under the pointer, and so
+    // does how far the view can scroll.
     private void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e)
     {
+        UpdateReach();
         UpdateCursor();
         InvalidateVisual();
     }

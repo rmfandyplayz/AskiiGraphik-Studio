@@ -31,6 +31,7 @@ public sealed class MagicWandTool : ITool
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
     private readonly SelectionCombiner _combiner;
+    private readonly SelectionArrows _arrows;
 
     // The click in progress, or null when there's none.
     private Click? _click;
@@ -51,6 +52,7 @@ public sealed class MagicWandTool : ITool
         _densities = context.Densities;
         _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
             ShowPreview);
+        _arrows = new SelectionArrows(context);
     }
 
     /// <summary>
@@ -90,6 +92,7 @@ public sealed class MagicWandTool : ITool
     public void PointerPressed(ToolPointerInput input)
     {
         End();
+        _arrows.EndMove();
         var settings = MagicWandOptions.Read(_options);
         _click = new Click(input.Cell, input.Position.X, settings);
         _session.Document.Changed += OnDocumentChanged;
@@ -127,21 +130,33 @@ public sealed class MagicWandTool : ITool
     /// <summary>
     /// Esc during a click cancels it, leaving the selection as it was and the tolerance as it was when the button went
     /// down. Otherwise Esc isn't the tool's, so the App switches to the Hand tool (ADR 0041).
+    /// With something selected and the button up, the arrows move the selected cells as the Move tool's do, and Enter
+    /// ends that move and deselects (ADR 0073).
     /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers)
     {
         if (key != ToolKey.Escape || _click is null)
-            return false;
+            return _arrows.KeyPressed(key, isGestureUnderWay: _click is not null);
 
         Cancel();
         return true;
     }
 
+    /// <summary>Notes when an arrow is let go, which decides whether the next press starts a new step.</summary>
+    public void ArrowReleased(ToolKey arrow) => _arrows.ArrowReleased(arrow);
+
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
 
-    /// <summary>Cancels a click in progress, leaving the selection and the tolerance as they were.</summary>
-    public void Deactivate() => Cancel();
+    /// <summary>
+    /// Cancels a click in progress, leaving the selection and the tolerance as they were, and ends a move the arrows
+    /// made.
+    /// </summary>
+    public void Deactivate()
+    {
+        Cancel();
+        _arrows.Detach();
+    }
 
     private int Tolerance => _options.Get(MagicWandOptions.Tolerance);
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Written with Claude Code (Anthropic).
 
+using AskiiArt.Core.Documents;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -15,6 +16,7 @@ internal sealed partial class CanvasView : UserControl
         AvaloniaProperty.Register<CanvasView, bool>(nameof(ShowScrollBars));
 
     private Thickness _coveredByWidgets;
+    private CanvasViewModel? _followedCanvas;
 
     public CanvasView()
     {
@@ -27,6 +29,18 @@ internal sealed partial class CanvasView : UserControl
     {
         get => GetValue(ShowScrollBarsProperty);
         set => SetValue(ShowScrollBarsProperty, value);
+    }
+
+    // A paste partly out of view comes to the middle, if it fits (ADR 0072).
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_followedCanvas is not null)
+            _followedCanvas.Pasted -= OnPasted;
+
+        _followedCanvas = DataContext as CanvasViewModel;
+        if (_followedCanvas is not null)
+            _followedCanvas.Pasted += OnPasted;
     }
 
     /// <summary>Gives the canvas keyboard focus, so Space + drag works without clicking first.</summary>
@@ -80,6 +94,8 @@ internal sealed partial class CanvasView : UserControl
             UpdateCanvasSafeArea();
         }
     }
+
+    private void OnPasted(object? sender, CellRect cells) => Canvas.CentreOnIfPartlyHidden(cells);
 
     // A ScrollBar sets its own IsVisible from this property, so binding IsVisible wouldn't hold.
     private void UpdateScrollBarVisibility()

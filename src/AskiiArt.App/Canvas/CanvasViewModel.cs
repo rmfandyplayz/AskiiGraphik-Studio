@@ -77,6 +77,17 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     /// <summary>The document's selection, which the canvas outlines (ADR 0055).</summary>
     public SessionSelection Selection => Session.Selection;
 
+    /// <summary>How wide the document's cells are for their height, in its font.</summary>
+    public double CellWidthToHeight => _cellWidthToHeight;
+
+    /// <summary>
+    /// Raised after a paste, with the cells it covers, so the view can bring them into sight (ADR 0072).
+    /// </summary>
+    public event EventHandler<CellRect>? Pasted;
+
+    /// <summary>Raises <see cref="Pasted"/> for <paramref name="cells"/>.</summary>
+    public void NotePasted(CellRect cells) => Pasted?.Invoke(this, cells);
+
     public ITool ActiveTool { get; private set; }
 
     /// <summary>The tools that can be chosen.</summary>
@@ -383,6 +394,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(Selection));
         OnPropertyChanged(nameof(Composite));
         OnPropertyChanged(nameof(Font));
+        OnPropertyChanged(nameof(CellWidthToHeight));
         OnPropertyChanged(nameof(ActiveTool));
         OnPropertyChanged(nameof(CanvasSizeText));
         OnPropertyChanged(nameof(CharacterSetText));
@@ -406,6 +418,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         Font = font;
         _cellWidthToHeight = CellWidthToHeightOf(font);
         OnPropertyChanged(nameof(Font));
+        OnPropertyChanged(nameof(CellWidthToHeight));
         OnPropertyChanged(nameof(FontText));
     }
 }

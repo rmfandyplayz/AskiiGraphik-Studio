@@ -20,6 +20,7 @@ internal sealed class BoxSelectGesture
     private readonly Func<double> _cellWidthToHeight;
     private readonly Func<CanvasSize, CellRect, SelectionMask> _shape;
     private readonly string _stepNameKey;
+    private readonly SelectionArrows _arrows;
     private ToolOverlay _overlay = ToolOverlay.None;
 
     // Where the drag started, or null when there's no drag, and the cell it has reached.
@@ -42,6 +43,7 @@ internal sealed class BoxSelectGesture
         _cellWidthToHeight = context.CellWidthToHeight;
         _shape = shape;
         _stepNameKey = stepNameKey;
+        _arrows = new SelectionArrows(context);
     }
 
     public event EventHandler? OverlayChanged;
@@ -50,6 +52,7 @@ internal sealed class BoxSelectGesture
 
     public void Press(ToolPointerInput input)
     {
+        _arrows.EndMove();
         _anchor = input.Cell;
         _corner = input.Cell;
         _modifiers = input.Modifiers;
@@ -76,13 +79,19 @@ internal sealed class BoxSelectGesture
     public bool KeyPressed(ToolKey key)
     {
         if (key != ToolKey.Escape || _anchor is null)
-            return false;
+            return _arrows.KeyPressed(key, isGestureUnderWay: _anchor is not null);
 
         End();
         return true;
     }
 
-    public void Deactivate() => End();
+    public void ArrowReleased(ToolKey arrow) => _arrows.ArrowReleased(arrow);
+
+    public void Deactivate()
+    {
+        End();
+        _arrows.Detach();
+    }
 
     private void Update(CellPoint cell, ToolModifiers modifiers)
     {

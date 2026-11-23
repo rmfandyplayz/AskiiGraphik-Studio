@@ -12,15 +12,16 @@ namespace AskiiArt.App.Canvas;
 /// maths, so it's tested without a window.
 /// </summary>
 /// <remarks>
-/// The scrollable content is the canvas plus <see cref="Margin"/> of empty space on every side.
-/// Along an axis where that content fits in the usable area (the viewport minus <see cref="Insets"/>),
-/// the canvas is centred in that area and can't scroll. Otherwise it scrolls far enough that every
-/// cell can reach the usable area, and passes under the insets on the way (ADR 0035).
+/// The scrollable content is <see cref="Reach"/>, the cells the view can go to, plus <see cref="Margin"/> of empty space
+/// on every side, and whatever <see cref="Held"/> keeps in reach. Along an axis where that content fits in the usable area
+/// (the viewport minus <see cref="Insets"/>), the canvas is centred in that area, as far as the content still fits, and
+/// can't scroll. Otherwise it scrolls far enough that every cell of the reach can reach the usable area, and passes
+/// under the insets on the way (ADRs 0035, 0072).
 /// </remarks>
 internal sealed record CanvasViewport
 {
     public CanvasViewport(CanvasSize canvasSize, PixelSize cellSize, PixelSize viewportSize, int margin,
-        PixelPoint scrollOffset, CanvasInsets insets = default)
+        PixelPoint scrollOffset, CanvasInsets insets = default, CellRect? reach = null, PixelRect held = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(cellSize.Width, 1, nameof(cellSize));
         ArgumentOutOfRangeException.ThrowIfLessThan(cellSize.Height, 1, nameof(cellSize));
@@ -31,6 +32,9 @@ internal sealed record CanvasViewport
         ViewportSize = new PixelSize(Math.Max(0, viewportSize.Width), Math.Max(0, viewportSize.Height));
         Margin = margin;
         Insets = insets;
+        Reach = reach ?? canvasSize.Bounds;
+        Held = held;
+        ContentBounds = ContentBoundsOf(Reach, cellSize, margin, held);
 
         var maximum = MaximumScrollOffset;
         ScrollOffset = new PixelPoint(Math.Clamp(scrollOffset.X, 0, maximum.X),
@@ -43,8 +47,23 @@ internal sealed record CanvasViewport
 
     public PixelSize ViewportSize { get; }
 
-    /// <summary>The empty space around the canvas when it's scrolled to an edge.</summary>
+    /// <summary>The empty space around <see cref="Reach"/> when it's scrolled to an edge.</summary>
     public int Margin { get; }
+
+    /// <summary>
+    /// The cells the view can scroll to: the canvas, the zone around it, and a selection past that with room around it
+    /// (ADR 0072). The canvas alone unless given.
+    /// </summary>
+    public CellRect Reach { get; }
+
+    /// <summary>
+    /// Device pixels, from the canvas's top-left corner, that stay in reach whatever <see cref="Reach"/> is, so the view
+    /// can stay where it is while something moves; empty when nothing is held.
+    /// </summary>
+    public PixelRect Held { get; }
+
+    /// <summary>The scrollable content, in device pixels from the canvas's top-left corner.</summary>
+    public PixelRect ContentBounds { get; }
 
     /// <summary>The parts of the viewport that windows and toolbars cover.</summary>
     public CanvasInsets Insets { get; }
@@ -62,16 +81,28 @@ internal sealed record CanvasViewport
 
     public PixelSize CanvasPixelSize => new(CanvasSize.Width * CellSize.Width, CanvasSize.Height * CellSize.Height);
 
-    /// <summary>The scrollable size: the canvas plus its margin on every side.</summary>
-    public PixelSize ContentSize => new(CanvasPixelSize.Width + 2 * Margin, CanvasPixelSize.Height + 2 * Margin);
+    /// <summary>The scrollable size: the reach plus its margin on every side, and what's held.</summary>
+    public PixelSize ContentSize => ContentBounds.Size;
 
     public PixelPoint MaximumScrollOffset =>
         new(Math.Max(0, ContentSize.Width - UsableSize.Width), Math.Max(0, ContentSize.Height - UsableSize.Height));
 
     /// <summary>The canvas's top-left corner, relative to the viewport's.</summary>
     public PixelPoint CanvasOrigin => new(
-        OriginAlong(ContentSize.Width, UsableSize.Width, CanvasPixelSize.Width, ScrollOffset.X, Insets.Left),
-        OriginAlong(ContentSize.Height, UsableSize.Height, CanvasPixelSize.Height, ScrollOffset.Y, Insets.Top));
+        OriginAlong(ContentBounds.X, ContentBounds.Width, UsableSize.Width, CanvasPixelSize.Width, ScrollOffset.X,
+            Insets.Left),
+        OriginAlong(ContentBounds.Y, ContentBounds.Height, UsableSize.Height, CanvasPixelSize.Height, ScrollOffset.Y,
+            Insets.Top));
+
+    /// <summary>The usable area, in device pixels from the canvas's top-left corner.</summary>
+    public PixelRect UsableOnCanvas
+    {
+        get
+        {
+            var origin = CanvasOrigin;
+            return new PixelRect(Insets.Left - origin.X, Insets.Top - origin.Y, UsableSize.Width, UsableSize.Height);
+        }
+    }
 
     /// <summary>The canvas's rectangle, relative to the viewport.</summary>
     public PixelRect CanvasBounds => new(CanvasOrigin, CanvasPixelSize);
@@ -145,19 +176,36 @@ internal sealed record CanvasViewport
     }
 
     public CanvasViewport WithViewportSize(PixelSize viewportSize) =>
-        new(CanvasSize, CellSize, viewportSize, Margin, ScrollOffset, Insets);
+        new(CanvasSize, CellSize, viewportSize, Margin, ScrollOffset, Insets, Reach, Held);
 
     public CanvasViewport WithCanvasSize(CanvasSize canvasSize) =>
-        new(canvasSize, CellSize, ViewportSize, Margin, ScrollOffset, Insets);
+        new(canvasSize, CellSize, ViewportSize, Margin, ScrollOffset, Insets, Reach, Held);
 
     public CanvasViewport WithMargin(int margin) =>
-        new(CanvasSize, CellSize, ViewportSize, margin, ScrollOffset, Insets);
+        new(CanvasSize, CellSize, ViewportSize, margin, ScrollOffset, Insets, Reach, Held);
 
     public CanvasViewport WithInsets(CanvasInsets insets) =>
-        new(CanvasSize, CellSize, ViewportSize, Margin, ScrollOffset, insets);
+        new(CanvasSize, CellSize, ViewportSize, Margin, ScrollOffset, insets, Reach, Held);
 
     public CanvasViewport ScrolledTo(PixelPoint scrollOffset) =>
-        new(CanvasSize, CellSize, ViewportSize, Margin, scrollOffset, Insets);
+        new(CanvasSize, CellSize, ViewportSize, Margin, scrollOffset, Insets, Reach, Held);
+
+    /// <summary>The same view with <paramref name="reach"/>, keeping the canvas where it is as far as the content allows.</summary>
+    public CanvasViewport WithReach(CellRect reach) => Placed(reach, Held, CanvasOrigin);
+
+    /// <summary>
+    /// The view with the canvas's top-left corner at <paramref name="canvasOrigin"/>, holding the usable area there in
+    /// reach, so it goes there whatever the reach is.
+    /// </summary>
+    public CanvasViewport HeldAt(PixelPoint canvasOrigin)
+    {
+        var usable = new PixelRect(Insets.Left - canvasOrigin.X, Insets.Top - canvasOrigin.Y, UsableSize.Width,
+            UsableSize.Height);
+        return Placed(Reach, usable, canvasOrigin);
+    }
+
+    /// <summary>The view holding nothing, keeping the canvas where it is as far as the reach then allows.</summary>
+    public CanvasViewport Released() => Placed(Reach, default, CanvasOrigin);
 
     public CanvasViewport ScrolledBy(int deltaX, int deltaY) =>
         ScrolledTo(new PixelPoint(ScrollOffset.X + deltaX, ScrollOffset.Y + deltaY));
@@ -174,18 +222,43 @@ internal sealed record CanvasViewport
         var cellY = (anchor.Y - origin.Y) / CellSize.Height;
 
         // The scroll offset that puts that same spot back under the anchor at the new size.
-        var scrollX = (int)Math.Round(Insets.Left + Margin - (anchor.X - cellX * cellSize.Width));
-        var scrollY = (int)Math.Round(Insets.Top + Margin - (anchor.Y - cellY * cellSize.Height));
+        var content = ContentBoundsOf(Reach, cellSize, Margin, default);
+        var scrollX = (int)Math.Round(Insets.Left - content.X - (anchor.X - cellX * cellSize.Width));
+        var scrollY = (int)Math.Round(Insets.Top - content.Y - (anchor.Y - cellY * cellSize.Height));
 
-        return new CanvasViewport(CanvasSize, cellSize, ViewportSize, Margin, new PixelPoint(scrollX, scrollY), Insets);
+        return new CanvasViewport(CanvasSize, cellSize, ViewportSize, Margin, new PixelPoint(scrollX, scrollY), Insets,
+            Reach);
     }
 
-    private int OriginAlong(int contentLength, int usableLength, int canvasLength, int scrollOffset, int insetBefore)
+    // A viewport with the content of reach and held, scrolled so the canvas's corner is at canvasOrigin if it can be.
+    private CanvasViewport Placed(CellRect reach, PixelRect held, PixelPoint canvasOrigin)
     {
-        if (contentLength <= usableLength)
-            return insetBefore + (usableLength - canvasLength) / 2;
+        var content = ContentBoundsOf(reach, CellSize, Margin, held);
+        var scroll = new PixelPoint(Insets.Left - content.X - canvasOrigin.X, Insets.Top - content.Y - canvasOrigin.Y);
+        return new CanvasViewport(CanvasSize, CellSize, ViewportSize, Margin, scroll, Insets, reach, held);
+    }
 
-        return insetBefore + Margin - scrollOffset;
+    private static PixelRect ContentBoundsOf(CellRect reach, PixelSize cellSize, int margin, PixelRect held)
+    {
+        var content = new PixelRect(reach.Left * cellSize.Width - margin, reach.Top * cellSize.Height - margin,
+            reach.Width * cellSize.Width + 2 * margin, reach.Height * cellSize.Height + 2 * margin);
+        if (held.Width <= 0 || held.Height <= 0)
+            return content;
+
+        return content.Union(held);
+    }
+
+    // Where the canvas starts along one axis. Content that fits keeps the canvas in the middle, moved only as far as the
+    // content needs to stay in the usable area; content that doesn't fit scrolls.
+    private static int OriginAlong(int contentStart, int contentLength, int usableLength, int canvasLength,
+        int scrollOffset, int insetBefore)
+    {
+        if (contentLength > usableLength)
+            return insetBefore - contentStart - scrollOffset;
+
+        var centred = insetBefore + (usableLength - canvasLength) / 2;
+        return Math.Clamp(centred, insetBefore - contentStart,
+            insetBefore + usableLength - (contentStart + contentLength));
     }
 
     private static int FloorDivide(int value, int divisor) => (int)Math.Floor((double)value / divisor);

@@ -72,6 +72,8 @@ public sealed class CanvasTypingTests : IDisposable
     public void WithTheTextTool_SpaceTypesASpace_AndSpaceDragDoesNotPan()
     {
         Click(new CellPoint(0, 0));
+        var horizontal = _control.HorizontalOffset;
+        var vertical = _control.VerticalOffset;
 
         _window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
         _window.KeyTextInput(" ");
@@ -83,8 +85,8 @@ public sealed class CanvasTypingTests : IDisposable
 
         Assert.True(Layer.GetCell(new CellPoint(0, 0)).HasGlyph);
         Assert.Equal(" ", GlyphAt(0, 0));
-        Assert.Equal(0, _control.HorizontalOffset);
-        Assert.Equal(0, _control.VerticalOffset);
+        Assert.Equal(horizontal, _control.HorizontalOffset);
+        Assert.Equal(vertical, _control.VerticalOffset);
     }
 
     [AvaloniaFact]

@@ -71,11 +71,11 @@ public sealed class CanvasControlTests : IDisposable
     public void Wheel_ScrollsDown()
     {
         Show();
+        var start = Offsets();
 
         _window.MouseWheel(new Point(10, 10), new Vector(0, -1));
 
-        Assert.Equal(50, _control.VerticalOffset);
-        Assert.Equal(0, _control.HorizontalOffset);
+        Assert.Equal((start.Horizontal, start.Vertical + 50), Offsets());
         Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
     }
 
@@ -85,11 +85,11 @@ public sealed class CanvasControlTests : IDisposable
     public void ShiftWheel_ScrollsSideways()
     {
         Show();
+        var start = Offsets();
 
         _window.MouseWheel(new Point(10, 10), new Vector(0, -2), RawInputModifiers.Shift);
 
-        Assert.Equal(100, _control.HorizontalOffset);
-        Assert.Equal(0, _control.VerticalOffset);
+        Assert.Equal((start.Horizontal + 100, start.Vertical), Offsets());
     }
 
     [AvaloniaFact]
@@ -112,11 +112,12 @@ public sealed class CanvasControlTests : IDisposable
     public void SpaceAndLeftDrag_PansTheCanvas_ButLeftDragAloneDoesNot()
     {
         Show();
+        var start = Offsets();
 
         _window.MouseDown(new Point(200, 150), MouseButton.Left);
         _window.MouseMove(new Point(150, 100));
         _window.MouseUp(new Point(150, 100), MouseButton.Left);
-        Assert.Equal(0, _control.HorizontalOffset);
+        Assert.Equal(start, Offsets());
 
         _window.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
         _window.MouseDown(new Point(200, 150), MouseButton.Left);
@@ -124,8 +125,7 @@ public sealed class CanvasControlTests : IDisposable
         _window.MouseUp(new Point(150, 100), MouseButton.Left);
         _window.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
 
-        Assert.Equal(50, _control.HorizontalOffset);
-        Assert.Equal(50, _control.VerticalOffset);
+        Assert.Equal((start.Horizontal + 50, start.Vertical + 50), Offsets());
     }
 
     [AvaloniaFact]
@@ -134,13 +134,13 @@ public sealed class CanvasControlTests : IDisposable
         _control.Tool = new HandTool();
         Show();
         Assert.NotNull(_control.Cursor);
+        var start = Offsets();
 
         _window.MouseDown(new Point(200, 150), MouseButton.Left);
         _window.MouseMove(new Point(150, 100));
         _window.MouseUp(new Point(150, 100), MouseButton.Left);
 
-        Assert.Equal(50, _control.HorizontalOffset);
-        Assert.Equal(50, _control.VerticalOffset);
+        Assert.Equal((start.Horizontal + 50, start.Vertical + 50), Offsets());
         Assert.NotNull(_control.Cursor);
 
         _control.Tool = null;
@@ -213,7 +213,7 @@ public sealed class CanvasControlTests : IDisposable
         Assert.Equal(Viewport.CanvasPointAt(Viewport.UsableCentre), _control.ViewCentre);
         var before = _control.ViewCentre;
 
-        _control.HorizontalOffset = 50;
+        _control.HorizontalOffset += 50;
 
         Assert.Equal(before.X + (50 / cellWidth), _control.ViewCentre.X, 6);
     }
@@ -327,17 +327,89 @@ public sealed class CanvasControlTests : IDisposable
         _canvas.Dispose();
     }
 
+    [AvaloniaFact]
+    public void TheView_ReachesASelectionPastTheZone_AndSettlesBackOnceItsGone()
+    {
+        Show();
+        _control.Selection = _canvas.Session.Selection;
+        var maximumBefore = _control.HorizontalMaximum;
+        SelectFarPastTheZone();
+        Assert.True(_control.HorizontalMaximum > maximumBefore);
+        _control.HorizontalOffset = _control.HorizontalMaximum;
+        var origin = Viewport.CanvasOrigin;
+
+        SelectionEdits.Deselect(_canvas.Session);
+
+        Assert.NotEqual(origin, Viewport.CanvasOrigin);
+        Assert.Equal(maximumBefore, _control.HorizontalMaximum);
+    }
+
+    [AvaloniaFact]
+    public void WhileAnArrowIsHeld_AndForAPauseAfter_TheViewStaysPut()
+    {
+        Show();
+        _control.Selection = _canvas.Session.Selection;
+        SelectFarPastTheZone();
+        _control.HorizontalOffset = _control.HorizontalMaximum;
+        var origin = Viewport.CanvasOrigin;
+        _control.Focus();
+
+        _window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        SelectionEdits.Deselect(_canvas.Session);
+        _window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        Render();
+        Assert.Equal(origin, Viewport.CanvasOrigin);
+
+        Thread.Sleep(MoveTool.ArrowRunPause + TimeSpan.FromMilliseconds(100));
+        Render();
+
+        Assert.NotEqual(origin, Viewport.CanvasOrigin);
+    }
+
+    [AvaloniaFact]
+    public void CentreOnIfPartlyHidden_BringsCellsThatFitToTheMiddle_AndLeavesTheViewOtherwise()
+    {
+        Show();
+        var origin = Viewport.CanvasOrigin;
+
+        _control.CentreOnIfPartlyHidden(new CellRect(0, 0, 2, 1));
+        Assert.Equal(origin, Viewport.CanvasOrigin);
+
+        _control.CentreOnIfPartlyHidden(new CellRect(150, 0, 200, 1));
+        Assert.Equal(origin, Viewport.CanvasOrigin);
+
+        _control.CentreOnIfPartlyHidden(new CellRect(150, 50, 2, 1));
+        var middle = Viewport.CellAt(Viewport.UsableCentre);
+        Assert.NotNull(middle);
+        Assert.InRange(middle.Value.X, 150, 152);
+        Assert.InRange(middle.Value.Y, 49, 51);
+    }
+
+    // Two cells 50 columns past the canvas's right edge, far past the zone, as the Move tool could leave them.
+    private void SelectFarPastTheZone()
+    {
+        var size = _canvas.Document.CanvasSize;
+        var far = SelectionMask.Rectangle(size, new CellRect(0, 0, 2, 1))
+            .MovedWithin(size, new CellPoint(size.Width + 50, 0), new CellRect(-1000, -1000, 3000, 3000));
+        _canvas.Session.History.Execute(new SetSelectionCommand(_canvas.Session.Selection, far, UndoStepNames.Move));
+    }
+
+    private (double Horizontal, double Vertical) Offsets() => (_control.HorizontalOffset, _control.VerticalOffset);
+
     private void Show()
     {
         _window.Show();
         Dispatcher.UIThread.RunJobs();
     }
 
-    // A few frames, so the canvas paints and any frame it asked for comes round.
-    private static void Render()
+    // A few frames, so the canvas paints and any frame it asked for comes round. The headless platform only renders
+    // a frame when something has changed, so the canvas is repainted each time.
+    private void Render()
     {
         for (var frame = 0; frame < 3; frame++)
         {
+            _control.InvalidateVisual();
+            Dispatcher.UIThread.RunJobs();
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             Dispatcher.UIThread.RunJobs();
         }

@@ -15,7 +15,8 @@ internal sealed class NudgeRun(TimeProvider clock)
 {
     // Measured from when the last arrow was let go, so a key held down, which the keyboard repeats only after a delay,
     // stays one run.
-    private static readonly TimeSpan _pause = TimeSpan.FromSeconds(0.4);
+    /// <summary>How long after the last arrow was let go a press still carries the run on.</summary>
+    public static readonly TimeSpan Pause = TimeSpan.FromSeconds(0.4);
 
     // How many presses one way make a turn start a new run.
     private const int PressesBeforeATurnCounts = 3;
@@ -32,7 +33,7 @@ internal sealed class NudgeRun(TimeProvider clock)
     /// </summary>
     public bool Continues(ToolKey arrow, CellPoint direction)
     {
-        var isSoon = _heldArrows.Count > 0 || clock.GetUtcNow() - _lastLetGo < _pause;
+        var isSoon = _heldArrows.Count > 0 || clock.GetUtcNow() - _lastLetGo < Pause;
         var turns = direction != _direction;
         var continues = _isUnderWay && isSoon && !(turns && _pressesThatWay >= PressesBeforeATurnCounts);
 

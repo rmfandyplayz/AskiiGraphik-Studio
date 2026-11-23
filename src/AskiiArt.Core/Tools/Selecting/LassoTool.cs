@@ -28,6 +28,7 @@ public sealed class LassoTool : ITool
 
     private readonly EditingSession _session;
     private readonly SelectionCombiner _combiner;
+    private readonly SelectionArrows _arrows;
     private readonly List<CanvasPoint> _path = [];
     private ToolOverlay _overlay = ToolOverlay.None;
     private bool _isDrawing;
@@ -39,6 +40,7 @@ public sealed class LassoTool : ITool
         _session = context.Session;
         _combiner = new SelectionCombiner(context.Session, context.Settings.For(SelectionToolOptions.Group),
             ShowPreview);
+        _arrows = new SelectionArrows(context);
     }
 
     /// <summary>
@@ -73,6 +75,7 @@ public sealed class LassoTool : ITool
     /// <summary>Starts a path where the pointer is.</summary>
     public void PointerPressed(ToolPointerInput input)
     {
+        _arrows.EndMove();
         _path.Clear();
         _path.Add(input.Position);
         _isDrawing = true;
@@ -108,21 +111,30 @@ public sealed class LassoTool : ITool
 
     /// <summary>
     /// Esc during a drag cancels it, leaving the selection as it was. Otherwise Esc isn't the tool's (ADR 0041).
+    /// With something selected and no drag under way, the arrows move the selected cells as the Move tool's do, and
+    /// Enter ends that move and deselects (ADR 0073).
     /// </summary>
     public bool KeyPressed(ToolKey key, ToolModifiers modifiers)
     {
         if (key != ToolKey.Escape || !_isDrawing)
-            return false;
+            return _arrows.KeyPressed(key, _isDrawing);
 
         End();
         return true;
     }
 
+    /// <summary>Notes when an arrow is let go, which decides whether the next press starts a new step.</summary>
+    public void ArrowReleased(ToolKey arrow) => _arrows.ArrowReleased(arrow);
+
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
 
-    /// <summary>Cancels a path in progress, leaving the selection as it was.</summary>
-    public void Deactivate() => End();
+    /// <summary>Cancels a path in progress, leaving the selection as it was, and ends a move the arrows made.</summary>
+    public void Deactivate()
+    {
+        End();
+        _arrows.Detach();
+    }
 
     // The canvas works the shape out from a copy of the path, and only if it draws this overlay, at most once a frame.
     private void ShowPath()

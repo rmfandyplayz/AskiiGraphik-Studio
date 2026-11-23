@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0072](0072-moving-past-the-zone-and-scrolling-round-it.md): a move now goes as far as the selection still touches the zone, rather than stopping at its outer edge, and the view scrolls to show a selection past it. The rest still stands.
+
 ## Context
 
 In ADR 0066 a selection moved off the canvas was cut to it, so its outline closed along the canvas edge and a shape moved off and back lost its cells. After 4.6's testing the owner asked for step 4.9:
@@ -34,3 +36,5 @@ In ADR 0066 a selection moved off the canvas was cut to it, so its outline close
 - A resize keeps the cells that land on the new canvas, including ones that were past the old one, and drops the rest.
 - With a canvas bigger than the window, the 32-pixel canvas margin can't show the whole zone (open question to the owner).
 - The opacities, rounding and greyed-out commands beyond the three named are guesses (TEMPORARY-UI).
+
+Updated 2026-11-22: since 4.9b (ADR 0072), `Limit` keeps the selection touching the zone instead of inside it, so what the Decision says about moves stopping at the zone's outer edge, and the Consequence about the 32-pixel margin, no longer hold. The margin is 64 pixels and the view can scroll past the zone.
