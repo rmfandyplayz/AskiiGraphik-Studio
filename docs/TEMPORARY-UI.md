@@ -419,7 +419,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | In every selection tool, with something selected and no gesture under way, the arrows move the selected cells as the Move tool's do, staying in the tool; with nothing selected they do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | During a selection tool's drag, while the Polygonal Lasso has corners down, or while the Magic Wand's button is held, the arrows do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | In a selection tool Enter ends a move the arrows made and deselects; with no such move it does nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
-| Reduce motion is a setting in the settings file only (`"reduceMotion": "true"`), off by default, read at start-up; it stills the selection's dashes and hatching, the landing outline, the docking animations and fades, and the view's glide | `Settings/ReducedMotion.cs` | 4.9b |
+| Reduce motion is a setting in the settings file only (`"reduceMotion": "true"`), off by default, read at start-up; it stills the selection's dashes and hatching, the landing outline, the docking animations and fades, and the view's glide. The owner had asked only that motion be ready for such a setting, and kept it. A switch in a future Preferences window that takes effect at once would also need the docking metrics re-read | `Settings/ReducedMotion.cs` | 4.9b |
 
 ## Ideas to revisit
 
