@@ -78,7 +78,10 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
             (CanvasActionIds.PatsIdea2, nameof(Strings.ActionPatsIdea2), PatsVariant.All[3]),
             (CanvasActionIds.PatsIdea3, nameof(Strings.ActionPatsIdea3), PatsVariant.All[4]),
             (CanvasActionIds.PatsIdeas1And3, nameof(Strings.ActionPatsIdeas1And3), PatsVariant.All[5]),
-            (CanvasActionIds.PatsIdeas1And2And3, nameof(Strings.ActionPatsIdeas1And2And3), PatsVariant.All[6])
+            (CanvasActionIds.PatsIdeas1And2And3, nameof(Strings.ActionPatsIdeas1And2And3), PatsVariant.All[6]),
+            (CanvasActionIds.PatsIdea3Fixed, nameof(Strings.ActionPatsIdea3Fixed), PatsVariant.All[7]),
+            (CanvasActionIds.PatsIdeas1And2And3Fixed, nameof(Strings.ActionPatsIdeas1And2And3Fixed),
+                PatsVariant.All[8])
         };
         var states = choices.Select(choice => new ActionCheckedState(() => canvas.Pats == choice.Variant)).ToArray();
         canvas.PropertyChanged += (_, e) =>

@@ -31,6 +31,9 @@ public sealed class RampShapeMatcher
     // sum of squares, counts as even, so it has no side for ink to be on.
     private const double UnevenShare = 0.05;
 
+    // Step 4.10a's fix (ADR 0074): the share of a target's unevenness a glyph must show for its edge to count as clear.
+    private const double ClearShare = 0.25;
+
     // Idea 3 (ADR 0074): how many parts of the neighbouring cells the comparison reaches into, across and down: half a
     // cell each way.
     private const int ContextColumns = GlyphShape.Columns / 2;
@@ -141,6 +144,25 @@ public sealed class RampShapeMatcher
 
         // Idea 2 can rule every level out; then the cell stays as light as it may.
         return double.IsPositiveInfinity(bestScore) ? lowest : best;
+    }
+
+    /// <summary>
+    /// Whether the level's glyph shows at least <see cref="ClearShare"/> of how the target's parts stray from their
+    /// average, so it shows where the edge lies. An even target has no edge to show. Temporary, for step 4.10a's fix
+    /// (ADR 0074).
+    /// </summary>
+    internal bool ShowsEdgeClearly(int level, ReadOnlySpan<double> target)
+    {
+        Span<double> targetStrays = stackalloc double[GlyphShape.PartCount];
+        target.CopyTo(targetStrays);
+        Blur(targetStrays, GlyphShape.Columns, GlyphShape.Rows);
+        var targetStrayWeight = Center(targetStrays);
+        if (targetStrayWeight <= 0)
+            return false;
+
+        var (agreement, scale) = FitOf(level, targetStrays);
+        var unshown = UnshownStray(level, agreement, scale, targetStrayWeight);
+        return 1 - unshown / targetStrayWeight >= ClearShare;
     }
 
     /// <summary>How a level's cell looks next to others: each part's intensity. Temporary, for step 4.10a.</summary>

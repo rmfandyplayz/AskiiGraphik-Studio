@@ -13,7 +13,18 @@ namespace AskiiArt.Core.Tools.Footprints;
 /// the order of <see cref="AskiiArt.Core.Ramps.GlyphShape"/>'s parts, and <paramref name="Weight"/> is the lightest of
 /// them, the weight the whole cell reached; it's null when every part weighs <paramref name="Weight"/>.
 /// </summary>
-public readonly record struct WeightedCell(CellPoint Point, double Weight, float[]? PartWeights);
+/// <param name="Point">The cell.</param>
+/// <param name="Weight">The greatest weight the whole cell reached.</param>
+/// <param name="PartWeights">The greatest weight each part reached, or null.</param>
+/// <param name="MiddleWeight">
+/// For a cell with <paramref name="PartWeights"/>, the greatest weight its middle reached, as step 4.6's brush weighed
+/// it; 0 otherwise. Temporary, for step 4.10a's comparison (ADR 0074).
+/// </param>
+public readonly record struct WeightedCell(
+    CellPoint Point,
+    double Weight,
+    float[]? PartWeights,
+    double MiddleWeight = 0);
 
 /// <summary>The cells a footprint covers as a stroke moves it.</summary>
 public static class FootprintSweep
@@ -105,6 +116,7 @@ public static class FootprintSweep
         }
 
         var parts = falloff.HasShapedCells ? new float[]?[weights.Length] : null;
+        var middles = parts is null ? null : new double[weights.Length];
         if (parts is not null)
         {
             foreach (var stamp in stamps)
@@ -119,6 +131,7 @@ public static class FootprintSweep
                     {
                         var column = x - stamp.X;
                         var index = rowStart + x;
+                        middles![index] = Math.Max(middles[index], falloff.WeightAt(column, row));
                         if (falloff.PeakWeightAt(column, row) > weights[index])
                             RaiseParts(ref parts[index], falloff.PartWeightsAt(column, row));
                     }
@@ -133,7 +146,8 @@ public static class FootprintSweep
             if (weights[index] > 0 || cellParts is not null)
             {
                 var point = new CellPoint(left + index % width, top + index / width);
-                reached.Add(new WeightedCell(point, weights[index], cellParts));
+                var middle = cellParts is null ? 0 : middles![index];
+                reached.Add(new WeightedCell(point, weights[index], cellParts, middle));
             }
         }
 

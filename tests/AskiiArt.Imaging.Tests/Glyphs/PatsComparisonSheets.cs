@@ -16,8 +16,8 @@ using SkiaSharp;
 namespace AskiiArt.Imaging.Tests.Glyphs;
 
 /// <summary>
-/// Step 4.10a's comparison sheets (ADR 0074): the same Brush strokes painted with each <see cref="PatsVariant"/>, side
-/// by side, as PNGs for the owner to judge by eye. Not a test: it only runs when asked for, with
+/// Step 4.10a's comparison sheets (ADR 0074): the same Brush strokes painted with each variant of
+/// <see cref="PatsVariant.SecondRound"/>, side by side, as PNGs for the owner to judge by eye. Not a test: it only runs when asked for, with
 /// <c>dotnet test --project tests/AskiiArt.Imaging.Tests --filter-class "*PatsComparisonSheets" --explicit only</c>,
 /// and writes to <c>.local/pats-sheets</c>. Temporary: step 4.10b removes it.
 /// </summary>
@@ -28,7 +28,7 @@ public sealed class PatsComparisonSheets
     private const int Gutter = 12;
     private const int LabelWidth = 70;
     private const int HeaderHeight = 48;
-    private static readonly CanvasSize _tileCells = new(74, 20);
+    private static readonly CanvasSize _tileCells = new(92, 20);
     private static readonly int[] _intensities = [25, 50, 100];
     private static readonly int[] _softnesses = [0, 50, 100];
     private static readonly string[] _fonts = ["JetBrains Mono", "Roboto Mono"];
@@ -61,7 +61,7 @@ public sealed class PatsComparisonSheets
     {
         var tileWidth = _tileCells.Width * metrics.Width;
         var tileHeight = _tileCells.Height * metrics.Height;
-        var variants = PatsVariant.All;
+        var variants = PatsVariant.SecondRound;
         var width = LabelWidth + _intensities.Length * (tileWidth + Gutter);
         var height = HeaderHeight + variants.Count * (tileHeight + Gutter);
         using var bitmap = new SKBitmap(width, height);
@@ -108,7 +108,8 @@ public sealed class PatsComparisonSheets
         data.SaveTo(file);
     }
 
-    // A circle and a square stamped once each, and a diagonal and a curve drawn with a small tip.
+    // A circle and a square stamped once each, a diagonal and a curve drawn with a small tip, and a stamp and a line
+    // with a size-7 tip, where the owner found 4.6's brush better on the Fine ramp when fully soft.
     private static Layer Paint(PatsVariant variant, BuiltInRamp ramp, int intensity, int softness,
         IGlyphDensityProvider densities, double cellWidthToHeight)
     {
@@ -138,6 +139,10 @@ public sealed class PatsComparisonSheets
         tip.Set(BrushTipOptions.Size, 6);
         Stroke(brush, Line((40, 3), (52, 17)));
         Stroke(brush, Curve());
+
+        tip.Set(BrushTipOptions.Size, 7);
+        Stroke(brush, [(81, 5)]);
+        Stroke(brush, Line((76, 15), (90, 12)));
 
         brush.Deactivate();
         return session.Document.ActiveFrame.Layers[0];

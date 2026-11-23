@@ -220,6 +220,8 @@ internal sealed record MenuLayout(
                 new ActionMenuEntry(CanvasActionIds.PatsIdea3),
                 new ActionMenuEntry(CanvasActionIds.PatsIdeas1And3),
                 new ActionMenuEntry(CanvasActionIds.PatsIdeas1And2And3),
+                new ActionMenuEntry(CanvasActionIds.PatsIdea3Fixed),
+                new ActionMenuEntry(CanvasActionIds.PatsIdeas1And2And3Fixed),
                 new SeparatorMenuEntry(),
                 new ActionMenuEntry(WindowSampleActionIds.First),
                 new ActionMenuEntry(WindowSampleActionIds.Second),

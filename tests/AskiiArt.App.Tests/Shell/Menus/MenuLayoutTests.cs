@@ -125,6 +125,8 @@ public sealed class MenuLayoutTests
                 CanvasActionIds.PatsIdea3,
                 CanvasActionIds.PatsIdeas1And3,
                 CanvasActionIds.PatsIdeas1And2And3,
+                CanvasActionIds.PatsIdea3Fixed,
+                CanvasActionIds.PatsIdeas1And2And3Fixed,
                 WindowSampleActionIds.First,
                 WindowSampleActionIds.Second,
                 WindowSampleActionIds.Third,

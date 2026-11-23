@@ -157,15 +157,20 @@ internal sealed class RampStroke
         var layer = _session.ActiveLayer;
         var cells = _session.EditCellsInSelection(layer.Id);
         List<CellPoint>? raised = _variant.LooksAtNeighbours ? [] : null;
-        foreach (var (point, tipWeight, tipParts) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
-                     document.CanvasSize))
+        foreach (var (point, tipWeight, tipParts, tipMiddle) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft,
+                     toTopLeft, document.CanvasSize))
         {
             var now = layer.GetCell(point);
             if (!_reached.TryGetValue(point, out var before))
-                before = new ReachedCell(now, 0, null);
+                before = new ReachedCell(now, 0, null, 0);
 
             if (!TryRaise(before, tipWeight * pressure, tipParts, pressure, out var reached))
                 continue;
+
+            // The fallback of step 4.10a's fix weighs the cell as step 4.6 did: an even stamp by its weight, a shaped one
+            // by its middle's.
+            var middle = tipParts is null ? tipWeight * pressure : tipMiddle * pressure;
+            reached = reached with { Middle = Math.Max(reached.Middle, middle) };
 
             _reached[point] = reached;
             var moved = MoveCell(reached, neighbours: null);
@@ -219,8 +224,8 @@ internal sealed class RampStroke
         }
 
         raised = heaviest - lightest <= BrushFalloff.EvenSpread
-            ? new ReachedCell(before.Cell, newParts.Average(), null)
-            : new ReachedCell(before.Cell, newWeight, newParts);
+            ? before with { Weight = newParts.Average(), Parts = null }
+            : before with { Weight = newWeight, Parts = newParts };
         return true;
     }
 
@@ -346,7 +351,14 @@ internal sealed class RampStroke
         }
         else
         {
-            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, neighbours, out change);
+            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, neighbours, out change, out var isClear);
+
+            // The fix: where no glyph clearly shows the edge, the cell is weighed as a whole, as step 4.6 weighed it.
+            if (_variant.FallsBackWhenUnclear && !isClear)
+            {
+                change = (_target - darknessBefore) * reached.Middle * _strength;
+                level = _ramp.LevelAt(darknessBefore + change);
+            }
         }
 
         // A cell short of the target's level is always on the target's side of it, so one level can't overshoot.
@@ -357,9 +369,9 @@ internal sealed class RampStroke
     }
 
     // The level, between the cell's and the target's, whose glyph best shows each part moved by its own weight.
-    // Change is how far the parts moved on average.
+    // Change is how far the parts moved on average, and isClear whether the glyph shows the edge clearly.
     private int MatchedLevel(float[] parts, int levelBefore, double darknessBefore,
-        RampShapeMatcher.CellNeighbours? neighbours, out double change)
+        RampShapeMatcher.CellNeighbours? neighbours, out double change, out bool isClear)
     {
         Span<double> target = stackalloc double[GlyphShape.PartCount];
         var totalChange = 0.0;
@@ -372,8 +384,10 @@ internal sealed class RampStroke
 
         change = totalChange / target.Length;
         _matcher ??= new RampShapeMatcher(_ramp, _densities());
-        return _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel),
-            _scoring, neighbours);
+        var level = _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel),
+            Math.Max(levelBefore, _targetLevel), _scoring, neighbours);
+        isClear = _matcher.ShowsEdgeClearly(level, target);
+        return level;
     }
 
     // A pressure the device can't tell counts as full, as a mouse's does.
@@ -394,6 +408,7 @@ internal sealed class RampStroke
     }
 
     // A cell the stroke has reached: as it was before the stroke, the greatest weight that has reached it as a whole,
-    // and where the tip weighed it unevenly, the greatest weight of each part, each at least Weight; else null.
-    private readonly record struct ReachedCell(Cell Cell, double Weight, float[]? Parts);
+    // and where the tip weighed it unevenly, the greatest weight of each part, each at least Weight; else null. Middle
+    // is the greatest weight its middle reached, as step 4.6 weighed it, for step 4.10a's fix.
+    private readonly record struct ReachedCell(Cell Cell, double Weight, float[]? Parts, double Middle);
 }

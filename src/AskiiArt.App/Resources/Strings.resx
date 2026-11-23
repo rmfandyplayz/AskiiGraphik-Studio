@@ -434,6 +434,14 @@
     <value>Brush Edges: Ideas 1, 2 and 3</value>
     <comment>Debug menu, step 4.10a only: all three ideas together.</comment>
   </data>
+  <data name="ActionPatsIdea3Fixed" xml:space="preserve">
+    <value>Brush Edges: Idea 3 with the Fix</value>
+    <comment>Debug menu, step 4.10a only: idea 3, with cells no glyph shows clearly weighed as a whole as in step 4.6.</comment>
+  </data>
+  <data name="ActionPatsIdeas1And2And3Fixed" xml:space="preserve">
+    <value>Brush Edges: Ideas 1, 2 and 3 with the Fix</value>
+    <comment>Debug menu, step 4.10a only: all three ideas, with cells no glyph shows clearly weighed as a whole as in step 4.6.</comment>
+  </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>
     <comment>Debug menu: replaces the document with a busy one in colour, to check how the canvas draws colour.</comment>

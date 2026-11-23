@@ -22,12 +22,17 @@ namespace AskiiArt.Core.Tools.RampStrokes;
 /// Idea 3: an edge cell is judged with the cells around it, as they're painted or already were, so ink lines up across
 /// cells.
 /// </param>
+/// <param name="FallsBackWhenUnclear">
+/// The fix after 4.10a's testing: where no glyph clearly shows an edge cell's edge, the cell is weighed as a whole at
+/// its middle, as step 4.6 weighed it, so straight sides and faintly grazed cells don't get stray marks.
+/// </param>
 public sealed record PatsVariant(
     string Name,
     bool ShapesEdges,
     bool CountsShapeAgainstFaintness,
     bool LeavesWrongSideEmpty,
-    bool LooksAtNeighbours)
+    bool LooksAtNeighbours,
+    bool FallsBackWhenUnclear = false)
 {
     /// <summary>Step 4.6's brush: no shaping.</summary>
     public static PatsVariant Unshaped { get; } = new("4.6", false, false, false, false);
@@ -44,6 +49,11 @@ public sealed record PatsVariant(
         new("2", true, false, true, false),
         new("3", true, false, false, true),
         new("1+3", true, true, false, true),
-        new("1+2+3", true, true, true, true)
+        new("1+2+3", true, true, true, true),
+        new("3+fix", true, false, false, true, true),
+        new("1+2+3+fix", true, true, true, true, true)
     ];
+
+    /// <summary>The variants the second round of sheets compares, after 4.10a's testing, in its order.</summary>
+    public static IReadOnlyList<PatsVariant> SecondRound { get; } = [All[0], All[4], All[7], All[6], All[8]];
 }

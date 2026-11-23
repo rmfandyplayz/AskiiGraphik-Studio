@@ -21,4 +21,6 @@ internal static class CanvasActionIds
     public const string PatsIdea3 = "askiiart.debug.pats.idea3";
     public const string PatsIdeas1And3 = "askiiart.debug.pats.ideas1And3";
     public const string PatsIdeas1And2And3 = "askiiart.debug.pats.ideas1And2And3";
+    public const string PatsIdea3Fixed = "askiiart.debug.pats.idea3Fixed";
+    public const string PatsIdeas1And2And3Fixed = "askiiart.debug.pats.ideas1And2And3Fixed";
 }
