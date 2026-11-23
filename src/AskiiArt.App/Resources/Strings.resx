@@ -406,6 +406,34 @@
     <value>Mouse Acts as a Pen at Half Pressure</value>
     <comment>Debug menu: while ticked, the mouse presses like a drawing tablet's pen at half pressure, to try pen pressure without a tablet.</comment>
   </data>
+  <data name="ActionPatsUnshaped" xml:space="preserve">
+    <value>Brush Edges: 4.6, Unshaped</value>
+    <comment>Debug menu, step 4.10a only: the Brush and Soft Eraser pick edge glyphs as in step 4.6, without shaping them.</comment>
+  </data>
+  <data name="ActionPatsShipped" xml:space="preserve">
+    <value>Brush Edges: 4.7, Shaped</value>
+    <comment>Debug menu, step 4.10a only: the Brush and Soft Eraser pick edge glyphs as in step 4.7. The default.</comment>
+  </data>
+  <data name="ActionPatsIdea1" xml:space="preserve">
+    <value>Brush Edges: Idea 1, Shape Counts More When Faint</value>
+    <comment>Debug menu, step 4.10a only: where the ink lies counts for more the fainter the edge.</comment>
+  </data>
+  <data name="ActionPatsIdea2" xml:space="preserve">
+    <value>Brush Edges: Idea 2, Wrong Side Left Empty</value>
+    <comment>Debug menu, step 4.10a only: a glyph inked on the wrong side of an edge is never picked.</comment>
+  </data>
+  <data name="ActionPatsIdea3" xml:space="preserve">
+    <value>Brush Edges: Idea 3, Neighboring Cells</value>
+    <comment>Debug menu, step 4.10a only: each edge cell is picked with the cells around it in view.</comment>
+  </data>
+  <data name="ActionPatsIdeas1And3" xml:space="preserve">
+    <value>Brush Edges: Ideas 1 and 3</value>
+    <comment>Debug menu, step 4.10a only: ideas 1 and 3 together.</comment>
+  </data>
+  <data name="ActionPatsIdeas1And2And3" xml:space="preserve">
+    <value>Brush Edges: Ideas 1, 2 and 3</value>
+    <comment>Debug menu, step 4.10a only: all three ideas together.</comment>
+  </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>
     <comment>Debug menu: replaces the document with a busy one in colour, to check how the canvas draws colour.</comment>

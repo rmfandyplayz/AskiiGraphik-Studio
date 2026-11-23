@@ -5,15 +5,16 @@ using System.ComponentModel;
 using AskiiArt.App.Actions;
 using AskiiArt.App.Canvas.FrameRate;
 using AskiiArt.App.Resources;
+using AskiiArt.Core.Tools.RampStrokes;
 using Avalonia.Input;
 using CommunityToolkit.Mvvm.Input;
 
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds Show Frame Rate and
-/// Mouse Acts as a Pen. Zooming with the mouse wheel is handled by the canvas control itself, because it zooms around
-/// the pointer.
+/// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds Show Frame Rate,
+/// Mouse Acts as a Pen and step 4.10a's Brush Edges choice. Zooming with the mouse wheel is handled by the canvas
+/// control itself, because it zooms around the pointer.
 /// </summary>
 internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugActions) : IActionProvider
 {
@@ -60,7 +61,51 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
                 new RelayCommand(canvas.FrameRate.Toggle), checkedState: frameRateState);
             yield return new AppAction(CanvasActionIds.MouseActsAsPen, nameof(Strings.ActionMouseActsAsPen),
                 new RelayCommand(canvas.ToggleMouseActingAsPen), checkedState: penState);
+            foreach (var action in PatsActions())
+                yield return action;
         }
+    }
+
+    // Step 4.10a's temporary choice of how the Brush and the Soft Eraser pick edge glyphs (ADR 0074): one item per
+    // variant, ticked while it's the one in use.
+    private IEnumerable<AppAction> PatsActions()
+    {
+        var choices = new (string Id, string LabelKey, PatsVariant Variant)[]
+        {
+            (CanvasActionIds.PatsUnshaped, nameof(Strings.ActionPatsUnshaped), PatsVariant.All[0]),
+            (CanvasActionIds.PatsShipped, nameof(Strings.ActionPatsShipped), PatsVariant.All[1]),
+            (CanvasActionIds.PatsIdea1, nameof(Strings.ActionPatsIdea1), PatsVariant.All[2]),
+            (CanvasActionIds.PatsIdea2, nameof(Strings.ActionPatsIdea2), PatsVariant.All[3]),
+            (CanvasActionIds.PatsIdea3, nameof(Strings.ActionPatsIdea3), PatsVariant.All[4]),
+            (CanvasActionIds.PatsIdeas1And3, nameof(Strings.ActionPatsIdeas1And3), PatsVariant.All[5]),
+            (CanvasActionIds.PatsIdeas1And2And3, nameof(Strings.ActionPatsIdeas1And2And3), PatsVariant.All[6])
+        };
+        var states = choices.Select(choice => new ActionCheckedState(() => canvas.Pats == choice.Variant)).ToArray();
+        canvas.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(CanvasViewModel.Pats))
+                return;
+
+            foreach (var state in states)
+                state.NotifyChanged();
+        };
+
+        for (var index = 0; index < choices.Length; index++)
+        {
+            var (id, labelKey, variant) = choices[index];
+            var state = states[index];
+            yield return new AppAction(id, labelKey, new RelayCommand(() => Choose(variant, state)),
+                checkedState: state);
+        }
+    }
+
+    private void Choose(PatsVariant variant, ActionCheckedState state)
+    {
+        // A menu may have unticked the item it was already ticked for; tick it again.
+        if (canvas.Pats == variant)
+            state.NotifyChanged();
+        else
+            canvas.Pats = variant;
     }
 
     private static void OnFrameRatePropertyChanged(PropertyChangedEventArgs e, ActionCheckedState frameRateState)

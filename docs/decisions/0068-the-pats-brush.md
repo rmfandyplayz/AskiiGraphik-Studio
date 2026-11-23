@@ -30,3 +30,5 @@ After testing 4.5, the owner found that the Brush's edge cells on the Fine ramp 
 - A sliver of shape in the top or bottom eighth of a cell, where few glyphs reach, falls back to the nearest tone, whichever side its ink is on.
 - Strokes cost more. Measured over a 153-move stroke on a 500 × 200 canvas, the slowest move of a fully soft size-100 tip went from 2.1 to 3.4 ms in Release and from 7.7 to 13.7 ms in Debug; the first stroke with a new big soft tip takes about 6 ms (25 ms in Debug) to weigh it.
 - M6's image conversion can reuse `GlyphShape` and `RampShapeMatcher` with targets taken from the image.
+
+Updated 2026-11-23: step 4.10a adds temporary variants beside this brush for the owner to compare, and this brush stays the default (ADR 0074).

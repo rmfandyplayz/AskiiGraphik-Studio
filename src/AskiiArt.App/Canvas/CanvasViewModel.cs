@@ -13,6 +13,7 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -143,6 +144,16 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         get;
         set => SetProperty(ref field, value);
     }
+
+    /// <summary>
+    /// How the Brush and the Soft Eraser pick edge glyphs, from the Debug menu, for step 4.10a's comparison (ADR 0074).
+    /// Each stroke reads it as it starts. Temporary.
+    /// </summary>
+    public PatsVariant Pats
+    {
+        get;
+        set => SetProperty(ref field, value);
+    } = PatsVariant.Shipped;
 
     /// <summary>The cell under the pointer, reported by the canvas control.</summary>
     public CellPoint? HoveredCell
@@ -369,7 +380,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     // The tool asks for the cell shape and the glyph densities each time it needs them, because the font can change
     // while it's in use.
     private ToolContext CreateToolContext(EditingSession session) =>
-        new(session, Colors, ToolSettings, () => _cellWidthToHeight, () => _densities.GetMeter(Font));
+        new(session, Colors, ToolSettings, () => _cellWidthToHeight, () => _densities.GetMeter(Font), () => Pats);
 
     private static double CellWidthToHeightOf(LoadedFont font)
     {

@@ -35,7 +35,8 @@ public sealed class BrushTool : ITool
     /// <summary>Registers the brush, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new BrushTool(context.Session,
         context.Colors, new BrushTipSource(context.Settings.For(TipOptions), context.CellWidthToHeight),
-        RampOptions.SourceIn(context.Settings), context.Settings.For(RampBrushOptions.Group), context.Densities))
+        RampOptions.SourceIn(context.Settings), context.Settings.For(RampBrushOptions.Group), context.Densities,
+        context.Pats))
     {
         OptionGroups = [TipOptions, RampOptions.Group, RampBrushOptions.Group],
         WarningFor = RampOptions.WarningFor
@@ -47,6 +48,7 @@ public sealed class BrushTool : ITool
     private readonly RampSource _ramp;
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
+    private readonly Func<PatsVariant> _pats;
     private ToolOverlay _overlay = ToolOverlay.None;
     private Gesture _gesture;
 
@@ -69,8 +71,9 @@ public sealed class BrushTool : ITool
     /// <param name="ramp">The ramp the Ramp option chooses.</param>
     /// <param name="options">The values of <see cref="RampBrushOptions.Group"/>.</param>
     /// <param name="densities">How dark glyphs look in the document's font, now.</param>
+    /// <param name="pats">Which way edge glyphs are picked, for step 4.10a's comparison; null for the shipped one.</param>
     public BrushTool(EditingSession session, PaintColors colors, BrushTipSource tip, RampSource ramp,
-        ToolOptionValues options, Func<IGlyphDensityProvider> densities)
+        ToolOptionValues options, Func<IGlyphDensityProvider> densities, Func<PatsVariant>? pats = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(colors);
@@ -87,6 +90,7 @@ public sealed class BrushTool : ITool
         _ramp = ramp;
         _options = options;
         _densities = densities;
+        _pats = pats ?? (() => PatsVariant.Shipped);
         _tip.Values.Changed += OnTipChanged;
     }
 
@@ -146,8 +150,9 @@ public sealed class BrushTool : ITool
         var foreground = _colors.ForegroundIn(document.ColorMode);
         var background = _colors.BackgroundIn(document.ColorMode);
         _gesture = Gesture.Painting;
+        var pats = _pats();
         _stroke = new RampStroke(_session, ramp,
-            _tip.FalloffWith(_options.Get(RampBrushOptions.Softness) / 100.0),
+            _tip.FalloffWith(_options.Get(RampBrushOptions.Softness) / 100.0, pats.ShapesEdges), pats,
             target: _options.Get(RampBrushOptions.Intensity) / 100.0, strength: 1, movesAtLeastOneLevel: false,
             _densities,
             (before, levelBefore, level) => Paint(ramp, foreground, background, before, levelBefore, level),

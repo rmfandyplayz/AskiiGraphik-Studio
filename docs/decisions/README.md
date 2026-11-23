@@ -80,3 +80,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0071](0071-selections-past-the-canvas-edge.md) | Selections past the canvas edge | Accepted |
 | [0072](0072-moving-past-the-zone-and-scrolling-round-it.md) | Moving past the zone, and scrolling round it | Accepted |
 | [0073](0073-arrows-in-the-selection-tools.md) | Arrows in the selection tools | Accepted |
+| [0074](0074-pats-comparison-variants.md) | PATS comparison variants | Accepted |

@@ -3,8 +3,8 @@
 
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Ramps;
-
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.RampStrokes;
 
 namespace AskiiArt.Core.Tools;
 
@@ -21,9 +21,14 @@ namespace AskiiArt.Core.Tools;
 /// <param name="Densities">
 /// How dark each glyph looks in the document's font, now (ADR 0045). Ask each time, as the font can change.
 /// </param>
+/// <param name="Pats">
+/// Which way the Brush and the Soft Eraser pick edge glyphs, for step 4.10a's comparison (ADR 0074); null for the
+/// shipped one. Temporary.
+/// </param>
 public sealed record ToolContext(
     EditingSession Session,
     PaintColors Colors,
     ToolSettings Settings,
     Func<double> CellWidthToHeight,
-    Func<IGlyphDensityProvider> Densities);
+    Func<IGlyphDensityProvider> Densities,
+    Func<PatsVariant>? Pats = null);

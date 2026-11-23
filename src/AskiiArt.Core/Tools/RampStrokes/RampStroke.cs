@@ -31,9 +31,17 @@ internal delegate Cell RampCellPaint(Cell before, int levelBefore, int level);
 /// (<see cref="RampShapeMatcher"/>, ADR 0068), so the ink lies where the tip painted. A part moves once too, by the
 /// greatest weight that has reached it.
 /// </para>
+/// <para>
+/// For step 4.10a's comparison (ADR 0074), a <see cref="PatsVariant"/> can change how edge glyphs are picked; with
+/// idea 3, each edge cell is picked again whenever a cell around it changes, judged with them.
+/// </para>
 /// </summary>
 internal sealed class RampStroke
 {
+    // Idea 3: how many times the edge cells near a move are picked again, each judged with its neighbours as they are
+    // after the last.
+    private const int NeighbourPasses = 2;
+
     private readonly EditingSession _session;
     private readonly Ramp _ramp;
     private readonly double _target;
@@ -45,6 +53,11 @@ internal sealed class RampStroke
     private readonly string _stepNameKey;
     private readonly CoalescingGroup _undo = new();
     private readonly Dictionary<CellPoint, ReachedCell> _reached = [];
+    private readonly PatsVariant _variant;
+    private readonly RampShapeMatcher.ShapeScoring _scoring;
+
+    // Idea 3: what the stroke has given each cell it reached so far, so each edge cell can be judged with them.
+    private readonly Dictionary<CellPoint, Cell> _given = [];
 
     // Each glyph's level, measured once per stroke.
     private readonly Dictionary<Rune, int> _levels = [];
@@ -65,6 +78,7 @@ internal sealed class RampStroke
     /// <param name="session">The session whose active layer the stroke changes.</param>
     /// <param name="ramp">The ramp cells move along.</param>
     /// <param name="falloff">The tip, and how strongly it reaches each of its cells.</param>
+    /// <param name="variant">How edge glyphs are picked, for step 4.10a's comparison.</param>
     /// <param name="target">The darkness cells move towards, from 0 to 1.</param>
     /// <param name="strength">How far, from 0 to 1, the full weight moves a cell to <paramref name="target"/>.</param>
     /// <param name="movesAtLeastOneLevel">
@@ -74,13 +88,15 @@ internal sealed class RampStroke
     /// <param name="paint">Gives each cell that moved.</param>
     /// <param name="stepNameKey">Names the undo step: a key from <see cref="UndoStepNames"/>.</param>
     /// <param name="start">Where the pointer was pressed.</param>
-    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, double target, double strength,
-        bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities, RampCellPaint paint, string stepNameKey,
-        ToolPointerInput start)
+    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, PatsVariant variant, double target,
+        double strength, bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities, RampCellPaint paint,
+        string stepNameKey, ToolPointerInput start)
     {
         _session = session;
         _ramp = ramp;
         Falloff = falloff;
+        _variant = variant;
+        _scoring = new RampShapeMatcher.ShapeScoring(variant.CountsShapeAgainstFaintness, variant.LeavesWrongSideEmpty);
         _target = target;
         _strength = strength;
         _movesAtLeastOneLevel = movesAtLeastOneLevel;
@@ -140,6 +156,7 @@ internal sealed class RampStroke
         var document = _session.Document;
         var layer = _session.ActiveLayer;
         var cells = _session.EditCellsInSelection(layer.Id);
+        List<CellPoint>? raised = _variant.LooksAtNeighbours ? [] : null;
         foreach (var (point, tipWeight, tipParts) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft, toTopLeft,
                      document.CanvasSize))
         {
@@ -151,10 +168,19 @@ internal sealed class RampStroke
                 continue;
 
             _reached[point] = reached;
-            var moved = MoveCell(reached);
+            var moved = MoveCell(reached, neighbours: null);
             if (moved != now)
                 cells.Set(point, moved);
+
+            if (raised is null || !IsPaintable(point))
+                continue;
+
+            raised.Add(point);
+            _given[point] = moved;
         }
+
+        if (raised is { Count: > 0 })
+            PickAgainWithNeighbours(raised, layer, cells);
 
         if (cells.Build(_stepNameKey) is not { } command)
             return;
@@ -207,7 +233,106 @@ internal sealed class RampStroke
         return Math.Max(Math.Max(OldPart(before, part), stamped), floor);
     }
 
-    private Cell MoveCell(ReachedCell reached)
+    // Idea 3: picks every edge cell next to a raised one again, judged with the cells around it, a few times over.
+    private void PickAgainWithNeighbours(List<CellPoint> raised, Layer layer, CellEditBuilder cells)
+    {
+        var near = new SortedSet<CellPoint>(Comparer<CellPoint>.Create((a, b) =>
+            a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X)));
+        foreach (var point in raised)
+        {
+            for (var dy = -1; dy <= 1; dy++)
+            {
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    var neighbour = new CellPoint(point.X + dx, point.Y + dy);
+                    if (_reached.TryGetValue(neighbour, out var cell) && cell.Parts is not null &&
+                        IsPaintable(neighbour))
+                    {
+                        near.Add(neighbour);
+                    }
+                }
+            }
+        }
+
+        var neighbours = new RampShapeMatcher.CellNeighbours();
+        for (var pass = 0; pass < NeighbourPasses; pass++)
+        {
+            foreach (var point in near)
+            {
+                FillNeighbours(point, layer, neighbours);
+                var moved = MoveCell(_reached[point], neighbours);
+                _given[point] = moved;
+                cells.Set(point, moved);
+            }
+        }
+    }
+
+    private void FillNeighbours(CellPoint point, Layer layer, RampShapeMatcher.CellNeighbours neighbours)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0)
+                    continue;
+
+                var neighbour = new CellPoint(point.X + dx, point.Y + dy);
+                var look = neighbours.LookOf(dx, dy);
+                LookOf(GivenOrLayerCell(neighbour, layer), look);
+                if (_given.ContainsKey(neighbour) && _reached.TryGetValue(neighbour, out var reached))
+                    TargetOf(reached, neighbours.TargetOf(dx, dy));
+                else
+                    look.CopyTo(neighbours.TargetOf(dx, dy));
+            }
+        }
+    }
+
+    private Cell GivenOrLayerCell(CellPoint point, Layer layer)
+    {
+        if (_given.TryGetValue(point, out var given))
+            return given;
+
+        return layer.Size.Contains(point) ? layer.GetCell(point) : Cell.Empty;
+    }
+
+    // How a cell looks, part by part, in the ramp's intensities.
+    private void LookOf(Cell cell, Span<double> look)
+    {
+        _matcher ??= new RampShapeMatcher(_ramp, _densities());
+        if (!cell.HasGlyph)
+        {
+            look.Clear();
+            return;
+        }
+
+        var level = LevelOf(cell);
+        if (_ramp.GlyphOf(level) == cell.Glyph)
+        {
+            _matcher.LookOf(level).CopyTo(look);
+            return;
+        }
+
+        var shape = _densities().GetShape(cell.Glyph);
+        var intensity = _ramp.IntensityOf(level);
+        for (var part = 0; part < look.Length; part++)
+            look[part] = shape.Ink > 0 ? intensity * shape.Parts[part] / shape.Ink : intensity;
+    }
+
+    // What the stroke means a cell to look like, part by part.
+    private void TargetOf(ReachedCell reached, Span<double> target)
+    {
+        var darknessBefore = _ramp.IntensityOf(LevelOf(reached.Cell));
+        for (var part = 0; part < target.Length; part++)
+        {
+            var weight = reached.Parts?[part] ?? reached.Weight;
+            target[part] = darknessBefore + (_target - darknessBefore) * weight * _strength;
+        }
+    }
+
+    private bool IsPaintable(CellPoint point) =>
+        _session.Selection.IsEmpty || _session.Selection.Mask.Contains(point);
+
+    private Cell MoveCell(ReachedCell reached, RampShapeMatcher.CellNeighbours? neighbours)
     {
         var before = reached.Cell;
         var levelBefore = LevelOf(before);
@@ -221,7 +346,7 @@ internal sealed class RampStroke
         }
         else
         {
-            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, out change);
+            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, neighbours, out change);
         }
 
         // A cell short of the target's level is always on the target's side of it, so one level can't overshoot.
@@ -233,7 +358,8 @@ internal sealed class RampStroke
 
     // The level, between the cell's and the target's, whose glyph best shows each part moved by its own weight.
     // Change is how far the parts moved on average.
-    private int MatchedLevel(float[] parts, int levelBefore, double darknessBefore, out double change)
+    private int MatchedLevel(float[] parts, int levelBefore, double darknessBefore,
+        RampShapeMatcher.CellNeighbours? neighbours, out double change)
     {
         Span<double> target = stackalloc double[GlyphShape.PartCount];
         var totalChange = 0.0;
@@ -246,7 +372,8 @@ internal sealed class RampStroke
 
         change = totalChange / target.Length;
         _matcher ??= new RampShapeMatcher(_ramp, _densities());
-        return _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel));
+        return _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel),
+            _scoring, neighbours);
     }
 
     // A pressure the device can't tell counts as full, as a mouse's does.
