@@ -8,9 +8,10 @@ using Avalonia;
 namespace AskiiArt.App.Canvas;
 
 /// <summary>
-/// Bringing a paste into view (ADR 0076). A paste that isn't fully in view brings the view to its centre, zoomed to the
-/// largest usual step up to 150% at which it fits with room round it, or to 25% if none does. The view glides there,
-/// zoom and all, and nothing else can change the zoom until it's done.
+/// Bringing cells into view after a paste or a run of arrow presses (ADRs 0076, 0077). Cells that aren't fully in view
+/// bring the view to their centre, at the current zoom if they fit there with room round them, else zoomed out to the
+/// largest usual step at which they do, or to 25%. The view glides there, zoom and all, and nothing else can change the
+/// zoom until it's done.
 /// </summary>
 internal sealed partial class CanvasControl
 {
@@ -42,7 +43,8 @@ internal sealed partial class CanvasControl
 
     /// <summary>
     /// Brings <paramref name="cells"/> into view when any of them is out of it, as after a paste: the view glides to
-    /// their centre, zoomed to fit them with room round them (ADR 0076). Cells fully in view leave the view as it is.
+    /// their centre, zoomed out if need be to fit them with room round them (ADRs 0076, 0077). Cells fully in view leave
+    /// the view as it is.
     /// </summary>
     public void BringIntoView(CellRect cells)
     {
@@ -52,10 +54,12 @@ internal sealed partial class CanvasControl
         if (_viewport.UsableOnCanvas.Contains(PixelsOf(cells, _viewport.CellSize)))
             return;
 
-        // A settling glide under way stops where it is, so the zoom glides from what's on screen.
-        StopGlide();
+        // A settling glide under way stops where it is, still held there, so the new glide starts from what's on screen.
+        // Releasing it first would jump to where it was going (4.11's testing).
+        _glide = null;
+        EndZoomGlide();
         var from = _viewport;
-        var factor = PasteFit.ZoomFor(cells, from.UsableSize, from.Margin, CellSizeAt);
+        var factor = ViewFit.ZoomFor(cells, ZoomFactor, from.UsableSize, from.Margin, CellSizeAt);
         var cellSize = CellSizeAt(factor);
         var zoomed = cellSize == from.CellSize ? from : from.Zoomed(cellSize, from.UsableCentre);
         var centre = PixelsOf(cells, cellSize).Center;
@@ -142,6 +146,16 @@ internal sealed partial class CanvasControl
         _zoomGlide = null;
         IsZoomLocked = false;
         InvalidateVisual();
+    }
+
+    /// <summary>Where the canvas's top-left corner shows on screen now, in device pixels, gliding or not.</summary>
+    internal Point CanvasOriginOnScreen()
+    {
+        if (_viewport is null)
+            return default;
+
+        var (viewport, transform) = DrawnView(_viewport);
+        return transform.Apply(new Point(viewport.CanvasOrigin.X, viewport.CanvasOrigin.Y));
     }
 
     // What to draw now: the view, or while a zoom glides, a view covering what the screen shows of the glide and how

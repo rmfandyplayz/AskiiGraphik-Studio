@@ -983,6 +983,9 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
     // does how far the view can scroll.
     private void OnSelectionChanged(object? sender, SessionSelectionChangedEventArgs e)
     {
+        if (IsArrowRunUnderWay)
+            _hasArrowRunChangedSelection = true;
+
         UpdateReach();
         UpdateCursor();
         InvalidateVisual();

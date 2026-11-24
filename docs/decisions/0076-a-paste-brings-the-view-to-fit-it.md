@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0077](0077-fitting-without-zooming-in-and-after-arrows.md): the fit keeps the current zoom when the paste fits there and never zooms in, arrow runs bring the selection into view too, and a glide starts from what's on screen. The rest still stands.
+
 ## Context
 
 Since 4.9b (ADR 0072), a paste partly out of view glided to the middle of the view only if it fitted at the current zoom. After 4.10a's testing the owner asked that any paste not fully in view bring the view to it and zoom to fit it with room round it, in to 150% at most and out to 25% at least, snapping to the usual zoom steps, gliding there zoom and all, with nothing else changing the zoom until it's done. Cells are whole device pixels at each zoom step (§12), so the zoom can't take the in-between sizes a smooth glide passes through.
@@ -30,3 +32,5 @@ Since 4.9b (ADR 0072), a paste partly out of view glided to the middle of the vi
 - During a glide the drawing and the pointer disagree: a click lands where the end's view has it. The glide is short, and a gesture ends it.
 - Zooming out, the start of the glide shows the smaller atlas's glyphs scaled up, slightly blurred, for a few frames.
 - A paste out of view at a zoom above 150% zooms out to 150% or less, even if it would fit as it is.
+
+Updated 2026-11-24: step 4.11b replaced the fit rule and fixed a glide that snapped first (ADR 0077).

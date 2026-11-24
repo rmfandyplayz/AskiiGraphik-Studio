@@ -379,13 +379,13 @@ public sealed class CanvasControlTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void BringIntoView_CentresAPasteOutOfView_ZoomedInNoFurtherThan150Percent()
+    public void BringIntoView_CentresAPasteOutOfView_KeepingAZoomItFitsAt()
     {
         Show();
 
         _control.BringIntoView(new CellRect(150, 50, 2, 1));
 
-        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+        Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
         var middle = Viewport.CellAt(Viewport.UsableCentre);
         Assert.NotNull(middle);
         Assert.InRange(middle.Value.X, 150, 152);
@@ -393,6 +393,73 @@ public sealed class CanvasControlTests : IDisposable
 
         // With no glide time, as with reduced motion, the view jumps there and the zoom stays free.
         Assert.False(_control.IsZoomLocked);
+    }
+
+    [AvaloniaFact]
+    public void BringIntoView_KeepsAZoomAbove100Percent_WhenThePasteFitsThere()
+    {
+        Show();
+        _control.ZoomFactor = ZoomLevels.Maximum;
+
+        _control.BringIntoView(new CellRect(150, 50, 1, 1));
+
+        Assert.Equal(ZoomLevels.Maximum, _control.ZoomFactor);
+        Assert.Equal(new CellPoint(150, 50), Viewport.CellAt(Viewport.UsableCentre));
+    }
+
+    // In 4.11's testing, a paste made while the view was settling first jumped to where the settling would end.
+    [AvaloniaFact]
+    public void BringIntoView_GlidesFromWhereTheViewIs_WhileItsSettling()
+    {
+        _control.ViewGlideMilliseconds = 60_000;
+        _control.ZoomGlideMilliseconds = 60_000;
+        Show();
+        _control.Selection = _canvas.Session.Selection;
+        SelectFarPastTheZone();
+        _control.HorizontalOffset = _control.HorizontalMaximum;
+        var onScreen = _control.CanvasOriginOnScreen();
+        SelectionEdits.Deselect(_canvas.Session);
+        Assert.Equal(onScreen, _control.CanvasOriginOnScreen());
+
+        _control.BringIntoView(new CellRect(150, 50, 2, 1));
+
+        Assert.True(_control.IsZoomLocked);
+        var start = _control.CanvasOriginOnScreen();
+        Assert.InRange(start.X, onScreen.X - 1, onScreen.X + 1);
+        Assert.InRange(start.Y, onScreen.Y - 1, onScreen.Y + 1);
+    }
+
+    [AvaloniaFact]
+    public void ARunOfArrowPresses_BringsTheSelectionIntoView_OnceThePauseAfterItIsOver()
+    {
+        Show();
+        _control.Selection = _canvas.Session.Selection;
+        _control.Focus();
+        var moved = new CellRect(150, 50, 3, 2);
+
+        _window.KeyPress(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        Select(moved);
+        _window.KeyRelease(Key.Right, RawInputModifiers.None, PhysicalKey.ArrowRight, null);
+        Render();
+        Assert.False(Viewport.UsableOnCanvas.Contains(PixelsOf(moved)));
+
+        Thread.Sleep(MoveTool.ArrowRunPause + TimeSpan.FromMilliseconds(100));
+        Render();
+
+        Assert.True(Viewport.UsableOnCanvas.Contains(PixelsOf(moved)));
+    }
+
+    [AvaloniaFact]
+    public void ASelectionChangedWithNoArrowHeld_LeavesTheViewAsItIs()
+    {
+        Show();
+        _control.Selection = _canvas.Session.Selection;
+        var origin = Viewport.CanvasOrigin;
+
+        Select(new CellRect(150, 50, 3, 2));
+        Render();
+
+        Assert.Equal(origin, Viewport.CanvasOrigin);
     }
 
     [AvaloniaFact]
@@ -429,11 +496,10 @@ public sealed class CanvasControlTests : IDisposable
 
         _control.BringIntoView(new CellRect(150, 50, 2, 1));
         Assert.True(_control.IsZoomLocked);
-        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
 
         _window.MouseWheel(new Point(10, 10), new Vector(0, -1), RawInputModifiers.Control);
         Render();
-        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+        Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
         Assert.True(_control.IsZoomLocked);
 
         // The wheel would still count as zooming, as part of the same turn of it, so this pans by dragging instead.
@@ -456,7 +522,14 @@ public sealed class CanvasControlTests : IDisposable
         Render();
 
         Assert.False(_control.IsZoomLocked);
-        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+        Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
+    }
+
+    private void Select(CellRect cells)
+    {
+        var mask = SelectionMask.Rectangle(_canvas.Document.CanvasSize, cells);
+        _canvas.Session.History.Execute(
+            new SetSelectionCommand(_canvas.Session.Selection, mask, UndoStepNames.Move));
     }
 
     private PixelRect PixelsOf(CellRect cells)

@@ -422,12 +422,12 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | In a selection tool Enter ends a move the arrows made and deselects; with no such move it does nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | Reduce motion is a setting in the settings file only (`"reduceMotion": "true"`), off by default, read at start-up; it stills the selection's dashes and hatching, the landing outline, the docking animations and fades, and the view's glide. The owner had asked only that motion be ready for such a setting, and kept it. A switch in a future Preferences window that takes effect at once would also need the docking metrics re-read | `Settings/ReducedMotion.cs` | 4.9b |
 
-### A paste brings the view to fit it (step 4.11, ADR 0076)
+### A paste brings the view to fit it (steps 4.11, 4.11b, ADRs 0076, 0077)
 
 | Choice | Where | Step |
 |---|---|---|
-| The room round a paste is the canvas margin, 64 logical pixels on every side, and "in view" means inside the part of the window toolbars and windows don't cover | `Canvas/PasteFit.cs`, `Canvas/CanvasControl.ZoomGlide.cs` | 4.11 |
-| A paste out of view at a zoom above 150% zooms out to 150% or less, even if it would fit as it is | `Canvas/PasteFit.cs` | 4.11 |
+| The room round a paste is the canvas margin, 64 logical pixels on every side, and "in view" means inside the part of the window toolbars and windows don't cover | `Canvas/ViewFit.cs`, `Canvas/CanvasControl.ZoomGlide.cs` | 4.11 |
+| After a run of arrow presses that moved the selection, once the 0.4 s pause is over, a selection not fully in view is centred the same way, zooming out if it doesn't fit; this includes the whole layer the Move tool's arrows select when nothing was | `Canvas/CanvasControl.Reach.cs` (`SettleAfterArrows`) | 4.11b |
 | The glide takes 0.25 s, easing out, a little longer than the view's 0.15 s settling glide since it zooms too; each zoom step takes as long as the next, and the spot in the middle of the view moves steadily | `AppCanvasZoomGlideMilliseconds` token, `Canvas/ZoomGlide.cs` | 4.11 |
 | While it glides, the wheel doesn't zoom and Zoom In, Zoom Out and Actual Size are greyed out; scrolling, panning, a drag, a click or an arrow end the glide at once, at its end | `Canvas/CanvasControl.ZoomGlide.cs`, `Canvas/CanvasViewModel.cs` | 4.11 |
 | Zooming out, glyphs are slightly blurred for the first few frames of the glide | `Canvas/Rendering/CanvasScenePainter.cs` | 4.11 |
@@ -437,6 +437,8 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 The owner's ideas, parked until the stage they belong to.
 
 - **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M5 or M8**): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
+
+- **Faint brush edges keep their ink on the stroke's side** (raised after 4.10b's testing; **for M10**): on a faint soft edge, matching darkness outweighs where the ink sits, so the outermost row can pick a glyph inked away from the stroke, such as the Fine ramp's backtick along a stroke's top, leaving a gap of about a cell and a half below it. A fix would rule out glyphs inked away from the stroke on faint edges, in the whole-cell fallback too; a rough try closed the gap but left the two edges uneven the other way, so it needs tuning and a recheck of circles and squares. A finer ink grid wouldn't help (the owner agreed not to try one).
 
 - **Other ways of painting as optional plugins** (raised after 4.10b's testing; **for M9**): built-in plugins could add back older brush behaviours, such as 4.6's whole cells, or bring new ways of drawing, as a choice for users who want more control than the one brush.
 

@@ -12,7 +12,8 @@ namespace AskiiArt.App.Canvas;
 /// How far the canvas view can scroll, and how it settles (ADR 0072). The view reaches the canvas, the zone around it,
 /// and a selection past that zone with room around it. It never moves while something may be moving: during a gesture,
 /// while an arrow is held, and for the pause after one that can carry a run of presses on. Then it glides back out of
-/// space nothing needs any more.
+/// space nothing needs any more. After a run of arrow presses that moved the selection, it brings the selection into
+/// view, as a paste does (ADR 0077).
 /// </summary>
 internal sealed partial class CanvasControl
 {
@@ -27,6 +28,9 @@ internal sealed partial class CanvasControl
     // When the last arrow held was let go, until the pause after it is over.
     private TimeSpan? _arrowsLetGoAt;
     private bool _isArrowPauseFrameRequested;
+
+    // Whether the selection changed while arrows were held or in the pause after them, so it's brought into view then.
+    private bool _hasArrowRunChangedSelection;
     private ViewGlide? _glide;
     private bool _isGlideFrameRequested;
 
@@ -45,7 +49,9 @@ internal sealed partial class CanvasControl
     }
 
     // While something may be moving, the view stays where it is.
-    private bool IsHoldingView => _isToolGestureActive || _arrowsDown.Count > 0 || _arrowsLetGoAt is not null;
+    private bool IsHoldingView => _isToolGestureActive || IsArrowRunUnderWay;
+
+    private bool IsArrowRunUnderWay => _arrowsDown.Count > 0 || _arrowsLetGoAt is not null;
 
     private CellRect CurrentReach()
     {
@@ -168,7 +174,7 @@ internal sealed partial class CanvasControl
         if (_topLevel is null)
         {
             _arrowsLetGoAt = null;
-            SettleView();
+            SettleAfterArrows();
             return;
         }
 
@@ -189,6 +195,17 @@ internal sealed partial class CanvasControl
         }
 
         _arrowsLetGoAt = null;
+        SettleAfterArrows();
+    }
+
+    // A run of arrow presses that moved the selection brings it into view, as a paste does; otherwise the view settles.
+    private void SettleAfterArrows()
+    {
+        var hasChangedSelection = _hasArrowRunChangedSelection;
+        _hasArrowRunChangedSelection = false;
+        if (hasChangedSelection && !IsHoldingView && Selection is { IsEmpty: false } selection)
+            BringIntoView(selection.Mask.Bounds);
+
         SettleView();
     }
 
