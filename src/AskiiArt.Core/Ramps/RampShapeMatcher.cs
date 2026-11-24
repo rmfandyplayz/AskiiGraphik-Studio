@@ -17,7 +17,7 @@ namespace AskiiArt.Core.Ramps;
 /// </para>
 /// <para>
 /// The Brush and the Soft Eraser also judge where the ink lies across the cells around (<see cref="CellNeighbours"/>),
-/// and can be strict about faint edges; both are internal to them.
+/// which is internal to them (ADR 0075).
 /// </para>
 /// </summary>
 public sealed class RampShapeMatcher
@@ -26,15 +26,6 @@ public sealed class RampShapeMatcher
     // fonts' Fine and Standard ramps: at 1, a faint edge cell keeps a glyph whose ink is on the wrong side, because a
     // level's worth of darkness outweighs it.
     private const double ShapeWeight = 4;
-
-    // Strict edges: below this average intensity, where the ink lies counts for more, by the square of how much fainter
-    // the edge is, up to MostFaintEdgeBoost times.
-    private const double FaintEdgeIntensity = 0.5;
-    private const double MostFaintEdgeBoost = 25;
-
-    // Strict edges: a target or a glyph whose parts stray from its average by less than this share of it, as a sum of
-    // squares, counts as even, so it has no side for ink to be on.
-    private const double UnevenShare = 0.05;
 
     // The share of a target's unevenness a glyph must show for its edge to count as shown. Tuned by eye: at 0.5 hardly
     // any edge counted, and the brush looked as it did before step 4.7.
@@ -127,7 +118,7 @@ public sealed class RampShapeMatcher
     /// or outside the ramp.
     /// </exception>
     public int LevelFor(ReadOnlySpan<double> target, int lowest, int highest) =>
-        Match(target, lowest, highest, isStrict: false, neighbours: null).Level;
+        Match(target, lowest, highest, neighbours: null).Level;
 
     /// <summary>
     /// As <see cref="LevelFor(ReadOnlySpan{double}, int, int)"/>, and says whether the level's glyph shows the edge.
@@ -137,13 +128,8 @@ public sealed class RampShapeMatcher
     /// <param name="target">The intensity each part of the cell should have, from 0 to 1.</param>
     /// <param name="lowest">The lightest level allowed.</param>
     /// <param name="highest">The darkest level allowed.</param>
-    /// <param name="isStrict">
-    /// Whether where the ink lies counts for more the fainter the edge, and a glyph inked on the wrong side of an uneven
-    /// target is never picked. If that rules out every level, the cell gets <paramref name="lowest"/>.
-    /// </param>
     /// <param name="neighbours">The cells around, filled in by the caller, or null to judge the cell alone.</param>
-    internal ShapeMatch Match(ReadOnlySpan<double> target, int lowest, int highest, bool isStrict,
-        CellNeighbours? neighbours)
+    internal ShapeMatch Match(ReadOnlySpan<double> target, int lowest, int highest, CellNeighbours? neighbours)
     {
         if (target.Length != GlyphShape.PartCount)
         {
@@ -164,7 +150,7 @@ public sealed class RampShapeMatcher
             return new ShapeMatch(lowest, ShowsEdge(lowest, targetStrays, targetStrayWeight));
 
         neighbours?.Prepare(target, mean);
-        var judge = new Judge(this, mean, targetStrayWeight, isStrict, neighbours);
+        var judge = new Judge(this, mean, targetStrayWeight, neighbours);
 
         // A level scores at least its tone gap's share, so the search starts at the level nearest in tone and stops,
         // each way, at the first level whose tone gap alone scores worse than the best so far: those beyond it are
@@ -177,9 +163,6 @@ public sealed class RampShapeMatcher
 
         for (var level = nearest - 1; level >= lowest && ToneScoreOf(level, mean) <= bestScore; level--)
             Consider(level, judge.ScoreOf(level, targetStrays), ref best, ref bestScore);
-
-        if (double.IsPositiveInfinity(bestScore))
-            best = lowest;
 
         return new ShapeMatch(best, ShowsEdge(best, targetStrays, targetStrayWeight));
     }
@@ -464,42 +447,26 @@ public sealed class RampShapeMatcher
         private readonly RampShapeMatcher _matcher;
         private readonly double _mean;
         private readonly double _targetStrayWeight;
-        private readonly bool _isStrict;
         private readonly CellNeighbours? _neighbours;
-        private readonly double _shapeWeight;
-        private readonly bool _isTargetUneven;
 
-        public Judge(RampShapeMatcher matcher, double mean, double targetStrayWeight, bool isStrict,
-            CellNeighbours? neighbours)
+        public Judge(RampShapeMatcher matcher, double mean, double targetStrayWeight, CellNeighbours? neighbours)
         {
             _matcher = matcher;
             _mean = mean;
             _targetStrayWeight = targetStrayWeight;
-            _isStrict = isStrict;
             _neighbours = neighbours;
-            _shapeWeight = ShapeWeight * (isStrict ? FaintEdgeBoost(mean) : 1);
-            _isTargetUneven = targetStrayWeight > UnevenShare * GlyphShape.PartCount * mean * mean;
         }
 
         public double ScoreOf(int level, ReadOnlySpan<double> targetStrays)
         {
             var (agreement, scale) = _matcher.FitOf(level, targetStrays);
-            if (_isStrict && _isTargetUneven && IsUnevenGlyph(level) && agreement <= 0)
-                return double.PositiveInfinity;
-
             double unshown;
             if (_neighbours is null)
                 unshown = _matcher.UnshownStray(level, agreement, scale, _targetStrayWeight);
             else
                 unshown = UnshownInWindow(level, scale);
 
-            return _matcher.ToneScoreOf(level, _mean) + _shapeWeight * unshown;
-        }
-
-        private bool IsUnevenGlyph(int level)
-        {
-            var intensity = _matcher._intensities[level];
-            return _matcher._strayWeights[level] > UnevenShare * GlyphShape.PartCount * intensity * intensity;
+            return _matcher.ToneScoreOf(level, _mean) + ShapeWeight * unshown;
         }
 
         // How far the window's strays, with the level's glyph in the middle scaled down as the cell alone would scale
@@ -522,18 +489,6 @@ public sealed class RampShapeMatcher
             var unshown = _neighbours.LeftToShowWeight - 2 * scale * agreement +
                           scale * scale * _matcher._windowLookWeights[level];
             return Math.Max(unshown, 0) * GlyphShape.PartCount / WindowParts;
-        }
-
-        private static double FaintEdgeBoost(double mean)
-        {
-            if (mean >= FaintEdgeIntensity)
-                return 1;
-
-            if (mean <= 0)
-                return MostFaintEdgeBoost;
-
-            var fainter = FaintEdgeIntensity / mean;
-            return Math.Min(fainter * fainter, MostFaintEdgeBoost);
         }
     }
 }

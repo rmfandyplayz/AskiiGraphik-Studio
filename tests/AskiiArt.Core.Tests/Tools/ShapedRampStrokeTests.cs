@@ -104,21 +104,6 @@ public sealed class ShapedRampStrokeTests
         Assert.Equal('·', TestCells.Read(Layer)[y][x]);
     }
 
-    // The tip covers about 30% of the top of the cells at the top of the hole, which leaves them a faint edge to show.
-    [Fact]
-    public void StrictEdges_KeepAFaintEdgesGlyph_WhereStandardEdgesLetItGo()
-    {
-        FillWith('#');
-        Click(CreateSoftEraser(), 3, 3);
-        var standard = TestCells.Read(Layer);
-        FillWith('#');
-
-        Click(CreateSoftEraser(EdgeStrictness.Strict), 3, 3);
-
-        Assert.Equal('·', standard[1][2]);
-        Assert.Equal('^', TestCells.Read(Layer)[1][2]);
-    }
-
     [Fact]
     public void OnlyTheCellsTheTipReaches_Change()
     {
@@ -172,12 +157,12 @@ public sealed class ShapedRampStrokeTests
             () => _glyphs);
     }
 
-    private SoftEraserTool CreateSoftEraser(EdgeStrictness strictness = EdgeStrictness.Standard)
+    private SoftEraserTool CreateSoftEraser()
     {
         var options = new ToolOptionValues(SoftEraserOptions.Group);
         options.Set(SoftEraserOptions.Softness, 0);
         return new SoftEraserTool(_session, TestTools.Tip(_tip), TestTools.Ramp(_ramp, _ramps), options,
-            () => _glyphs, () => strictness);
+            () => _glyphs);
     }
 
     private void FillWith(char glyph) =>

@@ -406,14 +406,6 @@
     <value>Mouse Acts as a Pen at Half Pressure</value>
     <comment>Debug menu: while ticked, the mouse presses like a drawing tablet's pen at half pressure, to try pen pressure without a tablet.</comment>
   </data>
-  <data name="ActionBrushEdgesStandard" xml:space="preserve">
-    <value>Brush Edges: Standard (3 with the Fix)</value>
-    <comment>Debug menu: the Brush and Soft Eraser judge each edge cell with the cells around it. The default.</comment>
-  </data>
-  <data name="ActionBrushEdgesStrict" xml:space="preserve">
-    <value>Brush Edges: Strict (1, 2 and 3 with the Fix)</value>
-    <comment>Debug menu: as Standard, and stricter about keeping faint edges' ink on the painted side.</comment>
-  </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>
     <comment>Debug menu: replaces the document with a busy one in colour, to check how the canvas draws colour.</comment>

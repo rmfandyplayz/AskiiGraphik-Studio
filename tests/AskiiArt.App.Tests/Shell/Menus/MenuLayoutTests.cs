@@ -118,8 +118,6 @@ public sealed class MenuLayoutTests
                 ShellActionIds.AllowTinyWindow,
                 CanvasActionIds.ShowFrameRate,
                 CanvasActionIds.MouseActsAsPen,
-                CanvasActionIds.BrushEdgesStandard,
-                CanvasActionIds.BrushEdgesStrict,
                 WindowSampleActionIds.First,
                 WindowSampleActionIds.Second,
                 WindowSampleActionIds.Third,

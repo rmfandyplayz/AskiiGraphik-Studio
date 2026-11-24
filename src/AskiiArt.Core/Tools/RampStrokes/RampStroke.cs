@@ -59,7 +59,6 @@ internal sealed class RampStroke
     private readonly string _stepNameKey;
     private readonly CoalescingGroup _undo = new();
     private readonly Dictionary<CellPoint, ReachedCell> _reached = [];
-    private readonly bool _isStrict;
     private readonly bool _shapesCells;
 
     // What the stroke has given each cell it reached so far, so each edge cell can be judged with them.
@@ -92,7 +91,6 @@ internal sealed class RampStroke
     /// <param name="session">The session whose active layer the stroke changes.</param>
     /// <param name="ramp">The ramp cells move along.</param>
     /// <param name="falloff">The tip, and how strongly it reaches each of its cells.</param>
-    /// <param name="strictness">How strictly edge glyphs keep their ink on the painted side.</param>
     /// <param name="target">The darkness cells move towards, from 0 to 1.</param>
     /// <param name="strength">How far, from 0 to 1, the full weight moves a cell to <paramref name="target"/>.</param>
     /// <param name="movesAtLeastOneLevel">
@@ -102,14 +100,13 @@ internal sealed class RampStroke
     /// <param name="paint">Gives each cell that moved.</param>
     /// <param name="stepNameKey">Names the undo step: a key from <see cref="UndoStepNames"/>.</param>
     /// <param name="start">Where the pointer was pressed.</param>
-    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, EdgeStrictness strictness,
-        double target, double strength, bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities,
-        RampCellPaint paint, string stepNameKey, ToolPointerInput start)
+    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, double target, double strength,
+        bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities, RampCellPaint paint, string stepNameKey,
+        ToolPointerInput start)
     {
         _session = session;
         _ramp = ramp;
         Falloff = falloff;
-        _isStrict = strictness == EdgeStrictness.Strict;
         _shapesCells = falloff.HasShapedCells;
         _target = target;
         _strength = strength;
@@ -434,7 +431,7 @@ internal sealed class RampStroke
         change = totalChange / target.Length;
         _matcher ??= new RampShapeMatcher(_ramp, _densities());
         var match = _matcher.Match(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel),
-            _isStrict, neighbours);
+            neighbours);
         showsEdge = match.ShowsEdge;
         return match.Level;
     }

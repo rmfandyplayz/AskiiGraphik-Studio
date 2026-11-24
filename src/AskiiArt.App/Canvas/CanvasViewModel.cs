@@ -13,7 +13,6 @@ using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Options;
-using AskiiArt.Core.Tools.RampStrokes;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -140,16 +139,6 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether the mouse presses like a pen at half pressure, from the Debug menu (ADR 0054).</summary>
     public bool IsMouseActingAsPen
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
-
-    /// <summary>
-    /// How strictly the Brush and the Soft Eraser keep edge glyphs' ink on the painted side, from the Debug menu
-    /// (ADR 0075). Each stroke reads it as it starts.
-    /// </summary>
-    public EdgeStrictness EdgeStrictness
     {
         get;
         set => SetProperty(ref field, value);
@@ -380,8 +369,7 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     // The tool asks for the cell shape and the glyph densities each time it needs them, because the font can change
     // while it's in use.
     private ToolContext CreateToolContext(EditingSession session) =>
-        new(session, Colors, ToolSettings, () => _cellWidthToHeight, () => _densities.GetMeter(Font),
-            () => EdgeStrictness);
+        new(session, Colors, ToolSettings, () => _cellWidthToHeight, () => _densities.GetMeter(Font));
 
     private static double CellWidthToHeightOf(LoadedFont font)
     {

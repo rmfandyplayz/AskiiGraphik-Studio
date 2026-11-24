@@ -30,8 +30,7 @@ public sealed class SoftEraserTool : ITool
     /// <summary>Registers the Soft Eraser, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new SoftEraserTool(
         context.Session, new BrushTipSource(context.Settings.For(EraserTool.OptionGroup), context.CellWidthToHeight),
-        RampOptions.SourceIn(context.Settings), context.Settings.For(SoftEraserOptions.Group), context.Densities,
-        context.EdgeStrictness))
+        RampOptions.SourceIn(context.Settings), context.Settings.For(SoftEraserOptions.Group), context.Densities))
     {
         OptionGroups = [EraserTool.OptionGroup, RampOptions.Group, SoftEraserOptions.Group],
         WarningFor = RampOptions.WarningFor
@@ -42,7 +41,6 @@ public sealed class SoftEraserTool : ITool
     private readonly RampSource _ramp;
     private readonly ToolOptionValues _options;
     private readonly Func<IGlyphDensityProvider> _densities;
-    private readonly Func<EdgeStrictness> _edgeStrictness;
     private ToolOverlay _overlay = ToolOverlay.None;
     private RampStroke? _stroke;
 
@@ -56,9 +54,8 @@ public sealed class SoftEraserTool : ITool
     /// <param name="ramp">The ramp the Ramp option chooses.</param>
     /// <param name="options">The values of <see cref="SoftEraserOptions.Group"/>.</param>
     /// <param name="densities">How dark glyphs look in the document's font, now.</param>
-    /// <param name="edgeStrictness">How strictly edge glyphs keep their ink on the painted side; null for standard.</param>
     public SoftEraserTool(EditingSession session, BrushTipSource tip, RampSource ramp, ToolOptionValues options,
-        Func<IGlyphDensityProvider> densities, Func<EdgeStrictness>? edgeStrictness = null)
+        Func<IGlyphDensityProvider> densities)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(tip);
@@ -73,7 +70,6 @@ public sealed class SoftEraserTool : ITool
         _ramp = ramp;
         _options = options;
         _densities = densities;
-        _edgeStrictness = edgeStrictness ?? (() => EdgeStrictness.Standard);
         _tip.Values.Changed += OnTipChanged;
     }
 
@@ -117,7 +113,7 @@ public sealed class SoftEraserTool : ITool
         // The stroke keeps the settings it starts with, so it erases along one ramp with one tip and one strength.
         var ramp = _ramp.Ramp;
         _stroke = new RampStroke(_session, ramp,
-            _tip.FalloffWith(_options.Get(SoftEraserOptions.Softness) / 100.0), _edgeStrictness(),
+            _tip.FalloffWith(_options.Get(SoftEraserOptions.Softness) / 100.0),
             target: 0, strength: _options.Get(SoftEraserOptions.Strength) / 100.0, movesAtLeastOneLevel: true,
             _densities,
             (before, levelBefore, level) => Lighten(ramp, before, levelBefore, level),
