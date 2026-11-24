@@ -17,8 +17,8 @@ namespace AskiiArt.Core.Tools.Footprints;
 /// <param name="Weight">The greatest weight the whole cell reached.</param>
 /// <param name="PartWeights">The greatest weight each part reached, or null.</param>
 /// <param name="MiddleWeight">
-/// For a cell with <paramref name="PartWeights"/>, the greatest weight its middle reached, as step 4.6's brush weighed
-/// it; 0 otherwise. Temporary, for step 4.10a's comparison (ADR 0074).
+/// For a cell with <paramref name="PartWeights"/>, the greatest weight its middle reached, which moves it when no
+/// glyph would clearly show its edge (ADR 0075); 0 otherwise.
 /// </param>
 public readonly record struct WeightedCell(
     CellPoint Point,

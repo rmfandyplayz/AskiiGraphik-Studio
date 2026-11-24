@@ -92,8 +92,9 @@ public sealed class BrushToolTests
         Assert.Equal(["@@@···", "@@@···", "@@@···"], TestCells.Read(Layer));
     }
 
-    // At full softness a 3-cell square paints the cells along its sides about 30% of the way, on average over each
-    // cell, and its corners about 16%, which takes empty cells to levels 3 and 1 (ADR 0068). Its middle paints fully.
+    // The test glyphs are all even, so none shows an edge, and each edge cell moves as a whole by the tip's weight at
+    // its middle (ADR 0075). At full softness a 3-cell square's is about a quarter all round, which takes empty cells
+    // to level 2. Its middle paints fully.
     [Fact]
     public void ASoftTip_PaintsLighterTowardsItsEdge()
     {
@@ -101,7 +102,7 @@ public sealed class BrushToolTests
 
         Click(1, 1);
 
-        Assert.Equal([".-.···", "-@-···", ".-.···"], TestCells.Read(Layer));
+        Assert.Equal([":::···", ":@:···", ":::···"], TestCells.Read(Layer));
     }
 
     [Fact]
@@ -114,7 +115,7 @@ public sealed class BrushToolTests
         Move(1, 1);
         Release(1, 1);
 
-        Assert.Equal('.', TestCells.Read(Layer)[0][0]);
+        Assert.Equal(':', TestCells.Read(Layer)[0][0]);
     }
 
     [Fact]
@@ -125,8 +126,8 @@ public sealed class BrushToolTests
         Click(1, 1);
         Click(1, 1);
 
-        // Level 1 after the first stroke, then 16% of the way on from there.
-        Assert.Equal(':', TestCells.Read(Layer)[0][0]);
+        // Level 2 after the first stroke, then a quarter of the way on from there.
+        Assert.Equal('=', TestCells.Read(Layer)[0][0]);
         Assert.Equal(2, History.UndoCount);
     }
 
@@ -160,7 +161,7 @@ public sealed class BrushToolTests
 
         Click(1, 1);
 
-        // From level 6, 30% of the way to 9 reaches level 7; from level 5 it would only reach 6.
+        // From level 6, a quarter of the way to 9 reaches level 7; from level 5 it would only reach 6.
         Assert.Equal('#', TestCells.Read(Layer)[0][1]);
     }
 

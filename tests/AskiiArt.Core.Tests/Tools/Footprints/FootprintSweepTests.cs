@@ -116,6 +116,28 @@ public sealed class FootprintSweepTests
         Assert.Equal(expected, CellAt(cells, 1, 0).PartWeights!);
     }
 
+    // A cell whose glyph wouldn't show its edge moves as a whole by this (ADR 0075).
+    [Fact]
+    public void AShapedCell_CarriesTheTipsWeightAtItsMiddle()
+    {
+        var falloff = BrushFalloff.Create(Square(3), softness: 1);
+
+        var cells = FootprintSweep.CoverWeighted(falloff, new CellPoint(0, 0), new CellPoint(0, 0), _canvas);
+
+        Assert.Equal(falloff.WeightAt(0, 0), CellAt(cells, 0, 0).MiddleWeight);
+    }
+
+    [Fact]
+    public void OverlappingShapedStamps_KeepTheGreatestWeightAtEachCellsMiddle()
+    {
+        var falloff = BrushFalloff.Create(Square(3), softness: 1);
+
+        var cells = FootprintSweep.CoverWeighted(falloff, new CellPoint(0, 0), new CellPoint(1, 0), _canvas);
+
+        // The first stamp's top middle cell is the second stamp's top-left corner.
+        Assert.Equal(Math.Max(falloff.WeightAt(1, 0), falloff.WeightAt(0, 0)), CellAt(cells, 1, 0).MiddleWeight);
+    }
+
     [Fact]
     public void AStampThatPaintsACellFully_OutweighsOneThatShapesIt()
     {

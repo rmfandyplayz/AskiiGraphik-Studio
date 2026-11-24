@@ -53,15 +53,11 @@ public sealed class BrushTipSource
     /// weighed again only when the footprint or the softness changes.
     /// </summary>
     /// <param name="softness">How much of the radius fades, from 0 (a hard tip) to 1.</param>
-    /// <param name="shapesEdges">False to weigh every cell as a whole, as before step 4.7 (ADR 0074).</param>
-    public BrushFalloff FalloffWith(double softness, bool shapesEdges = true)
+    public BrushFalloff FalloffWith(double softness)
     {
         var footprint = Footprint;
-        if (_falloff is null || _falloff.Footprint != footprint || !_falloff.Softness.Equals(softness) ||
-            _falloff.ShapesEdges != shapesEdges)
-        {
-            _falloff = BrushFalloff.Create(footprint, softness, shapesEdges);
-        }
+        if (_falloff is null || _falloff.Footprint != footprint || !_falloff.Softness.Equals(softness))
+            _falloff = BrushFalloff.Create(footprint, softness);
 
         return _falloff;
     }

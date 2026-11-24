@@ -21,9 +21,9 @@ namespace AskiiArt.Core.Tools;
 /// <param name="Densities">
 /// How dark each glyph looks in the document's font, now (ADR 0045). Ask each time, as the font can change.
 /// </param>
-/// <param name="Pats">
-/// Which way the Brush and the Soft Eraser pick edge glyphs, for step 4.10a's comparison (ADR 0074); null for the
-/// shipped one. Temporary.
+/// <param name="EdgeStrictness">
+/// How strictly the Brush and the Soft Eraser keep edge glyphs' ink on the painted side, now (ADR 0075); null for
+/// standard.
 /// </param>
 public sealed record ToolContext(
     EditingSession Session,
@@ -31,4 +31,4 @@ public sealed record ToolContext(
     ToolSettings Settings,
     Func<double> CellWidthToHeight,
     Func<IGlyphDensityProvider> Densities,
-    Func<PatsVariant>? Pats = null);
+    Func<EdgeStrictness>? EdgeStrictness = null);

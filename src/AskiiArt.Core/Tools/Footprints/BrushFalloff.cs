@@ -37,12 +37,10 @@ public sealed class BrushFalloff
     // The weight of each cell's heaviest part, or its weight where it paints evenly.
     private readonly float[] _peaks;
 
-    private BrushFalloff(BrushFootprint footprint, double softness, bool shapesEdges, double[] weights,
-        float[]?[] parts, float[] peaks)
+    private BrushFalloff(BrushFootprint footprint, double softness, double[] weights, float[]?[] parts, float[] peaks)
     {
         Footprint = footprint;
         Softness = softness;
-        ShapesEdges = shapesEdges;
         _weights = weights;
         _parts = parts;
         _peaks = peaks;
@@ -54,20 +52,13 @@ public sealed class BrushFalloff
     /// <summary>How much of the radius fades, from 0 to 1.</summary>
     public double Softness { get; }
 
-    /// <summary>
-    /// Whether edge cells were weighed part by part. Only step 4.10a's comparison of the brush before step 4.7 turns it
-    /// off (ADR 0074).
-    /// </summary>
-    public bool ShapesEdges { get; }
-
     /// <summary>True when some cell's parts weigh differently, so the tip has an edge to shape.</summary>
     public bool HasShapedCells => _parts.Any(parts => parts is not null);
 
     /// <summary>The weights of <paramref name="footprint"/>'s cells with <paramref name="softness"/>.</summary>
     /// <param name="footprint">The footprint.</param>
     /// <param name="softness">How much of the radius fades, from 0 (a hard tip) to 1.</param>
-    /// <param name="shapesEdges">False to weigh every cell as a whole at its middle, as before step 4.7.</param>
-    public static BrushFalloff Create(BrushFootprint footprint, double softness, bool shapesEdges = true)
+    public static BrushFalloff Create(BrushFootprint footprint, double softness)
     {
         ArgumentNullException.ThrowIfNull(footprint);
         if (double.IsNaN(softness) || softness < 0 || softness > 1)
@@ -78,7 +69,7 @@ public sealed class BrushFalloff
         var weights = new double[width * height];
         var parts = new float[]?[width * height];
         var peaks = new float[width * height];
-        var shapesCells = shapesEdges && HasMiddle(footprint);
+        var shapesCells = HasMiddle(footprint);
         for (var row = 0; row < height; row++)
         {
             var cells = footprint.Rows[row];
@@ -94,7 +85,7 @@ public sealed class BrushFalloff
             }
         }
 
-        return new BrushFalloff(footprint, softness, shapesEdges, weights, parts, peaks);
+        return new BrushFalloff(footprint, softness, weights, parts, peaks);
     }
 
     /// <summary>

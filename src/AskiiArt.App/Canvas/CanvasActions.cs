@@ -13,7 +13,7 @@ namespace AskiiArt.App.Canvas;
 
 /// <summary>
 /// The canvas's view actions: Zoom In, Zoom Out, Actual Size and Show Grid, and in Debug builds Show Frame Rate,
-/// Mouse Acts as a Pen and step 4.10a's Brush Edges choice. Zooming with the mouse wheel is handled by the canvas
+/// Mouse Acts as a Pen and Brush Edges. Zooming with the mouse wheel is handled by the canvas
 /// control itself, because it zooms around the pointer.
 /// </summary>
 internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugActions) : IActionProvider
@@ -61,32 +61,26 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
                 new RelayCommand(canvas.FrameRate.Toggle), checkedState: frameRateState);
             yield return new AppAction(CanvasActionIds.MouseActsAsPen, nameof(Strings.ActionMouseActsAsPen),
                 new RelayCommand(canvas.ToggleMouseActingAsPen), checkedState: penState);
-            foreach (var action in PatsActions())
+            foreach (var action in BrushEdgesActions())
                 yield return action;
         }
     }
 
-    // Step 4.10a's temporary choice of how the Brush and the Soft Eraser pick edge glyphs (ADR 0074): one item per
-    // variant, ticked while it's the one in use.
-    private IEnumerable<AppAction> PatsActions()
+    // How strictly the Brush and the Soft Eraser keep edge glyphs' ink on the painted side (ADR 0075): one item for
+    // each, ticked while it's the one in use.
+    private IEnumerable<AppAction> BrushEdgesActions()
     {
-        var choices = new (string Id, string LabelKey, PatsVariant Variant)[]
+        var choices = new (string Id, string LabelKey, EdgeStrictness Strictness)[]
         {
-            (CanvasActionIds.PatsUnshaped, nameof(Strings.ActionPatsUnshaped), PatsVariant.All[0]),
-            (CanvasActionIds.PatsShipped, nameof(Strings.ActionPatsShipped), PatsVariant.All[1]),
-            (CanvasActionIds.PatsIdea1, nameof(Strings.ActionPatsIdea1), PatsVariant.All[2]),
-            (CanvasActionIds.PatsIdea2, nameof(Strings.ActionPatsIdea2), PatsVariant.All[3]),
-            (CanvasActionIds.PatsIdea3, nameof(Strings.ActionPatsIdea3), PatsVariant.All[4]),
-            (CanvasActionIds.PatsIdeas1And3, nameof(Strings.ActionPatsIdeas1And3), PatsVariant.All[5]),
-            (CanvasActionIds.PatsIdeas1And2And3, nameof(Strings.ActionPatsIdeas1And2And3), PatsVariant.All[6]),
-            (CanvasActionIds.PatsIdea3Fixed, nameof(Strings.ActionPatsIdea3Fixed), PatsVariant.All[7]),
-            (CanvasActionIds.PatsIdeas1And2And3Fixed, nameof(Strings.ActionPatsIdeas1And2And3Fixed),
-                PatsVariant.All[8])
+            (CanvasActionIds.BrushEdgesStandard, nameof(Strings.ActionBrushEdgesStandard), EdgeStrictness.Standard),
+            (CanvasActionIds.BrushEdgesStrict, nameof(Strings.ActionBrushEdgesStrict), EdgeStrictness.Strict)
         };
-        var states = choices.Select(choice => new ActionCheckedState(() => canvas.Pats == choice.Variant)).ToArray();
+        var states = choices
+            .Select(choice => new ActionCheckedState(() => canvas.EdgeStrictness == choice.Strictness))
+            .ToArray();
         canvas.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName != nameof(CanvasViewModel.Pats))
+            if (e.PropertyName != nameof(CanvasViewModel.EdgeStrictness))
                 return;
 
             foreach (var state in states)
@@ -95,20 +89,20 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
 
         for (var index = 0; index < choices.Length; index++)
         {
-            var (id, labelKey, variant) = choices[index];
+            var (id, labelKey, strictness) = choices[index];
             var state = states[index];
-            yield return new AppAction(id, labelKey, new RelayCommand(() => Choose(variant, state)),
+            yield return new AppAction(id, labelKey, new RelayCommand(() => Choose(strictness, state)),
                 checkedState: state);
         }
     }
 
-    private void Choose(PatsVariant variant, ActionCheckedState state)
+    private void Choose(EdgeStrictness strictness, ActionCheckedState state)
     {
         // A menu may have unticked the item it was already ticked for; tick it again.
-        if (canvas.Pats == variant)
+        if (canvas.EdgeStrictness == strictness)
             state.NotifyChanged();
         else
-            canvas.Pats = variant;
+            canvas.EdgeStrictness = strictness;
     }
 
     private static void OnFrameRatePropertyChanged(PropertyChangedEventArgs e, ActionCheckedState frameRateState)

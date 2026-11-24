@@ -406,41 +406,13 @@
     <value>Mouse Acts as a Pen at Half Pressure</value>
     <comment>Debug menu: while ticked, the mouse presses like a drawing tablet's pen at half pressure, to try pen pressure without a tablet.</comment>
   </data>
-  <data name="ActionPatsUnshaped" xml:space="preserve">
-    <value>Brush Edges: 4.6, Unshaped</value>
-    <comment>Debug menu, step 4.10a only: the Brush and Soft Eraser pick edge glyphs as in step 4.6, without shaping them.</comment>
+  <data name="ActionBrushEdgesStandard" xml:space="preserve">
+    <value>Brush Edges: Standard (3 with the Fix)</value>
+    <comment>Debug menu: the Brush and Soft Eraser judge each edge cell with the cells around it. The default.</comment>
   </data>
-  <data name="ActionPatsShipped" xml:space="preserve">
-    <value>Brush Edges: 4.7, Shaped</value>
-    <comment>Debug menu, step 4.10a only: the Brush and Soft Eraser pick edge glyphs as in step 4.7. The default.</comment>
-  </data>
-  <data name="ActionPatsIdea1" xml:space="preserve">
-    <value>Brush Edges: Idea 1, Shape Counts More When Faint</value>
-    <comment>Debug menu, step 4.10a only: where the ink lies counts for more the fainter the edge.</comment>
-  </data>
-  <data name="ActionPatsIdea2" xml:space="preserve">
-    <value>Brush Edges: Idea 2, Wrong Side Left Empty</value>
-    <comment>Debug menu, step 4.10a only: a glyph inked on the wrong side of an edge is never picked.</comment>
-  </data>
-  <data name="ActionPatsIdea3" xml:space="preserve">
-    <value>Brush Edges: Idea 3, Neighboring Cells</value>
-    <comment>Debug menu, step 4.10a only: each edge cell is picked with the cells around it in view.</comment>
-  </data>
-  <data name="ActionPatsIdeas1And3" xml:space="preserve">
-    <value>Brush Edges: Ideas 1 and 3</value>
-    <comment>Debug menu, step 4.10a only: ideas 1 and 3 together.</comment>
-  </data>
-  <data name="ActionPatsIdeas1And2And3" xml:space="preserve">
-    <value>Brush Edges: Ideas 1, 2 and 3</value>
-    <comment>Debug menu, step 4.10a only: all three ideas together.</comment>
-  </data>
-  <data name="ActionPatsIdea3Fixed" xml:space="preserve">
-    <value>Brush Edges: Idea 3 with the Fix</value>
-    <comment>Debug menu, step 4.10a only: idea 3, with cells no glyph shows clearly weighed as a whole as in step 4.6.</comment>
-  </data>
-  <data name="ActionPatsIdeas1And2And3Fixed" xml:space="preserve">
-    <value>Brush Edges: Ideas 1, 2 and 3 with the Fix</value>
-    <comment>Debug menu, step 4.10a only: all three ideas, with cells no glyph shows clearly weighed as a whole as in step 4.6.</comment>
+  <data name="ActionBrushEdgesStrict" xml:space="preserve">
+    <value>Brush Edges: Strict (1, 2 and 3 with the Fix)</value>
+    <comment>Debug menu: as Standard, and stricter about keeping faint edges' ink on the painted side.</comment>
   </data>
   <data name="ActionOpenColorSample" xml:space="preserve">
     <value>Open _Color Sample</value>

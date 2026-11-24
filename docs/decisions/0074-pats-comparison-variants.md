@@ -3,7 +3,9 @@
 
 # 0074: PATS comparison variants
 
-Status: Accepted
+Status: Superseded by 0075
+
+> Superseded by [0075](0075-the-pats-brush-settled.md): the owner chose 3 with the fix as the brush's own, with 1, 2 and 3 with the fix kept as a stricter choice in the Debug menu. The other variants and the sheets are gone.
 
 ## Context
 

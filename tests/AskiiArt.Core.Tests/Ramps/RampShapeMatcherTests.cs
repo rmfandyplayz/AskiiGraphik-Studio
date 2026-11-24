@@ -69,12 +69,86 @@ public sealed class RampShapeMatcherTests
     }
 
     [Fact]
+    public void AMatch_SaysWhetherItsGlyphShowsTheTargetsEdge()
+    {
+        var bottomHeavy = TestShapes.BandParts(top: 0.1, bottom: 0.8);
+
+        Assert.Equal(new RampShapeMatcher.ShapeMatch(1, ShowsEdge: true), Match(bottomHeavy));
+        Assert.Equal(new RampShapeMatcher.ShapeMatch(2, ShowsEdge: false), Match(bottomHeavy, lowest: 2, highest: 3));
+        Assert.False(Match(TestShapes.EvenParts(0.5)).ShowsEdge);
+    }
+
+    // Nearest in tone, 'v' wins as no glyph shows so faint an edge enough to make up for the difference, though 'v'
+    // lies the wrong way. Strict edges count shape more where the edge is faint, and never pick a glyph inked the wrong
+    // way.
+    [Fact]
+    public void AStrictMatch_PicksTheGlyphInkedTheEdgesWay_ForAFaintEdge()
+    {
+        var topHeavy = TestShapes.BandParts(top: 0.4, bottom: 0);
+
+        Assert.Equal(1, Match(topHeavy).Level);
+        Assert.Equal(new RampShapeMatcher.ShapeMatch(3, ShowsEdge: true), Match(topHeavy, isStrict: true));
+    }
+
+    [Fact]
+    public void AStrictMatch_NeverPicksAGlyphInkedTheWrongWay_ForAnUnevenTarget()
+    {
+        for (var top = 0; top <= 20; top++)
+        {
+            for (var bottom = 0; bottom <= 20; bottom++)
+            {
+                // Clearly uneven: the matcher counts a target uneven when its strays, once blurred, weigh more than
+                // 5% of its tone's, and these weigh twice that before blurring.
+                var difference = (top - bottom) / 20.0;
+                var sum = (top + bottom) / 20.0;
+                if (difference * difference <= 0.1 * sum * sum)
+                    continue;
+
+                var target = TestShapes.BandParts(top / 20.0, bottom / 20.0);
+                var wrongWay = top > bottom ? 1 : 3;
+                Assert.NotEqual(wrongWay, Match(target, isStrict: true).Level);
+            }
+        }
+    }
+
+    // Judged alone, or beside cells that want the same edge but don't show it yet, the cell's 'v' also helps show
+    // theirs, as the eye blurs across cells. Beside cells that already show it, 'v' has less of the edge left to show,
+    // and '=', nearer in tone, wins.
+    [Fact]
+    public void NeighboursThatAlreadyShowTheEdge_LeaveTheCellLessToShow()
+    {
+        var bottomHeavy = TestShapes.BandParts(top: 0.2, bottom: 0.8);
+
+        Assert.Equal(1, Match(bottomHeavy).Level);
+        Assert.Equal(1, Match(bottomHeavy, neighbours: SidesWanting(bottomHeavy, lookingLike: null)).Level);
+        Assert.Equal(2, Match(bottomHeavy, neighbours: SidesWanting(bottomHeavy, lookingLike: 1)).Level);
+    }
+
+    [Fact]
     public void TheLevel_StaysWithinTheBoundsGiven()
     {
         var bottomHeavy = TestShapes.BandParts(top: 0.1, bottom: 0.8);
 
         Assert.Equal(2, _matcher.LevelFor(bottomHeavy, lowest: 2, highest: 4));
         Assert.Equal(0, _matcher.LevelFor(TestShapes.EvenParts(0.9), lowest: 0, highest: 0));
+    }
+
+    private RampShapeMatcher.ShapeMatch Match(double[] target, int lowest = 0, int highest = 4, bool isStrict = false,
+        RampShapeMatcher.CellNeighbours? neighbours = null) =>
+        _matcher.Match(target, lowest, highest, isStrict, neighbours);
+
+    // The cells either side want what the middle one wants, and look like the level given, or are empty.
+    private RampShapeMatcher.CellNeighbours SidesWanting(double[] target, int? lookingLike)
+    {
+        var neighbours = new RampShapeMatcher.CellNeighbours();
+        foreach (var dx in new[] { -1, 1 })
+        {
+            target.CopyTo(neighbours.TargetOf(dx, 0));
+            if (lookingLike is { } level)
+                _matcher.LookOf(level).CopyTo(neighbours.LookOf(dx, 0));
+        }
+
+        return neighbours;
     }
 
     [Fact]

@@ -32,15 +32,21 @@ internal delegate Cell RampCellPaint(Cell before, int levelBefore, int level);
 /// greatest weight that has reached it.
 /// </para>
 /// <para>
-/// For step 4.10a's comparison (ADR 0074), a <see cref="PatsVariant"/> can change how edge glyphs are picked; with
-/// idea 3, each edge cell is picked again whenever a cell around it changes, judged with them.
+/// Where the ink lies is judged across the cells around too, as the stroke and the layer leave them, and each edge
+/// cell near a move is picked again, so ink lines up across cells; only cells the stroke paints change. An edge cell
+/// whose glyph wouldn't clearly show its edge is moved as a whole, by the weight at its middle, so straight sides and
+/// cells the tip only grazes get no stray marks (ADR 0075).
 /// </para>
 /// </summary>
 internal sealed class RampStroke
 {
-    // Idea 3: how many times the edge cells near a move are picked again, each judged with its neighbours as they are
-    // after the last.
+    // How many times the edge cells near a move are picked again, each judged with its neighbours as they are after the
+    // last.
     private const int NeighbourPasses = 2;
+
+    private static readonly Comparison<CellPoint> _rowMajor = (a, b) => a.Y != b.Y
+        ? a.Y.CompareTo(b.Y)
+        : a.X.CompareTo(b.X);
 
     private readonly EditingSession _session;
     private readonly Ramp _ramp;
@@ -53,11 +59,19 @@ internal sealed class RampStroke
     private readonly string _stepNameKey;
     private readonly CoalescingGroup _undo = new();
     private readonly Dictionary<CellPoint, ReachedCell> _reached = [];
-    private readonly PatsVariant _variant;
-    private readonly RampShapeMatcher.ShapeScoring _scoring;
+    private readonly bool _isStrict;
+    private readonly bool _shapesCells;
 
-    // Idea 3: what the stroke has given each cell it reached so far, so each edge cell can be judged with them.
+    // What the stroke has given each cell it reached so far, so each edge cell can be judged with them.
     private readonly Dictionary<CellPoint, Cell> _given = [];
+
+    // Reused by each move's picking again: the edge cells near the move, in row order, when each was last picked, and
+    // when each one's glyph last changed, counted in changes.
+    private readonly HashSet<CellPoint> _near = [];
+    private readonly List<CellPoint> _nearInOrder = [];
+    private readonly Dictionary<CellPoint, int> _changedAt = [];
+    private readonly RampShapeMatcher.CellNeighbours _neighbours = new();
+    private int[] _pickedAt = [];
 
     // Each glyph's level, measured once per stroke.
     private readonly Dictionary<Rune, int> _levels = [];
@@ -78,7 +92,7 @@ internal sealed class RampStroke
     /// <param name="session">The session whose active layer the stroke changes.</param>
     /// <param name="ramp">The ramp cells move along.</param>
     /// <param name="falloff">The tip, and how strongly it reaches each of its cells.</param>
-    /// <param name="variant">How edge glyphs are picked, for step 4.10a's comparison.</param>
+    /// <param name="strictness">How strictly edge glyphs keep their ink on the painted side.</param>
     /// <param name="target">The darkness cells move towards, from 0 to 1.</param>
     /// <param name="strength">How far, from 0 to 1, the full weight moves a cell to <paramref name="target"/>.</param>
     /// <param name="movesAtLeastOneLevel">
@@ -88,15 +102,15 @@ internal sealed class RampStroke
     /// <param name="paint">Gives each cell that moved.</param>
     /// <param name="stepNameKey">Names the undo step: a key from <see cref="UndoStepNames"/>.</param>
     /// <param name="start">Where the pointer was pressed.</param>
-    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, PatsVariant variant, double target,
-        double strength, bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities, RampCellPaint paint,
-        string stepNameKey, ToolPointerInput start)
+    public RampStroke(EditingSession session, Ramp ramp, BrushFalloff falloff, EdgeStrictness strictness,
+        double target, double strength, bool movesAtLeastOneLevel, Func<IGlyphDensityProvider> densities,
+        RampCellPaint paint, string stepNameKey, ToolPointerInput start)
     {
         _session = session;
         _ramp = ramp;
         Falloff = falloff;
-        _variant = variant;
-        _scoring = new RampShapeMatcher.ShapeScoring(variant.CountsShapeAgainstFaintness, variant.LeavesWrongSideEmpty);
+        _isStrict = strictness == EdgeStrictness.Strict;
+        _shapesCells = falloff.HasShapedCells;
         _target = target;
         _strength = strength;
         _movesAtLeastOneLevel = movesAtLeastOneLevel;
@@ -156,7 +170,7 @@ internal sealed class RampStroke
         var document = _session.Document;
         var layer = _session.ActiveLayer;
         var cells = _session.EditCellsInSelection(layer.Id);
-        List<CellPoint>? raised = _variant.LooksAtNeighbours ? [] : null;
+        List<CellPoint>? raised = _shapesCells ? [] : null;
         foreach (var (point, tipWeight, tipParts, tipMiddle) in FootprintSweep.CoverWeighted(Falloff, fromTopLeft,
                      toTopLeft, document.CanvasSize))
         {
@@ -167,8 +181,8 @@ internal sealed class RampStroke
             if (!TryRaise(before, tipWeight * pressure, tipParts, pressure, out var reached))
                 continue;
 
-            // The fallback of step 4.10a's fix weighs the cell as step 4.6 did: an even stamp by its weight, a shaped one
-            // by its middle's.
+            // A cell whose glyph wouldn't clearly show its edge moves by this: an even stamp's weight, or a shaped one's
+            // at the cell's middle.
             var middle = tipParts is null ? tipWeight * pressure : tipMiddle * pressure;
             reached = reached with { Middle = Math.Max(reached.Middle, middle) };
 
@@ -238,11 +252,10 @@ internal sealed class RampStroke
         return Math.Max(Math.Max(OldPart(before, part), stamped), floor);
     }
 
-    // Idea 3: picks every edge cell next to a raised one again, judged with the cells around it, a few times over.
+    // Picks every edge cell next to a raised one again, judged with the cells around it, a few times over.
     private void PickAgainWithNeighbours(List<CellPoint> raised, Layer layer, CellEditBuilder cells)
     {
-        var near = new SortedSet<CellPoint>(Comparer<CellPoint>.Create((a, b) =>
-            a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X)));
+        _near.Clear();
         foreach (var point in raised)
         {
             for (var dy = -1; dy <= 1; dy++)
@@ -253,23 +266,59 @@ internal sealed class RampStroke
                     if (_reached.TryGetValue(neighbour, out var cell) && cell.Parts is not null &&
                         IsPaintable(neighbour))
                     {
-                        near.Add(neighbour);
+                        _near.Add(neighbour);
                     }
                 }
             }
         }
 
-        var neighbours = new RampShapeMatcher.CellNeighbours();
+        _nearInOrder.Clear();
+        _nearInOrder.AddRange(_near);
+        _nearInOrder.Sort(_rowMajor);
+        if (_pickedAt.Length < _nearInOrder.Count)
+            _pickedAt = new int[_nearInOrder.Count * 2];
+
+        // A cell's pick depends only on its own weights and on the cells around it, so after the first pass a cell is
+        // picked again only if a neighbour's glyph has changed since it was last picked.
+        _changedAt.Clear();
+        var changes = 0;
         for (var pass = 0; pass < NeighbourPasses; pass++)
         {
-            foreach (var point in near)
+            for (var index = 0; index < _nearInOrder.Count; index++)
             {
-                FillNeighbours(point, layer, neighbours);
-                var moved = MoveCell(_reached[point], neighbours);
+                var point = _nearInOrder[index];
+                if (pass > 0 && !HasNeighbourChangedSince(point, _pickedAt[index]))
+                    continue;
+
+                _pickedAt[index] = changes;
+                FillNeighbours(point, layer, _neighbours);
+                var moved = MoveCell(_reached[point], _neighbours);
+                if (_given.TryGetValue(point, out var given) && moved == given)
+                    continue;
+
                 _given[point] = moved;
                 cells.Set(point, moved);
+                _changedAt[point] = ++changes;
             }
         }
+    }
+
+    private bool HasNeighbourChangedSince(CellPoint point, int changes)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+        {
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var neighbour = new CellPoint(point.X + dx, point.Y + dy);
+                if ((dx != 0 || dy != 0) && _changedAt.TryGetValue(neighbour, out var changedAt) &&
+                    changedAt > changes)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void FillNeighbours(CellPoint point, Layer layer, RampShapeMatcher.CellNeighbours neighbours)
@@ -351,10 +400,10 @@ internal sealed class RampStroke
         }
         else
         {
-            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, neighbours, out change, out var isClear);
+            level = MatchedLevel(reached.Parts, levelBefore, darknessBefore, neighbours, out change, out var showsEdge);
 
-            // The fix: where no glyph clearly shows the edge, the cell is weighed as a whole, as step 4.6 weighed it.
-            if (_variant.FallsBackWhenUnclear && !isClear)
+            // A glyph that wouldn't clearly show the edge would only be a stray mark, so the cell moves as a whole.
+            if (!showsEdge)
             {
                 change = (_target - darknessBefore) * reached.Middle * _strength;
                 level = _ramp.LevelAt(darknessBefore + change);
@@ -369,9 +418,9 @@ internal sealed class RampStroke
     }
 
     // The level, between the cell's and the target's, whose glyph best shows each part moved by its own weight.
-    // Change is how far the parts moved on average, and isClear whether the glyph shows the edge clearly.
+    // Change is how far the parts moved on average, and showsEdge whether the glyph shows the edge clearly.
     private int MatchedLevel(float[] parts, int levelBefore, double darknessBefore,
-        RampShapeMatcher.CellNeighbours? neighbours, out double change, out bool isClear)
+        RampShapeMatcher.CellNeighbours? neighbours, out double change, out bool showsEdge)
     {
         Span<double> target = stackalloc double[GlyphShape.PartCount];
         var totalChange = 0.0;
@@ -384,10 +433,10 @@ internal sealed class RampStroke
 
         change = totalChange / target.Length;
         _matcher ??= new RampShapeMatcher(_ramp, _densities());
-        var level = _matcher.LevelFor(target, Math.Min(levelBefore, _targetLevel),
-            Math.Max(levelBefore, _targetLevel), _scoring, neighbours);
-        isClear = _matcher.ShowsEdgeClearly(level, target);
-        return level;
+        var match = _matcher.Match(target, Math.Min(levelBefore, _targetLevel), Math.Max(levelBefore, _targetLevel),
+            _isStrict, neighbours);
+        showsEdge = match.ShowsEdge;
+        return match.Level;
     }
 
     // A pressure the device can't tell counts as full, as a mouse's does.
@@ -409,6 +458,6 @@ internal sealed class RampStroke
 
     // A cell the stroke has reached: as it was before the stroke, the greatest weight that has reached it as a whole,
     // and where the tip weighed it unevenly, the greatest weight of each part, each at least Weight; else null. Middle
-    // is the greatest weight its middle reached, as step 4.6 weighed it, for step 4.10a's fix.
+    // is the greatest weight its middle reached, which moves it when its glyph wouldn't clearly show its edge.
     private readonly record struct ReachedCell(Cell Cell, double Weight, float[]? Parts, double Middle);
 }

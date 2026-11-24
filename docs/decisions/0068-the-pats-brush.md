@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0075](0075-the-pats-brush-settled.md): each edge cell is also judged with the cells around it, and a cell whose glyph wouldn't clearly show its edge moves as a whole by the tip's weight at its middle, as before 4.7. The rest still stands.
+
 ## Context
 
 After testing 4.5, the owner found that the Brush's edge cells on the Fine ramp often had their ink on the wrong side, such as `` `` `` and `..` along a circle's top where `..;;..` belongs, and that square edges were off too. Each cell took the glyph whose darkness matched the tip's weight at the cell's middle, so where the shape sits in the cell was lost. Step 4.7 picks edge glyphs by where the shape sits and how much of the cell it covers. It's always on, hard tips included, and uses only the ramp's glyphs. The owner accepts glyphs that are less predictable in return for truer shapes. The matching is to be shared with M6's structural matcher (ARCHITECTURE §17).
@@ -32,3 +34,5 @@ After testing 4.5, the owner found that the Brush's edge cells on the Fine ramp 
 - M6's image conversion can reuse `GlyphShape` and `RampShapeMatcher` with targets taken from the image.
 
 Updated 2026-11-23: step 4.10a adds temporary variants beside this brush for the owner to compare, and this brush stays the default (ADR 0074).
+
+Updated 2026-11-23: step 4.10b settles the brush on judging edge cells with their neighbours and the whole-cell fallback (ADR 0075).
