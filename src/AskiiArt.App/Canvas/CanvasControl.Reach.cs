@@ -12,7 +12,7 @@ namespace AskiiArt.App.Canvas;
 /// How far the canvas view can scroll, and how it settles (ADR 0072). The view reaches the canvas, the zone around it,
 /// and a selection past that zone with room around it. It never moves while something may be moving: during a gesture,
 /// while an arrow is held, and for the pause after one that can carry a run of presses on. Then it glides back out of
-/// space nothing needs any more. A paste that is partly out of view but would fit is brought to the middle.
+/// space nothing needs any more.
 /// </summary>
 internal sealed partial class CanvasControl
 {
@@ -44,28 +44,6 @@ internal sealed partial class CanvasControl
         set => SetValue(ViewGlideMillisecondsProperty, value);
     }
 
-    /// <summary>
-    /// Brings <paramref name="cells"/> to the middle of the view when some of them are out of view and all of them
-    /// would fit, as after a paste; otherwise leaves the view where it is.
-    /// </summary>
-    public void CentreOnIfPartlyHidden(CellRect cells)
-    {
-        if (_viewport is not { } viewport || cells.IsEmpty)
-            return;
-
-        var cellSize = viewport.CellSize;
-        var pixels = new PixelRect(cells.Left * cellSize.Width, cells.Top * cellSize.Height,
-            cells.Width * cellSize.Width, cells.Height * cellSize.Height);
-        var usable = viewport.UsableOnCanvas;
-        if (pixels.Width > usable.Width || pixels.Height > usable.Height || usable.Contains(pixels))
-            return;
-
-        var centre = pixels.Center;
-        var middle = viewport.UsableCentre;
-        var origin = new PixelPoint((int)Math.Round(middle.X) - centre.X, (int)Math.Round(middle.Y) - centre.Y);
-        GlideTo(viewport.HeldAt(origin).Released().CanvasOrigin);
-    }
-
     // While something may be moving, the view stays where it is.
     private bool IsHoldingView => _isToolGestureActive || _arrowsDown.Count > 0 || _arrowsLetGoAt is not null;
 
@@ -91,10 +69,10 @@ internal sealed partial class CanvasControl
         SettleView();
     }
 
-    // Glides out of space nothing needs any more, unless something may still be moving.
+    // Glides out of space nothing needs any more, unless something may still be moving or the view is gliding.
     private void SettleView()
     {
-        if (_viewport is not { } viewport || IsHoldingView || _glide is not null)
+        if (_viewport is not { } viewport || IsHoldingView || _glide is not null || _zoomGlide is not null)
             return;
 
         GlideTo(viewport.Released().CanvasOrigin);
@@ -152,9 +130,11 @@ internal sealed partial class CanvasControl
         RequestGlideFrame();
     }
 
-    // Scrolling or zooming takes over from a glide under way, from where it is.
+    // Scrolling or zooming takes over from a glide under way, from where it is. A zoom glide's view is already where
+    // it ends, so it ends there.
     private void StopGlide()
     {
+        EndZoomGlide();
         if (_glide is null)
             return;
 

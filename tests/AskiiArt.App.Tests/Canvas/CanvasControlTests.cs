@@ -367,22 +367,103 @@ public sealed class CanvasControlTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void CentreOnIfPartlyHidden_BringsCellsThatFitToTheMiddle_AndLeavesTheViewOtherwise()
+    public void BringIntoView_LeavesTheViewAsItIs_WhenThePasteIsFullyInView()
     {
         Show();
         var origin = Viewport.CanvasOrigin;
 
-        _control.CentreOnIfPartlyHidden(new CellRect(0, 0, 2, 1));
-        Assert.Equal(origin, Viewport.CanvasOrigin);
+        _control.BringIntoView(new CellRect(0, 0, 2, 1));
 
-        _control.CentreOnIfPartlyHidden(new CellRect(150, 0, 200, 1));
         Assert.Equal(origin, Viewport.CanvasOrigin);
+        Assert.Equal(ZoomLevels.ActualSize, _control.ZoomFactor);
+    }
 
-        _control.CentreOnIfPartlyHidden(new CellRect(150, 50, 2, 1));
+    [AvaloniaFact]
+    public void BringIntoView_CentresAPasteOutOfView_ZoomedInNoFurtherThan150Percent()
+    {
+        Show();
+
+        _control.BringIntoView(new CellRect(150, 50, 2, 1));
+
+        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
         var middle = Viewport.CellAt(Viewport.UsableCentre);
         Assert.NotNull(middle);
         Assert.InRange(middle.Value.X, 150, 152);
         Assert.InRange(middle.Value.Y, 49, 51);
+
+        // With no glide time, as with reduced motion, the view jumps there and the zoom stays free.
+        Assert.False(_control.IsZoomLocked);
+    }
+
+    [AvaloniaFact]
+    public void BringIntoView_ZoomsOutToTheLargestStepAtWhichAPartlyHiddenPasteFits()
+    {
+        Show();
+        var paste = new CellRect(0, 0, 100, 10);
+
+        _control.BringIntoView(paste);
+
+        Assert.True(_control.ZoomFactor < ZoomLevels.ActualSize);
+        Assert.True(Viewport.UsableOnCanvas.Contains(PixelsOf(paste)));
+
+        _control.ZoomFactor = ZoomLevels.StepIn(_control.ZoomFactor);
+        var bigger = PixelsOf(paste);
+        Assert.True(bigger.Width > Viewport.UsableSize.Width || bigger.Height > Viewport.UsableSize.Height);
+    }
+
+    [AvaloniaFact]
+    public void BringIntoView_ZoomsOutTo25Percent_WhenThePasteFitsAtNoStep()
+    {
+        Show();
+
+        _control.BringIntoView(new CellRect(0, 0, 5000, 1));
+
+        Assert.Equal(ZoomLevels.Minimum, _control.ZoomFactor);
+    }
+
+    [AvaloniaFact]
+    public void WhileTheViewGlidesToAPaste_NothingElseChangesTheZoom_AndPanningEndsTheGlide()
+    {
+        _control.ZoomGlideMilliseconds = 60_000;
+        Show();
+
+        _control.BringIntoView(new CellRect(150, 50, 2, 1));
+        Assert.True(_control.IsZoomLocked);
+        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+
+        _window.MouseWheel(new Point(10, 10), new Vector(0, -1), RawInputModifiers.Control);
+        Render();
+        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+        Assert.True(_control.IsZoomLocked);
+
+        // The wheel would still count as zooming, as part of the same turn of it, so this pans by dragging instead.
+        _window.MouseDown(new Point(200, 150), MouseButton.Middle);
+        _window.MouseMove(new Point(170, 110));
+        _window.MouseUp(new Point(170, 110), MouseButton.Middle);
+        Assert.False(_control.IsZoomLocked);
+    }
+
+    [AvaloniaFact]
+    public void TheGlideToAPaste_EndsByItself_AndFreesTheZoom()
+    {
+        _control.ZoomGlideMilliseconds = 50;
+        Show();
+
+        _control.BringIntoView(new CellRect(150, 50, 2, 1));
+        Assert.True(_control.IsZoomLocked);
+
+        Thread.Sleep(TimeSpan.FromMilliseconds(150));
+        Render();
+
+        Assert.False(_control.IsZoomLocked);
+        Assert.Equal(PasteFit.LargestZoom, _control.ZoomFactor);
+    }
+
+    private PixelRect PixelsOf(CellRect cells)
+    {
+        var cell = Viewport.CellSize;
+        return new PixelRect(cells.Left * cell.Width, cells.Top * cell.Height, cells.Width * cell.Width,
+            cells.Height * cell.Height);
     }
 
     // Two cells 50 columns past the canvas's right edge, far past the zone, as the Move tool could leave them.

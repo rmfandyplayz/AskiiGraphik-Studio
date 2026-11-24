@@ -25,7 +25,7 @@ internal sealed class CanvasSceneBuilder
     private readonly SelectionHatchBuilder _hatches = new();
 
     public CanvasScene Build(CompositeCache composite, GlyphAtlas atlas, CanvasViewport viewport,
-        CanvasColors colors, CanvasOverlays overlays)
+        CanvasColors colors, CanvasOverlays overlays, ViewTransform? transform = null)
     {
         ArgumentNullException.ThrowIfNull(composite);
         ArgumentNullException.ThrowIfNull(atlas);
@@ -87,6 +87,7 @@ internal sealed class CanvasSceneBuilder
         return new CanvasScene
         {
             Viewport = viewport,
+            Transform = transform ?? ViewTransform.Identity,
             Colors = colors,
             Backgrounds = _backgrounds.Complete(visibleBounds),
             Glyphs = batches,

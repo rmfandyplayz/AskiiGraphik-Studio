@@ -417,11 +417,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | While the canvas, its zone and any selection past it all fit in the window, the canvas stays centred, shifted only as far as it must be to show them | `Canvas/CanvasViewport.cs` (`OriginAlong`) | 4.9b |
 | The view keeps still during a drag or click, while an arrow is held and for 0.4 s after the last one is let go, the same pause that ends a run of presses | `Canvas/CanvasControl.Reach.cs` | 4.9b |
 | Then it glides out of space nothing needs any more in 0.15 s, easing out; scrolling, panning or zooming stops the glide where it is | `AppCanvasViewGlideMilliseconds` token, `Canvas/ViewGlide.cs` | 4.9b |
-| A paste that's partly out of view but would fit glides to the middle of the view; a paste that's all in view, or too big to fit, leaves the view as it is | `Canvas/CanvasControl.Reach.cs` (`CentreOnIfPartlyHidden`) | 4.9b |
 | In every selection tool, with something selected and no gesture under way, the arrows move the selected cells as the Move tool's do, staying in the tool; with nothing selected they do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | During a selection tool's drag, while the Polygonal Lasso has corners down, or while the Magic Wand's button is held, the arrows do nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | In a selection tool Enter ends a move the arrows made and deselects; with no such move it does nothing | `Core/Tools/Selecting/SelectionArrows.cs` | 4.9b |
 | Reduce motion is a setting in the settings file only (`"reduceMotion": "true"`), off by default, read at start-up; it stills the selection's dashes and hatching, the landing outline, the docking animations and fades, and the view's glide. The owner had asked only that motion be ready for such a setting, and kept it. A switch in a future Preferences window that takes effect at once would also need the docking metrics re-read | `Settings/ReducedMotion.cs` | 4.9b |
+
+### A paste brings the view to fit it (step 4.11, ADR 0076)
+
+| Choice | Where | Step |
+|---|---|---|
+| The room round a paste is the canvas margin, 64 logical pixels on every side, and "in view" means inside the part of the window toolbars and windows don't cover | `Canvas/PasteFit.cs`, `Canvas/CanvasControl.ZoomGlide.cs` | 4.11 |
+| A paste out of view at a zoom above 150% zooms out to 150% or less, even if it would fit as it is | `Canvas/PasteFit.cs` | 4.11 |
+| The glide takes 0.25 s, easing out, a little longer than the view's 0.15 s settling glide since it zooms too; each zoom step takes as long as the next, and the spot in the middle of the view moves steadily | `AppCanvasZoomGlideMilliseconds` token, `Canvas/ZoomGlide.cs` | 4.11 |
+| While it glides, the wheel doesn't zoom and Zoom In, Zoom Out and Actual Size are greyed out; scrolling, panning, a drag, a click or an arrow end the glide at once, at its end | `Canvas/CanvasControl.ZoomGlide.cs`, `Canvas/CanvasViewModel.cs` | 4.11 |
+| Zooming out, glyphs are slightly blurred for the first few frames of the glide | `Canvas/Rendering/CanvasScenePainter.cs` | 4.11 |
 
 ## Ideas to revisit
 

@@ -21,10 +21,12 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
     {
         var zoomIn = new RelayCommand(canvas.ZoomIn, () => canvas.CanZoomIn);
         var zoomOut = new RelayCommand(canvas.ZoomOut, () => canvas.CanZoomOut);
+        var actualSize = new RelayCommand(canvas.ZoomToActualSize, () => canvas.CanZoomToActualSize);
         var gridState = new ActionCheckedState(() => canvas.IsGridVisible);
         var penState = new ActionCheckedState(() => canvas.IsMouseActingAsPen);
 
-        canvas.PropertyChanged += (_, e) => OnCanvasPropertyChanged(e, zoomIn, zoomOut, gridState, penState);
+        canvas.PropertyChanged += (_, e) =>
+            OnCanvasPropertyChanged(e, [zoomIn, zoomOut, actualSize], gridState, penState);
 
         // The plus key is "=" without Shift on many keyboards, so both work, as does the keypad.
         yield return new AppAction(CanvasActionIds.ZoomIn, nameof(Strings.ActionZoomIn), zoomIn,
@@ -40,8 +42,7 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
             new ActionShortcut(Key.Subtract, ShortcutModifiers.Command)
         ]);
 
-        yield return new AppAction(CanvasActionIds.ActualSize, nameof(Strings.ActionActualSize),
-            new RelayCommand(canvas.ZoomToActualSize),
+        yield return new AppAction(CanvasActionIds.ActualSize, nameof(Strings.ActionActualSize), actualSize,
         [
             new ActionShortcut(Key.D0, ShortcutModifiers.Command),
             new ActionShortcut(Key.NumPad0, ShortcutModifiers.Command)
@@ -69,14 +70,16 @@ internal sealed class CanvasActions(CanvasViewModel canvas, bool includeDebugAct
             frameRateState.NotifyChanged();
     }
 
-    private static void OnCanvasPropertyChanged(PropertyChangedEventArgs e, RelayCommand zoomIn, RelayCommand zoomOut,
+    private static void OnCanvasPropertyChanged(PropertyChangedEventArgs e, RelayCommand[] zoomCommands,
         ActionCheckedState gridState, ActionCheckedState penState)
     {
         switch (e.PropertyName)
         {
             case nameof(CanvasViewModel.ZoomFactor):
-                zoomIn.NotifyCanExecuteChanged();
-                zoomOut.NotifyCanExecuteChanged();
+            case nameof(CanvasViewModel.IsZoomLocked):
+                foreach (var command in zoomCommands)
+                    command.NotifyCanExecuteChanged();
+
                 break;
             case nameof(CanvasViewModel.IsGridVisible):
                 gridState.NotifyChanged();

@@ -164,9 +164,21 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
     /// <summary>The spot of the canvas in the middle of the view, in cells, reported by the canvas control.</summary>
     public CanvasPoint ViewCentre { get; set; }
 
-    public bool CanZoomIn => ZoomLevels.StepIn(ZoomFactor) > ZoomFactor;
+    /// <summary>
+    /// True while the view glides to a paste, reported by the canvas control. Nothing else may change the zoom
+    /// meanwhile (ADR 0076).
+    /// </summary>
+    public bool IsZoomLocked
+    {
+        get;
+        set => SetProperty(ref field, value);
+    }
 
-    public bool CanZoomOut => ZoomLevels.StepOut(ZoomFactor) < ZoomFactor;
+    public bool CanZoomIn => !IsZoomLocked && ZoomLevels.StepIn(ZoomFactor) > ZoomFactor;
+
+    public bool CanZoomOut => !IsZoomLocked && ZoomLevels.StepOut(ZoomFactor) < ZoomFactor;
+
+    public bool CanZoomToActualSize => !IsZoomLocked;
 
     public string ZoomText => string.Format(CultureInfo.CurrentCulture, Strings.StatusZoomFormat, ZoomFactor * 100);
 
@@ -204,11 +216,23 @@ internal sealed class CanvasViewModel : ObservableObject, IDisposable
         _ => Strings.StatusCharacterSetUnicode
     };
 
-    public void ZoomIn() => ZoomFactor = ZoomLevels.StepIn(ZoomFactor);
+    public void ZoomIn()
+    {
+        if (CanZoomIn)
+            ZoomFactor = ZoomLevels.StepIn(ZoomFactor);
+    }
 
-    public void ZoomOut() => ZoomFactor = ZoomLevels.StepOut(ZoomFactor);
+    public void ZoomOut()
+    {
+        if (CanZoomOut)
+            ZoomFactor = ZoomLevels.StepOut(ZoomFactor);
+    }
 
-    public void ZoomToActualSize() => ZoomFactor = ZoomLevels.ActualSize;
+    public void ZoomToActualSize()
+    {
+        if (CanZoomToActualSize)
+            ZoomFactor = ZoomLevels.ActualSize;
+    }
 
     public void ToggleGrid() => IsGridVisible = !IsGridVisible;
 

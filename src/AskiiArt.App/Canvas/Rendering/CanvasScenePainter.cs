@@ -46,14 +46,16 @@ internal static class CanvasScenePainter
             Fill(canvas, paint, cell, colors.PlaceholderGlyph);
 
         // The atlas pages are alpha-only, so a page draws in the paint's colour (white) where it covers
-        // its glyph. Modulate multiplies that by each glyph's own colour.
+        // its glyph. Modulate multiplies that by each glyph's own colour. While a zoom glides, glyphs show bigger or
+        // smaller than drawn, and smoothing keeps them from looking blocky meanwhile.
         paint.Color = SKColors.White;
+        var glyphSampling = scene.Transform.IsScaled ? new SKSamplingOptions(SKFilterMode.Linear) : unsmoothed;
         foreach (var batch in scene.Glyphs)
         {
             if (batch.Page is { } page)
             {
                 canvas.DrawAtlas(page.Image, batch.Sprites, batch.Transforms, batch.Colors, SKBlendMode.Modulate,
-                    unsmoothed, paint);
+                    glyphSampling, paint);
             }
         }
 

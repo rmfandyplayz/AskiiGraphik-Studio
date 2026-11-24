@@ -17,7 +17,8 @@ public sealed class ReducedMotionTests
         "AppCanvasSelectionAntsSpeed",
         "AppLandingAntsSpeed",
         "AppDockingMotionMilliseconds",
-        "AppCanvasViewGlideMilliseconds"
+        "AppCanvasViewGlideMilliseconds",
+        "AppCanvasZoomGlideMilliseconds"
     ];
 
     [Fact]

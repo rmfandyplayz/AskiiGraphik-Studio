@@ -101,9 +101,11 @@
        doesn't have (ADR 0013); they're temporary until the owner designs that marker. -->
   <!-- The empty space past the zone around the canvas, or past the room around a selection beyond it, when the view
        is scrolled to an edge, in logical pixels (ADR 0072). After something moves, the view glides back out of space
-       nothing needs any more over this many milliseconds. -->
+       nothing needs any more over this many milliseconds. A paste out of view brings the view to it, zoom and all,
+       over the zoom glide's milliseconds (ADR 0076, placeholder). -->
   <x:Double x:Key="AppCanvasMargin">64</x:Double>
   <x:Double x:Key="AppCanvasViewGlideMilliseconds">150</x:Double>
+  <x:Double x:Key="AppCanvasZoomGlideMilliseconds">250</x:Double>
   <!-- The text caret is an outline around its cell, this many logical pixels thick. -->
   <x:Double x:Key="AppCanvasCaretThickness">2</x:Double>
   <!-- The selection outline (step 4.1, placeholder): black dashes on white, this many logical pixels thick, each

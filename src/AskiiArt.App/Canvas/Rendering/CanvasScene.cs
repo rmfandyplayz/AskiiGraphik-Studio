@@ -15,6 +15,12 @@ internal sealed class CanvasScene : IDisposable
 {
     public required CanvasViewport Viewport { get; init; }
 
+    /// <summary>
+    /// How the drawing is scaled and shifted on screen while the view glides to a new zoom (ADR 0076); otherwise
+    /// <see cref="ViewTransform.Identity"/>.
+    /// </summary>
+    public ViewTransform Transform { get; init; } = ViewTransform.Identity;
+
     public required CanvasColors Colors { get; init; }
 
     /// <summary>The visible cells' backgrounds, or null when none of them has one.</summary>

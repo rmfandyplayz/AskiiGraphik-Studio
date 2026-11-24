@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0076](0076-a-paste-brings-the-view-to-fit-it.md): a paste not fully in view now brings the view to it, zoom and all. The rest still stands.
+
 ## Context
 
 In ADR 0071 the zone around the canvas was a wall: a move stopped when the selection's side reached its outer edge. Testing 4.9, the owner meant a ring the selection must still *touch*, so everything can go off the canvas but not drift away for ever. The owner also asked that the view can scroll to see all of it, never moves while something is moving, then tidies up, and that all of the app's motion can be turned off for accessibility.
@@ -29,3 +31,5 @@ In ADR 0071 the zone around the canvas was a wall: a move stopped when the selec
 - A whole layer can now go entirely off the canvas; the cells there are still lost when the move ends (ADR 0071).
 - The 150 ms glide, the centring and the paste rule are guesses for the owner to judge (TEMPORARY-UI).
 - Changing the reduce-motion setting takes effect at the next start.
+
+Updated 2026-11-24: step 4.11 replaced the Paste bullet (ADR 0076).

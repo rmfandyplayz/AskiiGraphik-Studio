@@ -22,7 +22,8 @@ internal static class ReducedMotion
         "AppCanvasSelectionAntsSpeed",
         "AppLandingAntsSpeed",
         "AppDockingMotionMilliseconds",
-        "AppCanvasViewGlideMilliseconds"
+        "AppCanvasViewGlideMilliseconds",
+        "AppCanvasZoomGlideMilliseconds"
     ];
 
     /// <summary>True when the settings ask for reduced motion.</summary>

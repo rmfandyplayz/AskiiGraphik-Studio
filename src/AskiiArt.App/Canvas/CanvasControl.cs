@@ -452,7 +452,8 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
             ToDeviceLength(SelectionDashLength), _paintedMotion, overlay?.Path, overlay?.ShowsPathClosing ?? false,
             overlay?.Markers, Look.ScaledBy(_renderScaling));
         var buildStarted = Stopwatch.GetTimestamp();
-        var scene = _sceneBuilder.Build(Composite, atlas, _viewport, GetColors(), overlays);
+        var (drawnViewport, transform) = DrawnView(_viewport);
+        var scene = _sceneBuilder.Build(Composite, atlas, drawnViewport, GetColors(), overlays, transform);
         var buildTicks = Stopwatch.GetTimestamp() - buildStarted;
         context.Custom(new CanvasDrawOperation(new Rect(Bounds.Size), scene, FrameTimings, buildTicks));
 
@@ -538,8 +539,11 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
 
         if (change.Property == ZoomFactorProperty)
         {
-            // A wheel zoom anchors on the pointer; any other zoom (a shortcut, say) on the centre.
-            UpdateViewport(_zoomAnchor ?? ViewportCentre());
+            // A wheel zoom anchors on the pointer; any other zoom (a shortcut, say) on the centre. A glide to a paste
+            // sets the view at the new zoom itself.
+            if (!_isGlideSettingZoom)
+                UpdateViewport(_zoomAnchor ?? ViewportCentre());
+
             _zoomAnchor = null;
         }
         else if (change.Property == CompositeProperty || change.Property == FontProperty ||
@@ -797,9 +801,12 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
         SetViewport(_viewport.ScrolledBy(-(int)Math.Round(delta.X * distance), -(int)Math.Round(delta.Y * distance)));
     }
 
-    // Zooms in by positive steps and out by negative ones.
+    // Zooms in by positive steps and out by negative ones, unless the view is gliding to a paste.
     private void ZoomAt(Point anchor, int steps)
     {
+        if (IsZoomLocked)
+            return;
+
         var factor = ZoomFactor;
         for (var step = 0; step < Math.Abs(steps); step++)
             factor = steps > 0 ? ZoomLevels.StepIn(factor) : ZoomLevels.StepOut(factor);
@@ -942,9 +949,7 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
         if (Font is null || Atlases is null)
             return null;
 
-        var pixelSize = BaseFontSize * ZoomFactor * _renderScaling;
-        var clamped = Math.Clamp((float)pixelSize, CellMetrics.MinimumPixelSize, CellMetrics.MaximumPixelSize);
-        return Atlases.GetAtlas(Font, clamped, GlyphRenderOptions.Default);
+        return Atlases.GetAtlas(Font, PixelSizeAt(ZoomFactor), GlyphRenderOptions.Default);
     }
 
     private CanvasColors GetColors() => new(

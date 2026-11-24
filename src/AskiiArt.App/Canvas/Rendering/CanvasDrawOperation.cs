@@ -55,6 +55,14 @@ internal sealed class CanvasDrawOperation(Rect bounds, CanvasScene scene, FrameT
             // then lands exactly on the device's pixel grid, at any display scaling.
             var matrix = canvas.TotalMatrix;
             canvas.SetMatrix(SKMatrix.CreateTranslation(MathF.Round(matrix.TransX), MathF.Round(matrix.TransY)));
+            if (scene.Transform != ViewTransform.Identity)
+            {
+                var glide = scene.Transform;
+                var glideMatrix = SKMatrix.CreateScaleTranslation((float)glide.ScaleX, (float)glide.ScaleY,
+                    (float)glide.OffsetX, (float)glide.OffsetY);
+                canvas.Concat(in glideMatrix);
+            }
+
             CanvasScenePainter.Paint(canvas, scene);
             canvas.Restore();
             RecordFrame(paintStarted);

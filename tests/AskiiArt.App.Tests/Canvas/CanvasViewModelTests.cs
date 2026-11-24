@@ -32,6 +32,47 @@ public sealed class CanvasViewModelTests : IDisposable
     }
 
     [Fact]
+    public void WhileTheZoomIsLocked_ZoomingInOrOutOrToActualSizeDoesNothing()
+    {
+        ViewModel.ZoomFactor = 1.5;
+        ViewModel.IsZoomLocked = true;
+
+        Assert.False(ViewModel.CanZoomIn);
+        Assert.False(ViewModel.CanZoomOut);
+        Assert.False(ViewModel.CanZoomToActualSize);
+        ViewModel.ZoomIn();
+        ViewModel.ZoomOut();
+        ViewModel.ZoomToActualSize();
+        Assert.Equal(1.5, ViewModel.ZoomFactor);
+
+        ViewModel.IsZoomLocked = false;
+        Assert.True(ViewModel.CanZoomToActualSize);
+        ViewModel.ZoomToActualSize();
+        Assert.Equal(1, ViewModel.ZoomFactor);
+    }
+
+    [Fact]
+    public void TheZoomActions_FollowTheZoomLock()
+    {
+        var zoomActions = new CanvasActions(ViewModel, includeDebugActions: false).CreateActions()
+            .Where(action => action.Id is CanvasActionIds.ZoomIn or CanvasActionIds.ZoomOut
+                or CanvasActionIds.ActualSize)
+            .ToList();
+        var changes = 0;
+        foreach (var action in zoomActions)
+            action.Command.CanExecuteChanged += (_, _) => changes++;
+
+        ViewModel.IsZoomLocked = true;
+
+        Assert.Equal(3, zoomActions.Count);
+        Assert.Equal(3, changes);
+        Assert.All(zoomActions, action => Assert.False(action.Command.CanExecute(null)));
+
+        ViewModel.IsZoomLocked = false;
+        Assert.All(zoomActions, action => Assert.True(action.Command.CanExecute(null)));
+    }
+
+    [Fact]
     public void ZoomFactor_StaysWithinTheZoomLevels()
     {
         ViewModel.ZoomFactor = 100;

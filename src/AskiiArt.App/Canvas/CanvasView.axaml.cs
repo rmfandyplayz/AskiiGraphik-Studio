@@ -95,7 +95,7 @@ internal sealed partial class CanvasView : UserControl
         }
     }
 
-    private void OnPasted(object? sender, CellRect cells) => Canvas.CentreOnIfPartlyHidden(cells);
+    private void OnPasted(object? sender, CellRect cells) => Canvas.BringIntoView(cells);
 
     // A ScrollBar sets its own IsVisible from this property, so binding IsVisible wouldn't hold.
     private void UpdateScrollBarVisibility()
