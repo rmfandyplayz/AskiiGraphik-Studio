@@ -91,7 +91,18 @@ The selection mask and its tools, combine modes and commands, clipping, cut, cop
 
 ## M5: Drawing tools
 
-Line, curve, rectangle, rounded rectangle, ellipse, fill (flood fill, contiguous or global), pickup, table, and big text. Each tool's behavior is specified with the owner before it's built. First, settle what was step 4.10c (moved here on 2026-11-24): whether the line tools pick their characters by shape alone, reusing the glyph measurements, and how; the owner's view is that shaping stays in the Brush. Also a soft background eraser, once the owner decides what it does (ARCHITECTURE §23).
+Line, curve, rectangle (rounded or not), ellipse, box-drawing joins, fill, an eyedropper, table and gradient. Steps agreed with the owner on 2026-11-24. Each tool's exact behaviour is asked at the start of its step. Decided at the same time: the shape tools share one group on U (Line 1, Curve 2, Rectangle 3, Ellipse 4, Table 5), Fill is on G and the Eyedropper on I; lines and shapes keep the Move tool's Shift, Ctrl and Ctrl+Shift constraints (ADR 0069), and rectangles and ellipses the selection tools' Shift for looking square or round and Alt for drawing from the middle (ADR 0060). Left out: big text, since text from any online generator already pastes in (4.6) and too few FIGlet fonts are clearly licensed to bundle (parked as a plugin idea for M9), and a soft background eraser (parked with M8's idea for erasing text and backgrounds separately). Both are in `docs/TEMPORARY-UI.md`.
+
+- [~] **5.1 Line characters (was 4.10c).** How lines and shape outlines choose their characters, as comparison sheets the owner judges by eye. The owner chose to offer every way, as a Style option: **Standard** (characters by direction: `- | / \ +`), **Precise** (the character whose measured ink best follows the line through each cell, such as `_ . - '` for shallow slopes) and **Single character**. The sheets show two candidates for Standard and draw lines at every angle, rectangles, ellipses and curves each way in all four bundled fonts. No tool yet: the picking code is kept for 5.2.
+  - *The owner checks:* the sheets; which Standard to keep, and whether Precise needs tuning. [Test doc](testing/step-5.1-line-characters.md)
+  - *Built 2026-11-24:* `LineGlyphPicker` and its paths and cells in Core, with sheets in `.local/line-sheets` from all four bundled fonts. ADR 0078.
+- [ ] **5.2 Shapes group and the Line tool.** The Shapes group on U, with Line on 1: press, drag and let go, with a live preview of the real cells, one undo step, Esc cancelling, clipped to the selection, the Move tool's constraints, and the Style option from 5.1.
+- [ ] **5.3 Rectangle and ellipse.** Rectangle on 3, with rounded corners as an option, and Ellipse on 4: outline or filled, Shift for looking square or round, Alt from the middle.
+- [ ] **5.4 Box-drawing joins.** Off by default: an "Include joins" option where lines and outlines drawn in box-drawing characters join the ones already there (`┬ ┼ ╋`). In an ASCII-only document every join is `+`; the warning that says so waits for M8's notifications (`docs/TEMPORARY-UI.md`).
+- [ ] **5.5 Curve.** Curve on Shapes 2.
+- [ ] **5.6 Fill and the Eyedropper.** Fill on G, reusing the Magic Wand's flood fill, contiguous or global. The Eyedropper on I, like Illustrator's, with modifiers choosing what it copies: a click the character, Alt everything (as Alt+click in the brushes does), Ctrl (Cmd) only the background colour, Shift only the text colour.
+- [ ] **5.7 Table.**
+- [ ] **5.8 Gradient.** Added by the owner on 2026-11-24, in place of big text.
 
 ## M6: Image → ASCII
 

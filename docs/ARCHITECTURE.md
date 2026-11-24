@@ -167,7 +167,7 @@ One mechanism powers brushes, soft erase and image conversion.
 - **Intensity** is a value in [0, 1] that a tool produces for a cell. 0 means nothing, and 1 means the most ink.
 - A **ramp** is an ordered, user-editable mapping from intensity bands to glyphs, for example `" .:-=+*#%@"`. Ramps are first-class objects: they're named, stored in user settings, and can be exported and imported as small files so users can share them. Whether intensity 0 maps to an empty cell or to a space is part of each ramp's definition.
 - **Glyph density** is how much ink a glyph actually puts on screen in a given font, measured by rasterizing it (Imaging, §11). It's used to auto-generate a ramp from a font, to sort a user's characters by darkness, for soft erase (glyph → intensity → lighter glyph), and for image conversion.
-- **Glyph shape** is where in its cell that ink lies, measured in the same drawing. The Brush and the Soft Eraser use it to pick edge glyphs whose ink lies where the tip paints (§8.3, §8.4), and image conversion can too (§17).
+- **Glyph shape** is where in its cell that ink lies, measured in the same drawing. The Brush and the Soft Eraser use it to pick edge glyphs whose ink lies where the tip paints (§8.3, §8.4), lines' Precise style to pick the glyph that follows a line (§8.5), and image conversion can too (§17).
 
 Core defines `Ramp` and the `IGlyphDensityProvider` interface, and Imaging implements the provider. Core tests use a fake provider. *Decided in 3.1 (ADR 0045):* a ramp of n glyphs has n + 1 evenly spaced levels, the lowest being its empty cell or space; measured density sorts a ramp only when asked, never moving its levels; a ramp's name and id live with whatever keeps it; and density is measured as the canvas draws each glyph, fallback fonts and fitted block characters included. *Decided in 3.3 (ADR 0049):* a glyph that isn't in the ramp counts as the level whose measured density is nearest, so the Brush can blend over any text. *Decided in 3.5 (ADR 0052):* the user's ramps live in a `RampLibrary` with stable ids and unique names; built-in ramps are read-only and are copied to be edited. The Ramps window edits a ramp live, sorts it and generates one in the active document's font, and imports and exports `.asciiramp` files of one ramp each. *Decided in 4.7 (ADR 0068):* `IGlyphDensityProvider.GetShape` gives a `GlyphShape`, the cell cut into 4 × 8 equal parts and how much of each the ink covers. `RampShapeMatcher` picks the ramp level whose glyph best shows a target of 32 part intensities: near the target's average in tone, and with its ink's unevenness, scaled down as far as fits, matching the target's, both blurred a little as the eye blurs thin strokes. An even target gets the level nearest its intensity. *Decided in 4.10b (ADR 0075):* `RampShapeMatcher` can also judge a cell with the eight around it, comparing only where each cell's ink lies across the cell and the half of each neighbour nearest it, and says whether its glyph clearly shows the target's edge.
 
@@ -190,7 +190,7 @@ Tools edit through an **editing session**: the document, its undo history and th
 
 ### 8.2 Planned tools
 
-Planned tools, built over several milestones: text, brush, eraser, fill, pickup (eyedropper), line, curve, rectangle, rounded rectangle, ellipse, big text, table, the selection tools (§10), and move. Each tool's detailed behavior is specified with the owner when its milestone starts.
+Planned tools, built over several milestones: text, brush, eraser, fill, eyedropper, line, curve, rectangle, rounded rectangle, ellipse, table, gradient, the selection tools (§10), and move. Each tool's detailed behavior is specified with the owner when its milestone starts.
 
 ### 8.3 Erasers
 
@@ -200,7 +200,7 @@ The Eraser group (ADR 0050) has three erasers, which share one size and shape (A
 - **Soft Eraser** (step 3.4): lightens text along the ramp it shares with the Brush (§8.4). Each glyph moves lighter by the strength times the tip's weight there, and at least one level, once per stroke. Where the tip covers only part of a cell, the cell keeps the glyph whose ink lies away from the tip (step 4.7, ADR 0068), judged with the cells around it as the Brush's are (step 4.10b, ADR 0075). One lightened to nothing goes. Glyphs keep their colours, and backgrounds stay. A glyph that isn't in the ramp counts as the level that measures nearest.
 - **BG Eraser** (step 3.4): takes backgrounds away, and leaves glyphs and their colours. In a monochrome document it erases nothing, and Tool Options says so.
 
-What a soft background eraser does is still open (§23). If alpha ever becomes real, an eraser could lower alpha instead. That one is reserved; don't build it.
+A soft background eraser was parked on 2026-11-24, with M8's idea for erasing text and backgrounds separately (§23). If alpha ever becomes real, an eraser could lower alpha instead. That one is reserved; don't build it.
 
 ### 8.4 Brushes
 
@@ -209,6 +209,10 @@ The Brush group (ADR 0049) has four brushes, which share one size and shape (ADR
 - **Brush** paints a ramp's characters (§7, ADR 0045), along the ramp it shares with the Soft Eraser (§8.3). Its middle paints at the chosen intensity, and its edge fades by the chosen softness. It blends: each cell moves towards the intensity by how strongly the brush covers it, once per stroke. Where the tip covers only part of a cell, hard edges included, the cell gets the ramp glyph whose ink lies where the tip painted (PATS, step 4.7, ADR 0068): each part of the cell moves by its own weight, and `RampShapeMatcher` (§7) picks the level. Edge cells near the tip are picked again with the cells around it, art already on the layer included, so they may change as the stroke grows, though only cells the stroke paints change. A cell whose glyph wouldn't clearly show its edge moves as a whole by the tip's weight at its middle (step 4.10b, ADR 0075). It writes the FG and BG colours on every glyph it reaches, and Alt+click picks both. A ramp the document's character set can't hold paints nothing.
 - **FG Brush and BG Brush** (step 2b.3b) paint colour onto cells that are already there: text colour or background. Choosing one chooses the colour the colour windows change, and choosing the other colour while one of them is active switches to the other brush (ADRs 0042, 0043).
 - **Character Brush** (step 3.6, ADR 0053) puts one chosen character in every cell under the tip, hard-edged, in the FG and BG colours as typing gives them. Alt+click picks the character and both colours. The character is chosen in the Characters window, which lists Recent (the 16 characters painted with last), the user's character sets and built-in Unicode blocks. User sets are made from typed characters, edited live, and imported and exported as `.asciicharset` files, as ramps are (§7). A character the document's character set can't hold paints nothing.
+
+### 8.5 Lines and shapes
+
+M5's lines and shapes follow a `LinePath`, straight pieces in canvas coordinates; rectangles and ellipses run through the middles of their outermost cells. *Decided in 5.1 (ADR 0078):* a path takes one cell to a column where it runs more across than down and one to a row elsewhere, unbroken, each once, and a turn sharper than 45° on screen makes a corner. A Style chooses each cell's character (`LineGlyphPicker`): **Standard** by the path's direction on screen (`- | \ /`, with `+` at corners), **Precise** by the candidate glyph whose measured ink (§7) lies most like a thin stroke along the path through the cell, centred across where the path is steep, and **Single character**. Every style takes the same cells. Until 5.2 there's a second, temporary Standard that goes by each cell's step from the cell before to the cell after.
 
 ## 9. Commands and undo
 
@@ -412,9 +416,9 @@ Ask the owner about each of these at the milestone that needs it.
 | Charset policy. *Decided in 1.5:* per document, Unicode or ASCII only (§6, ADR 0016). *Decided in 1.6:* new documents default to ASCII only, chosen in the New dialog. *Still open:* the document options that switch it later | The owner's UI design |
 | Should selection changes count as undo steps? *Decided in 4.1:* yes, but they don't make the document unsaved (ADR 0055) | M4 |
 | Default ramp(s) to ship. *Decided in M3's planning:* Standard, Standard Alphanumerical, Fine, Blocks and Braille, each painting an empty cell at intensity 0 (ADR 0045) | M3 |
-| What a soft background eraser does, since a background colour has no intensity to lower. 3.4 built soft and hard text erasers and a hard background eraser (ADR 0050) | M5 |
+| What a soft background eraser does, since a background colour has no intensity to lower. 3.4 built soft and hard text erasers and a hard background eraser (ADR 0050). *Parked on 2026-11-24:* not built in M5; looked at again with M8's idea for erasing text and backgrounds separately | M8 |
 | Exact behavior of each tool | That tool's milestone |
-| Big-text font format (FIGlet?), and which fonts can legally be bundled | M5 |
+| Big-text font format (FIGlet?), and which fonts can legally be bundled. *Left out of M5 on 2026-11-24:* text from online generators already pastes in, and too few FIGlet fonts are clearly licensed to bundle; parked as a plugin idea | M9 |
 | How plugins are written (.NET assemblies, which run with the user's full permissions, or a scripting language), what they can add, and how they're licensed (the GPL likely covers an in-process plugin unless the project grants an exception, which is easiest before accepting outside code) | M9; the license before accepting outside code |
 | How to flag wide characters visually | When Unicode input is allowed |
 | When the owner's UI design will arrive, and in what form (Figma, AXAML, screenshots) | Any time |

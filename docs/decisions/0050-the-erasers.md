@@ -43,7 +43,7 @@ Step 3.4 adds a soft eraser for text and a hard one for backgrounds, as separate
 - ADR 0049's ramp option and stroke now live in `RampOptions` and `RampStroke`, and the Brush's own group holds Intensity, Softness and Blend mode.
 - Low strengths look more alike: 1% and 10% both take `@` to `%`. A soft tip's faintest edge takes a level too.
 - The Brush still rounds to the nearest level. The owner will look at both tools again in the UI Pass (M8).
-- What a soft background eraser does stays open (ARCHITECTURE §23).
+- What a soft background eraser does stays open (ARCHITECTURE §23); it was parked for M8 on 2026-11-24.
 - The ramp choice that 3.5 saves is one setting for both tools.
 
 Updated 2026-11-18: after testing step 3.4, the owner chose that every Soft Eraser stroke lightens at least one level, so a low Strength still clears. `RampStroke` takes `movesAtLeastOneLevel` for this; the Brush passes false.
@@ -51,3 +51,5 @@ Updated 2026-11-18: after testing step 3.4, the owner chose that every Soft Eras
 Updated 2026-11-19: a pen's pressure scales how strongly the Soft Eraser covers each cell, and it still lightens at least one level wherever it reaches (ADR 0054).
 
 Updated 2026-11-22: the Soft Eraser's edge cells keep the glyph whose ink lies away from the tip, as the Brush's lie towards it, and the at-least-one-level rule uses the average move over the cell (ADR 0068).
+
+Updated 2026-11-24: a soft background eraser wasn't built in M5; it's parked with M8's idea for erasing text and backgrounds separately.

@@ -432,11 +432,23 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | While it glides, the wheel doesn't zoom and Zoom In, Zoom Out and Actual Size are greyed out; scrolling, panning, a drag, a click or an arrow end the glide at once, at its end | `Canvas/CanvasControl.ZoomGlide.cs`, `Canvas/CanvasViewModel.cs` | 4.11 |
 | Zooming out, glyphs are slightly blurred for the first few frames of the glide | `Canvas/Rendering/CanvasScenePainter.cs` | 4.11 |
 
+### Line characters (step 5.1, ADR 0078)
+
+| Choice | Where | Step |
+|---|---|---|
+| Standard switches from `-` to `\` or `/` halfway between their angles on screen, and from those to `\|` halfway again; a turn sharper than 45° is a `+` corner | `Core/Tools/Lines/LineGlyphPicker.cs`, `LinePathCells.cs` | 5.1 |
+| Precise chooses from ``- _ . , ' ` " \| / \`` and measures the line as a stroke an eighth of a cell thick; a slope steeper than half a row per column is centred up and down by more the steeper it is | `Core/Tools/Lines/PreciseLineMatcher.cs`, `LinePathCells.cs` | 5.1 |
+| The comparison sheets' layout and their `*` for Single character | `tests/AskiiArt.Imaging.Tests/Glyphs/LineComparisonSheets.cs` | 5.1 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
 
-- **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M5 or M8**): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
+- **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M8**, decided 2026-11-24): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
+
+- **Warn when joins become `+`** (raised in M5's planning, 2026-11-24; **for M8's notifications**): turning on step 5.4's "Include joins" in an ASCII-only document should warn that every join is drawn as `+`, since box-drawing characters aren't allowed there. The warning waits for a way of showing notifications.
+
+- **Big text as a plugin** (raised in M5's planning, 2026-11-24; **for M9**): big text was left out of M5, since text from any online generator already pastes in. A plugin could add it: FIGlet's `.flf` and TOIlet's `.tlf` formats are well documented and users could load their own fonts, but only FIGlet's own small set of fonts is clearly licensed to bundle; the big online collections mostly state no licence.
 
 - **How arrow runs bring the selection into view** (raised when M4 closed, 2026-11-24; **the owner's UX call, no milestone yet**): the owner found some of 4.11b's behaviour undesirable, though working as built (ADR 0077), and will decide what it should do.
 
@@ -475,7 +487,7 @@ The owner's ideas, parked until the stage they belong to.
 - **Color and plugins** (decided after 2.3's testing, ADR 0032): colour and ANSI are in, as milestone M2b. Plugins are in, as M9 (first M8b, ADR 0046), with a built-in Discord ANSI message plugin. Opacity isn't planned; wide (CJK) characters could be a plugin.
 - **Tool Options toolbar** (raised in M3 planning): it's built from the active tool's options as data, so it isn't a plain container of tool buttons. It will probably be edited through a menu of its own rather than by dragging its contents, and tool settings should be exportable one day (like brush presets).
 - **Blend modes for the Brush** (raised in M3 planning): Blend only for now. Replace and Darken only could come later, perhaps from a dropdown on Tool Options where they show greyed out until then.
-- **Erasing text and backgrounds separately** (raised in M3 planning): the owner wants to erase a background without erasing the text first. 3.4 built separate erasers: soft and hard for text, and hard for backgrounds, since what a soft background eraser does waits for M5. A better way, such as a toggle on Tool Options, gets found in the UI Pass (M8).
+- **Erasing text and backgrounds separately** (raised in M3 planning): the owner wants to erase a background without erasing the text first. 3.4 built separate erasers: soft and hard for text, and hard for backgrounds. A better way, such as a toggle on Tool Options, gets found in the UI Pass (M8). A soft background eraser was parked here on 2026-11-24 rather than built in M5: fading a background towards none is really a soft BG Brush, and taking backgrounds from a share of cells looks noisy.
 - **How ramp strokes round** (raised after 3.4's testing; **decide in M8**): the Soft Eraser always lightens at least one level, so a low Strength still clears `.`, but 1% and 10% look alike. The Brush still rounds to the nearest level, so repeated soft strokes stop darkening their edge short of the intensity. The owner leans towards at least one level, and will decide for both tools in the UI Pass.
 - **Pen pressure choices** (raised in M3 planning): 3.7 made pressure scale how strongly the Brush and the Soft Eraser cover cells (ADR 0054). Later the user chooses what it controls (size, strength) and perhaps a curve. Checked on a real tablet in M10.
 - **The pen's eraser end** (raised in 3.7's planning): turning the pen over could erase, as it does in painting apps. Today it paints like the tip.

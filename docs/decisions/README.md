@@ -84,3 +84,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0075](0075-the-pats-brush-settled.md) | The PATS brush settled | Accepted |
 | [0076](0076-a-paste-brings-the-view-to-fit-it.md) | A paste brings the view to fit it | Accepted |
 | [0077](0077-fitting-without-zooming-in-and-after-arrows.md) | Fitting without zooming in, and after arrow runs | Accepted |
+| [0078](0078-line-characters.md) | Line characters | Accepted |
