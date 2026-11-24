@@ -438,6 +438,8 @@ The owner's ideas, parked until the stage they belong to.
 
 - **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M5 or M8**): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
 
+- **How arrow runs bring the selection into view** (raised when M4 closed, 2026-11-24; **the owner's UX call, no milestone yet**): the owner found some of 4.11b's behaviour undesirable, though working as built (ADR 0077), and will decide what it should do.
+
 - **Faint brush edges keep their ink on the stroke's side** (raised after 4.10b's testing; **for M10**): on a faint soft edge, matching darkness outweighs where the ink sits, so the outermost row can pick a glyph inked away from the stroke, such as the Fine ramp's backtick along a stroke's top, leaving a gap of about a cell and a half below it. A fix would rule out glyphs inked away from the stroke on faint edges, in the whole-cell fallback too; a rough try closed the gap but left the two edges uneven the other way, so it needs tuning and a recheck of circles and squares. A finer ink grid wouldn't help (the owner agreed not to try one).
 
 - **Other ways of painting as optional plugins** (raised after 4.10b's testing; **for M9**): built-in plugins could add back older brush behaviours, such as 4.6's whole cells, or bring new ways of drawing, as a choice for users who want more control than the one brush.
