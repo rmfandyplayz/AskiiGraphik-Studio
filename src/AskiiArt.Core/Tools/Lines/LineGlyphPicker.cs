@@ -12,7 +12,7 @@ public readonly record struct LineGlyph(CellPoint Cell, Rune Glyph);
 
 /// <summary>
 /// Chooses the characters a line or a shape's outline puts in the cells it passes through, in one of the
-/// <see cref="LineStyle"/>s (step 5.1). Made for one document's font, cell shape and character set.
+/// <see cref="LineStyle"/>s (ADR 0078). Made for one document's font, cell shape and character set.
 /// </summary>
 public sealed class LineGlyphPicker
 {

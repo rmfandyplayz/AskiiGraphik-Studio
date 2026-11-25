@@ -18,6 +18,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Selecting;
@@ -60,7 +61,8 @@ internal sealed class TestCanvas : IDisposable
                 CharacterBrushTool.Definition,
                 EraserTool.Definition,
                 SoftEraserTool.Definition,
-                EraserTool.BackgroundDefinition
+                EraserTool.BackgroundDefinition,
+                LineTool.Definition
             ],
             BuiltInToolGroups.All);
         ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases, Densities);

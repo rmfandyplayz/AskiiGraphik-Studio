@@ -85,3 +85,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0076](0076-a-paste-brings-the-view-to-fit-it.md) | A paste brings the view to fit it | Accepted |
 | [0077](0077-fitting-without-zooming-in-and-after-arrows.md) | Fitting without zooming in, and after arrow runs | Accepted |
 | [0078](0078-line-characters.md) | Line characters | Accepted |
+| [0079](0079-the-line-tool-and-the-shapes-group.md) | The Line tool and the Shapes group | Accepted |

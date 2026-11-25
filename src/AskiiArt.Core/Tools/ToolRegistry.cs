@@ -24,6 +24,13 @@ public sealed record ToolDefinition(ToolDescriptor Descriptor, Func<ToolContext,
     /// that never warns.
     /// </summary>
     public Func<ToolSettings, Document, string?>? WarningFor { get; init; }
+
+    /// <summary>
+    /// What choosing a character in the Characters window does while this tool is active, for a tool that draws with
+    /// the Character Brush's character (ADR 0079), given the tools' option values; it stays the active tool. Null for
+    /// a tool that doesn't, so choosing a character switches to the Character Brush.
+    /// </summary>
+    public Action<ToolSettings>? CharacterChosen { get; init; }
 }
 
 /// <summary>

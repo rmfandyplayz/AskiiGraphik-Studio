@@ -230,7 +230,8 @@ public sealed class MenuLayoutTests
                 ToolActionIds.CharacterBrush,
                 ToolActionIds.Eraser,
                 ToolActionIds.SoftEraser,
-                ToolActionIds.BackgroundEraser
+                ToolActionIds.BackgroundEraser,
+                ToolActionIds.Line
             ],
             ActionIdsIn(menu.Entries));
     }

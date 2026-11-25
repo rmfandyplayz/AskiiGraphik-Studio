@@ -112,4 +112,7 @@ public static class UndoStepNames
 
     /// <summary>Pasting cells, whether they float or are typed in at the Text tool's caret.</summary>
     public const string Paste = "UndoStepPaste";
+
+    /// <summary>A line drawn with the Line tool.</summary>
+    public const string Line = "UndoStepLine";
 }

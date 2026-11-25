@@ -239,8 +239,9 @@ internal sealed class CharactersPanelViewModel : ObservableObject
     public bool CanExport => Glyphs.Count > 0;
 
     /// <summary>
-    /// Chooses <paramref name="item"/>'s character for the Character Brush and switches to that brush, unless the
-    /// document can't hold it.
+    /// Chooses <paramref name="item"/>'s character for the Character Brush, unless the document can't hold it. A tool
+    /// that draws with that character, such as the Line tool, stays chosen and does what it does with a chosen
+    /// character (ADR 0079); otherwise the Character Brush is chosen.
     /// </summary>
     public void Choose(GlyphItem item)
     {
@@ -249,7 +250,10 @@ internal sealed class CharactersPanelViewModel : ObservableObject
             return;
 
         _options.Set(CharacterBrushOptions.Character, item.Glyph);
-        _canvas.SelectTool(CharacterBrushTool.Id);
+        if (_canvas.SelectedTool.CharacterChosen is { } chosen)
+            chosen(_canvas.ToolSettings);
+        else
+            _canvas.SelectTool(CharacterBrushTool.Id);
     }
 
     /// <summary>Adds a copy of the characters the chosen set shows, and chooses it.</summary>

@@ -438,7 +438,17 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 |---|---|---|
 | Standard switches from `-` to `\` or `/` halfway between their angles on screen, and from those to `\|` halfway again; a turn sharper than 45° is a `+` corner | `Core/Tools/Lines/LineGlyphPicker.cs`, `LinePathCells.cs` | 5.1 |
 | Precise chooses from ``- _ . , ' ` " \| / \`` and measures the line as a stroke an eighth of a cell thick; a slope steeper than half a row per column is centred up and down by more the steeper it is | `Core/Tools/Lines/PreciseLineMatcher.cs`, `LinePathCells.cs` | 5.1 |
-| The comparison sheets' layout and their `*` for Single character | `tests/AskiiArt.Imaging.Tests/Glyphs/LineComparisonSheets.cs` | 5.1 |
+
+### The Line tool (step 5.2, ADR 0079)
+
+| Choice | Where | Step |
+|---|---|---|
+| The Tools toolbar's button for the group says "Shapes", and the Tools menu lists Line after the erasers. With it, the bottom row of toolbars no longer fits a window 2048 logical pixels wide (2560 at 125%), so the Tools toolbar scrolls there until its text buttons become icons | `Shapes`/`ToolGroupShapes` and `ToolLine` in `Strings.resx`, `Shell/Toolbars/ToolbarLayout.cs`, `Shell/Menus/MenuLayout.cs` | 5.2 |
+| The style names are "Standard", "Standard by step", "Precise" and "Single character", and Standard is the default | `ToolOptionLineStyle*` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.2 |
+| Tool Options always shows the Character option for the Line tool, even when the style isn't Single character | `Core/Tools/Lines/LineTool.cs` | 5.2 |
+| Choosing a character in the Characters window while the Line tool is active sets the style to Single character and keeps the Line tool | `Core/Tools/Lines/LineStyleOptions.cs` (`ChooseSingleCharacter`) | 5.2 |
+| A line runs from the middle of the cell it starts in to the middle of the cell under the pointer; a click, or a drag back to the start cell, draws nothing | `Core/Tools/Lines/LineTool.cs` | 5.2 |
+| Alt does nothing to a line, and a line drawn with no background chosen keeps each cell's background | `Core/Tools/Lines/LineTool.cs` | 5.2 |
 
 ## Ideas to revisit
 
@@ -447,6 +457,8 @@ The owner's ideas, parked until the stage they belong to.
 - **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M8**, decided 2026-11-24): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
 
 - **Warn when joins become `+`** (raised in M5's planning, 2026-11-24; **for M8's notifications**): turning on step 5.4's "Include joins" in an ASCII-only document should warn that every join is drawn as `+`, since box-drawing characters aren't allowed there. The warning waits for a way of showing notifications.
+
+- **Precise lines' two halves alike** (raised after 5.1's testing, 2026-11-24; **after 5.2, in its own session**): the two halves of a Precise ellipse can pick characters that aren't mirror images, such as `'` on one side and `` ` `` on the other, or `,` against `.`. It comes from where the path is sampled in each cell and from the glyphs themselves not being mirror images. The owner will try the Line tool in the app and report what to tune.
 
 - **Big text as a plugin** (raised in M5's planning, 2026-11-24; **for M9**): big text was left out of M5, since text from any online generator already pastes in. A plugin could add it: FIGlet's `.flf` and TOIlet's `.tlf` formats are well documented and users could load their own fonts, but only FIGlet's own small set of fonts is clearly licensed to bundle; the big online collections mostly state no licence.
 

@@ -1329,7 +1329,7 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="ToolOptionCharacter" xml:space="preserve">
     <value>Character</value>
-    <comment>Tool Options toolbar: the character the Character Brush paints. Clicking it opens the Characters window.</comment>
+    <comment>Tool Options toolbar: the character the Character Brush paints, which the Line tool's Single character style draws with too. Clicking it opens the Characters window.</comment>
   </data>
   <data name="ToolWarningCharacterDoesNotFit" xml:space="preserve">
     <value>This character needs a Unicode document</value>
@@ -1538,5 +1538,37 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   <data name="CharacterSetNoneDrawable" xml:space="preserve">
     <value>No font on this computer can draw these characters.</value>
     <comment>Characters window: shown while a built-in set is chosen of which no installed font has any character.</comment>
+  </data>
+  <data name="ToolGroupShapes" xml:space="preserve">
+    <value>Shapes</value>
+    <comment>Tools toolbar: the Shapes group's button, which chooses the shape tool used last. U chooses it too.</comment>
+  </data>
+  <data name="ToolLine" xml:space="preserve">
+    <value>Line</value>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws a straight line by dragging. Key 1 chooses it while a shape tool is chosen.</comment>
+  </data>
+  <data name="ToolOptionLineStyle" xml:space="preserve">
+    <value>Style</value>
+    <comment>Tool Options toolbar: how lines and shapes choose the character for each cell they pass through.</comment>
+  </data>
+  <data name="ToolOptionLineStyleStandard" xml:space="preserve">
+    <value>Standard</value>
+    <comment>Tool Options toolbar: characters by the way the line runs through each cell: - | / \ and + at corners.</comment>
+  </data>
+  <data name="ToolOptionLineStyleStandardByStep" xml:space="preserve">
+    <value>Standard by step</value>
+    <comment>Tool Options toolbar: like Standard, but each cell by the step from the cell before to the cell after, so a shallow line shows each step it takes.</comment>
+  </data>
+  <data name="ToolOptionLineStylePrecise" xml:space="preserve">
+    <value>Precise</value>
+    <comment>Tool Options toolbar: the character whose ink best follows the line through each cell, measured in the document's font.</comment>
+  </data>
+  <data name="ToolOptionLineStyleSingleCharacter" xml:space="preserve">
+    <value>Single character</value>
+    <comment>Tool Options toolbar: the Character Brush's character in every cell. Choosing a character in the Characters window chooses this style.</comment>
+  </data>
+  <data name="UndoStepLine" xml:space="preserve">
+    <value>Line</value>
+    <comment>History: a line drawn with the Line tool.</comment>
   </data>
 </root>

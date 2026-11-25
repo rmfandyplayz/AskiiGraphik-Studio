@@ -34,7 +34,8 @@ internal sealed record ToolbarLayout(IReadOnlyList<MenuEntry> Entries)
         new ActionMenuEntry(ToolGroupActionIds.Select),
         new ActionMenuEntry(ToolGroupActionIds.Text),
         new ActionMenuEntry(ToolGroupActionIds.Brush),
-        new ActionMenuEntry(ToolGroupActionIds.Eraser)
+        new ActionMenuEntry(ToolGroupActionIds.Eraser),
+        new ActionMenuEntry(ToolGroupActionIds.Shapes)
     ]);
 
     /// <summary>

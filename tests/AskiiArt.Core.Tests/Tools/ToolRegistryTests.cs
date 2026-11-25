@@ -5,6 +5,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
@@ -30,14 +31,16 @@ public sealed class ToolRegistryTests
         EraserTool.Definition,
         SoftEraserTool.Definition,
         EraserTool.BackgroundDefinition,
+        LineTool.Definition
     ];
 
     [Fact]
-    public void TheBuiltInTools_AreGrouped_WithTheBrushesTogether_AndTheErasersTogether()
+    public void TheBuiltInTools_AreGrouped_WithTheBrushesTogether_TheErasersTogether_AndTheShapesTogether()
     {
         var registry = new ToolRegistry(_builtInTools, BuiltInToolGroups.All);
 
-        Assert.Equal(["", "V", "M", "T", "B", "E"], registry.Groups.Select(group => group.ShortcutLetter.ToString()));
+        Assert.Equal(["", "V", "M", "T", "B", "E", "U"],
+            registry.Groups.Select(group => group.ShortcutLetter.ToString()));
         Assert.Equal([MoveTool.Id], registry.GroupOf(MoveTool.Id).ToolIds);
         Assert.Equal(
             [RectangleSelectTool.Id, EllipseSelectTool.Id, LassoTool.Id, PolygonalLassoTool.Id, MagicWandTool.Id],
@@ -50,6 +53,7 @@ public sealed class ToolRegistryTests
             [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId],
             registry.GroupOf(SoftEraserTool.Id).ToolIds);
         Assert.Same(BuiltInToolGroups.Eraser, registry.GetGroup(BuiltInToolGroups.Eraser.Id));
+        Assert.Equal([LineTool.Id], registry.GroupOf(LineTool.Id).ToolIds);
     }
 
     [Fact]

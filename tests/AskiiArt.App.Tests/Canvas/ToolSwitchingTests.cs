@@ -98,7 +98,7 @@ public sealed class ToolSwitchingTests : IDisposable
         Assert.Equal(
             [
                 ToolGroupActionIds.Hand, ToolGroupActionIds.Move, ToolGroupActionIds.Select, ToolGroupActionIds.Text,
-                ToolGroupActionIds.Brush, ToolGroupActionIds.Eraser
+                ToolGroupActionIds.Brush, ToolGroupActionIds.Eraser, ToolGroupActionIds.Shapes
             ],
             actions.Keys.Where(id => id.StartsWith("toolGroup.", StringComparison.Ordinal)));
     }

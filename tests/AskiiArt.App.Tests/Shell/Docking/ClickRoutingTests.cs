@@ -61,9 +61,10 @@ public sealed class ClickRoutingTests : IDisposable
             _canvas.CreateToolOptionsViewModel(), ramps, characters, new RememberedToolState(settings));
 
         _window = builder.Build(KeyModifiers.Control);
-        // Wide enough for the default layout's bottom row, which doesn't fit the smallest window. Since the Move tool's
-        // button (step 4.5) it needs more than 1920, so this is the owner's screen: 2560 pixels at 125%.
-        _window.Width = 2048;
+        // Wide enough for the default layout's bottom row, which doesn't fit the smallest window. Since the Shapes
+        // group's button (step 5.2) it needs more than the owner's screen, 2048 at 125%, where the Tools toolbar
+        // scrolls until its text buttons become icons; this is that screen at 100%.
+        _window.Width = 2560;
         _window.Height = 800;
         _window.Show();
         Pump();

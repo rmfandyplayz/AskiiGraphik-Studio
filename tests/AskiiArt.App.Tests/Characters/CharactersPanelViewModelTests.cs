@@ -10,6 +10,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Lines;
 
 namespace AskiiArt.App.Tests.Characters;
 
@@ -98,6 +99,21 @@ public sealed class CharactersPanelViewModelTests : IDisposable
         Assert.Equal(new Rune('A'), Character);
         Assert.Equal(CharacterBrushTool.Id, _canvas.ViewModel.SelectedTool.Descriptor.Id);
         Assert.Equal(["A"], _viewModel.Glyphs.Where(glyph => glyph.IsChosen).Select(glyph => glyph.Text));
+    }
+
+    // The Line tool draws with the Character Brush's character in Single character (ADR 0079).
+    [Fact]
+    public void ClickingACharacter_WhileTheLineToolIsChosen_KeepsIt_AndMakesItsStyleSingleCharacter()
+    {
+        _canvas.ViewModel.SelectTool(LineTool.Id);
+        var item = _viewModel.Glyphs.Single(glyph => glyph.Text == "A");
+
+        item.ChooseCommand.Execute(null);
+
+        Assert.Equal(new Rune('A'), Character);
+        Assert.Equal(LineTool.Id, _canvas.ViewModel.SelectedTool.Descriptor.Id);
+        Assert.Equal(LineStyle.SingleCharacter,
+            LineStyleOptions.ReadStyle(_canvas.ToolSettings.For(LineStyleOptions.Group)));
     }
 
     [Fact]

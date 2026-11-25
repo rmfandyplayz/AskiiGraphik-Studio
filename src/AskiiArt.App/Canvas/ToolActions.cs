@@ -6,6 +6,7 @@ using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
@@ -30,6 +31,7 @@ internal static class ToolActionIds
     public const string Eraser = Prefix + EraserTool.Id;
     public const string SoftEraser = Prefix + SoftEraserTool.Id;
     public const string BackgroundEraser = Prefix + EraserTool.BackgroundId;
+    public const string Line = Prefix + LineTool.Id;
 
     private const string Prefix = "tool.";
 
@@ -46,6 +48,7 @@ internal static class ToolGroupActionIds
     public static string Text { get; } = For(BuiltInToolGroups.Text.Id);
     public static string Brush { get; } = For(BuiltInToolGroups.Brush.Id);
     public static string Eraser { get; } = For(BuiltInToolGroups.Eraser.Id);
+    public static string Shapes { get; } = For(BuiltInToolGroups.Shapes.Id);
 
     public static string For(string groupId) => Prefix + groupId;
 }

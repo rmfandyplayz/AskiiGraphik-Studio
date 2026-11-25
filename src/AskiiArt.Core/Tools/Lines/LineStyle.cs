@@ -3,7 +3,9 @@
 
 namespace AskiiArt.Core.Tools.Lines;
 
-/// <summary>How a line or a shape's outline chooses the character for each cell it passes through (step 5.1).</summary>
+/// <summary>
+/// How a line or a shape's outline chooses the character for each cell it passes through (ADR 0078, ADR 0079).
+/// </summary>
 public enum LineStyle
 {
     /// <summary>
@@ -13,8 +15,8 @@ public enum LineStyle
     Standard,
 
     /// <summary>
-    /// Step 5.1's second candidate for <see cref="Standard"/>: characters by the step from the cell before to the cell
-    /// after, so a shallow line shows each step it takes. Temporary: step 5.2 keeps one of the two.
+    /// The same characters as <see cref="Standard"/>, by the step from the cell before to the cell after instead, so a
+    /// shallow line shows each step it takes as a <c>/</c> or <c>\</c> between runs of <c>-</c>.
     /// </summary>
     StandardByStep,
 

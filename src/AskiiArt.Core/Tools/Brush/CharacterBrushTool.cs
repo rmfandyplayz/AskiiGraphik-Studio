@@ -62,7 +62,8 @@ public sealed class CharacterBrushTool : ITool
         context.Settings.For(CharacterBrushOptions.Group), context.Settings.RecentGlyphs))
     {
         OptionGroups = [BrushTool.TipOptions, CharacterBrushOptions.Group],
-        WarningFor = CharacterBrushOptions.WarningFor
+        WarningFor = CharacterBrushOptions.WarningFor,
+        CharacterChosen = _ => { }
     };
 
     private readonly EditingSession _session;
