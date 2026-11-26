@@ -30,3 +30,5 @@ Step 5.3 adds the Rectangle and Ellipse tools to the Shapes group (ADR 0079). Ag
 
 - Each redraw floods the box when filling, which costs what the box covers, as drawing the fill does anyway.
 - Rectangle and Ellipse change number keys when Curve joins the group.
+
+Updated 2026-11-25: in the Box style, rounded corners are `╭ ╮ ╰ ╯`, and Heavy box and Double box keep square corners (ADR 0081).

@@ -1143,6 +1143,10 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>This ramp needs a Unicode document</value>
     <comment>Tool Options toolbar: the chosen ramp has characters an ASCII document can't hold, so the Brush won't paint and the Soft Eraser won't erase.</comment>
   </data>
+  <data name="ToolWarningBoxLinesNeedUnicode" xml:space="preserve">
+    <value>Box-drawing lines need a Unicode document, so they're drawn in Standard</value>
+    <comment>Tool Options toolbar: a box-drawing style is chosen in an ASCII-only document, which can't hold its characters, so lines and shapes are drawn in the Standard style, joining with +.</comment>
+  </data>
   <data name="ToolWarningNoBackgrounds" xml:space="preserve">
     <value>This document has no background colours</value>
     <comment>Tool Options toolbar: the BG Eraser, or a shape filled with the background, is chosen in a monochrome document, so there are no backgrounds to erase or fill.</comment>
@@ -1563,6 +1567,22 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>Precise</value>
     <comment>Tool Options toolbar: the character whose ink best follows the line through each cell, measured in the document's font.</comment>
   </data>
+  <data name="ToolOptionLineStyleBox" xml:space="preserve">
+    <value>Box</value>
+    <comment>Tool Options toolbar: light box-drawing lines, ─ │ and corners like ┌, with ╱ and ╲ for slopes. Needs a Unicode document.</comment>
+  </data>
+  <data name="ToolOptionLineStyleHeavyBox" xml:space="preserve">
+    <value>Heavy box</value>
+    <comment>Tool Options toolbar: heavy box-drawing lines, ━ ┃ and corners like ┏, with ╱ and ╲ for slopes. Needs a Unicode document.</comment>
+  </data>
+  <data name="ToolOptionLineStyleDoubleBox" xml:space="preserve">
+    <value>Double box</value>
+    <comment>Tool Options toolbar: double box-drawing lines, ═ ║ and corners like ╔, with ╱ and ╲ for slopes. Needs a Unicode document.</comment>
+  </data>
+  <data name="ToolOptionIncludeJoins" xml:space="preserve">
+    <value>Include joins</value>
+    <comment>Tool Options toolbar: a button that stays down while it's on. Lines and shape outlines join the lines already there, as ┬ ┼ ╋ in the box-drawing styles and + in the others.</comment>
+  </data>
   <data name="ToolOptionLineStyleSingleCharacter" xml:space="preserve">
     <value>Single character</value>
     <comment>Tool Options toolbar: the Character Brush's character in every cell. Choosing a character in the Characters window chooses this style.</comment>
@@ -1597,7 +1617,7 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="ToolOptionRoundedCorners" xml:space="preserve">
     <value>Rounded corners</value>
-    <comment>Tool Options toolbar: a button that stays down while it's on. The Rectangle tool rounds its corners with . and ' characters.</comment>
+    <comment>Tool Options toolbar: a button that stays down while it's on. The Rectangle tool rounds its corners with . and ' characters, or with ╭ ╮ ╰ ╯ in the Box style.</comment>
   </data>
   <data name="UndoStepRectangle" xml:space="preserve">
     <value>Rectangle</value>

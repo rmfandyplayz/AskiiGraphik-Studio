@@ -13,6 +13,7 @@ using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.RampStrokes;
 using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Shapes;
@@ -406,19 +407,49 @@ public sealed class ToolOptionsViewModelTests : IDisposable
     public void TheRectangle_ShowsItsStyleFillRoundedCornersAndCharacter_AndTheEllipseAllButRoundedCorners()
     {
         _canvas.ViewModel.SelectTool(BoxShapeTool.RectangleId);
-        Assert.Equal(["Style", "Fill", "Rounded corners", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(["Style", "Include joins", "Fill", "Rounded corners", "Character"],
+            _viewModel.Items.Select(item => item.Name));
         Assert.Equal(["None", "Character", "Background"], Choice("Fill").Choices.Select(choice => choice.Name));
         Assert.True(Choice("Fill").IsDropDown);
 
         _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
-        Assert.Equal(["Style", "Fill", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(["Style", "Include joins", "Fill", "Character"], _viewModel.Items.Select(item => item.Name));
+    }
+
+    [AvaloniaFact]
+    public void TheLineTool_ShowsItsStyleWithTheBoxStyles_IncludeJoinsAsAToggle_AndTheCharacter()
+    {
+        _canvas.ViewModel.SelectTool(LineTool.Id);
+
+        Assert.Equal(["Style", "Include joins", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(
+            ["Standard", "Standard by step", "Precise", "Box", "Heavy box", "Double box", "Single character"],
+            Choice("Style").Choices.Select(choice => choice.Name));
+        var joins = Assert.IsType<ToggleToolOptionItem>(_viewModel.Items[1]);
+        Assert.False(joins.IsOn);
+
+        joins.IsOn = true;
+
+        Assert.True(_canvas.ToolSettings.For(LineStyleOptions.Group).Get(LineStyleOptions.IncludeJoins));
+    }
+
+    [AvaloniaFact]
+    public void ABoxStyle_InAnAsciiDocument_IsWarnedAbout()
+    {
+        _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
+        _canvas.ToolSettings.For(LineStyleOptions.Group).Set(LineStyleOptions.Style, "heavyBox");
+        Assert.False(_viewModel.HasWarning);
+
+        _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));
+
+        Assert.Equal(Strings.ToolWarningBoxLinesNeedUnicode, _viewModel.Warning);
     }
 
     [AvaloniaFact]
     public void TickingRoundedCorners_TurnsThemOn_AndTheBoxFollowsTheValue()
     {
         _canvas.ViewModel.SelectTool(BoxShapeTool.RectangleId);
-        var corners = Assert.IsType<ToggleToolOptionItem>(_viewModel.Items[2]);
+        var corners = Assert.IsType<ToggleToolOptionItem>(_viewModel.Items[3]);
         var values = _canvas.ToolSettings.For(ShapeOptions.RectangleGroup);
 
         corners.IsOn = true;

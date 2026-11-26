@@ -104,6 +104,47 @@ public sealed class BoxShapeToolTests
     }
 
     [Fact]
+    public void RoundedCorners_InBox_AreTheRoundedBoxDrawingCorners()
+    {
+        _session = SessionFor(ColorMode.Ansi, CharacterSet.Unicode);
+        _tool = ToolFor(BoxShape.Rectangle);
+        _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
+        Style.Set(LineStyleOptions.Style, "box");
+
+        Drag((1, 1), (6, 3));
+
+        Assert.Equal(["·╭────╮·····", "·│····│·····", "·╰────╯·····"], TestCells.Read(Layer)[1..4]);
+    }
+
+    // Heavy and double box-drawing lines have no rounded corners.
+    [Theory]
+    [InlineData("heavyBox", "┏━━━━┓")]
+    [InlineData("doubleBox", "╔════╗")]
+    public void RoundedCorners_InHeavyAndDoubleBox_StaySquare(string style, string top)
+    {
+        _session = SessionFor(ColorMode.Ansi, CharacterSet.Unicode);
+        _tool = ToolFor(BoxShape.Rectangle);
+        _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
+        Style.Set(LineStyleOptions.Style, style);
+
+        Drag((1, 1), (6, 3));
+
+        Assert.Equal("·" + top + "·····", TestCells.Read(Layer)[1]);
+    }
+
+    [Fact]
+    public void ABoxStyleInAnAsciiDocument_DrawsInStandard_WithItsRoundedCorners_AndWarns()
+    {
+        _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
+        Style.Set(LineStyleOptions.Style, "box");
+
+        Drag((1, 1), (6, 3));
+
+        Assert.Equal(["·.----.·····", "·|····|·····", "·'----'·····"], TestCells.Read(Layer)[1..4]);
+        Assert.Equal(LineStyleOptions.BoxNeedsUnicodeWarningKey, Warning());
+    }
+
+    [Fact]
     public void FillCharacter_FillsTheInside_WithTheCharacterBrushsCharacter_AndMakesItRecent()
     {
         Fill.Set(ShapeOptions.Fill, "character");
@@ -258,8 +299,8 @@ public sealed class BoxShapeToolTests
         Assert.DoesNotContain(ShapeOptions.RectangleGroup, BoxShapeTool.EllipseDefinition.OptionGroups);
     }
 
-    private static EditingSession SessionFor(ColorMode colorMode) =>
-        new(Document.Create(new CanvasSize(12, 7), "Layer", CharacterSet.Ascii, colorMode: colorMode));
+    private static EditingSession SessionFor(ColorMode colorMode, CharacterSet characterSet = CharacterSet.Ascii) =>
+        new(Document.Create(new CanvasSize(12, 7), "Layer", characterSet, colorMode: colorMode));
 
     private BoxShapeTool ToolFor(BoxShape shape) =>
         new(shape, _session, _colors, _settings, () => HalfAsWide, () => TestTools.NoInk);

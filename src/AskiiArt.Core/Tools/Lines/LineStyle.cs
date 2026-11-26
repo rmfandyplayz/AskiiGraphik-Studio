@@ -4,7 +4,8 @@
 namespace AskiiArt.Core.Tools.Lines;
 
 /// <summary>
-/// How a line or a shape's outline chooses the character for each cell it passes through (ADR 0078, ADR 0079).
+/// How a line or a shape's outline chooses the character for each cell it passes through (ADR 0078, ADR 0079,
+/// ADR 0081).
 /// </summary>
 public enum LineStyle
 {
@@ -26,6 +27,26 @@ public enum LineStyle
     /// </summary>
     Precise,
 
+    /// <summary>
+    /// Light box-drawing characters by the way the line runs, as <see cref="Standard"/> chooses them: <c>─</c>,
+    /// <c>│</c>, <c>╱</c> and <c>╲</c>, with corners such as <c>┌</c>.
+    /// </summary>
+    Box,
+
+    /// <summary>Heavy box-drawing characters, as <see cref="Box"/>: <c>━</c> and <c>┃</c>, with corners such as <c>┏</c>.</summary>
+    HeavyBox,
+
+    /// <summary>Double box-drawing characters, as <see cref="Box"/>: <c>═</c> and <c>║</c>, with corners such as <c>╔</c>.</summary>
+    DoubleBox,
+
     /// <summary>One chosen character in every cell.</summary>
     SingleCharacter
+}
+
+/// <summary>What sort of characters each <see cref="LineStyle"/> draws.</summary>
+public static class LineStyles
+{
+    /// <summary>Whether <paramref name="style"/> draws box-drawing characters, which need a Unicode document.</summary>
+    public static bool IsBox(this LineStyle style) =>
+        style is LineStyle.Box or LineStyle.HeavyBox or LineStyle.DoubleBox;
 }

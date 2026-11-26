@@ -231,6 +231,26 @@ public sealed class LineToolTests
         Assert.Equal(CharacterBrushOptions.CharacterDoesNotFitWarningKey, LineToolDefinitionWarning());
     }
 
+    [Fact]
+    public void TheBoxWarning_ShowsWhileABoxStyleCantBeDrawn()
+    {
+        Assert.Null(LineToolDefinitionWarning());
+
+        Style.Set(LineStyleOptions.Style, "doubleBox");
+
+        Assert.Equal(LineStyleOptions.BoxNeedsUnicodeWarningKey, LineToolDefinitionWarning());
+        Assert.Null(LineTool.Definition.WarningFor!(_settings,
+            Document.Create(new CanvasSize(4, 4), "Layer", CharacterSet.Unicode)));
+    }
+
+    [Fact]
+    public void IncludeJoins_IsOffAtFirst_AndSharedByTheShapeTools()
+    {
+        Assert.False(Style.Get(LineStyleOptions.IncludeJoins));
+        Assert.Contains(LineStyleOptions.IncludeJoins, LineStyleOptions.Group.Options);
+        Assert.Contains(LineStyleOptions.Group, LineTool.Definition.OptionGroups);
+    }
+
     private string? LineToolDefinitionWarning() => LineTool.Definition.WarningFor!(_settings, _session.Document);
 
     private Cell CellAt(int x, int y) => Layer.GetCell(new CellPoint(x, y));

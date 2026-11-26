@@ -21,7 +21,8 @@ namespace AskiiArt.Core.Tools.Lines;
 /// one's undo step, so it's one step when the drag ends; a release in the cell it started in draws nothing. Shift
 /// keeps it to an axis, Ctrl (Cmd on macOS) to the diagonals that look like 45° and Ctrl+Shift to one column per row,
 /// as the Move tool's drag does (ADR 0069). Esc takes the line back. It clips to the selection, and doesn't draw on a
-/// locked or hidden layer, or in Single character while the document can't hold the character.
+/// locked or hidden layer, or in Single character while the document can't hold the character. With Include joins on,
+/// it joins the line characters already there (ADR 0081).
 /// </summary>
 public sealed class LineTool : ITool
 {
@@ -111,8 +112,8 @@ public sealed class LineTool : ITool
 
     /// <summary>
     /// Starts a line in the pressed cell, unless the active layer is locked or hidden, or the style is Single character
-    /// and the document can't hold the character. The style, character and colours are kept for the whole drag. A
-    /// line may start outside the canvas.
+    /// and the document can't hold the character. The options and colours are kept for the whole drag. A line may
+    /// start outside the canvas.
     /// </summary>
     public void PointerPressed(ToolPointerInput input)
     {
@@ -129,9 +130,10 @@ public sealed class LineTool : ITool
             _recent.Use(glyph);
 
         var picker = new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet);
+        var joins = LineStyleOptions.ReadJoins(_style, style);
         var foreground = _colors.ForegroundIn(document.ColorMode);
         var background = _colors.BackgroundIn(document.ColorMode);
-        _drag = new Drag(input.Cell, style, glyph, picker, foreground, background,
+        _drag = new Drag(input.Cell, style, joins, glyph, picker, foreground, background,
             new LiveShape(_session, UndoStepNames.Line))
         {
             Pointer = input.Cell,
@@ -212,21 +214,21 @@ public sealed class LineTool : ITool
 
         var path = LinePath.Straight(MiddleOf(drag.Start), MiddleOf(end));
         var cells = drag.Shape.Collect(drag.Foreground, drag.Background);
-        foreach (var (point, glyph) in drag.Picker.Pick(path, drag.Style, drag.Character))
-            cells.PutGlyph(point, glyph);
-
+        cells.PutLine(drag.Picker.Pick(path, drag.Style, drag.Character), path.IsClosed, drag.Joins);
         drag.Shape.Show(cells);
     }
 
     private static CanvasPoint MiddleOf(CellPoint cell) => new(cell.X + 0.5, cell.Y + 0.5);
 
     // One drag's line: what it keeps from its start, and where it has got to.
-    private sealed class Drag(CellPoint start, LineStyle style, Rune character, LineGlyphPicker picker,
+    private sealed class Drag(CellPoint start, LineStyle style, bool joins, Rune character, LineGlyphPicker picker,
         CellColor foreground, CellColor background, LiveShape shape)
     {
         public CellPoint Start { get; } = start;
 
         public LineStyle Style { get; } = style;
+
+        public bool Joins { get; } = joins;
 
         public Rune Character { get; } = character;
 

@@ -455,7 +455,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Choice | Where | Step |
 |---|---|---|
 | Rectangle and Ellipse are on Shapes 2 and 3, after Line, until Curve joins the group in 5.5; the owner overhauls shortcuts in M8 | `Core/Tools/BuiltInToolGroups.cs` | 5.3 |
-| Tool Options shows Style, Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| Tool Options shows Style, Include joins (since 5.4), Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
 | Fill's choices are "None", "Character" and "Background", None by default, in a dropdown since there are three | `ToolOptionShapeFill*` in `Strings.resx`, `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
 | Rounded corners, and any on-or-off option, is a button that stays down while it's on, as the choice buttons are, since the Fluent checkbox is taller than a button | `ToolOptions/ToolOptionsToolbar.axaml` | 5.3 |
 | Shift and Alt shape the box whenever they're held, from the press on, and Ctrl does nothing | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
@@ -464,13 +464,25 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Filling with the background when no background colour is chosen takes the inside's backgrounds away, as the BG Brush does | `Core/Tools/Shapes/ShapeCells.cs` | 5.3 |
 | Choosing a character in the Characters window with Rectangle or Ellipse makes the style Single character only when neither the style nor the fill uses the character already | `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
 
+### Box-drawing styles and joins (step 5.4, ADR 0081)
+
+| Choice | Where | Step |
+|---|---|---|
+| The box styles are named "Box", "Heavy box" and "Double box", and come between Precise and Single character | `ToolOptionLineStyle*` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
+| All three draw slopes with the light `╱` and `╲` | `Core/Tools/Lines/LineGlyphPicker.cs` | 5.4 |
+| Rounded corners are `╭ ╮ ╰ ╯` in Box, and Heavy box and Double box keep square corners | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.4 |
+| "Include joins" is a button that stays down while it's on, after Style, shared by every shape tool and off by default. It shows in Single character too, where it does nothing | `ToolOptionIncludeJoins` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
+| A box style in an ASCII-only document draws in Standard, and Tool Options says "Box-drawing lines need a Unicode document, so they're drawn in Standard" | `ToolWarningBoxLinesNeedUnicode` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
+| Lines join only the active layer's characters. Diagonals, dashed lines and other characters are drawn over, and joining never makes a rounded corner | `Core/Tools/Lines/LineJoins.cs` | 5.4 |
+| Where no character has the joined arms together (double with heavy, say), every arm takes the new line's weight | `Core/Tools/Lines/LineJoins.cs` | 5.4 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
 
 - **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M8**, decided 2026-11-24): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
 
-- **Warn when joins become `+`** (raised in M5's planning, 2026-11-24; **for M8's notifications**): turning on step 5.4's "Include joins" in an ASCII-only document should warn that every join is drawn as `+`, since box-drawing characters aren't allowed there. The warning waits for a way of showing notifications.
+- **The box-drawing warning as a notification** (raised in M5's planning, 2026-11-24; **for M8's notifications**): the owner first asked that "Include joins" in an ASCII-only document warn that every join is drawn as `+`. Since 5.4, a box style chosen there shows a warning on the Tool Options toolbar instead, since other styles join with `+` in any document (ADR 0081). Once there's a way of showing notifications, the warning could move there.
 
 - **Precise lines' two halves alike** (raised after 5.1's testing, 2026-11-24; **after 5.2, in its own session**): the two halves of a Precise ellipse can pick characters that aren't mirror images, such as `'` on one side and `` ` `` on the other, or `,` against `.`. It comes from where the path is sampled in each cell and from the glyphs themselves not being mirror images. The owner will try the Line tool in the app and report what to tune.
 

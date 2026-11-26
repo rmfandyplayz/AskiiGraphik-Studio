@@ -134,8 +134,69 @@ public sealed class LineGlyphPickerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new LineGlyphPicker(0, _glyphs, CharacterSet.Ascii));
     }
 
+    [Theory]
+    [InlineData(LineStyle.Box, 8, 0, '─')]
+    [InlineData(LineStyle.Box, 0, 4, '│')]
+    [InlineData(LineStyle.Box, 4, 4, '╲')]
+    [InlineData(LineStyle.Box, 4, -4, '╱')]
+    [InlineData(LineStyle.HeavyBox, 8, 0, '━')]
+    [InlineData(LineStyle.HeavyBox, 0, 4, '┃')]
+    [InlineData(LineStyle.HeavyBox, 4, 4, '╲')]
+    [InlineData(LineStyle.DoubleBox, 8, 0, '═')]
+    [InlineData(LineStyle.DoubleBox, 0, 4, '║')]
+    [InlineData(LineStyle.DoubleBox, 4, -4, '╱')]
+    public void BoxStyles_GiveEveryCellTheirCharacterWhoseAngleIsNearest(LineStyle style, int across, int down,
+        char expected)
+    {
+        var glyphs = PickInUnicode(LinePath.Straight(Middle(10, 10), Middle(10 + across, 10 + down)), style);
+
+        Assert.All(glyphs, glyph => Assert.Equal(new Rune(expected), glyph.Glyph));
+    }
+
+    [Theory]
+    [InlineData(LineStyle.Box, "┌┐┘└")]
+    [InlineData(LineStyle.HeavyBox, "┏┓┛┗")]
+    [InlineData(LineStyle.DoubleBox, "╔╗╝╚")]
+    public void ARectangleInABoxStyle_HasItsCorners(LineStyle style, string corners)
+    {
+        var glyphs = PickInUnicode(LinePath.Rectangle(new CellRect(0, 0, 6, 4)), style)
+            .ToDictionary(g => g.Cell, g => g.Glyph);
+
+        Assert.Equal(new Rune(corners[0]), glyphs[new CellPoint(0, 0)]);
+        Assert.Equal(new Rune(corners[1]), glyphs[new CellPoint(5, 0)]);
+        Assert.Equal(new Rune(corners[2]), glyphs[new CellPoint(5, 3)]);
+        Assert.Equal(new Rune(corners[3]), glyphs[new CellPoint(0, 3)]);
+    }
+
+    // A corner whose cells on either side are across corners from it can't join them with a box-drawing corner.
+    [Fact]
+    public void ACornerOfABoxStyleLineThatTurnsAcrossCells_IsACross()
+    {
+        var path = LinePath.Through([Middle(0, 0), Middle(4, 4), Middle(8, 0)], closed: false);
+
+        var glyphs = PickInUnicode(path, LineStyle.Box).ToDictionary(g => g.Cell, g => g.Glyph);
+
+        Assert.Equal(new Rune('┼'), glyphs[new CellPoint(4, 4)]);
+    }
+
+    [Fact]
+    public void BoxStyles_AreDrawnInStandard_WhereTheCharacterSetCantHoldThem()
+    {
+        var picker = new LineGlyphPicker(HalfAsWide, _glyphs, CharacterSet.Ascii);
+        var rectangle = LinePath.Rectangle(new CellRect(0, 0, 6, 4));
+
+        Assert.Equal(LineStyle.Standard, picker.Drawn(LineStyle.HeavyBox));
+        Assert.Equal(Pick(rectangle, LineStyle.Standard), picker.Pick(rectangle, LineStyle.HeavyBox, _star));
+        Assert.Equal(LineStyle.Precise, picker.Drawn(LineStyle.Precise));
+        Assert.Equal(LineStyle.Box,
+            new LineGlyphPicker(HalfAsWide, _glyphs, CharacterSet.Unicode).Drawn(LineStyle.Box));
+    }
+
     private static IReadOnlyList<LineGlyph> Pick(LinePath path, LineStyle style) =>
         new LineGlyphPicker(HalfAsWide, _glyphs, CharacterSet.Ascii).Pick(path, style, _star);
+
+    private static IReadOnlyList<LineGlyph> PickInUnicode(LinePath path, LineStyle style) =>
+        new LineGlyphPicker(HalfAsWide, _glyphs, CharacterSet.Unicode).Pick(path, style, _star);
 
     private static CanvasPoint Middle(int x, int y) => new(x + 0.5, y + 0.5);
 

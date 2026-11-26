@@ -5,6 +5,7 @@ using System.Text;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
+using AskiiArt.Core.Tools.Lines;
 
 namespace AskiiArt.Core.Tools.Shapes;
 
@@ -41,6 +42,24 @@ internal sealed class ShapeCells
         var cell = _layer.GetCell(point);
         var background = _background.IsUnset ? cell.Background : _background;
         Change(point, cell, Cell.FromGlyph(glyph, _foreground, background));
+    }
+
+    /// <summary>
+    /// Puts <paramref name="line"/>'s characters in its cells, as <see cref="PutGlyph"/> does. With
+    /// <paramref name="joins"/>, each joins the line character already in its cell (ADR 0081); an open line's ends
+    /// join only on the side the line comes from.
+    /// </summary>
+    public void PutLine(IReadOnlyList<LineGlyph> line, bool isClosed, bool joins)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        for (var index = 0; index < line.Count; index++)
+        {
+            var (point, glyph) = line[index];
+            if (joins && _canvas.Contains(point) && _layer.GetCell(point) is { HasGlyph: true } cell)
+                glyph = LineJoins.Join(glyph, LineJoins.Along(line, index, isClosed), cell.Glyph);
+
+            PutGlyph(point, glyph);
+        }
     }
 
     /// <summary>Gives the cell at <paramref name="point"/> the background colour, keeping its glyph.</summary>

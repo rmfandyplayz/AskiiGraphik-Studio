@@ -30,3 +30,5 @@ Step 5.2 puts 5.1's line characters (ADR 0078) into a tool. The owner chose U fo
 
 - Precise lines across very large canvases may lag while dragged; if so, finding each cell's nearby pieces can be made cheaper, as it allocates now.
 - The later shape tools reuse the drawing pattern and the style group.
+
+Updated 2026-11-25: the style group also holds Include joins, and Style also offers Box, Heavy box and Double box (ADR 0081).

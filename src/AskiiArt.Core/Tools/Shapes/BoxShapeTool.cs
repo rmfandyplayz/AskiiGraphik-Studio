@@ -29,7 +29,8 @@ public enum BoxShape
 /// Alt grows it from the first cell outwards, as in Rectangle and Ellipse Select (ADR 0060). As with the Line tool
 /// (ADR 0079), the shape shows in the document as it's dragged and ends as one undo step, a release in the first cell
 /// draws nothing, Esc takes it back, it clips to the selection, and it isn't drawn on a locked or hidden layer, or
-/// while it would draw a character the document can't hold. A box one cell thin draws as a line.
+/// while it would draw a character the document can't hold. A box one cell thin draws as a line. With Include joins
+/// on, the outline joins the line characters already there (ADR 0081).
 /// </summary>
 public sealed class BoxShapeTool : ITool
 {
@@ -41,6 +42,10 @@ public sealed class BoxShapeTool : ITool
 
     private static readonly Rune _roundedTopCorner = new('.');
     private static readonly Rune _roundedBottomCorner = new('\'');
+    private static readonly Rune _roundedBoxTopLeft = new('╭');
+    private static readonly Rune _roundedBoxTopRight = new('╮');
+    private static readonly Rune _roundedBoxBottomRight = new('╯');
+    private static readonly Rune _roundedBoxBottomLeft = new('╰');
 
     /// <summary>The Rectangle tool's identity. The name key is the App's resource key.</summary>
     public static ToolDescriptor RectangleDescriptor { get; } =
@@ -124,7 +129,8 @@ public sealed class BoxShapeTool : ITool
             return;
 
         var document = _session.Document;
-        var style = LineStyleOptions.ReadStyle(_settings.For(LineStyleOptions.Group));
+        var lineOptions = _settings.For(LineStyleOptions.Group);
+        var style = LineStyleOptions.ReadStyle(lineOptions);
         var fill = ShapeOptions.ReadFill(_settings.For(ShapeOptions.FillGroup));
         var character = _settings.For(CharacterBrushOptions.Group).Get(CharacterBrushOptions.Character);
         var usesCharacter = style == LineStyle.SingleCharacter || fill == ShapeFill.Character;
@@ -140,9 +146,9 @@ public sealed class BoxShapeTool : ITool
 
         var isRounded = _shape == BoxShape.Rectangle
             && _settings.For(ShapeOptions.RectangleGroup).Get(ShapeOptions.RoundedCorners);
-        var look = new Look(style, fill, isRounded, character,
-            new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet),
-            _colors.ForegroundIn(document.ColorMode), _colors.BackgroundIn(document.ColorMode));
+        var picker = new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet);
+        var look = new Look(picker.Drawn(style), LineStyleOptions.ReadJoins(lineOptions, style), fill, isRounded,
+            character, picker, _colors.ForegroundIn(document.ColorMode), _colors.BackgroundIn(document.ColorMode));
         var undoStepName = _shape == BoxShape.Rectangle ? UndoStepNames.Rectangle : UndoStepNames.Ellipse;
         _drag = new Drag(input.Cell, look, new LiveShape(_session, undoStepName))
         {
@@ -257,9 +263,7 @@ public sealed class BoxShapeTool : ITool
         if (box.Width == 1 || box.Height == 1)
         {
             var line = LinePath.Straight(MiddleOf(box.Left, box.Top), MiddleOf(box.Right - 1, box.Bottom - 1));
-            foreach (var (point, glyph) in look.Picker.Pick(line, look.Style, look.Character))
-                cells.PutGlyph(point, glyph);
-
+            cells.PutLine(look.Picker.Pick(line, look.Style, look.Character), line.IsClosed, look.Joins);
             return;
         }
 
@@ -276,22 +280,47 @@ public sealed class BoxShapeTool : ITool
             }
         }
 
-        foreach (var (point, glyph) in outline)
+        if (!look.IsRounded)
         {
-            if (!look.IsRounded || !IsCornerOf(box, point))
-                cells.PutGlyph(point, glyph);
-            else if (look.Style != LineStyle.SingleCharacter)
-                cells.PutGlyph(point, point.Y == box.Top ? _roundedTopCorner : _roundedBottomCorner);
+            cells.PutLine(outline, path.IsClosed, look.Joins);
+            return;
         }
+
+        var rounded = new List<LineGlyph>(outline.Count);
+        foreach (var glyph in outline)
+        {
+            if (!IsCornerOf(box, glyph.Cell))
+                rounded.Add(glyph);
+            else if (look.Style != LineStyle.SingleCharacter)
+                rounded.Add(glyph with { Glyph = RoundedCorner(look.Style, box, glyph.Cell) ?? glyph.Glyph });
+        }
+
+        cells.PutLine(rounded, path.IsClosed, look.Joins);
     }
 
     private static bool IsCornerOf(CellRect box, CellPoint point) =>
         (point.X == box.Left || point.X == box.Right - 1) && (point.Y == box.Top || point.Y == box.Bottom - 1);
 
+    // A rounded corner: . at the top and ' at the bottom, or the rounded box-drawing corners in Box. Heavy and double
+    // box-drawing lines have no rounded corners, so theirs stay square.
+    private static Rune? RoundedCorner(LineStyle style, CellRect box, CellPoint corner)
+    {
+        var isTop = corner.Y == box.Top;
+        var isLeft = corner.X == box.Left;
+        return style switch
+        {
+            LineStyle.HeavyBox or LineStyle.DoubleBox => null,
+            LineStyle.Box when isTop => isLeft ? _roundedBoxTopLeft : _roundedBoxTopRight,
+            LineStyle.Box => isLeft ? _roundedBoxBottomLeft : _roundedBoxBottomRight,
+            _ => isTop ? _roundedTopCorner : _roundedBottomCorner
+        };
+    }
+
     private static CanvasPoint MiddleOf(int x, int y) => new(x + 0.5, y + 0.5);
 
-    // What a drag draws, kept from its start: the options, the colours and the picker for the document's font.
-    private sealed record Look(LineStyle Style, ShapeFill Fill, bool IsRounded, Rune Character,
+    // What a drag draws, kept from its start: the options, with the style it's drawn in, the colours and the picker for
+    // the document's font.
+    private sealed record Look(LineStyle Style, bool Joins, ShapeFill Fill, bool IsRounded, Rune Character,
         LineGlyphPicker Picker, CellColor Foreground, CellColor Background);
 
     // One drag's shape: where it started, and where it has got to.

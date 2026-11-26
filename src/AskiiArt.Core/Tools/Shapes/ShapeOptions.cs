@@ -75,8 +75,9 @@ public static class ShapeOptions
 
     /// <summary>
     /// The warning the Tool Options toolbar shows for <paramref name="document"/>: the Character Brush's while the
-    /// shape uses its character and the document can't hold it, otherwise the BG Eraser's while the fill is the
-    /// background and the document has no colours, otherwise null.
+    /// shape uses its character and the document can't hold it, otherwise the box-drawing styles' while they're drawn
+    /// in Standard, otherwise the BG Eraser's while the fill is the background and the document has no colours,
+    /// otherwise null.
     /// </summary>
     public static string? WarningFor(ToolSettings settings, Document document)
     {
@@ -84,6 +85,9 @@ public static class ShapeOptions
         ArgumentNullException.ThrowIfNull(document);
         if (UsesTheCharacter(settings) && CharacterBrushOptions.WarningFor(settings, document) is { } warning)
             return warning;
+
+        if (LineStyleOptions.BoxStyleWarningFor(settings, document) is { } boxWarning)
+            return boxWarning;
 
         if (ReadFill(settings.For(FillGroup)) == ShapeFill.Background && document.ColorMode == ColorMode.Monochrome)
             return EraserTool.NoBackgroundsWarningKey;
