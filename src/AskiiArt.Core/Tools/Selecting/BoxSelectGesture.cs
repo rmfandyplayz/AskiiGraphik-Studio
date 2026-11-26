@@ -119,43 +119,9 @@ internal sealed class BoxSelectGesture
 
     private CellRect Box()
     {
-        var anchor = _anchor ?? _corner;
         var shaping = _modifiers & ~_choseTheMode;
-        var fromCentre = shaping.HasFlag(ToolModifiers.Alt);
-        var across = _corner.X - anchor.X;
-        var down = _corner.Y - anchor.Y;
-        var width = fromCentre ? 2 * Math.Abs(across) + 1 : Math.Abs(across) + 1;
-        var height = fromCentre ? 2 * Math.Abs(down) + 1 : Math.Abs(down) + 1;
-        if (shaping.HasFlag(ToolModifiers.Shift))
-            (width, height) = LookingSquare(width, height, fromCentre);
-
-        if (fromCentre)
-            return new CellRect(anchor.X - (width - 1) / 2, anchor.Y - (height - 1) / 2, width, height);
-
-        var left = across >= 0 ? anchor.X : anchor.X - width + 1;
-        var top = down >= 0 ? anchor.Y : anchor.Y - height + 1;
-        return new CellRect(left, top, width, height);
-    }
-
-    // The box grown along its shorter side, as it looks on screen, until it looks square: a cell is usually about
-    // twice as tall as it's wide, so a square box has about twice as many columns as rows (ADR 0047's perceptual
-    // proportions). From the centre the sides stay odd, so the box stays centred on its first cell.
-    private (int Width, int Height) LookingSquare(int width, int height, bool fromCentre)
-    {
-        var widthToHeight = _cellWidthToHeight();
-        if (width * widthToHeight >= height)
-            return (width, WholeCells(width * widthToHeight, fromCentre));
-
-        return (WholeCells(height / widthToHeight, fromCentre), height);
-    }
-
-    // The nearest whole number of cells to size, at least one, and odd when it must be.
-    private static int WholeCells(double size, bool isOdd)
-    {
-        if (!isOdd)
-            return Math.Max(1, (int)Math.Round(size, MidpointRounding.AwayFromZero));
-
-        return 2 * Math.Max(0, (int)Math.Round((size - 1) / 2, MidpointRounding.AwayFromZero)) + 1;
+        return DragBox.Between(_anchor ?? _corner, _corner, shaping.HasFlag(ToolModifiers.Shift),
+            shaping.HasFlag(ToolModifiers.Alt), _cellWidthToHeight());
     }
 
     private void End()

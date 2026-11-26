@@ -115,4 +115,10 @@ public static class UndoStepNames
 
     /// <summary>A line drawn with the Line tool.</summary>
     public const string Line = "UndoStepLine";
+
+    /// <summary>A rectangle drawn with the Rectangle tool.</summary>
+    public const string Rectangle = "UndoStepRectangle";
+
+    /// <summary>An ellipse drawn with the Ellipse tool.</summary>
+    public const string Ellipse = "UndoStepEllipse";
 }

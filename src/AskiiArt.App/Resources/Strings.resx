@@ -1145,7 +1145,7 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   </data>
   <data name="ToolWarningNoBackgrounds" xml:space="preserve">
     <value>This document has no background colours</value>
-    <comment>Tool Options toolbar: the BG Eraser is chosen in a monochrome document, so there's nothing for it to erase.</comment>
+    <comment>Tool Options toolbar: the BG Eraser, or a shape filled with the background, is chosen in a monochrome document, so there are no backgrounds to erase or fill.</comment>
   </data>
   <data name="ActionToggleRamps" xml:space="preserve">
     <value>_Ramps</value>
@@ -1570,5 +1570,41 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
   <data name="UndoStepLine" xml:space="preserve">
     <value>Line</value>
     <comment>History: a line drawn with the Line tool.</comment>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws a rectangle by dragging from corner to corner. Key 2 chooses it while a shape tool is chosen.</comment>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws the ellipse that fits the box dragged out. Key 3 chooses it while a shape tool is chosen.</comment>
+  </data>
+  <data name="ToolOptionShapeFill" xml:space="preserve">
+    <value>Fill</value>
+    <comment>Tool Options toolbar: what the Rectangle and Ellipse tools put inside the shape's outline.</comment>
+  </data>
+  <data name="ToolOptionShapeFillNone" xml:space="preserve">
+    <value>None</value>
+    <comment>Tool Options toolbar: the shape is only its outline.</comment>
+  </data>
+  <data name="ToolOptionShapeFillCharacter" xml:space="preserve">
+    <value>Character</value>
+    <comment>Tool Options toolbar: the inside is filled with the Character Brush's character, in the current colours.</comment>
+  </data>
+  <data name="ToolOptionShapeFillBackground" xml:space="preserve">
+    <value>Background</value>
+    <comment>Tool Options toolbar: the inside gets the background colour, and keeps its characters.</comment>
+  </data>
+  <data name="ToolOptionRoundedCorners" xml:space="preserve">
+    <value>Rounded corners</value>
+    <comment>Tool Options toolbar: a button that stays down while it's on. The Rectangle tool rounds its corners with . and ' characters.</comment>
+  </data>
+  <data name="UndoStepRectangle" xml:space="preserve">
+    <value>Rectangle</value>
+    <comment>History: a rectangle drawn with the Rectangle tool.</comment>
+  </data>
+  <data name="UndoStepEllipse" xml:space="preserve">
+    <value>Ellipse</value>
+    <comment>History: an ellipse drawn with the Ellipse tool.</comment>
   </data>
 </root>

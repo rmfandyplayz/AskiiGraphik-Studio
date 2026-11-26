@@ -31,6 +31,7 @@ using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Selecting;
+using AskiiArt.Core.Tools.Shapes;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -111,6 +112,8 @@ internal static class AppServices
         services.AddSingleton(SoftEraserTool.Definition);
         services.AddSingleton(EraserTool.BackgroundDefinition);
         services.AddSingleton(LineTool.Definition);
+        services.AddSingleton(BoxShapeTool.RectangleDefinition);
+        services.AddSingleton(BoxShapeTool.EllipseDefinition);
         services.AddSingleton(BuiltInToolGroups.Hand);
         services.AddSingleton(BuiltInToolGroups.Move);
         services.AddSingleton(BuiltInToolGroups.Select);

@@ -10,6 +10,7 @@ using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
+using AskiiArt.Core.Tools.Shapes;
 
 namespace AskiiArt.Core.Tools.Lines;
 
@@ -130,7 +131,8 @@ public sealed class LineTool : ITool
         var picker = new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet);
         var foreground = _colors.ForegroundIn(document.ColorMode);
         var background = _colors.BackgroundIn(document.ColorMode);
-        _drag = new Drag(input.Cell, style, glyph, picker, foreground, background)
+        _drag = new Drag(input.Cell, style, glyph, picker, foreground, background,
+            new LiveShape(_session, UndoStepNames.Line))
         {
             Pointer = input.Cell,
             Modifiers = input.Modifiers
@@ -174,7 +176,7 @@ public sealed class LineTool : ITool
         if (key != ToolKey.Escape || _drag is not { } drag)
             return false;
 
-        TakeBack(drag);
+        drag.Shape.TakeBack();
         _drag = null;
         return true;
     }
@@ -195,13 +197,13 @@ public sealed class LineTool : ITool
         if (end == drag.End)
             return;
 
-        if (drag.Drawn is not null && !ReferenceEquals(_session.History.NewestStep, drag.Drawn))
+        if (drag.Shape.IsInterrupted)
         {
             _drag = null;
             return;
         }
 
-        TakeBack(drag);
+        drag.Shape.TakeBack();
         drag.End = end;
 
         // Undoing during the drag can take away the layer it started on, or lock it.
@@ -209,41 +211,18 @@ public sealed class LineTool : ITool
             return;
 
         var path = LinePath.Straight(MiddleOf(drag.Start), MiddleOf(end));
-        var layer = _session.ActiveLayer;
-        var canvas = _session.Document.CanvasSize;
-        var cells = _session.EditCellsInSelection(layer.Id);
+        var cells = drag.Shape.Collect(drag.Foreground, drag.Background);
         foreach (var (point, glyph) in drag.Picker.Pick(path, drag.Style, drag.Character))
-        {
-            if (!canvas.Contains(point))
-                continue;
+            cells.PutGlyph(point, glyph);
 
-            var cell = layer.GetCell(point);
-            var background = drag.Background.IsUnset ? cell.Background : drag.Background;
-            var drawn = Cell.FromGlyph(glyph, drag.Foreground, background);
-            if (drawn != cell)
-                cells.Set(point, drawn);
-        }
-
-        if (cells.Build(UndoStepNames.Line) is not { } command)
-            return;
-
-        _session.History.Execute(command);
-        drag.Drawn = command;
-    }
-
-    private void TakeBack(Drag drag)
-    {
-        if (drag.Drawn is not null && ReferenceEquals(_session.History.NewestStep, drag.Drawn))
-            _session.History.CancelNewestStep();
-
-        drag.Drawn = null;
+        drag.Shape.Show(cells);
     }
 
     private static CanvasPoint MiddleOf(CellPoint cell) => new(cell.X + 0.5, cell.Y + 0.5);
 
     // One drag's line: what it keeps from its start, and where it has got to.
     private sealed class Drag(CellPoint start, LineStyle style, Rune character, LineGlyphPicker picker,
-        CellColor foreground, CellColor background)
+        CellColor foreground, CellColor background, LiveShape shape)
     {
         public CellPoint Start { get; } = start;
 
@@ -257,14 +236,13 @@ public sealed class LineTool : ITool
 
         public CellColor Background { get; } = background;
 
+        public LiveShape Shape { get; } = shape;
+
         public CellPoint Pointer { get; set; }
 
         public ToolModifiers Modifiers { get; set; }
 
         // Where the drawn line ends; at the start, nothing is drawn.
         public CellPoint End { get; set; } = start;
-
-        // The step that draws the line now, or null while none does.
-        public IDocumentCommand? Drawn { get; set; }
     }
 }

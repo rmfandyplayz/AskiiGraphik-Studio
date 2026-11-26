@@ -22,6 +22,7 @@ using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Options;
 using AskiiArt.Core.Tools.Selecting;
+using AskiiArt.Core.Tools.Shapes;
 using AskiiArt.Core.Tools.Text;
 using AskiiArt.Imaging.Fonts;
 using AskiiArt.Imaging.Glyphs;
@@ -62,7 +63,9 @@ internal sealed class TestCanvas : IDisposable
                 EraserTool.Definition,
                 SoftEraserTool.Definition,
                 EraserTool.BackgroundDefinition,
-                LineTool.Definition
+                LineTool.Definition,
+                BoxShapeTool.RectangleDefinition,
+                BoxShapeTool.EllipseDefinition
             ],
             BuiltInToolGroups.All);
         ViewModel = new CanvasViewModel(ActiveDocument, tools, Colors, ToolSettings, Fonts, Atlases, Densities);

@@ -450,6 +450,20 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | A line runs from the middle of the cell it starts in to the middle of the cell under the pointer; a click, or a drag back to the start cell, draws nothing | `Core/Tools/Lines/LineTool.cs` | 5.2 |
 | Alt does nothing to a line, and a line drawn with no background chosen keeps each cell's background | `Core/Tools/Lines/LineTool.cs` | 5.2 |
 
+### Rectangle and Ellipse (step 5.3, ADR 0080)
+
+| Choice | Where | Step |
+|---|---|---|
+| Rectangle and Ellipse are on Shapes 2 and 3, after Line, until Curve joins the group in 5.5; the owner overhauls shortcuts in M8 | `Core/Tools/BuiltInToolGroups.cs` | 5.3 |
+| Tool Options shows Style, Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| Fill's choices are "None", "Character" and "Background", None by default, in a dropdown since there are three | `ToolOptionShapeFill*` in `Strings.resx`, `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
+| Rounded corners, and any on-or-off option, is a button that stays down while it's on, as the choice buttons are, since the Fluent checkbox is taller than a button | `ToolOptions/ToolOptionsToolbar.axaml` | 5.3 |
+| Shift and Alt shape the box whenever they're held, from the press on, and Ctrl does nothing | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| The pointer back in the first cell draws nothing, Shift or not, and a box one cell thin draws as a straight line | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| In Single character, rounded corners leave the four corner cells as they were | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| Filling with the background when no background colour is chosen takes the inside's backgrounds away, as the BG Brush does | `Core/Tools/Shapes/ShapeCells.cs` | 5.3 |
+| Choosing a character in the Characters window with Rectangle or Ellipse makes the style Single character only when neither the style nor the fill uses the character already | `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
+
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.

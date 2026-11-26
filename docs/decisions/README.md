@@ -86,3 +86,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0077](0077-fitting-without-zooming-in-and-after-arrows.md) | Fitting without zooming in, and after arrow runs | Accepted |
 | [0078](0078-line-characters.md) | Line characters | Accepted |
 | [0079](0079-the-line-tool-and-the-shapes-group.md) | The Line tool and the Shapes group | Accepted |
+| [0080](0080-rectangle-and-ellipse.md) | Rectangle and Ellipse | Accepted |

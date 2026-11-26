@@ -15,6 +15,7 @@ using AskiiArt.Core.Tools.Footprints;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.RampStrokes;
 using AskiiArt.Core.Tools.Selecting;
+using AskiiArt.Core.Tools.Shapes;
 using Avalonia.Headless.XUnit;
 
 namespace AskiiArt.App.Tests.ToolOptions;
@@ -399,6 +400,47 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         _canvas.ToolSettings.For(CharacterBrushOptions.Group)
             .Set(CharacterBrushOptions.Character, new Rune('#'));
         Assert.False(_viewModel.HasWarning);
+    }
+
+    [AvaloniaFact]
+    public void TheRectangle_ShowsItsStyleFillRoundedCornersAndCharacter_AndTheEllipseAllButRoundedCorners()
+    {
+        _canvas.ViewModel.SelectTool(BoxShapeTool.RectangleId);
+        Assert.Equal(["Style", "Fill", "Rounded corners", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(["None", "Character", "Background"], Choice("Fill").Choices.Select(choice => choice.Name));
+        Assert.True(Choice("Fill").IsDropDown);
+
+        _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
+        Assert.Equal(["Style", "Fill", "Character"], _viewModel.Items.Select(item => item.Name));
+    }
+
+    [AvaloniaFact]
+    public void TickingRoundedCorners_TurnsThemOn_AndTheBoxFollowsTheValue()
+    {
+        _canvas.ViewModel.SelectTool(BoxShapeTool.RectangleId);
+        var corners = Assert.IsType<ToggleToolOptionItem>(_viewModel.Items[2]);
+        var values = _canvas.ToolSettings.For(ShapeOptions.RectangleGroup);
+
+        corners.IsOn = true;
+        Assert.True(values.Get(ShapeOptions.RoundedCorners));
+
+        var changes = new List<string?>();
+        corners.PropertyChanged += (_, e) => changes.Add(e.PropertyName);
+        values.Set(ShapeOptions.RoundedCorners, false);
+
+        Assert.False(corners.IsOn);
+        Assert.Contains(nameof(ToggleToolOptionItem.IsOn), changes);
+    }
+
+    [AvaloniaFact]
+    public void FillingWithTheBackground_InAMonochromeDocument_IsWarnedAbout()
+    {
+        _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
+        Assert.False(_viewModel.HasWarning);
+
+        _canvas.ToolSettings.For(ShapeOptions.FillGroup).Set(ShapeOptions.Fill, "background");
+
+        Assert.Equal(Strings.ToolWarningNoBackgrounds, _viewModel.Warning);
     }
 
     private NumberToolOptionItem Size => (NumberToolOptionItem)_viewModel.Items[0];

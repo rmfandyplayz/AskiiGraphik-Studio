@@ -21,6 +21,7 @@ using AskiiArt.Core.Editing;
 using AskiiArt.Core.Tools.Brush;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
+using AskiiArt.Core.Tools.Shapes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -150,6 +151,7 @@ public sealed class ClickRoutingTests : IDisposable
     [InlineData(ColorBrushTool.ForegroundId)]
     [InlineData(EraserTool.Id)]
     [InlineData(HandTool.Id)]
+    [InlineData(BoxShapeTool.RectangleId)]
     public void ToolOptions_IsAsTallAsTheFileToolbar(string toolId)
     {
         _canvas.ViewModel.SelectTool(toolId);

@@ -3,8 +3,8 @@
 <!-- Edited with Claude Code (Anthropic). -->
 <!-- Placeholder Tool Options toolbar (steps 3.2 and 3.3): each option of the chosen tool, built from the tool's options
      as data (ADR 0047), then a warning when the tool can't be used. A number is a slider with its value beside it,
-     a choice is a row of buttons, or a dropdown when it has more than two, and a character is a button showing it,
-     which opens the Characters window (ADR 0053). The root is a StackPanel so that a
+     a choice is a row of buttons, or a dropdown when it has more than two, a character is a button showing it,
+     which opens the Characters window (ADR 0053), and a toggle is a button that stays down while it's on (ADR 0080). The root is a StackPanel so that a
      vertical toolbar can turn it, and the options follow it. Nothing here takes the keyboard, so the canvas keeps it
      and [ and ] still work after a click. -->
 <StackPanel xmlns="https://github.com/avaloniaui"
@@ -40,6 +40,10 @@
       <Setter Property="Focusable" Value="False" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
+    <Style Selector="ToggleButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
     <Style Selector="ComboBox">
       <Setter Property="Focusable" Value="False" />
       <Setter Property="Padding" Value="{DynamicResource ButtonPadding}" />
@@ -70,6 +74,11 @@
                 Command="{Binding ShowPickerCommand}"
                 ToolTip.Tip="{Binding Tooltip}" />
       </StackPanel>
+    </DataTemplate>
+    <!-- A button that stays down while the option is on. The Fluent checkbox's template is taller than a button, for
+         touch, and can't be made shorter, so it would make this toolbar taller than the others. -->
+    <DataTemplate DataType="options:ToggleToolOptionItem">
+      <ToggleButton Content="{Binding Name}" IsChecked="{Binding IsOn, Mode=TwoWay}" />
     </DataTemplate>
     <DataTemplate DataType="options:ChoiceToolOptionItem">
       <StackPanel Orientation="Horizontal" Spacing="{StaticResource AppSpacingSmall}">

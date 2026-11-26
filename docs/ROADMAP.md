@@ -101,7 +101,10 @@ Line, curve, rectangle (rounded or not), ellipse, box-drawing joins, fill, an ey
   - *The owner checks:* drawing lines in each style, the constraints, Esc and undo, and the shared character. [Test doc](testing/step-5.2-line-tool.md)
   - *Built 2026-11-24:* `LineTool` and the shared Style option in Core, the comparison sheets removed. ADR 0079.
   - *Tested 2026-11-25:* all passed on every platform, the extra tests too. The owner then asked for a line brush (5.9).
-- [ ] **5.3 Rectangle and ellipse.** Rectangle on 3, with rounded corners as an option, and Ellipse on 4: outline or filled, Shift for looking square or round, Alt from the middle.
+- [~] **5.3 Rectangle and ellipse.** Rectangle on 3, with rounded corners as an option, and Ellipse on 4: outline or filled, Shift for looking square or round, Alt from the middle.
+  - *Agreed 2026-11-25:* a Fill of None, Character or Background; rounded corners as `.` and `'`; number keys as simple as works, since M8 overhauls shortcuts, so Rectangle and Ellipse are on 2 and 3 until Curve comes.
+  - *The owner checks:* rectangles and ellipses in each style, rounded corners, each fill, Shift and Alt, and the shared character. [Test doc](testing/step-5.3-rectangle-and-ellipse.md)
+  - *Built 2026-11-25:* `BoxShapeTool`, the Fill and Rounded corners options with a new on-or-off kind of option, and drawing shared with the Line tool. ADR 0080.
 - [ ] **5.4 Box-drawing joins.** Off by default: an "Include joins" option where lines and outlines drawn in box-drawing characters join the ones already there (`┬ ┼ ╋`). In an ASCII-only document every join is `+`; the warning that says so waits for M8's notifications (`docs/TEMPORARY-UI.md`).
 - [ ] **5.5 Curve.** Curve on Shapes 2.
 - [ ] **5.6 Fill and the Eyedropper.** Fill on G, reusing the Magic Wand's flood fill, contiguous or global. The Eyedropper on I, like Illustrator's, with modifiers choosing what it copies: a click the character, Alt everything (as Alt+click in the brushes does), Ctrl (Cmd) only the background colour, Shift only the text colour.

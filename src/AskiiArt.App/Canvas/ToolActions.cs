@@ -9,6 +9,7 @@ using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
+using AskiiArt.Core.Tools.Shapes;
 using AskiiArt.Core.Tools.Text;
 using CommunityToolkit.Mvvm.Input;
 
@@ -32,6 +33,8 @@ internal static class ToolActionIds
     public const string SoftEraser = Prefix + SoftEraserTool.Id;
     public const string BackgroundEraser = Prefix + EraserTool.BackgroundId;
     public const string Line = Prefix + LineTool.Id;
+    public const string Rectangle = Prefix + BoxShapeTool.RectangleId;
+    public const string Ellipse = Prefix + BoxShapeTool.EllipseId;
 
     private const string Prefix = "tool.";
 

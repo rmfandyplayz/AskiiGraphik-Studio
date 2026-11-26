@@ -131,6 +131,9 @@ public sealed record ChoiceToolOption : ToolOption
     public bool Allows(string value) => Choices.Any(choice => choice.Value == value && choice.IsAvailable);
 }
 
+/// <summary>An option that's on or off, such as a rectangle's rounded corners (ADR 0080).</summary>
+public sealed record ToggleToolOption(string Id, string NameKey, bool DefaultValue) : ToolOption(Id, NameKey);
+
 /// <summary>
 /// A character, such as the one the Character Brush paints (ADR 0053): one that fills a cell and shows ink
 /// (<see cref="GlyphSet.CanHold"/>). The Tool Options toolbar shows it in a box that opens the Characters window.

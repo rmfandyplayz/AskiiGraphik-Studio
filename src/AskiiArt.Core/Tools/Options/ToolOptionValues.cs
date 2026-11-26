@@ -15,6 +15,7 @@ public sealed class ToolOptionValues
     private readonly Dictionary<string, int> _numbers = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _choices = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Rune> _glyphs = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, bool> _toggles = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IToolOptionChoiceSource> _moreChoices = new(StringComparer.Ordinal);
 
     /// <summary>Creates values for <paramref name="group"/>, each at its default, with only the options' own choices.
@@ -57,6 +58,9 @@ public sealed class ToolOptionValues
                     break;
                 case GlyphToolOption glyph:
                     _glyphs.Add(glyph.Id, glyph.DefaultValue);
+                    break;
+                case ToggleToolOption toggle:
+                    _toggles.Add(toggle.Id, toggle.DefaultValue);
                     break;
                 default:
                     throw new ArgumentException($"'{option.Id}' is an unknown kind of option.", nameof(group));
@@ -102,6 +106,26 @@ public sealed class ToolOptionValues
     {
         ThrowIfNotInGroup(option);
         return _glyphs[option.Id];
+    }
+
+    /// <summary>Whether <paramref name="option"/> is on.</summary>
+    /// <exception cref="ArgumentException"><paramref name="option"/> isn't one of the group's.</exception>
+    public bool Get(ToggleToolOption option)
+    {
+        ThrowIfNotInGroup(option);
+        return _toggles[option.Id];
+    }
+
+    /// <summary>Turns <paramref name="option"/> on or off.</summary>
+    /// <exception cref="ArgumentException"><paramref name="option"/> isn't one of the group's.</exception>
+    public void Set(ToggleToolOption option, bool value)
+    {
+        ThrowIfNotInGroup(option);
+        if (_toggles[option.Id] == value)
+            return;
+
+        _toggles[option.Id] = value;
+        Changed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Sets <paramref name="option"/> to <paramref name="value"/>.</summary>
@@ -184,8 +208,8 @@ public sealed class ToolOptionValues
     }
 
     /// <summary>
-    /// The values as JSON, an object with a property for each option: a number for a number, and a string for a
-    /// choice or a character. <see cref="ToolSettings"/> saves these.
+    /// The values as JSON, an object with a property for each option: a number for a number, a string for a choice or
+    /// a character, and true or false for a toggle. <see cref="ToolSettings"/> saves these.
     /// </summary>
     internal JsonObject ToJson()
     {
@@ -197,6 +221,7 @@ public sealed class ToolOptionValues
                 NumberToolOption number => JsonValue.Create(_numbers[number.Id]),
                 ChoiceToolOption choice => JsonValue.Create(_choices[choice.Id]),
                 GlyphToolOption glyph => JsonValue.Create(_glyphs[glyph.Id].ToString()),
+                ToggleToolOption toggle => JsonValue.Create(_toggles[toggle.Id]),
                 _ => null
             };
         }
@@ -227,6 +252,9 @@ public sealed class ToolOptionValues
                 case GlyphToolOption glyph when saved.TryGetValue(out string? text) && OnlyGlyph(text) is { } value
                     && GlyphToolOption.Allows(value):
                     Set(glyph, value);
+                    break;
+                case ToggleToolOption toggle when saved.TryGetValue(out bool isOn):
+                    Set(toggle, isOn);
                     break;
             }
         }

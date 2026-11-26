@@ -8,6 +8,7 @@ using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Moving;
 using AskiiArt.Core.Tools.Selecting;
+using AskiiArt.Core.Tools.Shapes;
 using AskiiArt.Core.Tools.Text;
 
 namespace AskiiArt.Core.Tests.Tools;
@@ -31,7 +32,9 @@ public sealed class ToolRegistryTests
         EraserTool.Definition,
         SoftEraserTool.Definition,
         EraserTool.BackgroundDefinition,
-        LineTool.Definition
+        LineTool.Definition,
+        BoxShapeTool.RectangleDefinition,
+        BoxShapeTool.EllipseDefinition
     ];
 
     [Fact]
@@ -53,7 +56,9 @@ public sealed class ToolRegistryTests
             [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId],
             registry.GroupOf(SoftEraserTool.Id).ToolIds);
         Assert.Same(BuiltInToolGroups.Eraser, registry.GetGroup(BuiltInToolGroups.Eraser.Id));
-        Assert.Equal([LineTool.Id], registry.GroupOf(LineTool.Id).ToolIds);
+        Assert.Equal(
+            [LineTool.Id, BoxShapeTool.RectangleId, BoxShapeTool.EllipseId],
+            registry.GroupOf(BoxShapeTool.EllipseId).ToolIds);
     }
 
     [Fact]

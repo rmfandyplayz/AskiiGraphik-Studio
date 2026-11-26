@@ -31,6 +31,7 @@ internal abstract class ToolOptionItem : ObservableObject
             NumberToolOption number => new NumberToolOptionItem(number, values),
             ChoiceToolOption choice => new ChoiceToolOptionItem(choice, values),
             GlyphToolOption glyph => new GlyphToolOptionItem(glyph, values, showGlyphPicker),
+            ToggleToolOption toggle => new ToggleToolOptionItem(toggle, values),
             _ => throw new ArgumentException($"The toolbar can't show '{option.Id}', an unknown kind of option.",
                 nameof(option))
         };
@@ -71,6 +72,19 @@ internal sealed class NumberToolOptionItem(NumberToolOption option, ToolOptionVa
         OnPropertyChanged(nameof(Value));
         OnPropertyChanged(nameof(ValueText));
     }
+}
+
+/// <summary>An option that's on or off, shown as a button that stays down while it's on (ADR 0080).</summary>
+internal sealed class ToggleToolOptionItem(ToggleToolOption option, ToolOptionValues values) : ToolOptionItem(option)
+{
+    /// <summary>Whether the option is on.</summary>
+    public bool IsOn
+    {
+        get => values.Get(option);
+        set => values.Set(option, value);
+    }
+
+    public override void Refresh() => OnPropertyChanged(nameof(IsOn));
 }
 
 /// <summary>

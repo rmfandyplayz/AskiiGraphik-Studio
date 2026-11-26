@@ -306,6 +306,40 @@ public sealed class ToolOptionTests
         Assert.Equal(new Rune(0x1F642), restored.For(group).Get(glyph));
     }
 
+    [Fact]
+    public void AToggle_StartsAtItsDefault_AndRaisesChangedOnlyWhenItFlips()
+    {
+        var toggle = new ToggleToolOption("rounded", "Rounded", DefaultValue: false);
+        var values = new ToolOptionValues(new ToolOptionGroup("test.toggles", [toggle]));
+        var changes = 0;
+        values.Changed += (_, _) => changes++;
+
+        Assert.False(values.Get(toggle));
+        values.Set(toggle, false);
+        values.Set(toggle, true);
+
+        Assert.True(values.Get(toggle));
+        Assert.Equal(1, changes);
+    }
+
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData("\"yes\"", true)]
+    [InlineData("1", true)]
+    public void AToggle_IsSavedAndRestored_AndAValueThatIsntTrueOrFalseIsIgnored(string saved, bool expected)
+    {
+        var toggle = new ToggleToolOption("rounded", "Rounded", DefaultValue: true);
+        var group = new ToolOptionGroup("test.toggles", [toggle]);
+        var settings = new ToolSettings();
+
+        settings.Restore("{\"test.toggles\": {\"rounded\": " + saved + "}}");
+        var restored = new ToolSettings();
+        restored.Restore(settings.ToJson());
+
+        Assert.Equal(expected, restored.For(group).Get(toggle));
+    }
+
     private static (ToolOptionValues Values, ChoiceToolOption Option, FakeChoiceSource Source) ValuesWithASource()
     {
         var source = new FakeChoiceSource("test.source");

@@ -7,6 +7,7 @@ using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
 using AskiiArt.Core.Tools.Lines;
+using AskiiArt.Core.Tools.Shapes;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -16,14 +17,17 @@ using Avalonia.Threading;
 
 namespace AskiiArt.App.Tests.Canvas;
 
-/// <summary>The Shapes group's Line tool through the real canvas view (ADR 0079): its letter, a drag and Esc.</summary>
-public sealed class LineCanvasTests : IDisposable
+/// <summary>
+/// The Shapes group through the real canvas view (ADR 0079, ADR 0080): its letter and number keys, and drags with the
+/// Line and Rectangle tools.
+/// </summary>
+public sealed class ShapesCanvasTests : IDisposable
 {
     private readonly TestCanvas _canvas = new(new CanvasSize(20, 10), colorMode: ColorMode.Ansi);
     private readonly Window _window;
     private readonly CanvasControl _control;
 
-    public LineCanvasTests()
+    public ShapesCanvasTests()
     {
         var view = new CanvasView { DataContext = _canvas.ViewModel };
         _window = new Window { Width = 800, Height = 600, Content = view };
@@ -53,6 +57,36 @@ public sealed class LineCanvasTests : IDisposable
 
         PressKey(Key.D1, PhysicalKey.Digit1, "1");
         Assert.IsType<LineTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void Keys2And3_ChooseTheRectangleAndTheEllipse_WhileAShapeToolIsChosen()
+    {
+        PressKey(Key.U, PhysicalKey.U, "u");
+
+        PressKey(Key.D2, PhysicalKey.Digit2, "2");
+        Assert.Equal(BoxShapeTool.RectangleId, Canvas.ActiveTool.Descriptor.Id);
+
+        PressKey(Key.D3, PhysicalKey.Digit3, "3");
+        Assert.Equal(BoxShapeTool.EllipseId, Canvas.ActiveTool.Descriptor.Id);
+    }
+
+    [AvaloniaFact]
+    public void ADragWithTheRectangle_DrawsItFromCornerToCorner_AsOneStep()
+    {
+        Canvas.SelectTool(BoxShapeTool.RectangleId);
+        Dispatcher.UIThread.RunJobs();
+
+        _window.MouseDown(CentreOf(new CellPoint(2, 1)), MouseButton.Left);
+        _window.MouseMove(CentreOf(new CellPoint(7, 4)));
+        _window.MouseUp(CentreOf(new CellPoint(7, 4)), MouseButton.Left);
+
+        Assert.Equal(new Rune('+'), Layer.GetCell(new CellPoint(2, 1)).Glyph);
+        Assert.Equal(new Rune('+'), Layer.GetCell(new CellPoint(7, 4)).Glyph);
+        Assert.Equal(new Rune('|'), Layer.GetCell(new CellPoint(2, 3)).Glyph);
+        Assert.True(Layer.GetCell(new CellPoint(4, 2)).IsEmpty);
+        Assert.Equal(UndoStepNames.Rectangle, _canvas.Session.History.GetStepNameKey(0));
+        Assert.Equal(1, _canvas.Session.History.UndoCount);
     }
 
     [AvaloniaFact]
