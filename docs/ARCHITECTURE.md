@@ -190,7 +190,7 @@ Tools edit through an **editing session**: the document, its undo history and th
 
 ### 8.2 Planned tools
 
-Planned tools, built over several milestones: text, brush, eraser, fill, eyedropper, line, curve, rectangle, rounded rectangle, ellipse, table, gradient, the selection tools (§10), and move. Each tool's detailed behavior is specified with the owner when its milestone starts.
+Planned tools, built over several milestones: text, brush, eraser, fill, eyedropper, line, curve, rectangle (rounded or not), ellipse, table, gradient, line brush, the selection tools (§10), and move. Each tool's detailed behavior is specified with the owner when its milestone starts.
 
 ### 8.3 Erasers
 

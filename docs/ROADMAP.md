@@ -97,15 +97,17 @@ Line, curve, rectangle (rounded or not), ellipse, box-drawing joins, fill, an ey
   - *The owner checks:* the sheets; which Standard to keep, and whether Precise needs tuning. [Test doc](testing/step-5.1-line-characters.md)
   - *Built 2026-11-24:* `LineGlyphPicker` and its paths and cells in Core, with sheets in `.local/line-sheets` from all four bundled fonts. ADR 0078.
   - *Tested 2026-11-24:* the owner found it looks good and kept both Standards as styles, with Single character sharing the Character Brush's character. Precise's two halves not always picking mirror-image characters is left for tuning once the tool is in the app (`docs/TEMPORARY-UI.md`). ADR 0079.
-- [~] **5.2 Shapes group and the Line tool.** The Shapes group on U, with Line on 1: press, drag and let go, with a live preview of the real cells, one undo step, Esc cancelling, clipped to the selection, the Move tool's constraints, and the Style option from 5.1.
+- [x] **5.2 Shapes group and the Line tool.** The Shapes group on U, with Line on 1: press, drag and let go, with a live preview of the real cells, one undo step, Esc cancelling, clipped to the selection, the Move tool's constraints, and the Style option from 5.1.
   - *The owner checks:* drawing lines in each style, the constraints, Esc and undo, and the shared character. [Test doc](testing/step-5.2-line-tool.md)
   - *Built 2026-11-24:* `LineTool` and the shared Style option in Core, the comparison sheets removed. ADR 0079.
+  - *Tested 2026-11-25:* all passed on every platform, the extra tests too. The owner then asked for a line brush (5.9).
 - [ ] **5.3 Rectangle and ellipse.** Rectangle on 3, with rounded corners as an option, and Ellipse on 4: outline or filled, Shift for looking square or round, Alt from the middle.
 - [ ] **5.4 Box-drawing joins.** Off by default: an "Include joins" option where lines and outlines drawn in box-drawing characters join the ones already there (`┬ ┼ ╋`). In an ASCII-only document every join is `+`; the warning that says so waits for M8's notifications (`docs/TEMPORARY-UI.md`).
 - [ ] **5.5 Curve.** Curve on Shapes 2.
 - [ ] **5.6 Fill and the Eyedropper.** Fill on G, reusing the Magic Wand's flood fill, contiguous or global. The Eyedropper on I, like Illustrator's, with modifiers choosing what it copies: a click the character, Alt everything (as Alt+click in the brushes does), Ctrl (Cmd) only the background colour, Shift only the text colour.
 - [ ] **5.7 Table.**
 - [ ] **5.8 Gradient.** Added by the owner on 2026-11-24, in place of big text.
+- [ ] **5.9 Line brush.** Added by the owner on 2026-11-25, after trying the Line tool. A brush that draws freehand lines in the line characters, as if the shape tools' outlines were drawn by hand, with the Style option and no size, intensity or softness. A **Pixel perfect** option works as Aseprite's does: among the last few cells the stroke drew, a cell with stroke cells on two sides that turn a corner (one above and one to the right, say) is taken out, so lines step diagonally instead of in L shapes. Cells drawn by earlier strokes are never changed. Last in M5, so it can use 5.4's joins. Its exact behaviour is asked at its start.
 
 ## M6: Image → ASCII
 
