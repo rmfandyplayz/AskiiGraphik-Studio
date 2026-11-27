@@ -109,6 +109,7 @@ internal sealed class CanvasSceneBuilder
             ToolPathThickness = Math.Max(1, overlays.SelectionThickness),
             ToolPathClosingLine = ClosingLineOf(toolPath, overlays.ShowsToolPathClosing),
             ToolMarkers = MarkersOf(viewport, overlays.ToolMarkers),
+            ToolHandles = HandlesOf(viewport, overlays.ToolHandles),
             Look = overlays.Look
         };
     }
@@ -147,6 +148,22 @@ internal sealed class CanvasSceneBuilder
         }
 
         return sceneMarkers;
+    }
+
+    private static SceneHandle[] HandlesOf(CanvasViewport viewport, IReadOnlyList<ToolHandle>? handles)
+    {
+        if (handles is null)
+            return [];
+
+        var sceneHandles = new SceneHandle[handles.Count];
+        for (var index = 0; index < sceneHandles.Length; index++)
+        {
+            var handle = handles[index];
+            sceneHandles[index] = new SceneHandle(ToDevicePixels(viewport, handle.Anchor),
+                ToDevicePixels(viewport, handle.End), handle.IsStrong);
+        }
+
+        return sceneHandles;
     }
 
     private static Point ToDevicePixels(CanvasViewport viewport, CanvasPoint point)

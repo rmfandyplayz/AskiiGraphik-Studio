@@ -84,6 +84,18 @@ public interface ITool
     /// <summary>The user typed <paramref name="text"/>. Returns true when the tool used it.</summary>
     bool TextEntered(string text);
 
+    /// <summary>
+    /// True while Undo (Ctrl+Z, Cmd+Z on macOS) is the tool's rather than the history's, as it is while a shape is
+    /// built point by point: Undo then calls <see cref="Undo"/>, and Redo does nothing (ADR 0083). It changes only
+    /// along with <see cref="Overlay"/>, so <see cref="OverlayChanged"/> says when to look again.
+    /// </summary>
+    bool TakesUndo => false;
+
+    /// <summary>Undo while <see cref="TakesUndo"/>, which takes away the last point placed.</summary>
+    void Undo()
+    {
+    }
+
     /// <summary>Another tool is taking over. Ends any gesture in progress.</summary>
     void Deactivate();
 }

@@ -77,6 +77,9 @@ internal sealed class CanvasScene : IDisposable
     /// <summary>The tool's markers, such as the Polygonal Lasso's corners.</summary>
     public IReadOnlyList<SceneMarker> ToolMarkers { get; init; } = [];
 
+    /// <summary>The handles of a curve being drawn, drawn under the markers.</summary>
+    public IReadOnlyList<SceneHandle> ToolHandles { get; init; } = [];
+
     /// <summary>How the hatching, the closing line and the markers look, in device pixels.</summary>
     public SelectionLook Look { get; init; }
 

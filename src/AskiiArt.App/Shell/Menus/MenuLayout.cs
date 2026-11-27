@@ -130,6 +130,7 @@ internal sealed record MenuLayout(
             new ActionMenuEntry(ToolActionIds.SoftEraser),
             new ActionMenuEntry(ToolActionIds.BackgroundEraser),
             new ActionMenuEntry(ToolActionIds.Line),
+            new ActionMenuEntry(ToolActionIds.Curve),
             new ActionMenuEntry(ToolActionIds.Rectangle),
             new ActionMenuEntry(ToolActionIds.Ellipse)
         ]);

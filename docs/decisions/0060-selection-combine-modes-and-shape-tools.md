@@ -38,3 +38,5 @@ Updated 2026-11-20: the Polygonal Lasso finishes on a click on its first corner'
 Updated 2026-11-20: a shape with no cells, such as one drawn off the canvas, no longer counts as a click: it combines like any other, so Intersect with it deselects everything (ADR 0061).
 
 Updated 2026-11-22: the canvas also reports Ctrl, or Cmd on macOS, through `ITool.ModifiersChanged`, for the Move tool's constraints (ADR 0069). Rectangle and Ellipse Select ignore it.
+
+Updated 2026-11-26: Undo (Ctrl+Z, Cmd+Z on macOS) while the Polygonal Lasso is drawing removes the last corner, as Backspace does, rather than undoing the last step (ADR 0083).

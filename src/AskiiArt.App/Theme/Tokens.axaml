@@ -139,6 +139,12 @@
   <x:Double x:Key="AppCanvasCornerMarkerRadius">3.5</x:Double>
   <x:Double x:Key="AppCanvasFinishMarkerRadius">8</x:Double>
   <x:Double x:Key="AppCanvasCornerMarkerOpacity">0.85</x:Double>
+  <!-- A curve's handles (step 5.5, placeholder, ADR 0083): a line from the anchor to a square this many logical pixels
+       from its middle to its sides, this strong for the selected anchor and the one under the pointer, and this strong
+       for the others. -->
+  <x:Double x:Key="AppCanvasHandleEndRadius">3</x:Double>
+  <x:Double x:Key="AppCanvasStrongHandleOpacity">0.9</x:Double>
+  <x:Double x:Key="AppCanvasFaintHandleOpacity">0.2</x:Double>
 
   <!-- Status bar -->
   <Thickness x:Key="AppStatusBarPadding">8,2</Thickness>

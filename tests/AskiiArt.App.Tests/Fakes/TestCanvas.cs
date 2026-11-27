@@ -16,6 +16,7 @@ using AskiiArt.Core.Exporting;
 using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Curves;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Lines;
@@ -64,6 +65,7 @@ internal sealed class TestCanvas : IDisposable
                 SoftEraserTool.Definition,
                 EraserTool.BackgroundDefinition,
                 LineTool.Definition,
+                CurveTool.Definition,
                 BoxShapeTool.RectangleDefinition,
                 BoxShapeTool.EllipseDefinition
             ],

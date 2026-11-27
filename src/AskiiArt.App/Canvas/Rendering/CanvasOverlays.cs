@@ -26,6 +26,7 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// </param>
 /// <param name="ShowsToolPathClosing">True to show faintly how the tool's line would close.</param>
 /// <param name="ToolMarkers">The tool's markers, such as the Polygonal Lasso's corners, or null for none.</param>
+/// <param name="ToolHandles">The handles of a curve being drawn, or null for none.</param>
 /// <param name="Look">How the hatching, the mode colours and the markers look, in device pixels.</param>
 internal readonly record struct CanvasOverlays(
     bool IsGridVisible,
@@ -40,6 +41,7 @@ internal readonly record struct CanvasOverlays(
     IReadOnlyList<CanvasPoint>? ToolPath = null,
     bool ShowsToolPathClosing = false,
     IReadOnlyList<ToolMarker>? ToolMarkers = null,
+    IReadOnlyList<ToolHandle>? ToolHandles = null,
     SelectionLook Look = default);
 
 /// <summary>

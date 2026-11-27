@@ -1591,13 +1591,21 @@ Click to change it in the Color and Swatches windows. On the canvas, X swaps the
     <value>Line</value>
     <comment>History: a line drawn with the Line tool.</comment>
   </data>
+  <data name="ToolCurve" xml:space="preserve">
+    <value>Curve</value>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws a curve through the points clicked, like a pen tool. Key 2 chooses it while a shape tool is chosen.</comment>
+  </data>
+  <data name="UndoStepCurve" xml:space="preserve">
+    <value>Curve</value>
+    <comment>History: a curve drawn with the Curve tool.</comment>
+  </data>
   <data name="ToolRectangle" xml:space="preserve">
     <value>Rectangle</value>
-    <comment>The Shapes group's sub-toolbar and the Tools menu: draws a rectangle by dragging from corner to corner. Key 2 chooses it while a shape tool is chosen.</comment>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws a rectangle by dragging from corner to corner. Key 3 chooses it while a shape tool is chosen.</comment>
   </data>
   <data name="ToolEllipse" xml:space="preserve">
     <value>Ellipse</value>
-    <comment>The Shapes group's sub-toolbar and the Tools menu: draws the ellipse that fits the box dragged out. Key 3 chooses it while a shape tool is chosen.</comment>
+    <comment>The Shapes group's sub-toolbar and the Tools menu: draws the ellipse that fits the box dragged out. Key 4 chooses it while a shape tool is chosen.</comment>
   </data>
   <data name="ToolOptionShapeFill" xml:space="preserve">
     <value>Fill</value>

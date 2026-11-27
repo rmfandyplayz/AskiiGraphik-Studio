@@ -10,6 +10,7 @@ using AskiiArt.Core.Documents;
 using AskiiArt.Core.Editing;
 using AskiiArt.Core.Selection;
 using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Selecting;
 using AskiiArt.Core.Tools.Text;
 using Avalonia.Input;
 
@@ -23,12 +24,49 @@ public sealed class EditActionsTests : IDisposable
 
     public EditActionsTests()
     {
-        _actions = new EditActions(_canvas.ActiveDocument, _canvas.TextExporter, _canvas.AnsiExporter, _shell)
+        _actions = new EditActions(_canvas.ActiveDocument, _canvas.ViewModel, _canvas.TextExporter,
+                _canvas.AnsiExporter, _shell)
             .CreateActions()
             .ToDictionary(action => action.Id);
     }
 
     private AppAction Undo => _actions[EditActionIds.Undo];
+
+    // A tool building a shape point by point takes Undo while it does, even with nothing in the history, and Redo
+    // does nothing meanwhile (ADR 0083).
+    [Fact]
+    public void Undo_IsTheToolsWhileItTakesUndo_AndRedoWaits()
+    {
+        _canvas.ViewModel.SelectTool(PolygonalLassoTool.Id);
+        var lasso = (PolygonalLassoTool)_canvas.ViewModel.ActiveTool;
+        Assert.False(Undo.Command.CanExecute(null));
+
+        lasso.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
+        Assert.True(Undo.Command.CanExecute(null));
+        Assert.False(Redo.Command.CanExecute(null));
+
+        Undo.Command.Execute(null);
+
+        Assert.False(lasso.IsDrawing);
+        Assert.False(Undo.Command.CanExecute(null));
+    }
+
+    [Fact]
+    public void Redo_ComesBack_WhenTheToolStopsTakingUndo()
+    {
+        var session = _canvas.Session;
+        SelectionEdits.Select(session, SelectionMask.Rectangle(session.Document.CanvasSize, new CellRect(0, 0, 1, 1)),
+            UndoStepNames.RectangleSelect);
+        session.History.Undo();
+        _canvas.ViewModel.SelectTool(PolygonalLassoTool.Id);
+        var lasso = _canvas.ViewModel.ActiveTool;
+
+        lasso.PointerPressed(new ToolPointerInput(new CellPoint(0, 0), 0.5, 0.5, ToolModifiers.None));
+        Assert.False(Redo.Command.CanExecute(null));
+
+        lasso.KeyPressed(ToolKey.Escape, ToolModifiers.None);
+        Assert.True(Redo.Command.CanExecute(null));
+    }
 
     [Fact]
     public void CopyAsText_CopiesTheVisibleArt_WithThisPlatformsLineBreaks()

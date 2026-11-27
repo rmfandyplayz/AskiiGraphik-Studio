@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Curves;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Lines;
@@ -46,9 +47,9 @@ public static class BuiltInToolGroups
     public static ToolGroup Eraser { get; } = new("askiiart.group.eraser", "ToolGroupEraser", "tool.eraser", 'E',
         [EraserTool.Id, SoftEraserTool.Id, EraserTool.BackgroundId]);
 
-    /// <summary>The shape tools, on U (ADR 0079, ADR 0080): Line, Rectangle and Ellipse so far.</summary>
+    /// <summary>The shape tools, on U (ADR 0079, ADR 0080, ADR 0083): Line, Curve, Rectangle and Ellipse so far.</summary>
     public static ToolGroup Shapes { get; } = new("askiiart.group.shapes", "ToolGroupShapes", "tool.shapes", 'U',
-        [LineTool.Id, BoxShapeTool.RectangleId, BoxShapeTool.EllipseId]);
+        [LineTool.Id, CurveTool.Id, BoxShapeTool.RectangleId, BoxShapeTool.EllipseId]);
 
     /// <summary>Every built-in group, in the order the Tools toolbar shows them.</summary>
     public static IReadOnlyList<ToolGroup> All { get; } = [Hand, Move, Select, Text, Brush, Eraser, Shapes];

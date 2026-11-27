@@ -450,7 +450,7 @@ internal sealed partial class CanvasControl : Control, ICustomHitTest
         var overlays = new CanvasOverlays(IsGridVisible, HoveredCell, overlay?.Caret, caretThickness,
             BrushOutlineOf(overlay), display, ToDeviceLength(SelectionThickness),
             ToDeviceLength(SelectionDashLength), _paintedMotion, overlay?.Path, overlay?.ShowsPathClosing ?? false,
-            overlay?.Markers, Look.ScaledBy(_renderScaling));
+            overlay?.Markers, overlay?.Handles, Look.ScaledBy(_renderScaling));
         var buildStarted = Stopwatch.GetTimestamp();
         var (drawnViewport, transform) = DrawnView(_viewport);
         var scene = _sceneBuilder.Build(Composite, atlas, drawnViewport, GetColors(), overlays, transform);

@@ -160,13 +160,15 @@ public readonly record struct ToolPointerInput(
 /// True to show faintly how the path would close: a line from its last point back to its first.
 /// </param>
 /// <param name="Markers">Dots to draw, such as the Polygonal Lasso's corners, or null for none.</param>
+/// <param name="Handles">The handles of a curve being drawn, under its markers, or null for none.</param>
 public sealed record ToolOverlay(
     CellPoint? Caret,
     BrushFootprint? Footprint = null,
     SelectionPreview? SelectionPreview = null,
     IReadOnlyList<CanvasPoint>? Path = null,
     bool ShowsPathClosing = false,
-    IReadOnlyList<ToolMarker>? Markers = null)
+    IReadOnlyList<ToolMarker>? Markers = null,
+    IReadOnlyList<ToolHandle>? Handles = null)
 {
     /// <summary>Nothing to draw.</summary>
     public static ToolOverlay None { get; } = new(Caret: null);
@@ -192,6 +194,17 @@ public enum ToolMarkerKind
 /// <param name="Position">Where its middle is, in cells with fractions.</param>
 /// <param name="Kind">What it is.</param>
 public readonly record struct ToolMarker(CanvasPoint Position, ToolMarkerKind Kind);
+
+/// <summary>
+/// A curve's handle (ADR 0083): a line from the anchor it belongs to out to its end, which can be dragged. The App draws
+/// it strongly or faintly, and its end keeps its size on screen whatever the zoom.
+/// </summary>
+/// <param name="Anchor">Where the anchor is, in cells with fractions.</param>
+/// <param name="End">Where the handle ends.</param>
+/// <param name="IsStrong">
+/// True for the handles of the anchor last placed, clicked or dragged, and of the one under the pointer.
+/// </param>
+public readonly record struct ToolHandle(CanvasPoint Anchor, CanvasPoint End, bool IsStrong);
 
 /// <summary>
 /// How far the pointer can be from a tool's marker and still be on it, in cells across and down: the marker's radius

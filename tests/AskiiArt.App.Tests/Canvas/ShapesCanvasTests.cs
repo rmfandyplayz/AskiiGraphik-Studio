@@ -6,6 +6,8 @@ using AskiiArt.App.Canvas;
 using AskiiArt.App.Tests.Fakes;
 using AskiiArt.Core.Commands;
 using AskiiArt.Core.Documents;
+using AskiiArt.Core.Tools;
+using AskiiArt.Core.Tools.Curves;
 using AskiiArt.Core.Tools.Lines;
 using AskiiArt.Core.Tools.Shapes;
 using Avalonia;
@@ -18,8 +20,8 @@ using Avalonia.Threading;
 namespace AskiiArt.App.Tests.Canvas;
 
 /// <summary>
-/// The Shapes group through the real canvas view (ADR 0079, ADR 0080): its letter and number keys, and drags with the
-/// Line and Rectangle tools.
+/// The Shapes group through the real canvas view (ADR 0079, ADR 0080, ADR 0083): its letter and number keys, drags with
+/// the Line and Rectangle tools, and clicks with the Curve tool.
 /// </summary>
 public sealed class ShapesCanvasTests : IDisposable
 {
@@ -60,14 +62,17 @@ public sealed class ShapesCanvasTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Keys2And3_ChooseTheRectangleAndTheEllipse_WhileAShapeToolIsChosen()
+    public void Keys2To4_ChooseTheCurveTheRectangleAndTheEllipse_WhileAShapeToolIsChosen()
     {
         PressKey(Key.U, PhysicalKey.U, "u");
 
         PressKey(Key.D2, PhysicalKey.Digit2, "2");
-        Assert.Equal(BoxShapeTool.RectangleId, Canvas.ActiveTool.Descriptor.Id);
+        Assert.IsType<CurveTool>(Canvas.ActiveTool);
 
         PressKey(Key.D3, PhysicalKey.Digit3, "3");
+        Assert.Equal(BoxShapeTool.RectangleId, Canvas.ActiveTool.Descriptor.Id);
+
+        PressKey(Key.D4, PhysicalKey.Digit4, "4");
         Assert.Equal(BoxShapeTool.EllipseId, Canvas.ActiveTool.Descriptor.Id);
     }
 
@@ -126,6 +131,36 @@ public sealed class ShapesCanvasTests : IDisposable
         Assert.True(Layer.GetCell(new CellPoint(3, 2)).IsEmpty);
         Assert.Equal(0, _canvas.Session.History.UndoCount);
         Assert.IsType<LineTool>(Canvas.ActiveTool);
+    }
+
+    [AvaloniaFact]
+    public void ClicksWithTheCurve_DrawItAsTheyGo_AndEnterFinishesItAsOneStep()
+    {
+        Canvas.SelectTool(CurveTool.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Click(new CellPoint(2, 1));
+        Click(new CellPoint(7, 1));
+        Assert.Equal(new Rune('-'), Layer.GetCell(new CellPoint(5, 1)).Glyph);
+        Assert.NotNull(Canvas.ActiveTool.Overlay.Markers);
+
+        _window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        _window.KeyRelease(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Dispatcher.UIThread.RunJobs();
+
+        for (var x = 2; x <= 7; x++)
+            Assert.Equal(new Rune('-'), Layer.GetCell(new CellPoint(x, 1)).Glyph);
+
+        Assert.Equal(ToolOverlay.None, Canvas.ActiveTool.Overlay);
+        Assert.Equal(1, _canvas.Session.History.UndoCount);
+        Assert.Equal(UndoStepNames.Curve, _canvas.Session.History.GetStepNameKey(0));
+    }
+
+    private void Click(CellPoint cell)
+    {
+        _window.MouseDown(CentreOf(cell), MouseButton.Left);
+        _window.MouseUp(CentreOf(cell), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
     }
 
     // As a keyboard does: the key goes down, then the text it types arrives.

@@ -232,6 +232,7 @@ public sealed class MenuLayoutTests
                 ToolActionIds.SoftEraser,
                 ToolActionIds.BackgroundEraser,
                 ToolActionIds.Line,
+                ToolActionIds.Curve,
                 ToolActionIds.Rectangle,
                 ToolActionIds.Ellipse
             ],

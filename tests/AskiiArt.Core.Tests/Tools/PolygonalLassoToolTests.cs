@@ -75,6 +75,22 @@ public sealed class PolygonalLassoToolTests
         Assert.Equal(_square, Selected);
     }
 
+    // Undo while drawing is the tool's, and does what Backspace does (ADR 0083).
+    [Fact]
+    public void Undo_TakesTheLastCornerAway_WhileAShapeIsDrawn()
+    {
+        Assert.False(_tool.TakesUndo);
+        ClickTheSquaresCorners();
+        Click(4.5, 3.5);
+        Assert.True(_tool.TakesUndo);
+
+        _tool.Undo();
+        _tool.KeyPressed(ToolKey.Enter, ToolModifiers.None);
+
+        Assert.Equal(_square, Selected);
+        Assert.False(_tool.TakesUndo);
+    }
+
     [Fact]
     public void BackspaceOnTheOnlyCorner_Cancels()
     {

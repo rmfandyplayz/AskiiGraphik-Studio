@@ -11,8 +11,8 @@ namespace AskiiArt.Core.Tools.Selecting;
 /// <summary>
 /// The Polygonal Lasso (ARCHITECTURE §10, ADR 0060): each click adds a corner, and a line follows the pointer from the
 /// last one. Clicking the first corner's marker, double-clicking or pressing Enter selects every cell whose centre the
-/// shape goes round, combined with the selection by the mode, as one undo step. Backspace takes the last corner away,
-/// and Esc cancels. While it's drawn, the canvas shows a marker on each corner, faintly how the shape would close, and
+/// shape goes round, combined with the selection by the mode, as one undo step. Backspace or Undo takes the last
+/// corner away (ADR 0083), and Esc cancels. While it's drawn, the canvas shows a marker on each corner, faintly how the shape would close, and
 /// what a double-click where the pointer is would select (ADR 0061). A shape of fewer than three corners goes round
 /// nothing and counts as a click, which deselects when replacing.
 /// </summary>
@@ -72,6 +72,9 @@ public sealed class PolygonalLassoTool : ITool
 
     /// <summary>True while a shape is being drawn, so Enter, Backspace and Esc are the tool's.</summary>
     public bool IsDrawing => _corners.Count > 0;
+
+    /// <summary>True while a shape is being drawn, when Undo takes the last corner away, as Backspace does.</summary>
+    public bool TakesUndo => IsDrawing;
 
     /// <summary>The corners, the line from the last one to the pointer, and what the shape would select.</summary>
     public ToolOverlay Overlay => _overlay;
@@ -140,8 +143,7 @@ public sealed class PolygonalLassoTool : ITool
                 Finish();
                 return true;
             case ToolKey.Backspace:
-                _corners.RemoveAt(_corners.Count - 1);
-                ShowPath();
+                RemoveLastCorner();
                 return true;
             case ToolKey.Escape:
                 Cancel();
@@ -157,11 +159,30 @@ public sealed class PolygonalLassoTool : ITool
     /// <summary>Takes no text.</summary>
     public bool TextEntered(string text) => false;
 
+    /// <summary>Takes the last corner away, as Backspace does; the first, too, which cancels.</summary>
+    public void Undo()
+    {
+        if (IsDrawing)
+            RemoveLastCorner();
+    }
+
     /// <summary>Cancels a shape in progress, leaving the selection as it was, and ends a move the arrows made.</summary>
     public void Deactivate()
     {
         Cancel();
         _arrows.Detach();
+    }
+
+    private void RemoveLastCorner()
+    {
+        _corners.RemoveAt(_corners.Count - 1);
+        if (!IsDrawing)
+        {
+            Cancel();
+            return;
+        }
+
+        ShowPath();
     }
 
     private void Finish()

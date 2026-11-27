@@ -287,7 +287,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Rectangle and Ellipse Select outline the selection they'd make, combined with the old one, while dragging. The lassos showed only their line until 4.2b, which previews theirs too | `Core/Tools/Selecting/*` | 4.2 |
 | The lassos' line: a 1-pixel black line along a white one three times as wide, rounded, antialiased, drawn over everything else on the canvas. It isn't closed while drawing | `Canvas/Rendering/CanvasScenePainter.cs` | 4.2 |
 | Lasso: a point is added each time the pointer moves a fifth of a cell. Releasing joins the end to the start. Esc during the drag cancels it | `Core/Tools/Selecting/LassoTool.cs` | 4.2 |
-| Polygonal Lasso: a click adds a corner exactly where clicked, not snapped to a cell. It finishes on a click on the first corner's marker (once there are three corners; from 4.2b, before which it was the first corner's cell), a double-click or Enter. Backspace removes the last corner, and removing the only one cancels. Esc or switching tools cancels. Space + drag pans between clicks. Finishing with fewer than three corners counts as a click | `Core/Tools/Selecting/PolygonalLassoTool.cs` | 4.2 |
+| Polygonal Lasso: a click adds a corner exactly where clicked, not snapped to a cell. It finishes on a click on the first corner's marker (once there are three corners; from 4.2b, before which it was the first corner's cell), a double-click or Enter. Backspace, or Undo since 5.5, removes the last corner, and removing the only one cancels. Esc or switching tools cancels. Space + drag pans between clicks. Finishing with fewer than three corners counts as a click | `Core/Tools/Selecting/PolygonalLassoTool.cs` | 4.2 |
 | Step names: Ellipse Select, Lasso, Polygonal Lasso, whatever the mode | `Strings.resx` | 4.2 |
 | All four tools use the normal arrow pointer | `Canvas/CanvasControl.cs` | 4.2 |
 | On Windows and Linux, letting go of Alt pressed during a drag doesn't open the menu bar. Alt pressed between Polygonal Lasso clicks still does, since the tool doesn't use it there | `Canvas/AltClickMenuGuard.cs` | 4.2 |
@@ -454,7 +454,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| Rectangle and Ellipse are on Shapes 2 and 3, after Line, until Curve joins the group in 5.5; the owner overhauls shortcuts in M8 | `Core/Tools/BuiltInToolGroups.cs` | 5.3 |
+| Rectangle and Ellipse are on Shapes 3 and 4, after Line and Curve (on 2 and 3 until 5.5); the owner overhauls shortcuts in M8 | `Core/Tools/BuiltInToolGroups.cs` | 5.3 |
 | Tool Options shows Style, Include joins (rectangle only, since 5.4), Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
 | Fill's choices are "None", "Character" and "Background", None by default, in a dropdown since there are three | `ToolOptionShapeFill*` in `Strings.resx`, `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
 | Rounded corners, and any on-or-off option, is a button that stays down while it's on, as the choice buttons are, since the Fluent checkbox is taller than a button | `ToolOptions/ToolOptionsToolbar.axaml` | 5.3 |
@@ -478,6 +478,23 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | The Rectangle's Style is its own, so a style chosen for the Line or the Ellipse doesn't carry to it, nor the other way | `Core/Tools/Shapes/ShapeOptions.cs` | 5.4b |
 | The Line joins box-drawing lines with `+`, since it draws plain characters | `Core/Tools/Lines/LineJoins.cs` | 5.4b |
 | A rectangle filled with a character covers the old lines inside it, so where they reach its outline they stop there (`┴`, `┤`) rather than crossing (`┼`) | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.4b |
+
+### The Curve tool (step 5.5, ADR 0083)
+
+| Choice | Where | Step |
+|---|---|---|
+| A handle is a line from its anchor to a small square, in the tool line's colours, the square 3 logical pixels from its middle to its sides. The 0.9 and 0.2 opacities are the owner's | `Canvas/Rendering/CanvasScenePainter.cs`, `Theme/Tokens.axaml` | 5.5 |
+| The tool is named "Curve", and the Tools menu lists it between Line and Rectangle | `ToolCurve` in `Strings.resx`, `Shell/Menus/MenuLayout.cs` | 5.5 |
+| A clicked anchor is smooth, its handles a sixth of the way from the anchor before it to the one after, as a Catmull-Rom spline's are. The newest anchor's handles follow the piece to the pointer, so they show what a click would make | `Core/Tools/Curves/CurveShape.cs` | 5.5 |
+| A drag pulls out handles once the pointer leaves the finishing marker's reach round where the press was, and the handle ends under the pointer | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| Ctrl keeps a new anchor to the diagonals that look like 45°, and Ctrl+Shift to one column per row, as for a line's end. Dragging an anchor isn't constrained | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| A press takes hold of an anchor's marker first, then a handle's end, then the rest of an anchor's cell, so a click never places a second anchor in an anchor's cell | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| Handles that shape nothing don't show: one at its anchor, and a smooth end anchor's handle past the end of the curve | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| The first anchor shows the finishing marker once the curve has two anchors, and a click on it then closes the curve. A curve of one anchor draws nothing | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| Once unlinked, a pair of handles stays unlinked. Dragging a smooth anchor's handle makes the anchor mirrored | `Core/Tools/Curves/CurveAnchor.cs` | 5.5 |
+| The curve follows the Style, Include joins, the character and the colours as they change while it's drawn | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| Tool Options shows Style, Include joins and Character, as for the Line tool | `Core/Tools/Curves/CurveTool.cs` | 5.5 |
+| While the Curve or the Polygonal Lasso is drawing, Undo is enabled even with an empty history, and Redo is greyed out | `Editing/EditActions.cs` | 5.5 |
 
 ## Ideas to revisit
 

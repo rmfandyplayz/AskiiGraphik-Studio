@@ -27,7 +27,7 @@ internal static class TestActions
         new ShellActions(shell, new AppDataLocations("root"), includeDebugActions, isMacOS),
         new CanvasActions(canvas.ViewModel, includeDebugActions),
         new ToolActions(canvas.ViewModel),
-        new EditActions(canvas.ActiveDocument, canvas.TextExporter, canvas.AnsiExporter, shell),
+        new EditActions(canvas.ActiveDocument, canvas.ViewModel, canvas.TextExporter, canvas.AnsiExporter, shell),
         new ClipboardActions(canvas.ActiveDocument, canvas.ViewModel, shell),
         new SelectionActions(canvas.ActiveDocument),
         new WindowMenuActions(new ShellDocking(new FakeAppSettings(), NullLogger<ShellDocking>.Instance)),

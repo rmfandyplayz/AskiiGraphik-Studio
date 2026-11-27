@@ -2,6 +2,7 @@
 // Written with Claude Code (Anthropic).
 
 using AskiiArt.App.Actions;
+using AskiiArt.App.Canvas;
 using AskiiArt.App.Documents;
 using AskiiArt.App.Resources;
 using AskiiArt.App.Shell;
@@ -16,16 +17,19 @@ namespace AskiiArt.App.Editing;
 /// <summary>
 /// Undo and Redo, for the active document's history, and Copy as Text and Copy as ANSI, which flatten the visible layers:
 /// the bounds of the selection's cells on the canvas while anything is selected, else the whole canvas (ADR 0067). While
-/// the selection lies all past the canvas's edges they have nothing to copy, so they're greyed out (ADR 0071).
+/// the selection lies all past the canvas's edges they have nothing to copy, so they're greyed out (ADR 0071). While the
+/// active tool takes Undo, as one building a shape point by point does, Undo is the tool's and Redo does nothing
+/// (ADR 0083).
 /// </summary>
 internal sealed class EditActions(
-    ActiveDocument activeDocument, TextExporter textExporter, AnsiExporter ansiExporter, IAppShell shell)
+    ActiveDocument activeDocument, CanvasViewModel canvas, TextExporter textExporter, AnsiExporter ansiExporter,
+    IAppShell shell)
     : IActionProvider
 {
     public IEnumerable<AppAction> CreateActions()
     {
-        var undo = new RelayCommand(() => History.Undo(), () => History.CanUndo);
-        var redo = new RelayCommand(() => History.Redo(), () => History.CanRedo);
+        var undo = new RelayCommand(Undo, () => canvas.ActiveTool.TakesUndo || History.CanUndo);
+        var redo = new RelayCommand(() => History.Redo(), () => !canvas.ActiveTool.TakesUndo && History.CanRedo);
         var copyAsText = new AsyncRelayCommand(CopyAsTextAsync, HasSomethingToCopyAsText);
         var copyAsAnsi = new AsyncRelayCommand(CopyAsAnsiAsync, HasSomethingToCopyAsText);
 
@@ -39,6 +43,22 @@ internal sealed class EditActions(
             Follow(followedSession);
             OnHistoryChanged(this, EventArgs.Empty);
             OnSelectionChanged(this, EventArgs.Empty);
+        };
+
+        // Whether the tool takes Undo changes only along with its overlay (ITool.TakesUndo).
+        var followedTool = canvas.ActiveTool;
+        var wasTakingUndo = followedTool.TakesUndo;
+        followedTool.OverlayChanged += OnToolOverlayChanged;
+        canvas.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(CanvasViewModel.ActiveTool))
+                return;
+
+            followedTool.OverlayChanged -= OnToolOverlayChanged;
+            followedTool = canvas.ActiveTool;
+            followedTool.OverlayChanged += OnToolOverlayChanged;
+            wasTakingUndo = followedTool.TakesUndo;
+            OnHistoryChanged(this, EventArgs.Empty);
         };
 
         yield return new AppAction(EditActionIds.Undo, nameof(Strings.ActionUndo), undo,
@@ -74,11 +94,32 @@ internal sealed class EditActions(
             redo.NotifyCanExecuteChanged();
         }
 
+        void OnToolOverlayChanged(object? sender, EventArgs e)
+        {
+            if (followedTool.TakesUndo == wasTakingUndo)
+                return;
+
+            wasTakingUndo = followedTool.TakesUndo;
+            OnHistoryChanged(this, EventArgs.Empty);
+        }
+
         void OnSelectionChanged(object? sender, EventArgs e)
         {
             copyAsText.NotifyCanExecuteChanged();
             copyAsAnsi.NotifyCanExecuteChanged();
         }
+    }
+
+    private void Undo()
+    {
+        var tool = canvas.ActiveTool;
+        if (tool.TakesUndo)
+        {
+            tool.Undo();
+            return;
+        }
+
+        History.Undo();
     }
 
     // With nothing selected they copy the whole canvas; with a selection, its cells on the canvas.

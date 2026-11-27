@@ -47,6 +47,11 @@ namespace AskiiArt.App.Canvas.Rendering;
 /// <param name="DroppedOffCanvasOpacity">
 /// How strongly the selection's lines past the canvas's edges show while a selection tool would drop them.
 /// </param>
+/// <param name="HandleEndRadius">Half the side of the square at the end of a curve's handle (ADR 0083).</param>
+/// <param name="StrongHandleOpacity">
+/// How strongly the handles of the curve's selected anchor, and of the one under the pointer, show.
+/// </param>
+/// <param name="FaintHandleOpacity">How strongly the curve's other handles show.</param>
 internal readonly record struct SelectionLook(
     SKColor HatchLine,
     SKColor HatchBackdrop,
@@ -73,14 +78,18 @@ internal readonly record struct SelectionLook(
     double FinishMarkerRadius,
     double CornerMarkerOpacity,
     double OffCanvasOpacity = 0,
-    double DroppedOffCanvasOpacity = 0)
+    double DroppedOffCanvasOpacity = 0,
+    double HandleEndRadius = 0,
+    double StrongHandleOpacity = 0,
+    double FaintHandleOpacity = 0)
 {
     /// <summary>The look with its lengths in device pixels, <paramref name="scaling"/> to a logical pixel.</summary>
     public SelectionLook ScaledBy(double scaling) => this with
     {
         HatchBandWidth = HatchBandWidth * scaling,
         CornerMarkerRadius = CornerMarkerRadius * scaling,
-        FinishMarkerRadius = FinishMarkerRadius * scaling
+        FinishMarkerRadius = FinishMarkerRadius * scaling,
+        HandleEndRadius = HandleEndRadius * scaling
     };
 
     /// <summary>
@@ -158,7 +167,10 @@ internal readonly record struct SelectionLook(
         Token(resources, "AppCanvasFinishMarkerRadius", theme),
         Token(resources, "AppCanvasCornerMarkerOpacity", theme),
         Token(resources, "AppCanvasSelectionOffCanvasOpacity", theme),
-        Token(resources, "AppCanvasSelectionDroppedOffCanvasOpacity", theme));
+        Token(resources, "AppCanvasSelectionDroppedOffCanvasOpacity", theme),
+        Token(resources, "AppCanvasHandleEndRadius", theme),
+        Token(resources, "AppCanvasStrongHandleOpacity", theme),
+        Token(resources, "AppCanvasFaintHandleOpacity", theme));
 
     private static SKColor Colour(IResourceNode resources, string key, ThemeVariant? theme)
     {

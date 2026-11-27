@@ -420,6 +420,30 @@ public sealed class SelectionOverlayRenderingTests : IDisposable
         Assert.Equal(SKColors.White, withoutALook.GetPixel((int)centre.X, (int)centre.Y));
     }
 
+    // A curve's handle (ADR 0083): a line from its anchor to a square, strongly or faintly.
+    [Fact]
+    public void ACurvesHandle_IsALineToASquare_ShownStronglyOrFaintly()
+    {
+        var viewport = CreateViewport();
+        var anchor = new CanvasPoint(0.5, 1);
+        var end = new CanvasPoint(3.5, 1);
+        var look = _look with { HandleEndRadius = 3, StrongHandleOpacity = 1, FaintHandleOpacity = 0.2 };
+
+        using var strong = Paint(viewport, new CanvasOverlays(false, null, SelectionThickness: 2,
+            ToolHandles: [new ToolHandle(anchor, end, IsStrong: true)], Look: look));
+        using var faint = Paint(viewport, new CanvasOverlays(false, null, SelectionThickness: 2,
+            ToolHandles: [new ToolHandle(anchor, end, IsStrong: false)], Look: look));
+        using var withoutALook = Paint(viewport, new CanvasOverlays(false, null, SelectionThickness: 2,
+            ToolHandles: [new ToolHandle(anchor, end, IsStrong: true)]));
+
+        var middle = DevicePoint(viewport, new CanvasPoint(2, 1));
+        var tip = DevicePoint(viewport, end);
+        Assert.Equal(SKColors.Black, strong.GetPixel((int)middle.X, (int)middle.Y));
+        Assert.Equal(SKColors.Yellow, strong.GetPixel((int)tip.X, (int)tip.Y));
+        Assert.InRange(faint.GetPixel((int)middle.X, (int)middle.Y).Red, 150, 250);
+        Assert.Equal(SKColors.White, withoutALook.GetPixel((int)middle.X, (int)middle.Y));
+    }
+
     private static bool IsBluish(SKColor pixel) => pixel.Blue > pixel.Red + 40;
 
     // The top row's first two cells moved one column left, so one is past the canvas's left edge.

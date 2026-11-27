@@ -84,6 +84,7 @@ internal static class CanvasScenePainter
 
         DrawClosingLine(canvas, paint, scene);
         DrawToolPath(canvas, paint, scene);
+        DrawHandles(canvas, paint, scene);
         DrawMarkers(canvas, paint, scene);
 
         canvas.Restore();
@@ -248,6 +249,50 @@ internal static class CanvasScenePainter
         paint.Color = SelectionLook.Faded(scene.Colors.SelectionLine, opacity);
         canvas.DrawLine(start, end, paint);
         paint.PathEffect = null;
+        UseFill(paint);
+    }
+
+    // Each handle as a line from its anchor to a small square at its end, in the tool line's colours, strongly or
+    // faintly. A placeholder look (docs/TEMPORARY-UI.md).
+    private static void DrawHandles(SKCanvas canvas, SKPaint paint, CanvasScene scene)
+    {
+        if (scene.ToolHandles.Count == 0)
+            return;
+
+        var look = scene.Look;
+        var thickness = scene.ToolPathThickness;
+        var halfSide = (float)look.HandleEndRadius;
+        paint.IsAntialias = true;
+        paint.StrokeCap = SKStrokeCap.Butt;
+        foreach (var handle in scene.ToolHandles)
+        {
+            var opacity = handle.IsStrong ? look.StrongHandleOpacity : look.FaintHandleOpacity;
+            if (opacity <= 0)
+                continue;
+
+            var anchor = new SKPoint((float)handle.Anchor.X, (float)handle.Anchor.Y);
+            var end = new SKPoint((float)handle.End.X, (float)handle.End.Y);
+            var line = SelectionLook.Faded(scene.Colors.SelectionLine, opacity);
+            var backdrop = SelectionLook.Faded(scene.Colors.SelectionBackdrop, opacity);
+            paint.Style = SKPaintStyle.Stroke;
+            paint.StrokeWidth = thickness * 3;
+            paint.Color = backdrop;
+            canvas.DrawLine(anchor, end, paint);
+            paint.StrokeWidth = thickness;
+            paint.Color = line;
+            canvas.DrawLine(anchor, end, paint);
+            if (halfSide <= 0)
+                continue;
+
+            var square = new SKRect(end.X - halfSide, end.Y - halfSide, end.X + halfSide, end.Y + halfSide);
+            paint.Style = SKPaintStyle.Fill;
+            paint.Color = backdrop;
+            canvas.DrawRect(square, paint);
+            paint.Style = SKPaintStyle.Stroke;
+            paint.Color = line;
+            canvas.DrawRect(square, paint);
+        }
+
         UseFill(paint);
     }
 

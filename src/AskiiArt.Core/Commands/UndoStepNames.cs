@@ -116,6 +116,9 @@ public static class UndoStepNames
     /// <summary>A line drawn with the Line tool.</summary>
     public const string Line = "UndoStepLine";
 
+    /// <summary>A curve drawn with the Curve tool.</summary>
+    public const string Curve = "UndoStepCurve";
+
     /// <summary>A rectangle drawn with the Rectangle tool.</summary>
     public const string Rectangle = "UndoStepRectangle";
 

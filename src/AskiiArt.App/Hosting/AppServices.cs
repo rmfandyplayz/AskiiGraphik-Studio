@@ -25,6 +25,7 @@ using AskiiArt.Core.GlyphSets;
 using AskiiArt.Core.Ramps;
 using AskiiArt.Core.Tools;
 using AskiiArt.Core.Tools.Brush;
+using AskiiArt.Core.Tools.Curves;
 using AskiiArt.Core.Tools.Eraser;
 using AskiiArt.Core.Tools.Hand;
 using AskiiArt.Core.Tools.Lines;
@@ -112,6 +113,7 @@ internal static class AppServices
         services.AddSingleton(SoftEraserTool.Definition);
         services.AddSingleton(EraserTool.BackgroundDefinition);
         services.AddSingleton(LineTool.Definition);
+        services.AddSingleton(CurveTool.Definition);
         services.AddSingleton(BoxShapeTool.RectangleDefinition);
         services.AddSingleton(BoxShapeTool.EllipseDefinition);
         services.AddSingleton(BuiltInToolGroups.Hand);
