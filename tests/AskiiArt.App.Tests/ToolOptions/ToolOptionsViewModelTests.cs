@@ -412,32 +412,36 @@ public sealed class ToolOptionsViewModelTests : IDisposable
         Assert.Equal(["None", "Character", "Background"], Choice("Fill").Choices.Select(choice => choice.Name));
         Assert.True(Choice("Fill").IsDropDown);
 
+        Assert.Equal(
+            ["Standard", "Standard by step", "Precise", "Box", "Heavy box", "Double box", "Single character"],
+            Choice("Style").Choices.Select(choice => choice.Name));
+
         _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
-        Assert.Equal(["Style", "Include joins", "Fill", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(["Style", "Fill", "Character"], _viewModel.Items.Select(item => item.Name));
+        Assert.Equal(4, Choice("Style").Choices.Count);
     }
 
     [AvaloniaFact]
-    public void TheLineTool_ShowsItsStyleWithTheBoxStyles_IncludeJoinsAsAToggle_AndTheCharacter()
+    public void TheLineTool_ShowsItsStyleWithoutTheBoxStyles_IncludeJoinsAsAToggle_AndTheCharacter()
     {
         _canvas.ViewModel.SelectTool(LineTool.Id);
 
         Assert.Equal(["Style", "Include joins", "Character"], _viewModel.Items.Select(item => item.Name));
-        Assert.Equal(
-            ["Standard", "Standard by step", "Precise", "Box", "Heavy box", "Double box", "Single character"],
+        Assert.Equal(["Standard", "Standard by step", "Precise", "Single character"],
             Choice("Style").Choices.Select(choice => choice.Name));
         var joins = Assert.IsType<ToggleToolOptionItem>(_viewModel.Items[1]);
         Assert.False(joins.IsOn);
 
         joins.IsOn = true;
 
-        Assert.True(_canvas.ToolSettings.For(LineStyleOptions.Group).Get(LineStyleOptions.IncludeJoins));
+        Assert.True(_canvas.ToolSettings.For(LineStyleOptions.JoinsGroup).Get(LineStyleOptions.IncludeJoins));
     }
 
     [AvaloniaFact]
     public void ABoxStyle_InAnAsciiDocument_IsWarnedAbout()
     {
-        _canvas.ViewModel.SelectTool(BoxShapeTool.EllipseId);
-        _canvas.ToolSettings.For(LineStyleOptions.Group).Set(LineStyleOptions.Style, "heavyBox");
+        _canvas.ViewModel.SelectTool(BoxShapeTool.RectangleId);
+        _canvas.ToolSettings.For(ShapeOptions.RectangleStyleGroup).Set(ShapeOptions.RectangleStyle, "heavyBox");
         Assert.False(_viewModel.HasWarning);
 
         _canvas.Session.History.Execute(new SetCharacterSetCommand(CharacterSet.Ascii));

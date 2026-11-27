@@ -32,3 +32,4 @@ Step 5.2 puts 5.1's line characters (ADR 0078) into a tool. The owner chose U fo
 - The later shape tools reuse the drawing pattern and the style group.
 
 Updated 2026-11-25: the style group also holds Include joins, and Style also offers Box, Heavy box and Double box (ADR 0081).
+Updated 2026-11-26: Include joins is now in a group of its own, and the box styles are only in the Rectangle's own Style, so the shared Style is back to its four styles (ADR 0082).

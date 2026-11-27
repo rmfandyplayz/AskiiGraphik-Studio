@@ -455,7 +455,7 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 | Choice | Where | Step |
 |---|---|---|
 | Rectangle and Ellipse are on Shapes 2 and 3, after Line, until Curve joins the group in 5.5; the owner overhauls shortcuts in M8 | `Core/Tools/BuiltInToolGroups.cs` | 5.3 |
-| Tool Options shows Style, Include joins (since 5.4), Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
+| Tool Options shows Style, Include joins (rectangle only, since 5.4), Fill, Rounded corners (rectangle only), then Character, which shows whether or not anything uses it | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
 | Fill's choices are "None", "Character" and "Background", None by default, in a dropdown since there are three | `ToolOptionShapeFill*` in `Strings.resx`, `Core/Tools/Shapes/ShapeOptions.cs` | 5.3 |
 | Rounded corners, and any on-or-off option, is a button that stays down while it's on, as the choice buttons are, since the Fluent checkbox is taller than a button | `ToolOptions/ToolOptionsToolbar.axaml` | 5.3 |
 | Shift and Alt shape the box whenever they're held, from the press on, and Ctrl does nothing | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.3 |
@@ -468,19 +468,24 @@ eel | `Canvas/AnsiTestSampleDocument.cs` | 2b.4 |
 
 | Choice | Where | Step |
 |---|---|---|
-| The box styles are named "Box", "Heavy box" and "Double box", and come between Precise and Single character | `ToolOptionLineStyle*` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
+| The box styles are named "Box", "Heavy box" and "Double box", and come between Precise and Single character, in the Rectangle's Style only (5.4b) | `ToolOptionLineStyle*` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
 | All three draw slopes with the light `╱` and `╲` | `Core/Tools/Lines/LineGlyphPicker.cs` | 5.4 |
 | Rounded corners are `╭ ╮ ╰ ╯` in Box, and Heavy box and Double box keep square corners | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.4 |
-| "Include joins" is a button that stays down while it's on, after Style, shared by every shape tool and off by default. It shows in Single character too, where it does nothing | `ToolOptionIncludeJoins` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
+| "Include joins" is a button that stays down while it's on, after Style, shared by the Line and the Rectangle (5.4b) and off by default. It shows in Single character too, where it does nothing | `ToolOptionIncludeJoins` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
 | A box style in an ASCII-only document draws in Standard, and Tool Options says "Box-drawing lines need a Unicode document, so they're drawn in Standard" | `ToolWarningBoxLinesNeedUnicode` in `Strings.resx`, `Core/Tools/Lines/LineStyleOptions.cs` | 5.4 |
 | Lines join only the active layer's characters. Diagonals, dashed lines and other characters are drawn over, and joining never makes a rounded corner | `Core/Tools/Lines/LineJoins.cs` | 5.4 |
 | Where no character has the joined arms together (double with heavy, say), every arm takes the new line's weight | `Core/Tools/Lines/LineJoins.cs` | 5.4 |
+| The Rectangle's Style is its own, so a style chosen for the Line or the Ellipse doesn't carry to it, nor the other way | `Core/Tools/Shapes/ShapeOptions.cs` | 5.4b |
+| The Line joins box-drawing lines with `+`, since it draws plain characters | `Core/Tools/Lines/LineJoins.cs` | 5.4b |
+| A rectangle filled with a character covers the old lines inside it, so where they reach its outline they stop there (`┴`, `┤`) rather than crossing (`┼`) | `Core/Tools/Shapes/BoxShapeTool.cs` | 5.4b |
 
 ## Ideas to revisit
 
 The owner's ideas, parked until the stage they belong to.
 
 - **A fuller tool options screen, and an edge-shaping switch** (raised after 4.10a's testing; **for M8**, decided 2026-11-24): the Tool Options toolbar keeps only the options that need quick access, and the rest, such as the ramp, move to a fuller tool options screen. Once it's in, and after testing, the Brush could get an option there to turn edge shaping (PATS) off, for cases where whole-cell tones look better.
+
+- **Drawing box-drawing characters ourselves** (raised after 5.4's testing, 2026-11-26; **for M8**): Roboto Mono has no box-drawing characters, and the fallback font's don't look right with it. Many terminals, Windows Terminal among them, draw U+2500 to U+257F themselves from each character's arms, so box lines look the same in every font. `LineJoins` already knows every character's arms.
 
 - **The box-drawing warning as a notification** (raised in M5's planning, 2026-11-24; **for M8's notifications**): the owner first asked that "Include joins" in an ASCII-only document warn that every join is drawn as `+`. Since 5.4, a box style chosen there shows a warning on the Tool Options toolbar instead, since other styles join with `+` in any document (ADR 0081). Once there's a way of showing notifications, the warning could move there.
 

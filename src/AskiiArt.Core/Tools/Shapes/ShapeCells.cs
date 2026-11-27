@@ -47,16 +47,21 @@ internal sealed class ShapeCells
     /// <summary>
     /// Puts <paramref name="line"/>'s characters in its cells, as <see cref="PutGlyph"/> does. With
     /// <paramref name="joins"/>, each joins the line character already in its cell (ADR 0081); an open line's ends
-    /// join only on the side the line comes from.
+    /// join only on the side the line comes from, and arms the old character had toward a cell in
+    /// <paramref name="covered"/>, which something drawn over, are dropped (ADR 0082).
     /// </summary>
-    public void PutLine(IReadOnlyList<LineGlyph> line, bool isClosed, bool joins)
+    public void PutLine(IReadOnlyList<LineGlyph> line, bool isClosed, bool joins,
+        IReadOnlySet<CellPoint>? covered = null)
     {
         ArgumentNullException.ThrowIfNull(line);
         for (var index = 0; index < line.Count; index++)
         {
             var (point, glyph) = line[index];
             if (joins && _canvas.Contains(point) && _layer.GetCell(point) is { HasGlyph: true } cell)
-                glyph = LineJoins.Join(glyph, LineJoins.Along(line, index, isClosed), cell.Glyph);
+            {
+                var along = LineJoins.Along(line, index, isClosed);
+                glyph = LineJoins.Join(glyph, along, cell.Glyph, CoveredSidesOf(point, covered));
+            }
 
             PutGlyph(point, glyph);
         }
@@ -74,6 +79,27 @@ internal sealed class ShapeCells
 
     /// <summary>The step that makes the changes, or null when no cell would change.</summary>
     public CellEditCommand? Build(string stepNameKey) => _cells.Build(stepNameKey);
+
+    private static LineSides CoveredSidesOf(CellPoint point, IReadOnlySet<CellPoint>? covered)
+    {
+        if (covered is null)
+            return LineSides.None;
+
+        var sides = LineSides.None;
+        if (covered.Contains(new CellPoint(point.X, point.Y - 1)))
+            sides |= LineSides.Up;
+
+        if (covered.Contains(new CellPoint(point.X + 1, point.Y)))
+            sides |= LineSides.Right;
+
+        if (covered.Contains(new CellPoint(point.X, point.Y + 1)))
+            sides |= LineSides.Down;
+
+        if (covered.Contains(new CellPoint(point.X - 1, point.Y)))
+            sides |= LineSides.Left;
+
+        return sides;
+    }
 
     private void Change(CellPoint point, Cell cell, Cell changed)
     {

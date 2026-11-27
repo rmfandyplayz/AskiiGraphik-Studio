@@ -76,16 +76,18 @@ internal static class LineJoins
 
     /// <summary>
     /// The character a cell gets when a line draws <paramref name="drawn"/> there, with the arms
-    /// <paramref name="along"/> the line, over <paramref name="existing"/>. It's <paramref name="drawn"/> itself
-    /// unless both are line characters and joining them adds an arm. Joined box-drawing arms that no character has
-    /// together all take the drawn line's weight, or failing that are all light, which every set of arms has.
+    /// <paramref name="along"/> the line, over <paramref name="existing"/>, whose arms toward
+    /// <paramref name="covered"/> sides are dropped, since something is drawn over them (ADR 0082). It's
+    /// <paramref name="drawn"/> itself unless both are line characters and joining them adds an arm. Joined
+    /// box-drawing arms that no character has together all take the drawn line's weight, or failing that are all
+    /// light, which every set of arms has.
     /// </summary>
-    public static Rune Join(Rune drawn, LineArms along, Rune existing)
+    public static Rune Join(Rune drawn, LineArms along, Rune existing, LineSides covered = LineSides.None)
     {
         if (!TryGetArms(drawn, out var own) || !TryGetArms(existing, out var under))
             return drawn;
 
-        var joined = along.Over(under);
+        var joined = along.Over(under.Without(covered));
         if (joined == own)
             return drawn;
 

@@ -32,3 +32,4 @@ Step 5.3 adds the Rectangle and Ellipse tools to the Shapes group (ADR 0079). Ag
 - Rectangle and Ellipse change number keys when Curve joins the group.
 
 Updated 2026-11-25: in the Box style, rounded corners are `╭ ╮ ╰ ╯`, and Heavy box and Double box keep square corners (ADR 0081).
+Updated 2026-11-26: the Rectangle now has a Style of its own with the box-drawing styles, while the Ellipse keeps the shared one (ADR 0082).

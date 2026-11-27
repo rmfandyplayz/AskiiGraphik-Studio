@@ -12,6 +12,17 @@ internal enum LineWeight : byte
     Double
 }
 
+/// <summary>The sides of a cell, as a set.</summary>
+[Flags]
+internal enum LineSides
+{
+    None = 0,
+    Up = 1,
+    Right = 2,
+    Down = 4,
+    Left = 8
+}
+
 /// <summary>
 /// The arms of a line character (ADR 0081): the lines it draws from the middle of its cell to each of the cell's
 /// sides, and how heavy each is. <c>─</c> has light arms left and right, <c>┏</c> heavy arms right and down.
@@ -40,6 +51,13 @@ internal readonly record struct LineArms(LineWeight Up, LineWeight Right, LineWe
         Right != LineWeight.None ? weight : LineWeight.None,
         Down != LineWeight.None ? weight : LineWeight.None,
         Left != LineWeight.None ? weight : LineWeight.None);
+
+    /// <summary>The arms left once those toward <paramref name="sides"/> are taken off.</summary>
+    public LineArms Without(LineSides sides) => new(
+        sides.HasFlag(LineSides.Up) ? LineWeight.None : Up,
+        sides.HasFlag(LineSides.Right) ? LineWeight.None : Right,
+        sides.HasFlag(LineSides.Down) ? LineWeight.None : Down,
+        sides.HasFlag(LineSides.Left) ? LineWeight.None : Left);
 
     /// <summary>
     /// The arms left once those pointing away from a neighbour <paramref name="across"/> columns and

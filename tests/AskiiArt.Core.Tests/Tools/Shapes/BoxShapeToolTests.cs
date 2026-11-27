@@ -40,6 +40,8 @@ public sealed class BoxShapeToolTests
 
     private ToolOptionValues Style => _settings.For(LineStyleOptions.Group);
 
+    private ToolOptionValues RectangleStyle => _settings.For(ShapeOptions.RectangleStyleGroup);
+
     private ToolOptionValues Fill => _settings.For(ShapeOptions.FillGroup);
 
     private ToolOptionValues Character => _settings.For(CharacterBrushOptions.Group);
@@ -95,7 +97,7 @@ public sealed class BoxShapeToolTests
     {
         TestCells.Paint(Layer, "", "x·····x");
         _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
-        Style.Set(LineStyleOptions.Style, "singleCharacter");
+        RectangleStyle.Set(ShapeOptions.RectangleStyle, "singleCharacter");
         Character.Set(CharacterBrushOptions.Character, new Rune('*'));
 
         Drag((0, 1), (6, 3));
@@ -109,7 +111,7 @@ public sealed class BoxShapeToolTests
         _session = SessionFor(ColorMode.Ansi, CharacterSet.Unicode);
         _tool = ToolFor(BoxShape.Rectangle);
         _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
-        Style.Set(LineStyleOptions.Style, "box");
+        RectangleStyle.Set(ShapeOptions.RectangleStyle, "box");
 
         Drag((1, 1), (6, 3));
 
@@ -125,7 +127,7 @@ public sealed class BoxShapeToolTests
         _session = SessionFor(ColorMode.Ansi, CharacterSet.Unicode);
         _tool = ToolFor(BoxShape.Rectangle);
         _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
-        Style.Set(LineStyleOptions.Style, style);
+        RectangleStyle.Set(ShapeOptions.RectangleStyle, style);
 
         Drag((1, 1), (6, 3));
 
@@ -136,7 +138,7 @@ public sealed class BoxShapeToolTests
     public void ABoxStyleInAnAsciiDocument_DrawsInStandard_WithItsRoundedCorners_AndWarns()
     {
         _settings.For(ShapeOptions.RectangleGroup).Set(ShapeOptions.RoundedCorners, true);
-        Style.Set(LineStyleOptions.Style, "box");
+        RectangleStyle.Set(ShapeOptions.RectangleStyle, "box");
 
         Drag((1, 1), (6, 3));
 
@@ -281,9 +283,13 @@ public sealed class BoxShapeToolTests
     }
 
     [Fact]
-    public void ChoosingACharacter_MakesTheStyleSingleCharacter_OnlyWhenNothingUsesIt()
+    public void ChoosingACharacter_MakesTheShapesStyleSingleCharacter_OnlyWhenNothingUsesIt()
     {
         BoxShapeTool.RectangleDefinition.CharacterChosen!(_settings);
+        Assert.Equal(LineStyle.SingleCharacter, LineStyleOptions.ReadStyle(RectangleStyle));
+        Assert.Equal(LineStyle.Standard, LineStyleOptions.ReadStyle(Style));
+
+        BoxShapeTool.EllipseDefinition.CharacterChosen!(_settings);
         Assert.Equal(LineStyle.SingleCharacter, LineStyleOptions.ReadStyle(Style));
 
         Style.Set(LineStyleOptions.Style, "precise");
@@ -292,11 +298,27 @@ public sealed class BoxShapeToolTests
         Assert.Equal(LineStyle.Precise, LineStyleOptions.ReadStyle(Style));
     }
 
+    // The ellipse keeps the Line tool's styles and doesn't join (ADR 0082).
     [Fact]
-    public void OnlyTheRectangle_HasRoundedCorners()
+    public void OnlyTheRectangle_HasRoundedCorners_TheBoxStyles_AndIncludeJoins()
     {
-        Assert.Contains(ShapeOptions.RectangleGroup, BoxShapeTool.RectangleDefinition.OptionGroups);
-        Assert.DoesNotContain(ShapeOptions.RectangleGroup, BoxShapeTool.EllipseDefinition.OptionGroups);
+        Assert.Equal(
+            [ShapeOptions.RectangleStyleGroup, LineStyleOptions.JoinsGroup, ShapeOptions.FillGroup,
+                ShapeOptions.RectangleGroup, CharacterBrushOptions.Group],
+            BoxShapeTool.RectangleDefinition.OptionGroups);
+        Assert.Equal([LineStyleOptions.Group, ShapeOptions.FillGroup, CharacterBrushOptions.Group],
+            BoxShapeTool.EllipseDefinition.OptionGroups);
+        Assert.Contains("doubleBox", ShapeOptions.RectangleStyle.Choices.Select(choice => choice.Value));
+    }
+
+    [Fact]
+    public void TheRectanglesStyle_IsItsOwn()
+    {
+        RectangleStyle.Set(ShapeOptions.RectangleStyle, "precise");
+        Style.Set(LineStyleOptions.Style, "standardByStep");
+
+        Assert.Equal(LineStyle.Precise, LineStyleOptions.ReadStyle(RectangleStyle));
+        Assert.Equal(LineStyle.StandardByStep, LineStyleOptions.ReadStyle(Style));
     }
 
     private static EditingSession SessionFor(ColorMode colorMode, CharacterSet characterSet = CharacterSet.Ascii) =>

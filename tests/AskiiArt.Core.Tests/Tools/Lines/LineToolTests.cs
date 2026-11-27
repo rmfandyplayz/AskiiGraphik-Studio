@@ -32,7 +32,8 @@ public sealed class LineToolTests
         _session = new EditingSession(
             Document.Create(new CanvasSize(10, 4), "Layer", CharacterSet.Ascii, colorMode: ColorMode.Ansi));
         TestCells.Paint(Layer, "abcdefghij", "··········", "··········", "··········");
-        _tool = new LineTool(_session, _colors, Style, Character, _recent, () => HalfAsWide, () => TestTools.NoInk);
+        _tool = new LineTool(_session, _colors, Style, _settings.For(LineStyleOptions.JoinsGroup), Character, _recent,
+            () => HalfAsWide, () => TestTools.NoInk);
         _colors.Foreground = _red;
         _colors.Background = _blue;
     }
@@ -231,24 +232,20 @@ public sealed class LineToolTests
         Assert.Equal(CharacterBrushOptions.CharacterDoesNotFitWarningKey, LineToolDefinitionWarning());
     }
 
+    // Only the rectangle has the box-drawing styles (ADR 0082).
     [Fact]
-    public void TheBoxWarning_ShowsWhileABoxStyleCantBeDrawn()
+    public void TheLinesStyles_AreThePlainOnes()
     {
-        Assert.Null(LineToolDefinitionWarning());
-
-        Style.Set(LineStyleOptions.Style, "doubleBox");
-
-        Assert.Equal(LineStyleOptions.BoxNeedsUnicodeWarningKey, LineToolDefinitionWarning());
-        Assert.Null(LineTool.Definition.WarningFor!(_settings,
-            Document.Create(new CanvasSize(4, 4), "Layer", CharacterSet.Unicode)));
+        Assert.Equal(["standard", "standardByStep", "precise", "singleCharacter"],
+            LineStyleOptions.Style.Choices.Select(choice => choice.Value));
+        Assert.Contains(LineStyleOptions.Group, LineTool.Definition.OptionGroups);
     }
 
     [Fact]
-    public void IncludeJoins_IsOffAtFirst_AndSharedByTheShapeTools()
+    public void IncludeJoins_IsOffAtFirst_AndTheLineHasIt()
     {
-        Assert.False(Style.Get(LineStyleOptions.IncludeJoins));
-        Assert.Contains(LineStyleOptions.IncludeJoins, LineStyleOptions.Group.Options);
-        Assert.Contains(LineStyleOptions.Group, LineTool.Definition.OptionGroups);
+        Assert.False(_settings.For(LineStyleOptions.JoinsGroup).Get(LineStyleOptions.IncludeJoins));
+        Assert.Contains(LineStyleOptions.JoinsGroup, LineTool.Definition.OptionGroups);
     }
 
     private string? LineToolDefinitionWarning() => LineTool.Definition.WarningFor!(_settings, _session.Document);

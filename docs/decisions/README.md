@@ -88,3 +88,4 @@ How ADRs work (status values, superseding, small corrections) is described in [A
 | [0079](0079-the-line-tool-and-the-shapes-group.md) | The Line tool and the Shapes group | Accepted |
 | [0080](0080-rectangle-and-ellipse.md) | Rectangle and Ellipse | Accepted |
 | [0081](0081-box-drawing-styles-and-joins.md) | Box-drawing styles and joins | Accepted |
+| [0082](0082-box-styles-on-the-rectangle-and-fills-over-joins.md) | Box styles on the rectangle, and fills over joins | Accepted |

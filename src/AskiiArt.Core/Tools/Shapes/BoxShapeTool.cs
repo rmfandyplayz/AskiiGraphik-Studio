@@ -29,8 +29,9 @@ public enum BoxShape
 /// Alt grows it from the first cell outwards, as in Rectangle and Ellipse Select (ADR 0060). As with the Line tool
 /// (ADR 0079), the shape shows in the document as it's dragged and ends as one undo step, a release in the first cell
 /// draws nothing, Esc takes it back, it clips to the selection, and it isn't drawn on a locked or hidden layer, or
-/// while it would draw a character the document can't hold. A box one cell thin draws as a line. With Include joins
-/// on, the outline joins the line characters already there (ADR 0081).
+/// while it would draw a character the document can't hold. A box one cell thin draws as a line. The rectangle has
+/// the box-drawing styles too, and with Include joins on, its outline joins the line characters already there, a
+/// character fill covering the parts of them inside it (ADR 0081, ADR 0082).
 /// </summary>
 public sealed class BoxShapeTool : ITool
 {
@@ -129,8 +130,7 @@ public sealed class BoxShapeTool : ITool
             return;
 
         var document = _session.Document;
-        var lineOptions = _settings.For(LineStyleOptions.Group);
-        var style = LineStyleOptions.ReadStyle(lineOptions);
+        var style = LineStyleOptions.ReadStyle(_settings.For(ShapeOptions.StyleGroupOf(_shape)));
         var fill = ShapeOptions.ReadFill(_settings.For(ShapeOptions.FillGroup));
         var character = _settings.For(CharacterBrushOptions.Group).Get(CharacterBrushOptions.Character);
         var usesCharacter = style == LineStyle.SingleCharacter || fill == ShapeFill.Character;
@@ -147,8 +147,9 @@ public sealed class BoxShapeTool : ITool
         var isRounded = _shape == BoxShape.Rectangle
             && _settings.For(ShapeOptions.RectangleGroup).Get(ShapeOptions.RoundedCorners);
         var picker = new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet);
-        var look = new Look(picker.Drawn(style), LineStyleOptions.ReadJoins(lineOptions, style), fill, isRounded,
-            character, picker, _colors.ForegroundIn(document.ColorMode), _colors.BackgroundIn(document.ColorMode));
+        var joins = _shape == BoxShape.Rectangle && LineStyleOptions.ReadJoins(_settings.For(LineStyleOptions.JoinsGroup), style);
+        var look = new Look(picker.Drawn(style), joins, fill, isRounded, character, picker,
+            _colors.ForegroundIn(document.ColorMode), _colors.BackgroundIn(document.ColorMode));
         var undoStepName = _shape == BoxShape.Rectangle ? UndoStepNames.Rectangle : UndoStepNames.Ellipse;
         _drag = new Drag(input.Cell, look, new LiveShape(_session, undoStepName))
         {
@@ -211,16 +212,16 @@ public sealed class BoxShapeTool : ITool
             context.CellWidthToHeight, context.Densities))
     {
         OptionGroups = OptionGroupsOf(shape),
-        WarningFor = ShapeOptions.WarningFor,
-        CharacterChosen = ShapeOptions.ChooseCharacter
+        WarningFor = (settings, document) => ShapeOptions.WarningFor(shape, settings, document),
+        CharacterChosen = settings => ShapeOptions.ChooseCharacter(shape, settings)
     };
 
     private static ToolOptionGroup[] OptionGroupsOf(BoxShape shape)
     {
         if (shape == BoxShape.Rectangle)
         {
-            return [LineStyleOptions.Group, ShapeOptions.FillGroup, ShapeOptions.RectangleGroup,
-                CharacterBrushOptions.Group];
+            return [ShapeOptions.RectangleStyleGroup, LineStyleOptions.JoinsGroup, ShapeOptions.FillGroup,
+                ShapeOptions.RectangleGroup, CharacterBrushOptions.Group];
         }
 
         return [LineStyleOptions.Group, ShapeOptions.FillGroup, CharacterBrushOptions.Group];
@@ -269,20 +270,26 @@ public sealed class BoxShapeTool : ITool
 
         var path = _shape == BoxShape.Rectangle ? LinePath.Rectangle(box) : LinePath.Ellipse(box);
         var outline = look.Picker.Pick(path, look.Style, look.Character);
+        HashSet<CellPoint>? covered = null;
         if (look.Fill != ShapeFill.None)
         {
-            foreach (var point in ShapeInterior.Of(box, outline.Select(glyph => glyph.Cell)))
+            var inside = ShapeInterior.Of(box, outline.Select(glyph => glyph.Cell));
+            foreach (var point in inside)
             {
                 if (look.Fill == ShapeFill.Character)
                     cells.PutGlyph(point, look.Character);
                 else
                     cells.PutBackground(point);
             }
+
+            // A character fill covers what was inside, the lines the outline joins included.
+            if (look.Fill == ShapeFill.Character)
+                covered = [.. inside];
         }
 
         if (!look.IsRounded)
         {
-            cells.PutLine(outline, path.IsClosed, look.Joins);
+            cells.PutLine(outline, path.IsClosed, look.Joins, covered);
             return;
         }
 
@@ -295,7 +302,7 @@ public sealed class BoxShapeTool : ITool
                 rounded.Add(glyph with { Glyph = RoundedCorner(look.Style, box, glyph.Cell) ?? glyph.Glyph });
         }
 
-        cells.PutLine(rounded, path.IsClosed, look.Joins);
+        cells.PutLine(rounded, path.IsClosed, look.Joins, covered);
     }
 
     private static bool IsCornerOf(CellRect box, CellPoint point) =>

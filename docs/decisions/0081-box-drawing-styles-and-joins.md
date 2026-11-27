@@ -5,6 +5,8 @@
 
 Status: Accepted
 
+> Partly replaced by [ADR 0082](0082-box-styles-on-the-rectangle-and-fills-over-joins.md): only the Rectangle has the box styles, in a Style of its own; Include joins is on the Line and the Rectangle only; and a rectangle's character fill covers the lines it joins. The rest still stands.
+
 ## Context
 
 Step 5.4 adds box-drawing joins, opt-in as the owner asked in M5's planning: an "Include joins" option where lines and outlines join the lines already there (`┬ ┼ ╋`), with `+` for every join in an ASCII-only document. At the step's start no style drew box-drawing characters, since 5.1's styles (ADR 0078) are all plain text. The owner agreed to add three box styles, the rules below for what joins, a Tool Options warning now rather than an M8 notification, and one shared Include joins option.
@@ -28,3 +30,5 @@ Step 5.4 adds box-drawing joins, opt-in as the owner asked in M5's planning: an 
 
 - Lines joining what's under them depend on what's on the active layer only, not on the other layers.
 - The Curve, Table and Line brush steps can use the same joins through `ShapeCells.PutLine`.
+
+Updated 2026-11-26: the box styles are the Rectangle's alone, Include joins is the Line's and the Rectangle's, and a character fill covers what it joins (ADR 0082).

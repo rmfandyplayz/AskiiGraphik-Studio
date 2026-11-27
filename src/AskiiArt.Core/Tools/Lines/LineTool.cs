@@ -35,10 +35,10 @@ public sealed class LineTool : ITool
     /// <summary>Registers the tool, as DI does.</summary>
     public static ToolDefinition Definition { get; } = new(ToolDescriptor, context => new LineTool(
         context.Session, context.Colors, context.Settings.For(LineStyleOptions.Group),
-        context.Settings.For(CharacterBrushOptions.Group), context.Settings.RecentGlyphs, context.CellWidthToHeight,
-        context.Densities))
+        context.Settings.For(LineStyleOptions.JoinsGroup), context.Settings.For(CharacterBrushOptions.Group),
+        context.Settings.RecentGlyphs, context.CellWidthToHeight, context.Densities))
     {
-        OptionGroups = [LineStyleOptions.Group, CharacterBrushOptions.Group],
+        OptionGroups = [LineStyleOptions.Group, LineStyleOptions.JoinsGroup, CharacterBrushOptions.Group],
         WarningFor = LineStyleOptions.WarningFor,
         CharacterChosen = LineStyleOptions.ChooseSingleCharacter
     };
@@ -46,6 +46,7 @@ public sealed class LineTool : ITool
     private readonly EditingSession _session;
     private readonly PaintColors _colors;
     private readonly ToolOptionValues _style;
+    private readonly ToolOptionValues _joins;
     private readonly ToolOptionValues _character;
     private readonly RecentGlyphs _recent;
     private readonly Func<double> _cellWidthToHeight;
@@ -59,16 +60,19 @@ public sealed class LineTool : ITool
     /// <param name="session">The editing session the tool changes.</param>
     /// <param name="colors">The current colours, which drawn cells get.</param>
     /// <param name="style">The values of <see cref="LineStyleOptions.Group"/>.</param>
+    /// <param name="joins">The values of <see cref="LineStyleOptions.JoinsGroup"/>.</param>
     /// <param name="character">The values of <see cref="CharacterBrushOptions.Group"/>, shared with the Character Brush.</param>
     /// <param name="recent">The recent characters, which a Single character line's character joins.</param>
     /// <param name="cellWidthToHeight">How wide the document's cells look next to their height.</param>
     /// <param name="glyphs">Where each glyph's ink lies in the document's font, for Precise.</param>
-    public LineTool(EditingSession session, PaintColors colors, ToolOptionValues style, ToolOptionValues character,
-        RecentGlyphs recent, Func<double> cellWidthToHeight, Func<IGlyphDensityProvider> glyphs)
+    public LineTool(EditingSession session, PaintColors colors, ToolOptionValues style, ToolOptionValues joins,
+        ToolOptionValues character, RecentGlyphs recent, Func<double> cellWidthToHeight,
+        Func<IGlyphDensityProvider> glyphs)
     {
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(colors);
         ArgumentNullException.ThrowIfNull(style);
+        ArgumentNullException.ThrowIfNull(joins);
         ArgumentNullException.ThrowIfNull(character);
         ArgumentNullException.ThrowIfNull(recent);
         ArgumentNullException.ThrowIfNull(cellWidthToHeight);
@@ -76,12 +80,16 @@ public sealed class LineTool : ITool
         if (style.Group != LineStyleOptions.Group)
             throw new ArgumentException("These aren't the Shapes group's style options.", nameof(style));
 
+        if (joins.Group != LineStyleOptions.JoinsGroup)
+            throw new ArgumentException("These aren't the Shapes group's join options.", nameof(joins));
+
         if (character.Group != CharacterBrushOptions.Group)
             throw new ArgumentException("These aren't the Character Brush's own options.", nameof(character));
 
         _session = session;
         _colors = colors;
         _style = style;
+        _joins = joins;
         _character = character;
         _recent = recent;
         _cellWidthToHeight = cellWidthToHeight;
@@ -130,7 +138,7 @@ public sealed class LineTool : ITool
             _recent.Use(glyph);
 
         var picker = new LineGlyphPicker(_cellWidthToHeight(), _glyphs(), document.CharacterSet);
-        var joins = LineStyleOptions.ReadJoins(_style, style);
+        var joins = LineStyleOptions.ReadJoins(_joins, style);
         var foreground = _colors.ForegroundIn(document.ColorMode);
         var background = _colors.BackgroundIn(document.ColorMode);
         _drag = new Drag(input.Cell, style, joins, glyph, picker, foreground, background,
